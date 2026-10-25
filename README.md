@@ -184,8 +184,8 @@ Then:
 
 | Phase | Focus | Status |
 |:---:|---|:---:|
-| **0** | Foundation: toolchain, boot order, Net layer, test runner, CI, test range | 🟡 7 / 9 ([progress](docs/PROGRESS.md)) |
-| **1** | **Flight model prototype**: cockpit camera, two contrasting jets | ⚪ Next |
+| **0** | Foundation: toolchain, boot order, Net layer, test runner, CI, test range | ✅ Done ([progress](docs/PROGRESS.md)) |
+| **1** | **Flight model prototype**: cockpit camera, two contrasting jets | 🟡 Next |
 | **2** | Guns and component damage | ⚪ |
 | **3** | Missiles, radar, RWR and countermeasures | ⚪ |
 | **4** | Match loop MVP: FFA, AI pilots, first map, tutorial, touch controls | ⚪ |
