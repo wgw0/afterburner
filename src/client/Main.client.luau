@@ -8,5 +8,12 @@ end
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Boot = require(Shared.Boot)
 
-Boot.run(script.Parent:WaitForChild("Controllers"), "Controller")
+-- Client-local attributes (they don't replicate); read by the startup smoke test (tests/Smoke.luau).
+ReplicatedStorage:SetAttribute("ClientBootFailures", 0)
+
+Boot.run(script.Parent:WaitForChild("Controllers"), "Controller", function()
+	ReplicatedStorage:SetAttribute("ClientBootFailures", Boot.startFailures)
+end)
+
+ReplicatedStorage:SetAttribute("ClientReady", true)
 print("[Boot] Client ready")

@@ -65,6 +65,11 @@ local checkers: { [string]: (any) -> boolean } = {
 	end,
 }
 
+function Validate.isKnownSpec(spec: string): boolean
+	local base = if string.sub(spec, -1) == "?" then string.sub(spec, 1, -2) else spec
+	return checkers[base] ~= nil
+end
+
 function Validate.matchesSpec(value: any, spec: string): boolean
 	local optional = string.sub(spec, -1) == "?"
 	local base = if optional then string.sub(spec, 1, -2) else spec
