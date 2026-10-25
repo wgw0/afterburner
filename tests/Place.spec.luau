@@ -15,6 +15,7 @@ return function(ctx)
 		ReplicatedStorage:FindFirstChild("Shared"),
 		ServerScriptService:FindFirstChild("Server"),
 		ServerStorage:FindFirstChild("Tests"),
+		ServerStorage:FindFirstChild("Tools"),
 		ServerStorage:FindFirstChild("TestSandbox"), -- the runner's own temporary copy
 		StarterPlayer.StarterPlayerScripts:FindFirstChild("Client"),
 	}
