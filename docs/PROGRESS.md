@@ -5,7 +5,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | Phase | Done | Status |
 |---|---|---|
 | 0 Foundation | 9 / 9 | ✅ Complete |
-| 1–8 | 0 / 182 | ⚪ Not started |
+| 1–8 | 0 / 183 | ⚪ Not started |
 
 ---
 
@@ -49,6 +49,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 - [ ] **CAM-02** Greybox analogue cockpit kit with 4 live gauges
 - [ ] **CAM-05** G-LOC, grey-out and red-out effects
 - [ ] **HUD-01** Core flight HUD: speed, altitude, G, throttle, heading, flight path marker, reticle
+- [ ] **HUD-07** HUD visual design pass (added after the first playtest: the Phase 1 HUD is placeholder text)
 - [ ] **AIR-01** Spawn/despawn, network ownership, attributes and the no-character setup
 - [ ] **FX-01** Afterburner, contrails, vapour (own jet + others)
 - [ ] **AUD-01** Engine and wind (cockpit and external)

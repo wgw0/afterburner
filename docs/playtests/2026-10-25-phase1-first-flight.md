@@ -20,7 +20,7 @@
 
 ## Results against the exit test
 
-**Pending** Will's verdict.
+**Partial.** Flight feel is "good-ish" after tuning; HUD needs a design pass before sign-off.
 
 ## Findings
 
@@ -31,6 +31,11 @@
 | 3 | Jet slowly sank with the aim held level (instructor flew the nose, not the flight path) | 🟡 minor | Claude | Fixed: instructor works in the flight-path frame; new 30 s altitude-hold spec |
 | 4 | Gunsight glass too big and opaque; canopy bows heavy | 🟡 minor | Will (screenshot) | Fixed: smaller, more transparent glass; thinner bows |
 | 5 | MiG-21 takes ~90 s to pass Mach 1 at 9 km in afterburner (too slow) | 🟡 minor | Claude (numbers) | Tune wave drag / per-airframe transonic drag in a later pass |
+| 6 | Roll felt too fast and not jet-like | 🟠 major | Will | Fixed: roll inertia (~0.4 s), then Will tuned F-5E roll 80 / pitch 20 / yaw 10 °/s in the P panel; MiG-21 scaled to 65 / 17 / 8 |
+| 7 | Spawned too high to see the ground; haze hid it | 🟡 minor | Will | Fixed: spawn 3000 → 1200 studs, Atmosphere density 0.3 → 0.1 |
+| 8 | No ground to judge height and speed | 🟠 major | Will | Fixed: placeholder terrain (tools/TerrainBuilder), streaming off for Phase 1 |
+| 9 | "Test" from F5 once hung with only the server booted | 🟡 minor | Will | Not reproduced; likely overlapped with a session Claude had started. Watch for it |
+| 10 | HUD looks awful: loose screen text, clashes with canopy frame, no tapes or pitch ladder; cockpit gauge dials squashed with ticks outside | 🟠 major | Will | New task HUD-07 (HUD design pass); gauge fix under CAM-02 |
 
 ## Follow-ups
 
