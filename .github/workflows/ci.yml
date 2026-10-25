@@ -23,6 +23,9 @@ jobs:
           rokit authenticate github --token "$GITHUB_TOKEN"
           rokit install --no-trust-check
 
+      - name: Integrity checks (place file, strict mode, conflicts, Rojo paths, remotes)
+        run: bash scripts/ci-checks.sh
+
       - name: StyLua (format check)
         run: stylua --check src tests
 

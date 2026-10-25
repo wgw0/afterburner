@@ -3,6 +3,7 @@
 --   Init:  set up state, declare things. Must not yield or call other modules.
 --   Start: connect events, start loops. Each Start runs in its own thread so one can't block the rest.
 -- Modules may set `Priority` (lower runs first, default 100); ties break on name.
+-- Start failures are counted in `Boot.startFailures` so the startup smoke test can see them.
 
 export type Module = {
 	Priority: number?,
@@ -10,7 +11,9 @@ export type Module = {
 	Start: ((self: any) -> ())?,
 }
 
-local Boot = {}
+local Boot = {
+	startFailures = 0,
+}
 
 local function collect(folder: Instance): { { name: string, module: Module } }
 	local entries = {}
@@ -34,7 +37,8 @@ local function collect(folder: Instance): { { name: string, module: Module } }
 end
 
 -- Returns the ordered list of module names that booted.
-function Boot.run(folder: Instance, label: string): { string }
+-- onStartFailure (optional) is called with the module name whenever a Start errors.
+function Boot.run(folder: Instance, label: string, onStartFailure: ((string) -> ())?): { string }
 	local entries = collect(folder)
 	local names = {}
 
@@ -59,7 +63,11 @@ function Boot.run(folder: Instance, label: string): { string }
 			task.spawn(function()
 				local ok, err = xpcall(start, debug.traceback, entry.module)
 				if not ok then
+					Boot.startFailures += 1
 					warn(`[Boot] {label} {entry.name}:Start failed: {err}`)
+					if onStartFailure then
+						onStartFailure(entry.name)
+					end
 				end
 			end)
 		end
