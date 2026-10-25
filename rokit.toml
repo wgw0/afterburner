@@ -1,5 +1,8 @@
-# Toolchain pinned with Rokit (https://github.com/rojo-rbx/rokit)
+﻿# Toolchain pinned with Rokit (https://github.com/rojo-rbx/rokit)
 # Run `rokit install` in this folder to get the exact versions below.
 
 [tools]
-rojo = "rojo-rbx/rojo@7.4.4"
+rojo = "rojo-rbx/rojo@7.7.1"
+stylua = "JohnnyMorganz/StyLua@2.6.0"
+selene = "Kampfkarren/selene@0.32.0"
+wally = "UpliftGames/wally@0.3.2"

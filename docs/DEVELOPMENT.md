@@ -66,12 +66,14 @@
 | **Roblox Studio** | Place editing, playtesting, profiling | Built-in MCP server is enabled for AI-assisted work |
 | **Rojo** | Sync `src/` files into Studio | Pinned in `rokit.toml` |
 | **Rokit** | Installs pinned CLI tools | `rokit install` |
-| **Wally** | Luau package manager | Add to `rokit.toml` in Phase 0 |
-| **StyLua** | Formatter | Add to `rokit.toml`. Config in `stylua.toml` |
-| **Selene** | Linter | Add to `rokit.toml`. Config in `selene.toml` with the `roblox` std |
-| **luau-lsp** | Type checking and autocomplete in VS Code | Uses `sourcemap.json` from `rojo sourcemap` |
-| **Jest-Lua** | Unit tests for pure modules | Installed through Wally as a dev dependency |
-| **GitHub Actions** | CI: format check, lint, Rojo build | See §35 |
+| **Wally** | Luau package manager | Pinned in `rokit.toml`. `wally.toml` in the repo root |
+| **StyLua** | Formatter | Pinned in `rokit.toml`. Config in `stylua.toml` |
+| **Selene** | Linter | Pinned in `rokit.toml`. Config in `selene.toml` with the `roblox` std |
+| **luau-lsp** | Type checking and autocomplete in your editor | VS Code extension ("Luau Language Server"). Uses `sourcemap.json` from `rojo sourcemap` |
+| **TestRunner** (in-house) | Unit tests for pure modules | `tests/TestRunner.luau`, synced to `ServerStorage.Tests` (§33) |
+| **GitHub Actions** | CI: format check, lint, Rojo build | `.github/workflows/ci.yml` (§35) |
+
+> **Why an in-house test runner instead of Jest-Lua:** Jest-Lua needs a Studio feature flag (`debug.loadmodule`) to be switched on by editing Studio's settings files. A ~200-line runner covers what the pure modules need, runs in Edit mode from the command bar or the Studio MCP tools, and clones modules before requiring them, so edits synced by Rojo are always picked up.
 
 Pin the **exact** version of every tool in `rokit.toml` at the moment you add it, and never use floating versions.
 
@@ -81,7 +83,8 @@ Pin the **exact** version of every tool in `rokit.toml` at the moment you add it
 |---|---|---|
 | **ProfileStore** (loleris) | Session-locked player data | Server. If it isn't on Wally, vendor it into `src/server/Vendor/` with its licence. |
 | **React (react-lua) + ReactRoblox** | Hangar, shop, menus | Client |
-| **Jest-Lua** | Unit tests | Dev only |
+
+Packages install to `Packages/` (git-ignored, restored with `wally install`). Add a `Packages` entry under `ReplicatedStorage` in `default.project.json` when the first dependency is added.
 
 Keep the dependency list short. Everything else (Signal, Trove, Spring, networking) is small enough to write in-house in `src/shared/Util`, so we own and understand it.
 
@@ -116,7 +119,7 @@ All tunable numbers live in config modules under `src/shared/Config/` (shared) o
 | **Test universe** | A separate, private Roblox experience | Multiplayer tests, purchases with test products, matchmaking across places |
 | **Production** | The public experience | Releases only, from tagged commits |
 
-Keep **separate experiences** for test and production, so DataStores, MemoryStores and products never mix. A `Config.Environment` value (set per place via an attribute on `ServerScriptService`) switches DataStore names and enables debug tools in test only.
+Keep **separate experiences** for test and production, so DataStores, MemoryStores and products never mix. `Shared.Config.Environment` reads the `Environment` attribute on **`ReplicatedStorage`** (so the server and clients agree), switches DataStore names and enables debug tools in test only. If the attribute is missing, Studio counts as `"Test"` and live servers as `"Prod"`, so debug tools can never switch on by accident in production. **Set `Environment = "Prod"` on the production place before publishing.**
 
 ### 0.7 Shared vocabulary
 
@@ -262,7 +265,7 @@ return ExampleService
 | ID | Task | Phase |
 |---|---|---|
 | CORE-01 | Create the full folder tree and the server/client `Main` boot loaders with Init/Start ordering and error reporting per service | 0 |
-| CORE-02 | Add StyLua, Selene, Wally and luau-lsp to `rokit.toml`, with config files (`stylua.toml`, `selene.toml`, `wally.toml`) | 0 |
+| CORE-02 | Add StyLua, Selene and Wally to `rokit.toml`, with config files (`stylua.toml`, `selene.toml`, `wally.toml`) | 0 |
 | CORE-03 | Set up GitHub Actions CI (§35) | 0 |
 | CORE-04 | Write `Util`: Signal, Trove, Spring, RingBuffer, Pool, Validate, with unit tests | 0 |
 
@@ -586,7 +589,7 @@ Using constraints, rather than setting the CFrame directly, keeps the movement p
 
 ### 6.7 Acceptance tests
 
-Automated (Jest-Lua):
+Automated (TestRunner):
 
 - Level flight at cruise throttle holds altitude within ±2% over 10 s of simulated time once trimmed.
 - At a constant 9 G pull, speed decays. At full afterburner in a dive, speed rises.
@@ -1816,7 +1819,7 @@ end
 
 | Layer | Tool | What |
 |---|---|---|
-| **Unit** | Jest-Lua in Studio (run via a test runner script, and in CI if a headless runner is set up) | FlightModel, Instructor, Ballistics, Guidance, Signature, Economy, TechTree rules, Validate, Pack, migrations |
+| **Unit** | In-house TestRunner in Studio Edit mode: `require(game.ServerStorage.Tests.TestRunner).run()` (headless CI later, if a suitable runner is available) | FlightModel, Instructor, Ballistics, Guidance, Signature, Economy, TechTree rules, Validate, Pack, migrations |
 | **Integration** | Studio **Test → Clients and Servers** (2–4 clients) | Spawning, combat, missiles, damage, match flow |
 | **Network** | Studio network simulation (replication lag, packet loss) | Gun hits at 150 ms, missile smoothness, anti-cheat false positives |
 | **Device** | Studio Device Emulator plus real phones and a console if possible | HUD scaling, touch, performance |
@@ -1828,7 +1831,7 @@ end
 
 | ID | Task | Phase |
 |---|---|---|
-| TST-01 | Jest-Lua setup and test runner | 0 |
+| TST-01 | Test runner (`tests/TestRunner.luau`) and first specs | 0 |
 | TST-02 | Network simulation test checklist | 2 |
 | TST-03 | Playtest template and log folder | 1 |
 | TST-04 | Headless unit tests in CI (if a suitable runner is available) | 6 |
@@ -1948,8 +1951,8 @@ On every push and PR:
 | Jet model | `Team` | string | |
 | Jet model | `IsAI` | boolean | |
 | Jet model | `Afterburner` | boolean | Drives other players' afterburner FX. Set by the server from the pilot's throttle report (5 Hz) |
-| ServerScriptService | `Environment` | string | `"Test"` / `"Prod"` |
-| ServerScriptService | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"` |
+| ReplicatedStorage | `Environment` | string | `"Test"` / `"Prod"` (missing = Test in Studio, Prod live) |
+| ReplicatedStorage | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"` (missing = Single) |
 | ReplicatedStorage | `ServerReady` | boolean | Boot finished |
 | SpawnPoint parts | `Team`, `Type`, `Altitude` | | §19 |
 | CaptureZone parts | `Name`, `Radius`, `MinAlt`, `MaxAlt` | | §19 |

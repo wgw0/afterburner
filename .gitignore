@@ -11,6 +11,11 @@
 build/
 sourcemap.json
 
+# Wally packages (restored with `wally install`; wally.lock IS committed)
+Packages/
+ServerPackages/
+DevPackages/
+
 # OS / editor
 .DS_Store
 Thumbs.db
