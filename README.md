@@ -11,7 +11,7 @@
 [![Tooling](https://img.shields.io/badge/sync-Rojo-E13835?style=for-the-badge)](https://rojo.space)
 [![Status](https://img.shields.io/badge/status-pre--alpha-FF8A3D?style=for-the-badge)](#-roadmap)
 
-[**Design doc**](docs/DESIGN.md) · [**Roadmap**](#-roadmap) · [**Getting started**](#-getting-started) · [**Project layout**](#-project-layout)
+[**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Roadmap**](#-roadmap) · [**Getting started**](#-getting-started) · [**Project layout**](#-project-layout)
 
 </div>
 
@@ -132,7 +132,8 @@ afterburner/
 ├── 📄 rokit.toml             # pinned toolchain (Rojo)
 ├── 🎮 Afterburner.rbxl       # the place: map, terrain, models
 ├── 📚 docs/
-│   └── DESIGN.md             # full game design document
+│   ├── DESIGN.md             # full game design document
+│   └── DEVELOPMENT.md        # engineering spec: every system, task and acceptance test
 ├── 🎨 assets/                # README art and source images
 └── 🧩 src/
     ├── shared/   → ReplicatedStorage.Shared              (Config, AircraftData, FlightModel…)
