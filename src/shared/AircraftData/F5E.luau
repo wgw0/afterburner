@@ -28,7 +28,7 @@ return {
 
 	MaxG = 7.33,
 	MinG = -3,
-	MaxRollRate = 200,
+	MaxRollRate = 160,
 	MaxPitchRate = 28,
 	MaxYawRate = 12,
 	MaxMach = 1.6,

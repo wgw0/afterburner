@@ -13,7 +13,7 @@ return table.freeze({
 	-- Control law responsiveness
 	AOA_TRACKING_GAIN = 6, -- 1/s: how fast AoA follows the commanded AoA
 	PITCH_RATE_RESPONSE = 10, -- 1/s
-	ROLL_RATE_RESPONSE = 8, -- 1/s
+	ROLL_RATE_RESPONSE = 2.5, -- 1/s: roll builds over ~0.4 s (roll inertia)
 	SIDESLIP_STABILITY = 3, -- 1/s: weathervaning in yaw
 	SIDE_FORCE_COEFFICIENT = -0.8, -- per radian of sideslip
 	PROTECTED_AOA_FRACTION = 0.92, -- AoA limiter keeps below this fraction of critical
@@ -31,8 +31,8 @@ return table.freeze({
 	-- Instructor (mouse-aim autopilot) gains
 	INSTRUCTOR_PITCH_GAIN = 4,
 	INSTRUCTOR_PITCH_DAMPING = 1.2,
-	INSTRUCTOR_ROLL_GAIN = 3,
-	INSTRUCTOR_ROLL_DAMPING = 0.35,
+	INSTRUCTOR_ROLL_GAIN = 2,
+	INSTRUCTOR_ROLL_DAMPING = 0.5,
 	INSTRUCTOR_YAW_GAIN = 4,
 	INSTRUCTOR_LEVEL_GAIN = 1.5,
 	INSTRUCTOR_SAFE_G = 6.5, -- protected G limit unless the pilot overrides
