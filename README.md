@@ -11,7 +11,7 @@
 [![Tooling](https://img.shields.io/badge/sync-Rojo-E13835?style=for-the-badge)](https://rojo.space)
 [![Status](https://img.shields.io/badge/status-pre--alpha-FF8A3D?style=for-the-badge)](#-roadmap)
 
-[**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Roadmap**](#-roadmap) · [**Getting started**](#-getting-started) · [**Project layout**](#-project-layout)
+[**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Progress**](docs/PROGRESS.md) · [**Roadmap**](#-roadmap) · [**Getting started**](#-getting-started) · [**Project layout**](#-project-layout)
 
 </div>
 
@@ -128,17 +128,27 @@ Scripts live as files in this repo and are synced into Studio with [Rojo](https:
 
 ```
 afterburner/
-├── 📄 default.project.json   # Rojo: maps src/ into the DataModel
-├── 📄 rokit.toml             # pinned toolchain (Rojo)
+├── 📄 default.project.json   # Rojo: maps src/ and tests/ into the DataModel
+├── 📄 rokit.toml             # pinned toolchain (Rojo, StyLua, Selene, Wally)
+├── 📄 stylua.toml · selene.toml · wally.toml
 ├── 🎮 Afterburner.rbxl       # the place: map, terrain, models
+├── ⚙️ .github/workflows/     # CI: format check, lint, Rojo build
 ├── 📚 docs/
 │   ├── DESIGN.md             # full game design document
-│   └── DEVELOPMENT.md        # engineering spec: every system, task and acceptance test
+│   ├── DEVELOPMENT.md        # engineering spec: every system, task and acceptance test
+│   └── PROGRESS.md           # task tracker, ticked only when tested
 ├── 🎨 assets/                # README art and source images
+├── 🧪 tests/     → ServerStorage.Tests                   (TestRunner + *.spec modules)
 └── 🧩 src/
-    ├── shared/   → ReplicatedStorage.Shared              (Config, AircraftData, FlightModel…)
-    ├── server/   → ServerScriptService.Server            (services)
-    └── client/   → StarterPlayer.StarterPlayerScripts.Client  (controllers)
+    ├── shared/   → ReplicatedStorage.Shared              (Boot, Config, Net, Util…)
+    ├── server/   → ServerScriptService.Server            (Main + Services/)
+    └── client/   → StarterPlayer.StarterPlayerScripts.Client  (Main + Controllers/)
+```
+
+**Run the unit tests** in Studio (Edit mode, command bar):
+
+```lua
+require(game.ServerStorage.Tests.TestRunner).run()
 ```
 
 ## 🚀 Getting started
@@ -174,7 +184,7 @@ Then:
 
 | Phase | Focus | Status |
 |:---:|---|:---:|
-| **0** | Foundation: repo, Rojo layout, service boot order | 🟡 In progress |
+| **0** | Foundation: toolchain, boot order, Net layer, test runner, CI, test range | 🟡 7 / 9 ([progress](docs/PROGRESS.md)) |
 | **1** | **Flight model prototype**: cockpit camera, two contrasting jets | ⚪ Next |
 | **2** | Guns and component damage | ⚪ |
 | **3** | Missiles, radar, RWR and countermeasures | ⚪ |

@@ -1,0 +1,5 @@
+std = "roblox"
+
+[lints]
+# Specs use describe/it/expect injected through a context table, so globals are not needed.
+shadowing = "allow"

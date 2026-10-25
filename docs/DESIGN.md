@@ -559,13 +559,13 @@ For the very first playable build, a **single place** is fine: everyone in one s
 Each phase ends with a **playable build** and a clear exit test. Don't start the next phase until the current one is fun.
 
 ### Phase 0: Foundation (week 1)
-- [ ] Set up the folder layout (§9.1), Config module and a boot order for services and controllers.
+- [x] Set up the folder layout (§9.1), Config module and a boot order for services and controllers.
 - [x] Tooling: a Git repo on GitHub, laid out for Rojo (`default.project.json` → `src/`).
-- [ ] Install Rojo (CLI plus the Studio plugin) and confirm `rojo serve` syncs into the place.
-- [ ] Add utility modules (Signal, Trove/Maid).
-- [ ] Build a greybox map: a large flat test area with a few towers and a runway.
+- [x] Install Rojo (CLI plus the Studio plugin) and confirm `rojo serve` syncs into the place.
+- [x] Add utility modules (Signal, Trove, Spring, RingBuffer, Pool, Validate) and the typed Net layer.
+- [x] Build a greybox map: a test range with a runway, slalom pylons and height towers (`Workspace.TestRange`).
 
-**Exit test:** the place boots with no errors and the empty services log that they started.
+**Exit test:** the place boots with no errors and the services log that they started. ✅ *Passed. Task-level detail is in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 1: Flight model prototype (weeks 2–3) ← **the most important phase**
 - [ ] Greybox jet (box fuselage plus wings) with network ownership given to the pilot.

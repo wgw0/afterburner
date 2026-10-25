@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    name: Format, lint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rokit
+        run: |
+          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned tools
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rokit authenticate github --token "$GITHUB_TOKEN"
+          rokit install --no-trust-check
+
+      - name: StyLua (format check)
+        run: stylua --check src tests
+
+      - name: Selene (lint)
+        run: selene src tests
+
+      - name: Rojo build
+        run: |
+          mkdir -p build
+          rojo build default.project.json -o build/Afterburner.rbxl
