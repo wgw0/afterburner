@@ -28,8 +28,8 @@ return {
 
 	MaxG = 7.0,
 	MinG = -3,
-	MaxRollRate = 130,
-	MaxPitchRate = 24,
-	MaxYawRate = 10,
+	MaxRollRate = 65, -- scaled from the F-5E playtest tuning
+	MaxPitchRate = 17,
+	MaxYawRate = 8,
 	MaxMach = 2.05,
 }

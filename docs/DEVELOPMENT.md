@@ -781,6 +781,7 @@ From `gStress` (FLT step 12):
 | HUD-04 | Warnings system with priorities (stall, terrain, fuel, bounds) | 4 |
 | HUD-05 | Era variants (analogue vs glass symbology) | 6 |
 | HUD-06 | Mobile scaling pass | 4 |
+| HUD-07 | HUD visual design pass: a collimated HUD box ahead of the pilot (not loose screen text), speed and altitude tapes, heading tape, pitch ladder, flight path marker, consistent symbology and glow; screen overlay kept for chase view and phones | 1 |
 
 **Acceptance:** on a phone-sized viewport (Device Emulator, small phone), every element is readable and nothing overlaps the touch buttons.
 
@@ -1976,7 +1977,7 @@ On every push and PR:
 | Phase | Tasks |
 |---|---|
 | **0 Foundation** | CORE-01–04, NET-01–02, MAP-01, TST-01, REL-01 |
-| **1 Flight prototype** | ACD-01–03, FLT-01–07, INP-01–02, CAM-01, CAM-02, CAM-05, HUD-01, AIR-01, FX-01, AUD-01, TST-03 |
+| **1 Flight prototype** | ACD-01–03, FLT-01–07, INP-01–02, CAM-01, CAM-02, CAM-05, HUD-01, HUD-07, AIR-01, FX-01, AUD-01, TST-03 |
 | **2 Guns and damage** | ACD-04, GUN-01–06, GUN-08, DMG-01, DMG-02, DMG-04, AIR-02, AIR-03, AIR-05, FLT-10, CAM-03, HUD-02, FX-02, AUD-02, TST-02, PRF-01 |
 | **3 Missiles and sensors** | ACD-05, NET-03, MSL-01–06, SNS-01–06, CMS-01–03, CAM-04, HUD-03, DMG-03, FX-03, FX-04, AUD-03 |
 | **4 Match loop MVP** | MCH-01–04, AI-01–03, MAP-02, TUT-01–02, INP-03–04, AIR-04, HUD-04, HUD-06, CAM-06, SEC-01–03, ANL-01, PRF-02 |

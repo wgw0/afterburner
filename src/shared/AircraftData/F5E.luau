@@ -28,8 +28,8 @@ return {
 
 	MaxG = 7.33,
 	MinG = -3,
-	MaxRollRate = 160,
-	MaxPitchRate = 28,
-	MaxYawRate = 12,
+	MaxRollRate = 80, -- playtest-tuned 2026-10-25
+	MaxPitchRate = 20,
+	MaxYawRate = 10,
 	MaxMach = 1.6,
 }
