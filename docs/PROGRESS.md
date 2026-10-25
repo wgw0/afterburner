@@ -4,7 +4,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | Phase | Done | Status |
 |---|---|---|
-| 0 Foundation | 7 / 9 | 🟡 Waiting on CI's first run on GitHub |
+| 0 Foundation | 9 / 9 | ✅ Complete |
 | 1–8 | 0 / 182 | ⚪ Not started |
 
 ---
@@ -15,13 +15,13 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 |:---:|---|---|
 | ✅ | **CORE-01** Folder tree and server/client `Main` boot loaders with Init/Start ordering and per-service error reporting | Play test: output shows `Service started: DiagnosticsService` → `Server ready` → `Controller started: DiagnosticsController` → `Client ready`, with no errors. `Boot.spec`: Priority ordering, a yielding `Init` is refused, a failing `Init` names the module. |
 | ✅ | **CORE-02** StyLua, Selene, Wally in `rokit.toml` with config files | `rokit install` gives Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Wally 0.3.2. `stylua --check` and `selene` both clean (0 errors, 0 warnings). |
-| ⏳ | **CORE-03** GitHub Actions CI | Workflow written (`.github/workflows/ci.yml`). Same steps pass locally. **Ticked once the first run on GitHub is green.** |
+| ✅ | **CORE-03** GitHub Actions CI | First run on GitHub passed: [run 40242794421](https://github.com/wgw0/afterburner/actions/runs/40242794421) (StyLua check, Selene, Rojo build). |
 | ✅ | **CORE-04** Util: Signal, Trove, Spring, RingBuffer, Pool, Validate, with unit tests | `Util.spec` and `Validate.spec` pass in Studio. |
 | ✅ | **NET-01** `Definitions` format plus `Net` wrapper with type validation | Play test: the client fired a string, NaN, `1.5`, three arguments, and no arguments at an integer remote. All 5 were dropped with the reason logged. A bad RemoteFunction argument returned `nil` without erroring. A valid echo round trip took 91–123 ms in Studio. |
 | ✅ | **NET-02** Per-remote token-bucket rate limiting plus a dropped-call counter | Play test: 50 pings in one frame against a 5-call burst gave exactly the burst through and the rest dropped. Logging is summarised every 5 s (`x46`), so spam can't flood the output. |
 | ✅ | **MAP-01** Greybox test map: flat area, towers, runway | `Workspace.TestRange` (60 parts): 1,800-stud runway with markings, 6 slalom pylons, height towers at 100/250/500/1000 studs. Saved in `Afterburner.rbxl`. |
 | ✅ | **TST-01** Test runner and first specs | `require(game.ServerStorage.Tests.TestRunner).run()` → **28 passed, 0 failed**. A deliberately failing spec was correctly reported as a failure, with file and line. |
-| ⏳ | **REL-01** CI workflow | Same as CORE-03. |
+| ✅ | **REL-01** CI workflow | Same as CORE-03. Runs on every push and PR. |
 
 **Also done in Phase 0:**
 - [x] Rojo CLI and Studio plugin installed. `rojo serve` syncs every file into the open place (checked instance by instance).
