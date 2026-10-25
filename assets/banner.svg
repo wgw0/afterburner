@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="Afterburner: Roblox air combat">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#05070f"/>
+      <stop offset="0.55" stop-color="#0d1a33"/>
+      <stop offset="1" stop-color="#2a1a2e"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.82" cy="0.95" r="0.55">
+      <stop offset="0" stop-color="#ff8a3d" stop-opacity="0.55"/>
+      <stop offset="0.4" stop-color="#ff5a2a" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#ff5a2a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trail" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#fff4c2"/>
+      <stop offset="0.3" stop-color="#ffb347"/>
+      <stop offset="1" stop-color="#ff3d1f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffc58a"/>
+    </linearGradient>
+    <style>
+      .flame { animation: flicker 0.12s infinite alternate; transform-origin: 842px 196px; }
+      @keyframes flicker { from { transform: scaleX(0.85); opacity: 0.85; } to { transform: scaleX(1.08); opacity: 1; } }
+      .hud { fill: none; stroke: #5dffa8; stroke-width: 1.5; opacity: 0.55; }
+      .hudtext { fill: #5dffa8; opacity: 0.6; font: 600 14px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 2px; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#sky)"/>
+  <rect width="1280" height="360" fill="url(#sun)"/>
+
+  <!-- stars -->
+  <g fill="#fff" opacity="0.5">
+    <circle cx="80" cy="40" r="1"/><circle cx="210" cy="90" r="0.8"/><circle cx="340" cy="30" r="1.2"/>
+    <circle cx="520" cy="70" r="0.8"/><circle cx="690" cy="25" r="1"/><circle cx="1010" cy="50" r="0.9"/>
+    <circle cx="1180" cy="30" r="1.1"/><circle cx="1230" cy="110" r="0.7"/><circle cx="150" cy="150" r="0.7"/>
+  </g>
+
+  <!-- horizon / mountains -->
+  <path d="M0 300 L120 270 L210 290 L330 250 L430 285 L560 262 L700 292 L820 258 L960 288 L1080 266 L1200 290 L1280 276 L1280 360 L0 360 Z" fill="#0a0f1c"/>
+  <path d="M0 325 L160 305 L300 322 L470 300 L640 326 L800 306 L980 324 L1140 304 L1280 318 L1280 360 L0 360 Z" fill="#06090f"/>
+
+  <!-- HUD pitch ladder -->
+  <g class="hud">
+    <path d="M560 120 h50 m60 0 h50"/>
+    <path d="M560 270 h50 m60 0 h50" stroke-dasharray="6 5"/>
+    <circle cx="640" cy="195" r="9"/>
+    <path d="M622 195 h-14 M658 195 h14 M640 186 v-8"/>
+  </g>
+  <text class="hudtext" x="728" y="124">10</text>
+  <text class="hudtext" x="728" y="274">-10</text>
+  <text class="hudtext" x="40" y="336">SPD 512 KT</text>
+  <text class="hudtext" x="1110" y="336">ALT 18,400</text>
+
+  <!-- contrails -->
+  <rect x="300" y="186" width="545" height="3" fill="url(#trail)"/>
+  <rect x="300" y="204" width="545" height="3" fill="url(#trail)"/>
+
+  <!-- afterburner flame -->
+  <path class="flame" d="M842 189 L760 196 L842 203 Z" fill="url(#flame)"/>
+
+  <!-- jet silhouette (side-on, generic 4th-gen) -->
+  <g fill="#c9d3e6">
+    <path d="M840 190 L870 186 L930 184 L1000 186 L1040 190 L1062 194 L1040 198 L1000 200 L930 201 L870 202 L840 201 Z"/>
+    <path d="M930 186 L960 160 L985 160 L972 186 Z" fill="#9aa7bf"/>
+    <path d="M880 186 L895 150 L915 150 L912 186 Z"/>
+    <path d="M920 200 L960 222 L990 222 L975 200 Z" fill="#9aa7bf"/>
+    <path d="M995 185 Q1012 176 1030 186 Z" fill="#5b7bb0"/>
+  </g>
+
+  <!-- title -->
+  <text x="640" y="88" text-anchor="middle" fill="url(#title)" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="72" letter-spacing="18">AFTERBURNER</text>
+  <text x="640" y="322" text-anchor="middle" fill="#ffd2a8" opacity="0.85" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="600" font-size="18" letter-spacing="8">SIM-FLAVOURED AIR COMBAT FOR ROBLOX</text>
+</svg>

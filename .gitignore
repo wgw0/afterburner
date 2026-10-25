@@ -1,0 +1,23 @@
+# Roblox Studio
+*.rbxl.lock
+*.rbxlx.lock
+*.rblx.lock
+
+# Studio auto-recovery / backups
+*_AutoRecovery_*.rbxl
+*.rbxl.bak
+
+# Rojo build output (built places go here, not the root)
+build/
+sourcemap.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
