@@ -1,13 +1,18 @@
 --!strict
 -- World scale (DEVELOPMENT.md §3.2). Every value here is a starting point to tune in playtests.
+--
+-- The flight model runs in real-world SI units. Only the world is compressed: a jet doing a real
+-- 250 m/s moves 250 × SPEED_SCALE "visual metres" per second in the world. Because positions come
+-- from those scaled velocities, real-equivalent distances and altitudes are world distances divided
+-- by SPEED_SCALE, so climbs, turn rates and energy all stay true to life.
 
 local STUDS_PER_METRE = 1 / 0.28
 local SPEED_SCALE = 0.38
 
 return table.freeze({
 	STUDS_PER_METRE = STUDS_PER_METRE,
-	SPEED_SCALE = SPEED_SCALE, -- world speed = real speed × this
-	DISTANCE_DISPLAY_SCALE = 1 / SPEED_SCALE, -- displayed distances are inflated by this
-	MAP_HALF_EXTENT = 20000, -- studs from the origin to the edge of the play area
-	CEILING = 12000, -- studs
+	SPEED_SCALE = SPEED_SCALE,
+	DISTANCE_DISPLAY_SCALE = 1 / SPEED_SCALE,
+	MAP_HALF_EXTENT = 20000, -- studs from the origin to the edge of the play area (~14.7 km real)
+	CEILING = 20000, -- studs (~48,000 ft real-equivalent)
 })

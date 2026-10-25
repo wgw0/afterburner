@@ -30,7 +30,7 @@ while IFS= read -r file; do
 		"--!strict"|"--!nonstrict"*) ;;
 		*) error "$file must start with --!strict (or --!nonstrict with a reason)";;
 	esac
-done < <(find src tests -name '*.luau' -type f)
+done < <(find src tests tools -name '*.luau' -type f)
 
 # 3. No merge-conflict markers in tracked text files.
 if git grep -nIE '^(<<<<<<<|>>>>>>>)( |$)' -- . ':!scripts/ci-checks.sh' >/dev/null; then
@@ -58,7 +58,7 @@ fi
 
 # 5. Every remote used in code is declared in Net/Definitions.
 defs="src/shared/Net/Definitions.luau"
-declared=$(grep -oE '^\s+[A-Za-z0-9_]+ = \{ direction' "$defs" | awk '{print $1}' | sort -u)
+declared=$(grep -oE $'^\t[A-Za-z0-9_]+ = \\{' "$defs" | awk '{print $1}' | sort -u)
 used=$(grep -rhoE 'Net\.(Server|Client)\.(on|handle|fire|fireAll|fireList|invoke)\("[A-Za-z0-9_]+"' src \
 	| grep -oE '"[A-Za-z0-9_]+"' | tr -d '"' | sort -u)
 for name in $used; do

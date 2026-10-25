@@ -13,6 +13,17 @@ export type Definition = {
 }
 
 local definitions: { [string]: Definition } = {
+	-- Aircraft lifecycle (§10)
+	RequestSpawn = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 1 } },
+	ReportCrash = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 1 } },
+	-- Pilot's throttle/afterburner/G for other players' effects, 5 Hz: throttle, afterburner, gLoad
+	FlightTelemetry = {
+		direction = "ClientToServer",
+		reliable = false,
+		args = { "number", "boolean", "number" },
+		rate = { burst = 10, perSecond = 8 },
+	},
+
 	-- Diagnostics (test environment only): exercises the Net layer end to end.
 	DebugPing = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 5, perSecond = 2 } },
 	DebugPong = { direction = "ServerToClient", args = { "integer", "number" } },
