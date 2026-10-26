@@ -11,9 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned release download with retries (the install script's API lookup is rate-limited on
+      # shared runners and failed a run).
       - name: Install Rokit
+        env:
+          ROKIT_VERSION: "1.2.0"
         run: |
-          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o rokit.zip \
+            "https://github.com/rojo-rbx/rokit/releases/download/v${ROKIT_VERSION}/rokit-${ROKIT_VERSION}-linux-x86_64.zip"
+          unzip -o rokit.zip -d rokit-bin
+          ./rokit-bin/rokit self-install
+          rm -rf rokit.zip rokit-bin
           echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
 
       - name: Install pinned tools
