@@ -22,6 +22,7 @@ ControlSurfaces.ANIMATED = {
 -- Manoeuvring flaps: out with angle of attack, in at high speed (degrees, metres per second)
 local FLAP_AOA_START, FLAP_AOA_FULL = 3, 12
 local FLAP_SPEED_FULL, FLAP_SPEED_NONE = 230, 290
+local FULL_RUDDER_SIDESLIP = 6 -- degrees of sideslip shown as full rudder
 
 export type Commands = {
 	pitch: number, -- -1..1, nose up positive
@@ -50,8 +51,19 @@ function ControlSurfaces.flapFraction(aoa: number, speed: number): number
 	return byAoA * bySpeed
 end
 
--- Commands for a jet we only see moving (other players, AI): body rates against the airframe's maximum
--- rates. angularVelocity is world space (rad/s); velocity is metres per second.
+-- Sideslip in degrees: positive when the nose points right of the flight path.
+function ControlSurfaces.sideslip(cframe: CFrame, velocity: Vector3): number
+	local v = cframe:VectorToObjectSpace(velocity)
+	if v.Magnitude < 1e-3 then
+		return 0
+	end
+	return math.deg(math.atan2(-v.X, -v.Z))
+end
+
+-- Commands for a jet we only see moving (other players, AI). Pitch and roll come from body rates against
+-- the airframe's maximum rates. Yaw comes from sideslip, not yaw rate: in a banked turn the body yaw rate
+-- is large while the rudder stays near centre. angularVelocity is world space (rad/s); velocity is
+-- metres per second.
 function ControlSurfaces.fromMotion(
 	cframe: CFrame,
 	angularVelocity: Vector3,
@@ -59,12 +71,12 @@ function ControlSurfaces.fromMotion(
 	airframe: any
 ): Commands
 	local w = cframe:VectorToObjectSpace(angularVelocity)
-	-- Nose along -Z: pitch up is +X rotation, roll right is -Z rotation, yaw right is -Y rotation.
-	local pitchRate, rollRate, yawRate = w.X, -w.Z, -w.Y
+	-- Nose along -Z: pitch up is +X rotation, roll right is -Z rotation.
+	local pitchRate, rollRate = w.X, -w.Z
 	return {
 		pitch = clamp1(pitchRate / math.rad(airframe.MaxPitchRate or 20)),
 		roll = clamp1(rollRate / math.rad(airframe.MaxRollRate or 90)),
-		yaw = clamp1(yawRate / math.rad(airframe.MaxYawRate or 10)),
+		yaw = clamp1(ControlSurfaces.sideslip(cframe, velocity) / FULL_RUDDER_SIDESLIP),
 		flap = ControlSurfaces.flapFraction(ControlSurfaces.angleOfAttack(cframe, velocity), velocity.Magnitude),
 	}
 end

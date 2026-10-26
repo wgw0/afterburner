@@ -16,13 +16,22 @@ return function(ctx)
 	end
 
 	describe("commands from motion", function()
-		it("reads nose-up pitch, right roll and right yaw as positive", function()
+		it("reads nose-up pitch, right roll and nose-right sideslip as positive", function()
 			local pitch = ControlSurfaces.fromMotion(level, Vector3.new(0.2, 0, 0), forward, airframe)
 			local roll = ControlSurfaces.fromMotion(level, Vector3.new(0, 0, -0.5), forward, airframe)
-			local yaw = ControlSurfaces.fromMotion(level, Vector3.new(0, -0.1, 0), forward, airframe)
+			-- Flight path to the left of the nose: the nose is yawed right
+			local yaw = ControlSurfaces.fromMotion(level, Vector3.zero, Vector3.new(-10, 0, -200), airframe)
 			expect(pitch.pitch > 0).toBe(true)
 			expect(roll.roll > 0).toBe(true)
 			expect(yaw.yaw > 0).toBe(true)
+		end)
+
+		it("keeps the rudder central in a coordinated turn", function()
+			-- Banked 70° and turning hard: large body yaw rate, no sideslip
+			local banked = CFrame.Angles(0, 0, math.rad(-70))
+			local turn = Vector3.new(0, 0.3, 0) -- world yaw rate
+			local c = ControlSurfaces.fromMotion(banked, turn, banked.LookVector * 200, airframe)
+			expect(math.abs(c.yaw) < 1e-6).toBe(true)
 		end)
 
 		it("keeps commands within -1..1", function()
