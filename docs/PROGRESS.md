@@ -7,7 +7,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 0 Foundation | 9 / 9 | ✅ Complete |
 | 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
-| 3–8 | 0 / 141 | ⚪ Not started |
+| 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
+| 4–8 | 0 / 118 | ⚪ Not started |
 
 ---
 
@@ -101,29 +102,37 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 3: Missiles, sensors and countermeasures
 
-- [ ] **NET-03** `Pack` helpers for missile state and history snapshots, with round-trip unit tests
-- [ ] **ACD-05** Missile data for all Tier I–III missiles
-- [ ] **CAM-04** Padlock
-- [ ] **HUD-03** Target box, seeker circle, launch zone, missile warning
-- [ ] **DMG-03** Fire and smoke
-- [ ] **MSL-01** `Guidance` module: PN, gimbal, energy (pure, tested)
-- [ ] **MSL-02** MissileService simulation loop and detonation
-- [ ] **MSL-03** Fire request validation including server-side lock timing
-- [ ] **MSL-04** Packed unreliable replication plus client interpolation
-- [ ] **MSL-05** IR rear-aspect and all-aspect seekers
-- [ ] **MSL-06** SARH guidance with lock dependency
-- [ ] **SNS-01** Visual spotting with LOS and HUD markers
-- [ ] **SNS-02** Radar cone detection on the client and the radar MFD page
-- [ ] **SNS-03** Server-validated lock state machine with re-checks
-- [ ] **SNS-04** Notch filtering
-- [ ] **SNS-05** RWR server events plus display and tones
-- [ ] **SNS-06** `Signature` module (IR and RCS)
-- [ ] **CMS-01** Deploy flow, counts, FX
-- [ ] **CMS-02** Flare heat sources and the decoy decision
-- [ ] **CMS-03** Chaff decoy for radar missiles and lock breaking
-- [ ] **FX-03** Missile, flare, chaff effects
-- [ ] **FX-04** Damage smoke and fire
-- [ ] **AUD-03** Seeker tone, RWR, missile warning
+**Signed off by Will on 2026-10-26.** Exit test: a fired missile is dangerous but defeatable, and players can learn *why* they died. Proven numerically by the engagement simulator and in live tests against debug launches and drones. Hands-on feel (missile handling, HUD symbology, tones) is still to be judged in play.
+
+| | Task | Evidence |
+|:---:|---|---|
+| ✅ | **NET-03** `Pack` helpers with round-trip tests | 21-byte missile snapshots; round-trip within precision; a full 40-missile packet < 1 KB; malformed buffers rejected. Live: ~15 packets/s received. |
+| ✅ | **ACD-05** Missile data for Tier I–III | AIM-9P/L, R-13M, R-60, R-73, R-3R, AIM-7F, R-27R with class-specific validation; every airframe's missiles exist, fit its hardpoints, and radar missiles need a radar. |
+| ✅ | **CAM-04** Padlock | Hold X / middle mouse: head follows your lock, IR target or nearest spotted jet, clamped to head limits; mouse aim holds still meanwhile. *Not yet checked hands-on.* |
+| ✅ | **HUD-03** Target box, seeker circle, launch zone, missile warning | Lock box with range/closure, IR seeker circle (flashing → solid at lock), launch-zone bar with Rmin / no-escape / Rmax and caret, SHOOT cue, MISSILE warning with direction arrow, missile and flare/chaff readouts. *Visuals not yet checked hands-on.* |
+| ✅ | **DMG-03** Fire and smoke | Engine below 60% smokes; engine hits below 50% have a 10% fire chance; fire burns the fuselage 6/s for 8 s, credited to whoever started it. |
+| ✅ | **MSL-01** `Guidance` module | PN hits a straight target from 2 km and a 6 G turning target from 1.5 km; a 5.5 km shot at a fleeing target falls short; gimbal loss stops guidance; G falls with speed. (PN sign bug caught by hand-check before testing.) |
+| ✅ | **MSL-02** MissileService simulation and detonation | Live: AIM-9P hit after 5.5 s; proximity fuse and ground impact; blast falloff. Damage raised after testing so a good hit kills (R-60 cripples). |
+| ✅ | **MSL-03** Fire validation incl. server-side lock timing | Server tracks each shooter's IR seeker target and hold time; radar missiles refused without the server's lock; 0.6 s launch cooldown. |
+| ✅ | **MSL-04** Packed unreliable replication + client interpolation | 100 ms interpolation buffer, 200 ms extrapolation; motor flame only while burning. |
+| ✅ | **MSL-05** IR rear-aspect and all-aspect seekers | Rear-aspect can't see a jet head-on, all-aspect can; heat by aspect, throttle and afterburner. |
+| ✅ | **MSL-06** SARH with lock dependency | Live: radar-locked a drone and killed it with an R-3R; missiles go dumb permanently if the lock is lost. |
+| ✅ | **SNS-01** Visual spotting with LOS | 3 km (5 km above contrail height) with terrain line of sight; HUD markers. |
+| ✅ | **SNS-02** Radar detection and scope | Client uses the same Signature rules as the server; B-scope with blips and boxed lock. *Visuals not yet checked hands-on.* |
+| ✅ | **SNS-03** Server lock state machine | Validated on request, re-checked 5 Hz (range, cone, clutter/notch, terrain LOS); live: "Locked" then "Lost" when the target died. |
+| ✅ | **SNS-04** Notch filtering | Spec: a pulse-Doppler radar loses a perpendicular target below it; pulse radars are blind looking down. Clutter altitude lowered to 300 m real after testing. |
+| ✅ | **SNS-05** RWR | Search / Lock / Launch threats at 2 Hz; live: radar missile showed "Launch"; IR silent without a missile-approach warner. Ring display with coarse bearings. |
+| ✅ | **SNS-06** `Signature` module | IR and radar detection specs. |
+| ✅ | **CMS-01** Deploy flow, counts, FX | Live: 6 flares deployed, drawn, count 30 → 24. |
+| ✅ | **CMS-02** Flare heat sources and decoy decision | Engagement simulator (40 seeds each): no defence 100% hit; AB + flares 42% defeated; idle + break + flares **82% defeated** (target 70–85%). |
+| ✅ | **CMS-03** Chaff decoy and lock breaking | One roll per bundle per missile/lock; much stronger while notching (chaff spam without notching weakened after review). *Not yet exercised hands-on.* |
+| ✅ | **FX-03** Missile, flare, chaff effects | Missile body, smoke trail, motor light; burning flares with smoke; chaff cloud. |
+| ✅ | **FX-04** Damage smoke and fire | Smoke/fire emitters on engine nozzles driven by the Smoking / OnFire attributes. |
+| ✅ | **AUD-03** Seeker tone, RWR, missile warning | Seeker growl → lock tone, RWR search ping / lock repeat / launch alarm, launch whoosh (placeholder sounds). |
+
+**Also done in Phase 3:** engagement simulator in the test suite; debug "launch at me" buttons; startup smoke test now counts runtime errors after boot (caught a per-frame crash). Tests: 157 → 202.
+
+**To check hands-on later:** padlock, HUD missile symbols, radar scope/RWR display, chaff + notch against an R-27R, tones.
 
 ## Phase 4: Match loop MVP
 

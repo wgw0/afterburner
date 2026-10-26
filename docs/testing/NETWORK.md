@@ -32,3 +32,4 @@ Or use **File → Studio Settings → Network → Incoming Replication Lag**.
 |---|---|---|---|
 | 2026-10-26 | phase-2/guns-damage | 0 ms | #1 drone shot down in 1.07 s (23 hits); #4 server crash detection 0.45 s; #5 fake report ignored |
 | 2026-10-26 | phase-2/guns-damage | 150 ms | #1 drone shot down in 1.56 s (28 hits) |
+| 2026-10-26 | phase-3/missiles-sensors | 0 ms | Missile state ~15 packets/s; AIM-9P debug launch hit; R-27R showed RWR Launch; R-3R kill on a radar-locked drone; flares deployed and counted |
