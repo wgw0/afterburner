@@ -31,6 +31,11 @@ return {
 	MaxRollRate = 65, -- scaled from the F-5E playtest tuning
 	MaxPitchRate = 17,
 	MaxYawRate = 8,
+	-- Weapons and sensors
+	Missiles = { { Weapon = "R60", Count = 2 }, { Weapon = "R3R", Count = 2 } },
+	Radar = { Range = 20000, Cone = 30, CanNotch = false }, -- RP-22: pulse radar, poor look-down
+	RWR = { LaunchWarning = false, Resolution = "Coarse" },
+	Countermeasures = { Flares = 16, Chaff = 16 }, -- gameplay addition; the real bis had none
 	Gun = "GSh23L",
 	MaxMach = 2.05,
 }

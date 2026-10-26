@@ -31,6 +31,11 @@ return {
 	MaxRollRate = 80, -- playtest-tuned 2026-10-25
 	MaxPitchRate = 20,
 	MaxYawRate = 10,
+	-- Weapons and sensors
+	Missiles = { { Weapon = "AIM9P", Count = 2 } }, -- wingtip rails
+	Radar = { Range = 18000, Cone = 30, CanNotch = false }, -- AN/APQ-159: pulse radar, poor look-down
+	RWR = { LaunchWarning = false, Resolution = "Coarse" },
+	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "M39A2_Twin",
 	MaxMach = 1.6,
 }
