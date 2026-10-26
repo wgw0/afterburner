@@ -96,8 +96,10 @@ return function(ctx)
 			end
 		end)
 
-		it("the test range is present", function()
-			expect(workspace:FindFirstChild("TestRange") ~= nil).toBe(true)
+		it("the island runway is present (the menu's streaming focus)", function()
+			local range = workspace:FindFirstChild("TestRange")
+			local runway = range and range:FindFirstChild("Runway")
+			expect(runway and runway:FindFirstChild("Strip") ~= nil).toBe(true)
 		end)
 
 		it("the map has airborne spawn points inside the play area, clear of terrain", function()
