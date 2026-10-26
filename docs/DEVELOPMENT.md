@@ -1929,7 +1929,7 @@ On every push and PR:
 | `MatchState` | S→All | Reliable | `state, timeLeft, scores` | — | §17 |
 | `KillFeed` | S→All | Reliable | `killer, victim, weapon, assists` | — | §17 |
 | `MatchResults` | S→C | Reliable | `results, rewards` | — | §17 |
-| `Research` / `Buy` / `BuyModule` | C→S | Reliable | IDs only | 2/s | §23 |
+| `ResearchAircraft` / `BuyAircraft` / `BuyModule` | Function | Reliable | IDs only → (ok, error) | 2/s | §23 |
 | `SetLineup` / `SetLoadout` / `EquipCosmetic` | C→S | Reliable | IDs only | 2/s | §23–27 |
 | `QueueJoin` / `QueueLeave` | C→S | Reliable | `modeId` | 1/s | §25 |
 | `QueueStatus` | S→C | Reliable | `state, waitTime, estimate` | — | §25 |

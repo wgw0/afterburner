@@ -603,11 +603,11 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** 8 players and bots have a full match. Run an internal playtest with friends and write down every complaint. ✅ *Signed off 2026-10-26 on solo and 24-bot matches; the multiplayer playtest is still to run. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 5: Progression and saving (weeks 9–10)
-- [ ] DataService with ProfileStore and the schema (§9.3).
-- [ ] XP, RP, Credits and match rewards (§7.2).
-- [ ] Hangar UI and a tech tree for Tiers I–III (about 8 jets).
-- [ ] Modules (upgrades) and lineup selection.
-- [ ] Battle rating matchmaking: a basic version inside a single place first.
+- [x] DataService with ProfileStore and the schema (§9.3). *Persistence to verify on the test experience.*
+- [x] XP, RP, Credits and match rewards (§7.2).
+- [x] Hangar UI and a tech tree for Tiers I–III (8 jets).
+- [x] Modules (upgrades) and lineup selection.
+- [x] Battle rating matchmaking: a basic version inside a single place first.
 
 **Exit test:** a fresh account can play from F-5E to a Tier II jet, data survives rejoins, and there's no way to dupe currency.
 

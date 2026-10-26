@@ -9,7 +9,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
 | 4 Match loop MVP | 21 / 21 | ✅ Signed off |
-| 5–8 | 0 / 97 | ⚪ Not started |
+| 5 Progression and saving | 21 / 23 | 🟡 Built; DAT-01 check and REL-02 need the test experience |
+| 6–8 | 0 / 74 | ⚪ Not started |
 
 ---
 
@@ -181,29 +182,35 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 5: Progression and saving
 
-- [ ] **MSL-07** ARH with midcourse and active phase
-- [ ] **AI-04** Missile use, Extend state
-- [ ] **AI-05** Difficulty profiles
-- [ ] **DAT-01** DataService with ProfileStore, environment-based names, kick on failure
-- [ ] **DAT-02** Schema v1, migrations framework and tests
-- [ ] **DAT-03** Client replica with delta updates
-- [ ] **DAT-05** Data reset and inspection admin commands (test environment)
-- [ ] **PRG-01** Event recording in matches and reward calculation
-- [ ] **PRG-02** Research, purchase and lineup rules with server validation
-- [ ] **PRG-03** Pilot level curve and level rewards
-- [ ] **PRG-04** Upgrade modules feeding flight/loadout modifiers
-- [ ] **PRG-05** Anti-farming rules
-- [ ] **PRG-06** Economy simulation and pacing check
-- [ ] **UI-01** React setup, theme, router, base components
-- [ ] **UI-02** Hangar with 3D preview and lineup
-- [ ] **UI-03** Tech tree screen
-- [ ] **UI-04** Aircraft detail: modules, loadout, camo
-- [ ] **UI-06** Results screen with reward animations
-- [ ] **MMK-01** In-server BR matching (single place)
-- [ ] **SET-01** Settings data, controller, change signal
-- [ ] **ANL-03** Economy events
-- [ ] **OPS-02** AdminService and commands
-- [ ] **REL-02** Test universe setup (separate experience, test products)
+**Built and tested in Studio; persistence and session locking still to verify on a published test experience (REL-02).** In an unpublished place ProfileStore runs on an in-memory mock, so saves work within a session but can't survive a rejoin yet. Exit test: a fresh account can play from the F-5E to a Tier II jet (simulated: 2.2 h), data survives rejoins (needs REL-02), and there's no way to dupe currency (every grant and spend is server-side and validated; session locking from ProfileStore, to verify on REL-02).
+
+| | Task | Evidence |
+|:---:|---|---|
+| ✅ | **MSL-07** ARH with midcourse and active phase | `Guidance.arhTrack`: data link midcourse (or the last known track, extrapolated, if the launcher's lock drops), active inside `ActiveRange`; outside the gimbal or notched for over 1 s it's lost. Warnings, AI defence and chaff only once active. AIM-120A and R-77 (Tier IV). `Missiles.spec`: 5 ARH tests. Live: a debug AIM-120A from 1.8 km behind went active, the RWR showed the launch, and it hit after 4.4 s. |
+| ✅ | **AI-04** Missile use, Extend state | `AIBrain.chooseMissile`: heat-seekers when the seeker sees the target, radar missiles after a server lock (`SensorService:RequestLock`), through the same launch checks as players. `Dogfight.spec`: 4 tests. Live (24-jet stress): 8 launches in ~30 s (R-60, AIM-9P, R-3R). Extend state from Phase 4 (`Dogfight.spec`). |
+| ✅ | **AI-05** Difficulty profiles | Easy / Normal / Hard / Ace: reaction time, aim error, G use, energy and flare skill, and now missile pacing and launch range. `Dogfight.spec`: an Ace beats an Easy pilot; better pilots fire from further and more often. *Matches still fill with Normal pilots.* |
+| 🟡 | **DAT-01** DataService with ProfileStore, environment-based names, kick on failure | `DataService`: `lm-loleris/profilestore` 1.0.3 (the author's own Wally package), store `PlayerData_Test_v1` / `PlayerData_Prod_v1`, kick with a friendly message if a session can't start, migrations on load, `BeforeRelease` before every session ends, `Update()` for all writes. Live in Studio on the mock store. *Persistence across rejoins and the two-servers-at-once test need the test experience (REL-02).* |
+| ✅ | **DAT-02** Schema v1, migrations framework and tests | `PlayerData`: schema v1, `MIGRATIONS` run in order on load, reconcile fills new fields, bounded receipt list, settings sanitised. `PlayerData.spec`: 10 tests (fixtures through a pretend v2→v3 migration, a v0 save, missing fields, bad settings). |
+| ✅ | **DAT-03** Client replica with delta updates | Only changed top-level fields are pushed (`PlayerDataUpdate`); the client asks for the full replica on start (`GetPlayerData`). Delta tests in `PlayerData.spec`; live: the menus updated after every research, purchase and admin grant. |
+| ✅ | **DAT-05** Data reset and inspection admin commands (test environment) | `data.inspect`, `data.reset`, `give.credits` / `give.xp` / `give.rp`, `unlock` (test environment only). Live: give RP and Credits, unlock all 8 jets. |
+| ✅ | **PRG-01** Event recording in matches and reward calculation | `ProgressionService` tallies kills (victim and jet flown), assists, missiles defeated (new `MissileService.MissileDefeated`), survival and activity; rewards at match end (and on leaving mid-match). Live: shooting down a drone paid "Kills (AI)" 50 XP / 50 RP / 75 Cr, plus the win and first-win-of-the-day bonus: 312 XP, 403 Cr in all. *Leaving mid-match not yet tested live (needs a second client or REL-02).* |
+| ✅ | **PRG-02** Research, purchase and lineup rules with server validation | `Progression.research` / `buy` / `setLineup`, used through validated remotes. Live: refused with no RP, out of order (F-16A without a Tier II jet), without Credits, too many lineup slots, a module on an unowned jet; accepted when allowed. `Progression.spec`. |
+| ✅ | **PRG-03** Pilot level curve and level rewards | `xpToNext(level) = 500 + 150 × level^1.35`, 250 Credits per level, lineup slot 2 at level 5 and 3 at level 15. `Progression.spec`; shown in the top bar and the hangar's locked slots. |
+| ✅ | **PRG-04** Upgrade modules feeding flight/loadout modifiers | Engine I/II, Airframe I/II, Avionics I, Countermeasures I; costs scale with tier. Fitted modules ride on the jet (`Modules` attribute) and apply to the pilot's flight model, both radars and the countermeasure counts. Fully upgraded is +6% thrust, +0.5 G: stock is within the 85–90% target. Live: Engine I on a Mirage showed up on the respawned jet. |
+| ✅ | **PRG-05** Anti-farming rules | AI kills pay half; after 3 kills on the same victim each further kill pays a quarter; no input for 60 s means no survival or win bonus. `Progression.spec`; live AI kill paid half. |
+| ✅ | **PRG-06** Economy simulation and pacing check | `tools/EconomySim` runs an average free player on the real code; `Economy.spec` checks the targets. After tuning: first new jet **24 min**, Tier II **2.2 h**, Tier III **8.2 h** (targets 20–30 min, 2–3 h, 8–10 h). |
+| ✅ | **UI-01** React setup, theme, router, base components | react-lua 17.2.1 via Wally (`jsdotlua/react`, `react-roblox`); `UI/Theme`, `UI/Components` (panel, label, button with pending state, bar, pill), `UI/App` with top bar and screen router; `MenuController` owns the state and sends intents. |
+| ✅ | **UI-02** Hangar with 3D preview and lineup | Jet on a turntable, lineup slots (locked until level 5 / 15 with the reason), your jets add / remove, Play with the match status, training lessons. Checked in play. |
+| ✅ | **UI-03** Tech tree screen | Branch columns by tier, node states, RP progress, costs; Research and Buy through the UI live (Mirage IIIE researched, then bought). |
+| ✅ | **UI-04** Aircraft detail: modules, loadout, camo | Stock vs upgraded performance bars, modules with costs or the exact reason they can't be fitted, loadout, camo (Default only until the shop), lineup. Checked in play. |
+| ✅ | **UI-06** Results screen with reward animations | Winner, reward lines counting up, pilot level bar, scoreboard; replaces the Phase 4 results panel. Checked in play. |
+| ✅ | **MMK-01** In-server BR matching (single place) | `Matchmaking`: match band = top lineup BR down 1.0; AI fly jets in the band; jets above it are refused with the reason; the hangar shows the band. `Matchmaking.spec`: 6 tests. Live: an F-4E lineup gave a BR 2.0–3.0 match with AI in F-4Es, Mirage F1s and IIIs; an F-16A was refused. |
+| ✅ | **SET-01** Settings data, controller, change signal | `Config/Settings` (known keys, ranges, sanitise), `SettingsController` (`Get`, `Set`, `Changed`): control scheme, sensitivity, invert pitch, FOV, default camera, volumes applied at once. Live: FOV 82 and invert saved; an invalid scheme and an unknown key dropped. *The settings screen is SET-02 (Phase 6).* |
+| ✅ | **ANL-03** Economy events | Every Credits source (match rewards) and sink (jets, modules) goes to `AnalyticsService:LogEconomyEvent` and the telemetry log. |
+| ✅ | **OPS-02** AdminService and commands | Admins: the place's creator or group owner, a list, or anyone in Studio; data commands only in the test environment; every command logged. Live through the `AdminCommand` remote. |
+| ⬜ | **REL-02** Test universe setup (separate experience, test products) | Needs Will: a separate test experience on Roblox, published from this place, with Studio API access on. |
+
+**Also done in Phase 5:** six new jets with greybox models (Mirage IIIE, F-4E Phantom II, MiG-23MLD, Mirage F1C, F-16A, MiG-29A) and their weapons (DEFA 552, M61A1, GSh-30-1, R.550 Magic, Super 530F, R-24R); a parametric greybox generator; ACD-03's CI half finished before the phase. Tests: 269 → 352.
 
 ## Phase 6: Content and polish for a soft launch
 
