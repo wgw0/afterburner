@@ -224,8 +224,8 @@ local function toggleLock()
 	if not root then
 		return
 	end
-	if SensorController.lockId ~= 0 then
-		Net.Client.fire("RadarLockRequest", 0)
+	if SensorController.lockId ~= 0 or SensorController.acquiringId ~= 0 then
+		SensorController:CancelRadarLock()
 		return
 	end
 	local best, bestDot = 0, -2
@@ -238,7 +238,7 @@ local function toggleLock()
 		end
 	end
 	if best ~= 0 then
-		Net.Client.fire("RadarLockRequest", best)
+		SensorController:StartRadarLock(best)
 	end
 end
 

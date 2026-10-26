@@ -100,7 +100,7 @@ local SPECS: { [string]: JetSpec } = {
 			Tail = { size = Vector3.new(3.4, 2.4, 2.0), at = Vector3.new(0, 0.8, 5.5) },
 		},
 		attachments = {
-			CockpitEye = Vector3.new(0, 1.05, -2.9),
+			CockpitEye = Vector3.new(0, 1.25, -2.9),
 			GunMuzzle = Vector3.new(0, 0.2, -6.2),
 			Hardpoint1 = Vector3.new(-4.0, 0, 1.3),
 			Hardpoint2 = Vector3.new(4.0, 0, 1.3),
@@ -182,7 +182,7 @@ local SPECS: { [string]: JetSpec } = {
 			Tail = { size = Vector3.new(2.8, 2.6, 2.5), at = Vector3.new(0, 0.9, 5.3) },
 		},
 		attachments = {
-			CockpitEye = Vector3.new(0, 1.0, -3.8),
+			CockpitEye = Vector3.new(0, 1.2, -3.8),
 			GunMuzzle = Vector3.new(0, -0.7, -1.5),
 			Hardpoint1 = Vector3.new(-1.8, -0.3, 1.8),
 			Hardpoint2 = Vector3.new(1.8, -0.3, 1.8),

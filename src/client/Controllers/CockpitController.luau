@@ -19,6 +19,8 @@ local FRAME_COLOUR = Color3.fromRGB(55, 58, 62)
 local DIAL_COLOUR = Color3.fromRGB(16, 16, 18)
 local NEEDLE_COLOUR = Color3.fromRGB(240, 240, 230)
 local MARK_COLOUR = Color3.fromRGB(200, 200, 190)
+local DIAL_SIZE = 84 -- pixels on the panel (200 per stud)
+local DIAL_TOP = 14 -- pixels from the panel top to the dials
 
 type Gauge = {
 	needle: Frame,
@@ -68,9 +70,10 @@ local function makeGauge(
 	local dial = Instance.new("Frame")
 	dial.Name = name
 	dial.AnchorPoint = Vector2.new(0.5, 0.5)
-	dial.Position = UDim2.fromScale(x, 0.5)
-	dial.Size = UDim2.fromScale(0.6, 0.6) -- RelativeYY: a round dial, 60% of the panel height
-	dial.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	-- A fixed size near the top of the panel: the panel's height depends on how far the fuselage sits
+	-- below the eye, and the dials shouldn't grow with it.
+	dial.Position = UDim2.new(x, 0, 0, DIAL_TOP + DIAL_SIZE / 2)
+	dial.Size = UDim2.fromOffset(DIAL_SIZE, DIAL_SIZE)
 	dial.BackgroundColor3 = DIAL_COLOUR
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
@@ -148,7 +151,7 @@ local function makeGauge(
 end
 
 local PANEL_DISTANCE = -2.3 -- studs ahead of the eye
-local PANEL_TOP_BELOW_EYE = -0.32 -- studs (eye space)
+local PANEL_TOP_BELOW_EYE = -0.6 -- studs (eye space): about 15° below the line of sight, for a view over the nose
 local PANEL_CLEARANCE = 0.06 -- studs above the fuselage top
 local PANEL_MIN_HEIGHT = 0.55
 
@@ -259,8 +262,10 @@ local function buildCockpit(jet: Model)
 		root,
 		Color3.fromRGB(150, 200, 170)
 	)
+	-- SmoothPlastic, not Glass: Roblox draws Glass parts opaque in front of water.
 	sight.Transparency = 0.9
-	sight.Material = Enum.Material.Glass
+	sight.Material = Enum.Material.SmoothPlastic
+	sight.CastShadow = false
 	sight.Parent = model
 
 	local surface = Instance.new("SurfaceGui")
@@ -303,6 +308,11 @@ local function update(dt: number)
 		if d:IsA("BasePart") then
 			d.LocalTransparencyModifier = if visible then 0 else 1
 		end
+	end
+	-- From inside, the jet's own canopy just tints the view (and its Glass goes opaque over water).
+	local canopy = FlightController.jet and FlightController.jet:FindFirstChild("Canopy", true)
+	if canopy and canopy:IsA("BasePart") then
+		canopy.LocalTransparencyModifier = if visible then 1 else 0
 	end
 	if not visible then
 		return
