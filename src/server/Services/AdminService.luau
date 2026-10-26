@@ -3,6 +3,8 @@
 -- (command, args) -> (ok, message). Every call is checked here; the client's debug panel is only a UI.
 --   Admins: the place's creator (or group owner), anyone listed in ADMINS, and everyone in Studio.
 --   Data-changing commands only run in the test environment; inspection and kicks work everywhere.
+--   Owners (the creator, group owner or ADMINS; not everyone in Studio) also get full access to every
+--   jet, module, skin and lineup slot, in test and live (Progression.unlockEverything).
 -- Every command is logged to analytics.
 
 local HttpService = game:GetService("HttpService")
@@ -29,7 +31,12 @@ local AdminService = {
 }
 
 function AdminService:IsAdmin(player: Player): boolean
-	if RunService:IsStudio() or table.find(ADMINS, player.UserId) then
+	return RunService:IsStudio() or self:IsOwner(player)
+end
+
+-- The game's owner: its creator, the owner of the group that owns it, or anyone listed in ADMINS.
+function AdminService:IsOwner(player: Player): boolean
+	if table.find(ADMINS, player.UserId) then
 		return true
 	end
 	if game.CreatorType == Enum.CreatorType.User then
@@ -203,10 +210,26 @@ function AdminService:Run(admin: Player, command: string, args: { [string]: any 
 	return result, message
 end
 
+local function grantFullAccess(player: Player)
+	if AdminService:IsOwner(player) then
+		DataService:Update(player, Progression.unlockEverything)
+		Telemetry.event("FullAccess", 1, {}, player)
+	end
+end
+
 function AdminService:Init()
 	Net.Server.handle("AdminCommand", function(player: Player, command: string, args: { [string]: any }?)
 		return self:Run(player, command, args)
 	end)
+	DataService.ProfileLoaded:Connect(grantFullAccess)
+end
+
+function AdminService:Start()
+	for _, player in Players:GetPlayers() do
+		if DataService:IsLoaded(player) then
+			grantFullAccess(player)
+		end
+	end
 end
 
 return AdminService

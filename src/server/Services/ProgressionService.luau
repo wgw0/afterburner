@@ -180,6 +180,16 @@ function ProgressionService:Init()
 			return Progression.setModuleFitted(data, airframeId, moduleId, fitted)
 		end, false, `{airframeId}:{moduleId}`)
 	end)
+	Net.Server.handle("BuySkin", function(player: Player, airframeId: string, skinId: string)
+		return handleIntent(player, "BuySkin", function(data)
+			return Progression.buySkin(data, airframeId, skinId)
+		end, true, `{airframeId}:{skinId}`)
+	end)
+	Net.Server.handle("SetSkin", function(player: Player, airframeId: string, skinId: string)
+		return handleIntent(player, "SetSkin", function(data)
+			return Progression.setSkin(data, airframeId, skinId)
+		end, false, `{airframeId}:{skinId}`)
+	end)
 	Net.Server.handle("SetLineup", function(player: Player, ids: { any })
 		return handleIntent(player, "SetLineup", function(data)
 			return Progression.setLineup(data, ids)
@@ -220,6 +230,10 @@ function ProgressionService:Start()
 		local data = DataService:GetData(player)
 		local entry = data and data.Aircraft[airframeId]
 		return Progression.encodeModules(entry and entry.Modules)
+	end
+	AircraftService.skinFor = function(player: Player, airframeId: string): string?
+		local data = DataService:GetData(player)
+		return data and Progression.skinFor(data, airframeId)
 	end
 
 	-- Match events

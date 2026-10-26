@@ -151,6 +151,8 @@ local function App(props: any)
 			end,
 			OnBuyModule = props.OnBuyModule,
 			OnSetModuleFitted = props.OnSetModuleFitted,
+			OnBuySkin = props.OnBuySkin,
+			OnSetSkin = props.OnSetSkin,
 			OnLineup = props.OnLineup,
 		})
 	else

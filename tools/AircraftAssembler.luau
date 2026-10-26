@@ -253,32 +253,12 @@ function AircraftAssembler.build(id: string, source: Instance): (Model?, { strin
 	return model, report
 end
 
--- Fits a skin from ReplicatedStorage.Assets.Skins.<id>.<skin> (one SurfaceAppearance per texture set,
--- named after the set). Without a name, the airframe's default (the Default attribute on its skins
--- folder). Returns the skin fitted, or nil if there is none.
+-- Fits a skin (Shared.Skins) to the model; without a name, the airframe's default from Config.Skins.
+-- Returns the skin fitted, or nil if its textures aren't in Assets.Skins.
 function AircraftAssembler.applySkin(model: Model, id: string, skinName: string?): string?
-	local skins = ReplicatedStorage:FindFirstChild("Assets")
-	skins = skins and skins:FindFirstChild("Skins")
-	local airframe = skins and skins:FindFirstChild(id)
-	local name = skinName or (airframe and airframe:GetAttribute("Default"))
-	local skin = airframe and type(name) == "string" and airframe:FindFirstChild(name)
-	if not skin then
-		return nil
-	end
-	for _, part in model:GetChildren() do
-		local set = part:IsA("MeshPart") and part:GetAttribute("TextureSet")
-		local source = set and skin:FindFirstChild(set)
-		if source and source:IsA("SurfaceAppearance") then
-			local old = part:FindFirstChildWhichIsA("SurfaceAppearance")
-			if old then
-				old:Destroy()
-			end
-			source:Clone().Parent = part
-			part.Color = Color3.new(1, 1, 1) -- the colour map is opaque; keep tints neutral
-		end
-	end
-	model:SetAttribute("Skin", skin.Name)
-	return skin.Name
+	local Skins = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skins")) :: any
+	local name = skinName or Skins.default(id)
+	return if Skins.apply(model, id, name) then name else nil
 end
 
 -- Builds the model and puts it in ReplicatedStorage.Assets.Aircraft.<id>. Returns a report.

@@ -82,7 +82,7 @@ local function Hangar(props: any)
 	local pending, setPending = React.useState(false)
 	local selected = props.Selected
 	local airframe = selected and AircraftData.get(selected) :: any
-	local slots = Progression.lineupSlots(data.PilotLevel)
+	local slots = Progression.slotsFor(data)
 
 	-- Lineup column
 	local lineupChildren: { [string]: any } = { Layout = C.List({ Gap = 8 }) }
@@ -203,6 +203,7 @@ local function Hangar(props: any)
 		Preview = if airframe
 			then e(JetPreview, {
 				AirframeId = selected,
+				Skin = Progression.skinFor(data, selected),
 				Size = UDim2.fromScale(0.5, 0.62),
 				Position = UDim2.fromScale(0.5, 0.36),
 				AnchorPoint = Vector2.new(0.5, 0.5),
