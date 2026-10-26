@@ -163,6 +163,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | ✅ | **ANL-01** Telemetry wrapper | `Telemetry.event`: pcall'd, tagged with the environment, recent-event log; `MatchEnded`, `Death` and anti-cheat events seen firing in play. |
 | ✅ | **PRF-02** Full-match stress test (bots fill to 24 jets) | Debug "Stress" mode fills to 24 jets. Once the map had streamed in, the server held **60 Hz**; the services' Heartbeat work cost **1.1 ms average, 4.5 ms peak** per frame (new meter in `Main.server`). Dips to 40–53 Hz only while Studio streamed the new map (server, client and renderer share one process in Studio). |
 
+**After sign-off:** the Phase 0 pylons and height towers, Roblox's default Baseplate and the unused SpawnLocation were removed from the island; the runway stays as the menu backdrop.
+
 **Also done in Phase 4:** AI difficulty profiles (Easy/Normal/Hard/Ace) and the Extend state, early parts of AI-04/05; debug panel buttons for mode switching, the stress mode, ending a match and forcing the touch UI; server step-cost meter (`ServerStepMs`, `ServerStepPeakMs`, `ServerHz` attributes). Tests: 202 → 269.
 
 **To check with real devices and players:** gamepad sticks, touch on a phone, HUD warnings hands-on, lessons 2–3 end to end, an 8-player match.
