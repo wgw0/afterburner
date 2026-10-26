@@ -286,7 +286,8 @@ local function build(): ScreenGui
 	helpLabel = text(gui, 13, Enum.TextXAlignment.Right)
 	helpLabel.AnchorPoint = Vector2.new(1, 1)
 	helpLabel.Position = UDim2.new(1, -20, 1, -20)
-	helpLabel.Size = UDim2.fromOffset(560, 16)
+	helpLabel.Size = UDim2.fromOffset(560, 32) -- two lines: flying and camera, then weapons
+	helpLabel.TextYAlignment = Enum.TextYAlignment.Bottom
 	helpLabel.TextTransparency = 0.35
 
 	-- IR seeker circle: sits on the boresight while searching, jumps onto the target, solid when locked.
@@ -627,8 +628,9 @@ local function update()
 		readouts.Missile.Position = UDim2.fromOffset(rightX, bottomY - 20)
 		if selectedSpec then
 			local count = (jetModel:GetAttribute(`Msl_{selected}`) :: number?) or 0
-			readouts.Missile.Text = `{selectedSpec.DisplayName} x{count}`
-			readouts.Missile.TextColor3 = if count == 0 then RED else GREEN
+			local caged = WeaponData.isIR(selectedSpec) and SensorController.seekerCaged and count > 0
+			readouts.Missile.Text = `{selectedSpec.DisplayName} x{count}{if caged then "  SEEKER OFF" else ""}`
+			readouts.Missile.TextColor3 = if count == 0 then RED elseif caged then AMBER else GREEN
 		else
 			readouts.Missile.Text = ""
 		end
@@ -869,8 +871,8 @@ local function update()
 	fuelLabel.Position = if InputController.device == "Touch"
 		then UDim2.new(0, 20, 1, -230)
 		else UDim2.new(0, 20, 1, -20)
-	helpLabel.Text =
-		`{if InputController.scheme == "MouseAim" then "MOUSE AIM" else "DIRECT"} · M scheme · V camera · Z zoom · P tuning`
+	helpLabel.Text = `{if InputController.scheme == "MouseAim" then "MOUSE AIM" else "DIRECT"} · M scheme · V camera · Z zoom · P tuning`
+		.. "\nLMB guns · Space missile · R next missile · T lock/unlock · F flare · C chaff"
 end
 
 function HUDController:Start()

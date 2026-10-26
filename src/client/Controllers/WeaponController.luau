@@ -224,8 +224,15 @@ local function toggleLock()
 	if not root then
 		return
 	end
+	-- The lock key is lock / unlock: it drops a radar lock (or one being built), and with a heat-seeker
+	-- selected it switches the seeker off and on.
 	if SensorController.lockId ~= 0 or SensorController.acquiringId ~= 0 then
 		SensorController:CancelRadarLock()
+		return
+	end
+	local missile = SensorController:SelectedMissile()
+	if missile and WeaponData.isIR(missile) then
+		SensorController:ToggleSeeker()
 		return
 	end
 	local best, bestDot = 0, -2
