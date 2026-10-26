@@ -20,12 +20,12 @@ local TIER_II = { "F4E", "MiG23MLD", "MirageF1" }
 local NODES: { Node } = {
 	{ Id = "F5E", Tier = 1, Branch = "NATO", Requires = {}, RP = 0, Credits = 0 },
 	{ Id = "MiG21bis", Tier = 1, Branch = "East", Requires = {}, RP = 0, Credits = 0 },
-	{ Id = "MirageIII", Tier = 1, Branch = "Europe", Requires = { "F5E", "MiG21bis" }, RP = 400, Credits = 1000 },
-	{ Id = "F4E", Tier = 2, Branch = "NATO", Requires = TIER_I, RP = 1800, Credits = 3200 },
-	{ Id = "MiG23MLD", Tier = 2, Branch = "East", Requires = TIER_I, RP = 1800, Credits = 3200 },
-	{ Id = "MirageF1", Tier = 2, Branch = "Europe", Requires = TIER_I, RP = 1800, Credits = 3200 },
-	{ Id = "F16A", Tier = 3, Branch = "NATO", Requires = TIER_II, RP = 6500, Credits = 11000 },
-	{ Id = "MiG29A", Tier = 3, Branch = "East", Requires = TIER_II, RP = 6500, Credits = 11000 },
+	{ Id = "MirageIII", Tier = 1, Branch = "Europe", Requires = { "F5E", "MiG21bis" }, RP = 300, Credits = 800 },
+	{ Id = "F4E", Tier = 2, Branch = "NATO", Requires = TIER_I, RP = 1600, Credits = 2900 },
+	{ Id = "MiG23MLD", Tier = 2, Branch = "East", Requires = TIER_I, RP = 1600, Credits = 2900 },
+	{ Id = "MirageF1", Tier = 2, Branch = "Europe", Requires = TIER_I, RP = 1600, Credits = 2900 },
+	{ Id = "F16A", Tier = 3, Branch = "NATO", Requires = TIER_II, RP = 7500, Credits = 12500 },
+	{ Id = "MiG29A", Tier = 3, Branch = "East", Requires = TIER_II, RP = 7500, Credits = 12500 },
 }
 
 local byId: { [string]: Node } = {}
