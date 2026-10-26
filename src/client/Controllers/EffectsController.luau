@@ -1,5 +1,6 @@
 --!strict
--- Visual effects for every jet (DEVELOPMENT.md §20, FX-01): afterburner flame, contrails, wingtip vapour.
+-- Visual effects for every jet (DEVELOPMENT.md §20, FX-01 / FX-04): afterburner flame, contrails, wingtip
+-- vapour, and smoke / fire from a damaged engine (Smoking / OnFire attributes set by the server).
 -- Your own jet uses live flight state; other jets use the Throttle/Afterburner/GLoad attributes the
 -- server sets from each pilot's telemetry. Client-only; the server never creates effects.
 
@@ -25,6 +26,8 @@ type JetFx = {
 	lights: { PointLight },
 	contrails: { Trail },
 	vapour: { Trail },
+	smoke: { ParticleEmitter },
+	fire: { ParticleEmitter },
 	trove: Trove.Trove,
 }
 
@@ -65,7 +68,8 @@ local function setup(model: Model)
 		return
 	end
 	local trove = Trove.new()
-	local fx: JetFx = { model = model, flames = {}, lights = {}, contrails = {}, vapour = {}, trove = trove }
+	local fx: JetFx =
+		{ model = model, flames = {}, lights = {}, contrails = {}, vapour = {}, smoke = {}, fire = {}, trove = trove }
 
 	for _, nozzle in root:GetChildren() do
 		if nozzle:IsA("Attachment") and string.match(nozzle.Name, "^Nozzle%d+$") then
@@ -91,6 +95,34 @@ local function setup(model: Model)
 			light.Brightness = 0
 			light.Parent = nozzle
 			table.insert(fx.flames, beam)
+			-- Damage smoke and fire trail from the engine (FX-04)
+			local smoke = Instance.new("ParticleEmitter")
+			smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			smoke.Color = ColorSequence.new(Color3.fromRGB(60, 60, 60), Color3.fromRGB(25, 25, 25))
+			smoke.Size = NumberSequence.new(3, 14)
+			smoke.Transparency = NumberSequence.new(0.35, 1)
+			smoke.Lifetime = NumberRange.new(2.5, 4)
+			smoke.Rate = 40
+			smoke.Speed = NumberRange.new(2, 6)
+			smoke.EmissionDirection = Enum.NormalId.Back
+			smoke.Enabled = false
+			smoke.Parent = nozzle
+			table.insert(fx.smoke, smoke)
+			local fire = Instance.new("ParticleEmitter")
+			fire.Texture = "rbxasset://textures/particles/fire_main.dds"
+			fire.Color = ColorSequence.new(Color3.fromRGB(255, 200, 110), Color3.fromRGB(255, 70, 20))
+			fire.LightEmission = 1
+			fire.Size = NumberSequence.new(4, 1)
+			fire.Transparency = NumberSequence.new(0.1, 1)
+			fire.Lifetime = NumberRange.new(0.3, 0.6)
+			fire.Rate = 60
+			fire.Speed = NumberRange.new(4, 10)
+			fire.EmissionDirection = Enum.NormalId.Back
+			fire.Enabled = false
+			fire.Parent = nozzle
+			table.insert(fx.fire, fire)
+			trove:Add(smoke)
+			trove:Add(fire)
 			table.insert(fx.lights, light)
 			trove:Add(tail)
 			trove:Add(beam)
@@ -153,6 +185,14 @@ local function update()
 		local contrailsOn = altitude > Flight.CONTRAIL_ALTITUDE
 		for _, trail in fx.contrails do
 			trail.Enabled = contrailsOn
+		end
+		local smoking = model:GetAttribute("Smoking") == true
+		local burning = model:GetAttribute("OnFire") == true
+		for _, emitter in fx.smoke do
+			emitter.Enabled = smoking or burning
+		end
+		for _, emitter in fx.fire do
+			emitter.Enabled = burning
 		end
 		local vapourOn = gLoad > Flight.VAPOUR_G
 		for _, trail in fx.vapour do

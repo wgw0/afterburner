@@ -44,7 +44,31 @@ local definitions: { [string]: Definition } = {
 	-- Kill feed line: killer name ("" = none), victim name, weapon or cause, assist names
 	KillFeed = { direction = "ServerToClient", args = { "string", "string", "string", "table" } },
 
+	-- Missiles, sensors and countermeasures (§13–15)
+	-- Pick which missile type Space fires: index into the airframe's Missiles list
+	SelectWeapon = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 6, perSecond = 4 } },
+	-- Lock a radar contact (0 = unlock)
+	RadarLockRequest = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 6, perSecond = 4 } },
+	-- Your radar lock changed: targetJetId (0 = none), state "Locked" | "Lost" | "None"
+	LockState = { direction = "ServerToClient", args = { "integer", "string" } },
+	-- Who's painting you: { { id = jetId, kind = "Search"|"Lock"|"Launch", position = Vector3 } }
+	RWRUpdate = { direction = "ServerToClient", args = { "table" } },
+	-- Fire the selected missile at a target (0 = no lock: fires unguided)
+	MissileFire = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 3, perSecond = 2 } },
+	-- A missile was launched: id, weaponId, ownerJetId (0 = none), position, velocity
+	MissileSpawned = { direction = "ServerToClient", args = { "integer", "string", "integer", "Vector3", "Vector3" } },
+	-- Packed positions of every missile in flight (Net/Pack), ~15 Hz
+	MissileState = { direction = "ServerToClient", reliable = false, args = { "buffer" } },
+	-- A missile exploded or expired: id, position, jet it hit (0 = none)
+	MissileDetonated = { direction = "ServerToClient", args = { "integer", "Vector3", "integer" } },
+	-- Drop a flare or chaff bundle: "Flare" | "Chaff"
+	CountermeasureDeploy = { direction = "ClientToServer", args = { "string" }, rate = { burst = 6, perSecond = 6 } },
+	-- A jet dropped a flare or chaff: jetId, kind, position, velocity
+	CountermeasureFx = { direction = "ServerToClient", args = { "integer", "string", "Vector3", "Vector3" } },
+
 	-- Diagnostics (test environment only): exercises the Net layer end to end.
+	-- Fire a missile at yourself from 1.8 km behind, to practise defending (weapon id)
+	DebugLaunchAtMe = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Spawn a target drone: mode "ahead" (in front of you, same heading) or "circle" (orbits the range)
 	DebugSpawnDrone = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
 	DebugPing = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 5, perSecond = 2 } },

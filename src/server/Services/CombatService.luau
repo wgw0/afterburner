@@ -27,6 +27,10 @@ type Jet = AircraftService.Jet
 local FIRE_TIME_TOLERANCE = 1 -- seconds: trigger messages stamped further from now are ignored
 local JAM_CLEAR_HEAT = 0.4 -- an overheated gun works again once it cools to this
 local BROADPHASE_MARGIN = 60 -- studs around a round's path to consider a target
+local FIRE_CHANCE = 0.1 -- per engine hit once the engine is below half health (DMG-03)
+local FIRE_DURATION = 8 -- seconds
+local FIRE_DPS = 6 -- fuselage damage per second while burning
+local SMOKE_BELOW = 0.6 -- engine health fraction that starts trailing smoke
 
 type Hitbox = { name: string, offset: CFrame, size: Vector3 }
 
@@ -55,6 +59,7 @@ local CombatService = {
 }
 
 local states: { [number]: CombatState } = {}
+local fires: { [number]: { untilTime: number, attacker: Player? } } = {}
 local worldParams: RaycastParams
 
 local function otherPlayers(except: Player?): { Player }
@@ -112,6 +117,14 @@ function CombatService:ApplyDamage(target: Jet, component: string, amount: numbe
 	end
 	sendDamageState(state)
 	self.JetDamaged:Fire(target, component, amount, attacker)
+
+	-- Engine damage: smoke, and a chance of fire once it's badly hit (DMG-03)
+	local engine = (state.health.Engine or 0) / (state.maxHealth.Engine or 1)
+	target.model:SetAttribute("Smoking", engine < SMOKE_BELOW)
+	if component == "Engine" and engine < 0.5 and not fires[target.id] and math.random() < FIRE_CHANCE then
+		fires[target.id] = { untilTime = os.clock() + FIRE_DURATION, attacker = attacker }
+		target.model:SetAttribute("OnFire", true)
+	end
 	if destroyed then
 		AircraftService:Despawn(target, "Shot")
 	end
@@ -243,6 +256,19 @@ local function tick(dt: number)
 			if state.jammed and state.heat <= JAM_CLEAR_HEAT then
 				state.jammed = false
 			end
+		end
+	end
+	-- Fires burn the airframe, credited to whoever started them
+	local now = os.clock()
+	for jetId, fire in fires do
+		local state = states[jetId]
+		if not state then
+			fires[jetId] = nil
+		elseif now >= fire.untilTime then
+			fires[jetId] = nil
+			state.jet.model:SetAttribute("OnFire", false)
+		else
+			CombatService:ApplyDamage(state.jet, "Fuselage", FIRE_DPS * dt, fire.attacker, "Fire")
 		end
 	end
 	-- Rounds are flown after every gun has fired, so all shooters see the same target poses.

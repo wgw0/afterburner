@@ -66,7 +66,7 @@ end
 
 -- Chance a radar missile loses its target to a chaff bundle. Much better while notching.
 function Countermeasures.chaffDecoyChance(resistance: number, notching: boolean): number
-	return math.clamp((1 - resistance) * (if notching then 0.8 else 0.25), 0, 1)
+	return math.clamp((1 - resistance) * (if notching then 0.8 else 0.08), 0, 1) -- spamming chaff without notching rarely works
 end
 
 -- Chance a chaff bundle breaks a radar lock (smaller than decoying a missile).

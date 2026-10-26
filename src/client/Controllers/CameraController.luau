@@ -7,6 +7,8 @@
 --     horizon; in Direct it follows the jet's nose, smoothed.
 -- Field of view widens a little with speed and G for a sense of speed (Z zooms in).
 -- Snap views (CAM-03): hold Left Alt + an arrow to look left / right / back / up.
+-- Padlock (CAM-04): hold X or the middle mouse button to keep your head on the target (your lock, your
+--   heat-seeker's target, or the nearest spotted jet), within realistic head limits.
 -- When your jet is destroyed, the camera orbits the explosion for a few seconds (AIR-03).
 -- With no jet, the camera orbits the test range.
 
@@ -22,12 +24,15 @@ local Units = require(Shared.Units)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
+local SensorController = require(script.Parent.SensorController)
 
 local BASE_FOV = 70
 local ZOOM_FOV = 35
 local SPEED_FOV = 10 -- extra degrees at high speed
 local G_FOV = 6 -- extra degrees in a hard pull
 local DEATH_CAM_SECONDS = 3.5
+local PADLOCK_YAW_LIMIT = math.rad(160)
+local PADLOCK_PITCH_MIN, PADLOCK_PITCH_MAX = math.rad(-25), math.rad(90)
 local SNAP_VIEWS: { [Enum.KeyCode]: Vector2 } = { -- (yaw, pitch) in degrees
 	[Enum.KeyCode.Left] = Vector2.new(100, 5),
 	[Enum.KeyCode.Right] = Vector2.new(-100, 5),
@@ -52,6 +57,22 @@ local orbitAngle = 0
 local myJetId: number? = nil
 local deathUntil = 0
 local deathPosition = Vector3.zero
+
+-- Head angles (yaw, pitch) that keep the padlock target in view, or nil when not padlocking.
+local function padlockView(jetCF: CFrame): Vector2?
+	local held = UserInputService:IsKeyDown(Enum.KeyCode.X)
+		or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
+	local target = if held then SensorController:PadlockTarget() else nil
+	local targetRoot = target and target.PrimaryPart
+	InputController.padlocked = targetRoot ~= nil
+	if not targetRoot then
+		return nil
+	end
+	local rel = jetCF:VectorToObjectSpace((targetRoot.Position - jetCF.Position).Unit)
+	local yaw = math.clamp(math.atan2(-rel.X, -rel.Z), -PADLOCK_YAW_LIMIT, PADLOCK_YAW_LIMIT)
+	local pitch = math.clamp(math.asin(math.clamp(rel.Y, -1, 1)), PADLOCK_PITCH_MIN, PADLOCK_PITCH_MAX)
+	return Vector2.new(yaw, pitch)
+end
 
 -- Snap view offsets while Left Alt is held, else nil.
 local function snapView(): Vector2?
@@ -95,7 +116,7 @@ local function cockpitView(root: BasePart, dt: number): CFrame
 	local shift = gShift:Update(dt, math.clamp((g - 1) * 0.04, -0.15, 0.35))
 	local position = eyeCF.Position - jetCF.UpVector * shift
 
-	local snap = snapView()
+	local snap = padlockView(jetCF) or snapView()
 	local yaw = headYaw:Update(dt, if snap then snap.X else InputController.freeLookYaw)
 	local pitch = headPitch:Update(dt, if snap then snap.Y else InputController.freeLookPitch)
 	local base = if InputController.scheme == "MouseAim"

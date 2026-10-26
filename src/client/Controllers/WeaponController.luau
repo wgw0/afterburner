@@ -1,6 +1,9 @@
 --!strict
 -- Guns on the client (DEVELOPMENT.md §11, GUN-02/05).
---   Left mouse fires. The client only tells the server "trigger down/up" plus a spread seed; the server
+--   Left mouse fires the gun. Missiles (Phase 3): R cycles missile type, Space fires it at your radar
+--   lock (radar missiles) or what the heat-seeker sees (IR), T locks/unlocks the radar contact nearest
+--   your nose, F drops a flare, C drops chaff. The server checks every launch.
+--   Gun: The client only tells the server "trigger down/up" plus a spread seed; the server
 --   fires and scores the real rounds.
 --   Tracers: every client simulates the same rounds from the same seed with Ballistics, so the shooter
 --   and everyone watching see matching streams without each round being sent over the network.
@@ -11,6 +14,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Ballistics = require(Shared.Ballistics)
 local Net = require(Shared.Net)
 local Pool = require(Shared.Util.Pool)
@@ -20,6 +24,7 @@ local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
+local SensorController = require(script.Parent.SensorController)
 
 local TRACER_EVERY = 2 -- draw every Nth round (real belts mix tracer and ball rounds)
 local TRACER_COLOUR = Color3.fromRGB(255, 214, 120)
@@ -176,6 +181,67 @@ local function update(dt: number)
 	debug.profileend()
 end
 
+local function cycleMissile()
+	local jet = FlightController.jet
+	if not jet then
+		return
+	end
+	local airframe = AircraftData.get(jet:GetAttribute("AirframeId") :: string) :: any
+	local slots = airframe and airframe.Missiles or {}
+	if #slots == 0 then
+		return
+	end
+	local current = jet:GetAttribute("SelectedMissile")
+	local index = 1
+	for i, slot in slots do
+		if slot.Weapon == current then
+			index = i % #slots + 1
+		end
+	end
+	Net.Client.fire("SelectWeapon", index)
+end
+
+local function fireMissile()
+	local missile = SensorController:SelectedMissile()
+	if not missile then
+		return
+	end
+	local target = 0
+	if WeaponData.isRadar(missile) then
+		target = SensorController.lockId
+		if target == 0 then
+			return -- radar missiles need a lock
+		end
+	elseif SensorController.irLocked then
+		target = SensorController.irTargetId
+	end
+	Net.Client.fire("MissileFire", target)
+end
+
+-- Lock the radar contact nearest the nose, or unlock if already locked.
+local function toggleLock()
+	local root = FlightController.root
+	if not root then
+		return
+	end
+	if SensorController.lockId ~= 0 then
+		Net.Client.fire("RadarLockRequest", 0)
+		return
+	end
+	local best, bestDot = 0, -2
+	for id, contact in SensorController.contacts do
+		if contact.onRadar then
+			local dot = root.CFrame.LookVector:Dot((contact.position - root.Position).Unit)
+			if dot > bestDot then
+				best, bestDot = id, dot
+			end
+		end
+	end
+	if best ~= 0 then
+		Net.Client.fire("RadarLockRequest", best)
+	end
+end
+
 function WeaponController:IsFiring(model: Model): boolean
 	local stream = streams[model]
 	return stream ~= nil and stream.firing
@@ -193,6 +259,22 @@ function WeaponController:Init()
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 and not processed and not InputController.uiOpen then
 			setTrigger(true)
+		end
+	end)
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or InputController.uiOpen or not FlightController.jet then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.R then
+			cycleMissile()
+		elseif input.KeyCode == Enum.KeyCode.Space then
+			fireMissile()
+		elseif input.KeyCode == Enum.KeyCode.T then
+			toggleLock()
+		elseif input.KeyCode == Enum.KeyCode.F then
+			Net.Client.fire("CountermeasureDeploy", "Flare")
+		elseif input.KeyCode == Enum.KeyCode.C then
+			Net.Client.fire("CountermeasureDeploy", "Chaff")
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
