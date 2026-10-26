@@ -28,6 +28,7 @@ local SensorController = require(script.Parent.SensorController)
 local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
 local RED = Color3.fromRGB(255, 85, 70)
+local CONTACT = Color3.fromRGB(205, 215, 205) -- jets you can see but not lock
 local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
@@ -66,11 +67,10 @@ local hitMarker: TextLabel
 local hitUntil = 0
 local killFeed: Frame
 local feedLines: { { label: TextLabel, expires: number } } = {}
-local targetMarkers: { [Model]: { box: Frame, label: TextLabel } } = {}
+local targetMarkers: { [Model]: any } = {}
 local markerLayer: Frame
 -- HUD-03: missiles
 local seekerCircle: Frame
-local lockBox: Frame
 local lockLabel: TextLabel
 local zoneBar: Frame
 local zoneMarks: { [string]: Frame } = {}
@@ -305,10 +305,12 @@ local function build(): ScreenGui
 	zoneCaret.AnchorPoint = Vector2.new(1, 0.5)
 	zoneCaret.Size = UDim2.fromOffset(16, 16)
 	zoneCaret.Text = "◀"
-	shootCue = text(box, 22)
+	shootCue = text(box, 34)
 	shootCue.AnchorPoint = Vector2.new(0.5, 0.5)
-	shootCue.Size = UDim2.fromOffset(120, 26)
-	shootCue.Text = "SHOOT"
+	shootCue.Size = UDim2.fromOffset(220, 38)
+	shootCue.Font = Enum.Font.GothamBlack
+	shootCue.TextStrokeTransparency = 0.4
+	shootCue.Text = "FIRE"
 	shootCue.Visible = false
 
 	-- Gun lead indicator: put the gun cross on it to hit the target.
@@ -331,17 +333,7 @@ local function build(): ScreenGui
 	markerLayer.Size = UDim2.fromScale(1, 1)
 	markerLayer.Parent = gui
 
-	-- Radar lock box (whole screen, so it shows even outside the HUD)
-	lockBox = Instance.new("Frame")
-	lockBox.AnchorPoint = Vector2.new(0.5, 0.5)
-	lockBox.Size = UDim2.fromOffset(40, 40)
-	lockBox.BackgroundTransparency = 1
-	local lockStroke = Instance.new("UIStroke")
-	lockStroke.Color = GREEN
-	lockStroke.Thickness = 2
-	lockStroke.Parent = lockBox
-	lockBox.Visible = false
-	lockBox.Parent = gui
+	-- Range and closure above a locked target (whole screen, so it shows even outside the HUD)
 	lockLabel = text(gui, 14)
 	lockLabel.AnchorPoint = Vector2.new(0.5, 1)
 	lockLabel.Size = UDim2.fromOffset(200, 16)
@@ -418,27 +410,52 @@ local function layoutTape(tape: Tape, t: TapeLayout)
 	end
 end
 
-local function marker(model: Model): { box: Frame, label: TextLabel }
+type Marker = { box: Frame, label: TextLabel, stroke: UIStroke, corner: UICorner }
+
+local function marker(model: Model): Marker
 	local existing = targetMarkers[model]
 	if existing then
 		return existing
 	end
 	local f = Instance.new("Frame")
 	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.Size = UDim2.fromOffset(26, 26)
+	f.Size = UDim2.fromOffset(18, 18)
 	f.BackgroundTransparency = 1
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = RED
-	stroke.Thickness = 1.5
+	stroke.Color = CONTACT
+	stroke.Thickness = 1
 	stroke.Parent = f
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 0)
+	corner.Parent = f
 	f.Parent = markerLayer
 	local l = text(markerLayer, 13)
 	l.AnchorPoint = Vector2.new(0.5, 0)
 	l.Size = UDim2.fromOffset(160, 16)
-	l.TextColor3 = RED
-	local entry = { box = f, label = l }
+	l.TextColor3 = CONTACT
+	local entry = { box = f, label = l, stroke = stroke, corner = corner }
 	targetMarkers[model] = entry
 	return entry
+end
+
+-- Lock symbology (playtest request): a jet the selected missile could lock gets a green circle, a green
+-- square while the lock builds, and a red square once it's locked. Other jets get a small grey box.
+local MARKER_STYLES = {
+	Contact = { size = 18, circle = false, thickness = 1 },
+	Lockable = { size = 34, circle = true, thickness = 2 },
+	Locking = { size = 34, circle = false, thickness = 2.5 },
+	Locked = { size = 38, circle = false, thickness = 3 },
+}
+
+local function styleMarker(m: Marker, state: string)
+	local style = MARKER_STYLES[state]
+	local colour = if state == "Locked" then RED elseif state == "Contact" then CONTACT else GREEN
+	m.box.Size = UDim2.fromOffset(style.size, style.size)
+	m.corner.CornerRadius = if style.circle then UDim.new(0.5, 0) else UDim.new(0, 0)
+	m.stroke.Color = colour
+	m.stroke.Thickness = style.thickness
+	m.label.TextColor3 = colour
+	m.label.Position = m.box.Position + UDim2.fromOffset(0, style.size / 2 + 4)
 end
 
 local function addFeedLine(message: string, colour: Color3)
@@ -689,7 +706,18 @@ local function update()
 		m.box.Visible = onScreen and screen.Z > 0
 		m.label.Visible = m.box.Visible
 		m.box.Position = UDim2.fromOffset(screen.X, screen.Y)
-		m.label.Position = UDim2.fromOffset(screen.X, screen.Y + 16)
+		local id = model:GetAttribute("JetId") :: number?
+		local markerState = "Contact"
+		if id then
+			if id == SensorController.lockId or (id == SensorController.irTargetId and SensorController.irLocked) then
+				markerState = "Locked"
+			elseif id == SensorController.irTargetId or id == SensorController.acquiringId then
+				markerState = "Locking"
+			elseif SensorController.lockable[id] then
+				markerState = "Lockable"
+			end
+		end
+		styleMarker(m, markerState)
 		m.label.Text = string.format("%s %.1fkm", (model:GetAttribute("PilotName") :: string?) or "?", range / 1000)
 		local off = math.deg(math.acos(math.clamp((otherRoot.Position - myPosition).Unit:Dot(look), -1, 1)))
 		if range <= LEAD_RANGE and off <= LEAD_CONE and off < bestOff then
@@ -733,31 +761,20 @@ local function update()
 		targetModel = SensorController:GetModel(SensorController.lockId)
 	end
 
-	seekerCircle.Visible = isIR
-	if isIR then
-		local seekerStroke = seekerCircle:FindFirstChildOfClass("UIStroke") :: UIStroke
-		local seekRoot = targetModel and targetModel.PrimaryPart
-		if seekRoot then
-			local p = project(camera, (seekRoot.Position - camera.CFrame.Position).Unit)
-			seekerCircle.Position = toBox(p)
-			seekerStroke.Thickness = if SensorController.irLocked then 3 else 1.5
-			seekerCircle.Visible = SensorController.irLocked or (os.clock() % 0.3 < 0.2)
-		else
-			seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
-			seekerStroke.Thickness = 1.5
-		end
-	end
+	-- The seeker circle shows the heat-seeker searching at the boresight; once it sees a target, the
+	-- target's own marker (green square, then red) takes over.
+	seekerCircle.Visible = isIR and SensorController.irTargetId == 0
+	seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
-	local lockModel = if SensorController.lockId ~= 0 then SensorController:GetModel(SensorController.lockId) else nil
+	local ready = if isIR then SensorController.irLocked else SensorController.lockId ~= 0
+	local lockModel = if ready then targetModel else nil
 	local lockRoot = lockModel and lockModel.PrimaryPart
-	lockBox.Visible = false
 	lockLabel.Visible = false
 	if lockRoot then
 		local screen, onScreen = camera:WorldToViewportPoint(lockRoot.Position)
 		if onScreen and screen.Z > 0 then
-			lockBox.Visible = true
 			lockLabel.Visible = true
-			lockBox.Position = UDim2.fromOffset(screen.X, screen.Y)
+			lockLabel.TextColor3 = RED
 			lockLabel.Position = UDim2.fromOffset(screen.X, screen.Y - 24)
 			local rel = lockRoot.Position - myPosition
 			local closure = -(Units.velocityFromStuds(lockRoot.AssemblyLinearVelocity) - myVelocity):Dot(rel.Unit)
@@ -790,10 +807,16 @@ local function update()
 		zoneMarks.NoEscape.Position = UDim2.fromOffset(0, y(rNoEscape))
 		zoneMarks.Min.Position = UDim2.fromOffset(0, y(rMin))
 		zoneCaret.Position = UDim2.fromOffset(-2, y(range))
+		-- FIRE in red once locked and inside the launch zone; otherwise say why not.
 		local inZone = range >= rMin and range <= rMax
-		local ready = if isIR then SensorController.irLocked else SensorController.lockId ~= 0
-		shootCue.Visible = inZone and ready
-		shootCue.Position = UDim2.fromOffset(boxW / 2, boxH * 0.62)
+		shootCue.Visible = ready
+		shootCue.Position = UDim2.fromOffset(boxW / 2, -34) -- above the heading scale, clear of the target
+		if inZone then
+			shootCue.Text, shootCue.TextColor3, shootCue.TextSize = "FIRE", RED, 34
+		else
+			shootCue.Text = if range > rMax then "OUT OF RANGE" else "TOO CLOSE"
+			shootCue.TextColor3, shootCue.TextSize = AMBER, 18
+		end
 	end
 
 	-- Missile warning: any missile guiding on you that your RWR can hear

@@ -2,8 +2,12 @@
 -- Radar scope and RWR display (DEVELOPMENT.md §14, SNS-02 / SNS-05). Screen-space panels at the bottom.
 --   Radar (B-scope): left-right is bearing across the radar cone, bottom-to-top is range. Contacts your
 --     radar sees are blips; your lock is a boxed, brighter blip.
---   RWR: a ring around your jet. Threats show at their bearing: S = search radar, L = locked on you
---     (flashing), M = missile guiding on you (red, fast flashing). Coarse RWRs only give 8 directions.
+--   Situation display (the round scope): top-down and heading-up, with your jet in the middle.
+--     * The wedge ahead is where the selected missile can lock (heat-seeker: seeker cone out to its
+--       range; radar missile: the radar cone out to the missile's range).
+--     * Dots are jets you know about: red = locked, green = lockable, amber = the rest.
+--     * RWR around the rim: threats at their bearing, S = search radar, L = locked on you (flashing),
+--       M = missile guiding on you (red, fast flashing). Coarse RWRs only give 8 directions.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +15,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
@@ -35,6 +40,12 @@ local radarLabel: TextLabel
 local blips: { Frame } = {}
 local rwrPanel: Frame
 local rwrMarks: { TextLabel } = {}
+local tsdDots: { Frame } = {}
+local coneLeft: Frame
+local coneRight: Frame
+local coneEnd: Frame
+local tsdLabel: TextLabel
+local DEFAULT_TSD_RANGE = 10000 -- real metres shown from the centre to the rim without a radar
 
 local function panel(name: string, size: Vector2, position: UDim2, anchor: Vector2): Frame
 	local f = Instance.new("Frame")
@@ -101,11 +112,50 @@ local function build()
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = rwrPanel
-	local me = label(rwrPanel, "✈", 18)
-	me.Position = UDim2.fromScale(0.5, 0.5)
+	local function bar(size: Vector2, position: UDim2, anchor: Vector2?): Frame
+		local f = Instance.new("Frame")
+		f.AnchorPoint = anchor or Vector2.new(0.5, 0.5)
+		f.BackgroundColor3 = GREEN
+		f.BorderSizePixel = 0
+		f.Size = UDim2.fromOffset(size.X, size.Y)
+		f.Position = position
+		f.Parent = rwrPanel
+		return f
+	end
+	-- Half-range ring
+	local ring = Instance.new("Frame")
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Position = UDim2.fromScale(0.5, 0.5)
+	ring.Size = UDim2.fromScale(0.5, 0.5)
+	ring.BackgroundTransparency = 1
+	local ringCorner = Instance.new("UICorner")
+	ringCorner.CornerRadius = UDim.new(0.5, 0)
+	ringCorner.Parent = ring
+	local ringStroke = Instance.new("UIStroke")
+	ringStroke.Color = GREEN
+	ringStroke.Transparency = 0.75
+	ringStroke.Parent = ring
+	ring.Parent = rwrPanel
+	-- Lock cone (two edges and an end line), drawn under the jet symbol
+	coneLeft = bar(Vector2.new(1, 10), UDim2.fromScale(0.5, 0.5))
+	coneRight = bar(Vector2.new(1, 10), UDim2.fromScale(0.5, 0.5))
+	coneEnd = bar(Vector2.new(10, 1), UDim2.fromScale(0.5, 0.5))
+	for _, f in { coneLeft, coneRight, coneEnd } do
+		f.BackgroundTransparency = 0.35
+	end
+	-- Own jet, line-art like the HUD: fuselage, swept-looking wings, tailplane
+	local centre = UDim2.fromScale(0.5, 0.5)
+	bar(Vector2.new(3, 24), centre)
+	bar(Vector2.new(22, 3), centre + UDim2.fromOffset(0, 1))
+	bar(Vector2.new(10, 2), centre + UDim2.fromOffset(0, 10))
+	bar(Vector2.new(3, 3), centre + UDim2.fromOffset(0, -13)) -- nose
 	local title = label(rwrPanel, "RWR", 11)
 	title.Position = UDim2.new(0.5, 0, 0, 12)
 	title.TextTransparency = 0.4
+	tsdLabel = label(rwrPanel, "", 10)
+	tsdLabel.Size = UDim2.fromOffset(80, 12)
+	tsdLabel.Position = UDim2.new(0.5, 0, 1, -12)
+	tsdLabel.TextTransparency = 0.3
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
@@ -124,6 +174,44 @@ local function blip(i: number): Frame
 		blips[i] = b
 	end
 	return b
+end
+
+local function tsdDot(i: number): Frame
+	local d = tsdDots[i]
+	if not d then
+		d = Instance.new("Frame")
+		d.AnchorPoint = Vector2.new(0.5, 0.5)
+		d.Size = UDim2.fromOffset(6, 6)
+		d.BorderSizePixel = 0
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = d
+		d.Parent = rwrPanel
+		tsdDots[i] = d
+	end
+	return d
+end
+
+-- Draws the selected missile's lock wedge: half-angle in degrees, length as a fraction of the radius.
+local function drawCone(halfAngle: number?, reach: number)
+	local visible = halfAngle ~= nil and reach > 0
+	coneLeft.Visible, coneRight.Visible, coneEnd.Visible = visible, visible, visible
+	if not halfAngle then
+		return
+	end
+	local radius = RWR_SIZE / 2
+	local length = math.clamp(reach, 0, 1) * radius
+	local a = math.rad(math.min(halfAngle, 80))
+	-- GUI objects rotate about their centre, so each edge is centred halfway along its line.
+	local midX, midY = length / 2 * math.sin(a), -length / 2 * math.cos(a)
+	coneLeft.Size = UDim2.fromOffset(1, length)
+	coneLeft.Position = UDim2.new(0.5, -midX, 0.5, midY)
+	coneLeft.Rotation = -math.deg(a)
+	coneRight.Size = UDim2.fromOffset(1, length)
+	coneRight.Position = UDim2.new(0.5, midX, 0.5, midY)
+	coneRight.Rotation = math.deg(a)
+	coneEnd.Size = UDim2.fromOffset(2 * length * math.sin(a), 1)
+	coneEnd.Position = UDim2.new(0.5, 0, 0.5, -length * math.cos(a))
 end
 
 local function rwrMark(i: number): TextLabel
@@ -178,6 +266,38 @@ local function update()
 		blips[i].Visible = false
 	end
 
+	-- Situation display: lock cone and contacts
+	local tsdRange = if radar then radar.Range else DEFAULT_TSD_RANGE
+	tsdLabel.Text = string.format("%d km", math.round(tsdRange / 1000))
+	local missile = SensorController:SelectedMissile()
+	if missile and WeaponData.isRadar(missile) and radar then
+		drawCone(radar.Cone, math.min(missile.MaxRange, radar.Range) / tsdRange)
+	elseif missile then
+		drawCone(missile.SeekerCone, missile.MaxRange / tsdRange)
+	else
+		drawCone(nil, 0)
+	end
+	local dots = 0
+	for id, contact in SensorController.contacts do
+		local rel = myCF:PointToObjectSpace(contact.position)
+		local flat = Vector2.new(rel.X, -rel.Z)
+		local distance = contact.range / tsdRange
+		if distance <= 0.95 and flat.Magnitude > 1e-3 then
+			dots += 1
+			local d = tsdDot(dots)
+			local p = flat.Unit * distance * 0.5
+			d.Position = UDim2.fromScale(0.5 + p.X, 0.5 - p.Y)
+			local locked = id == SensorController.lockId
+				or (id == SensorController.irTargetId and SensorController.irLocked)
+			d.BackgroundColor3 = if locked then RED elseif SensorController.lockable[id] then GREEN else AMBER
+			d.Size = if locked then UDim2.fromOffset(8, 8) else UDim2.fromOffset(6, 6)
+			d.Visible = true
+		end
+	end
+	for i = dots + 1, #tsdDots do
+		tsdDots[i].Visible = false
+	end
+
 	-- RWR
 	local coarse = not (airframe and airframe.RWR and airframe.RWR.Resolution == "Fine")
 	local shown = 0
@@ -187,7 +307,7 @@ local function update()
 		if coarse then
 			bearing = math.round(bearing / (math.pi / 4)) * (math.pi / 4)
 		end
-		local radius = if threat.kind == "Launch" then 0.22 elseif threat.kind == "Lock" then 0.32 else 0.42
+		local radius = 0.42 -- around the rim, clear of the contacts
 		shown += 1
 		local m = rwrMark(shown)
 		m.Position = UDim2.fromScale(0.5 + math.sin(bearing) * radius, 0.5 - math.cos(bearing) * radius)

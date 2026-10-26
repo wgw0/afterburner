@@ -2,7 +2,10 @@
 -- What your jet knows about other jets (DEVELOPMENT.md §14, SNS-01/02).
 --   Visual: spotted within 3 km (5 km if they're high enough to leave contrails) with clear line of sight.
 --   Radar: contacts your radar can see right now (same rules the server uses for locks).
---   Lock: your radar lock, as confirmed by the server.
+--   Lockable: the contacts the selected missile could lock right now (heat-seeker: inside its seeker
+--     cone and hot enough at that range; radar missile: on your radar). The HUD circles them.
+--   Lock: your radar lock, as confirmed by the server. Pressing lock starts a 1 s lock-on (the target
+--     must stay on radar) before the request goes to the server, so a radar lock builds up like an IR one.
 --   IR seeker: for the selected heat-seeker, the target it sees and how long it's been held (for the
 --     tone and the HUD). The server keeps its own copy and decides what can actually be fired.
 --   RWR: threats the server says are painting you.
@@ -24,6 +27,7 @@ local WeaponData = require(Shared.WeaponData)
 local FlightController = require(script.Parent.FlightController)
 
 local UPDATE_INTERVAL = 0.2
+local RADAR_LOCK_ON = 1.0 -- seconds a radar contact is held before the lock request
 local VISUAL_RANGE = 3000 -- real metres
 local CONTRAIL_VISUAL_RANGE = 5000
 
@@ -43,6 +47,10 @@ local SensorController = {
 	Priority = 33,
 	contacts = {} :: { [number]: Contact },
 	lockId = 0, -- your radar lock (server-confirmed), 0 = none
+	lockable = {} :: { [number]: boolean },
+	acquiringId = 0, -- radar lock-on in progress (before / while asking the server), 0 = none
+	acquireStart = 0,
+	requestedAt = 0,
 	irTargetId = 0, -- what the selected heat-seeker sees, 0 = nothing
 	irHeldFor = 0, -- seconds the seeker has held irTargetId
 	irLocked = false, -- held for the missile's LockTime
@@ -141,15 +149,37 @@ local function update()
 		end
 	end
 
-	-- IR seeker for the selected heat-seeker
+	-- IR seeker for the selected heat-seeker; what the selected missile could lock
 	local missile = self:SelectedMissile()
 	local bestId, bestDot = 0, -2
+	table.clear(self.lockable)
+	if missile and WeaponData.isRadar(missile) then
+		for id, contact in self.contacts do
+			if contact.onRadar then
+				self.lockable[id] = true
+			end
+		end
+	end
+	if self.acquiringId ~= 0 then
+		local contact = self.contacts[self.acquiringId]
+		-- Give up if the contact left the radar before the lock-on finished, or the server never answered.
+		local lost = not (contact and contact.onRadar)
+		local unanswered = self.acquireStart == 0 and os.clock() - self.requestedAt > 2
+		if lost or unanswered then
+			self.acquiringId = 0
+		elseif self.acquireStart > 0 and os.clock() - self.acquireStart >= RADAR_LOCK_ON then
+			self.acquireStart = 0 -- asked; waiting for the server's answer
+			self.requestedAt = os.clock()
+			Net.Client.fire("RadarLockRequest", self.acquiringId)
+		end
+	end
 	if missile and WeaponData.isIR(missile) then
 		for id, contact in self.contacts do
 			local throttle = (contact.model:GetAttribute("Throttle") :: number?) or 0.85
 			local afterburner = contact.model:GetAttribute("Afterburner") == true
 			local otherRoot = contact.model.PrimaryPart
 			if otherRoot and Guidance.irLockable(missile, myCF, otherRoot.CFrame, throttle, afterburner) then
+				self.lockable[id] = true
 				local dot = myCF.LookVector:Dot((otherRoot.Position - myCF.Position).Unit)
 				if dot > bestDot then
 					bestId, bestDot = id, dot
@@ -172,6 +202,7 @@ function SensorController:Init()
 
 	Net.Client.on("LockState", function(targetId: number, state: string)
 		self.lockId = if state == "Locked" then targetId else 0
+		self.acquiringId = 0
 		self.LockChanged:Fire(targetId, state)
 	end)
 	Net.Client.on("RWRUpdate", function(threats: { Threat })
@@ -179,8 +210,23 @@ function SensorController:Init()
 	end)
 	FlightController.JetChanged:Connect(function()
 		self.lockId = 0
+		self.acquiringId = 0
 		self.threats = {}
 	end)
+end
+
+-- Starts a radar lock-on on a contact (the server is asked once it has stayed on radar for 1 s).
+function SensorController:StartRadarLock(id: number)
+	self.acquiringId = id
+	self.acquireStart = os.clock()
+end
+
+-- Drops the radar lock, or cancels a lock-on in progress.
+function SensorController:CancelRadarLock()
+	self.acquiringId = 0
+	if self.lockId ~= 0 then
+		Net.Client.fire("RadarLockRequest", 0)
+	end
 end
 
 function SensorController:Start()
