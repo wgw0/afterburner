@@ -9,7 +9,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
 | 4 Match loop MVP | 21 / 21 | ✅ Signed off |
-| 5 Progression and saving | 23 / 23 | 🟡 Built, awaiting sign-off |
+| 5 Progression and saving | 23 / 23 | ✅ Signed off |
 | 6–8 | 0 / 74 | ⚪ Not started |
 
 ---
@@ -182,7 +182,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 5: Progression and saving
 
-**Built and tested; waiting for Will's sign-off.** Exit test: a fresh account can play from the F-5E to a Tier II jet (simulated: 2.2 h); data survives rejoins (checked on the test experience); no way to dupe currency (every grant and spend is server-side and validated, with ProfileStore session locking). *The two-servers-at-once check needs two live servers: carried to the first multiplayer playtest.*
+**Signed off by Will on 2026-10-26.** Exit test: a fresh account can play from the F-5E to a Tier II jet (simulated: 2.2 h); data survives rejoins (checked on the test experience); no way to dupe currency (every grant and spend is server-side and validated, with ProfileStore session locking). *The two-servers-at-once check needs two live servers: carried to the first multiplayer playtest.*
 
 | | Task | Evidence |
 |:---:|---|---|
