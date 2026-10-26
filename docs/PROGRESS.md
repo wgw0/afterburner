@@ -9,7 +9,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
 | 4 Match loop MVP | 21 / 21 | ✅ Signed off |
-| 5 Progression and saving | 21 / 23 | 🟡 Built; DAT-01 check and REL-02 need the test experience |
+| 5 Progression and saving | 23 / 23 | 🟡 Built, awaiting sign-off |
 | 6–8 | 0 / 74 | ⚪ Not started |
 
 ---
@@ -182,14 +182,14 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 5: Progression and saving
 
-**Built and tested in Studio; persistence and session locking still to verify on a published test experience (REL-02).** In an unpublished place ProfileStore runs on an in-memory mock, so saves work within a session but can't survive a rejoin yet. Exit test: a fresh account can play from the F-5E to a Tier II jet (simulated: 2.2 h), data survives rejoins (needs REL-02), and there's no way to dupe currency (every grant and spend is server-side and validated; session locking from ProfileStore, to verify on REL-02).
+**Built and tested; waiting for Will's sign-off.** Exit test: a fresh account can play from the F-5E to a Tier II jet (simulated: 2.2 h); data survives rejoins (checked on the test experience); no way to dupe currency (every grant and spend is server-side and validated, with ProfileStore session locking). *The two-servers-at-once check needs two live servers: carried to the first multiplayer playtest.*
 
 | | Task | Evidence |
 |:---:|---|---|
 | ✅ | **MSL-07** ARH with midcourse and active phase | `Guidance.arhTrack`: data link midcourse (or the last known track, extrapolated, if the launcher's lock drops), active inside `ActiveRange`; outside the gimbal or notched for over 1 s it's lost. Warnings, AI defence and chaff only once active. AIM-120A and R-77 (Tier IV). `Missiles.spec`: 5 ARH tests. Live: a debug AIM-120A from 1.8 km behind went active, the RWR showed the launch, and it hit after 4.4 s. |
 | ✅ | **AI-04** Missile use, Extend state | `AIBrain.chooseMissile`: heat-seekers when the seeker sees the target, radar missiles after a server lock (`SensorService:RequestLock`), through the same launch checks as players. `Dogfight.spec`: 4 tests. Live (24-jet stress): 8 launches in ~30 s (R-60, AIM-9P, R-3R). Extend state from Phase 4 (`Dogfight.spec`). |
 | ✅ | **AI-05** Difficulty profiles | Easy / Normal / Hard / Ace: reaction time, aim error, G use, energy and flare skill, and now missile pacing and launch range. `Dogfight.spec`: an Ace beats an Easy pilot; better pilots fire from further and more often. *Matches still fill with Normal pilots.* |
-| 🟡 | **DAT-01** DataService with ProfileStore, environment-based names, kick on failure | `DataService`: `lm-loleris/profilestore` 1.0.3 (the author's own Wally package), store `PlayerData_Test_v1` / `PlayerData_Prod_v1`, kick with a friendly message if a session can't start, migrations on load, `BeforeRelease` before every session ends, `Update()` for all writes. Live in Studio on the mock store. *Persistence across rejoins and the two-servers-at-once test need the test experience (REL-02).* |
+| ✅ | **DAT-01** DataService with ProfileStore, environment-based names, kick on failure | `DataService`: `lm-loleris/profilestore` 1.0.3 (the author's own Wally package), store `PlayerData_Test_v1` / `PlayerData_Prod_v1`, kick with a friendly message if a session can't start, migrations on load, `BeforeRelease` before every session ends, `Update()` for all writes. On the test experience: "Roblox API services available - data will be saved"; +1,234 Credits and a new lineup survived stopping and rejoining. A second ProfileStore session on the same save got it and its write was kept (1,734 → 1,735) with nothing lost on the first session's exit. *That ran inside one server, so it can't prove the two-servers case: check in the first multiplayer playtest.* |
 | ✅ | **DAT-02** Schema v1, migrations framework and tests | `PlayerData`: schema v1, `MIGRATIONS` run in order on load, reconcile fills new fields, bounded receipt list, settings sanitised. `PlayerData.spec`: 10 tests (fixtures through a pretend v2→v3 migration, a v0 save, missing fields, bad settings). |
 | ✅ | **DAT-03** Client replica with delta updates | Only changed top-level fields are pushed (`PlayerDataUpdate`); the client asks for the full replica on start (`GetPlayerData`). Delta tests in `PlayerData.spec`; live: the menus updated after every research, purchase and admin grant. |
 | ✅ | **DAT-05** Data reset and inspection admin commands (test environment) | `data.inspect`, `data.reset`, `give.credits` / `give.xp` / `give.rp`, `unlock` (test environment only). Live: give RP and Credits, unlock all 8 jets. |
@@ -208,7 +208,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | ✅ | **SET-01** Settings data, controller, change signal | `Config/Settings` (known keys, ranges, sanitise), `SettingsController` (`Get`, `Set`, `Changed`): control scheme, sensitivity, invert pitch, FOV, default camera, volumes applied at once. Live: FOV 82 and invert saved; an invalid scheme and an unknown key dropped. *The settings screen is SET-02 (Phase 6).* |
 | ✅ | **ANL-03** Economy events | Every Credits source (match rewards) and sink (jets, modules) goes to `AnalyticsService:LogEconomyEvent` and the telemetry log. |
 | ✅ | **OPS-02** AdminService and commands | Admins: the place's creator or group owner, a list, or anyone in Studio; data commands only in the test environment; every command logged. Live through the `AdminCommand` remote. |
-| ⬜ | **REL-02** Test universe setup (separate experience, test products) | Needs Will: a separate test experience on Roblox, published from this place, with Studio API access on. |
+| ✅ | **REL-02** Test universe setup (separate experience, test products) | "Afterburner (TEST)" published by Will (place 72582604278324), Studio API access on; the place carries `Environment = "Test"` (test save store, debug and admin data tools on). The release checklist says to switch it to `Prod` before a production publish. *Test products come with the shop (Phase 7).* |
 
 **Also done in Phase 5:** six new jets with greybox models (Mirage IIIE, F-4E Phantom II, MiG-23MLD, Mirage F1C, F-16A, MiG-29A) and their weapons (DEFA 552, M61A1, GSh-30-1, R.550 Magic, Super 530F, R-24R); a parametric greybox generator; ACD-03's CI half finished before the phase. Tests: 269 → 352.
 
