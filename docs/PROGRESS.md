@@ -223,7 +223,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
     - a Motor6D model contract
     - `ControlSurfaceController`
   - *1 / 15: the F-5E base model is in the game.* 35 parts, 10.7k triangles; it passes the contract in Studio and CI and has moving control surfaces. Flown hands-on, cockpit view and missile launch checked.
-  - *Still to do for the F-5E:* PBR textures and skins.
+  - *Painted:* the "Ghost" two-tone grey PBR skin from `tools/blender/f5e_paint.py`, fitted in game.
+  - *Still to do for the F-5E:* more skins, and the in-game skin picker and ownership.
 - [ ] **FLT-08** Variable geometry (F-14)
 - [ ] **INP-05** Rebinding UI and persisted bindings
 - [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
