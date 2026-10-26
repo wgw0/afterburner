@@ -187,8 +187,8 @@ Then:
 | **0** | Foundation: toolchain, boot order, Net layer, test runner, CI, test range | ✅ Done ([progress](docs/PROGRESS.md)) |
 | **1** | **Flight model prototype**: cockpit camera, two contrasting jets | ✅ Done |
 | **2** | Guns and component damage | ✅ Done |
-| **3** | Missiles, radar, RWR and countermeasures | 🟡 Next |
-| **4** | Match loop MVP: FFA, AI pilots, first map, tutorial, touch controls | ⚪ |
+| **3** | Missiles, radar, RWR and countermeasures | ✅ Done |
+| **4** | Match loop MVP: FFA, AI pilots, first map, tutorial, touch controls | 🟡 Next |
 | **5** | Progression and saving: tech tree Tiers I–III, BR matchmaking | ⚪ |
 | **6** | Content and polish for a soft launch: about 15 jets, TDM and Air Superiority | ⚪ |
 | **7** | Monetisation: cosmetics shop, VIP, Season 1 pass | ⚪ |

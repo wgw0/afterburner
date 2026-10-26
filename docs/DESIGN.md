@@ -586,12 +586,12 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** a 1v1 guns-only fight is tense and the winner feels skill-based. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 3: Missiles, sensors and countermeasures (weeks 5–6)
-- [ ] Server-side missile sim (proportional navigation, motor burn, drag).
-- [ ] IR lock with seeker tone. Flares.
-- [ ] Radar cone, RWR, SARH missiles, chaff and notching.
-- [ ] Missile-launch warning and an incoming-missile indicator.
+- [x] Server-side missile sim (proportional navigation, motor burn, drag).
+- [x] IR lock with seeker tone. Flares.
+- [x] Radar cone, RWR, SARH missiles, chaff and notching.
+- [x] Missile-launch warning and an incoming-missile indicator.
 
-**Exit test:** a fired missile is dangerous but defeatable, and players can learn *why* they died.
+**Exit test:** a fired missile is dangerous but defeatable, and players can learn *why* they died. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 4: Match loop, MVP (weeks 7–8)
 - [ ] Free-for-all mode: spawn in, a score limit and timer, an end screen with rewards.
