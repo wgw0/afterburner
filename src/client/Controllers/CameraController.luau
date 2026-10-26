@@ -1,7 +1,10 @@
 --!strict
 -- Cockpit-first camera (DEVELOPMENT.md §8.1).
 --   Cockpit (default): eye at CockpitEye. In Mouse Aim the head looks along the aim direction, so the
---     jet visibly chases where you look. Free look (RMB) turns the head; G pushes the head down.
+--     jet visibly chases where you look, and the horizon stays mostly level (the cockpit tilts around
+--     you, with a little of the jet's roll kept for feel). A view that rolled fully with the jet turned
+--     the mouse's "right" into "down" mid-turn and made Mouse Aim hard to fly from the cockpit.
+--     Free look (RMB) turns the head; G pushes the head down.
 --   Chase (V): the camera sits a fixed distance behind and above the jet *along the camera's own view*,
 --     so the jet always stays centred on screen. In Mouse Aim the view follows the aim with a level
 --     horizon; in Direct it follows the jet's nose, smoothed.
@@ -41,6 +44,7 @@ local SNAP_VIEWS: { [Enum.KeyCode]: Vector2 } = { -- (yaw, pitch) in degrees
 	[Enum.KeyCode.Down] = Vector2.new(170, 25),
 	[Enum.KeyCode.Up] = Vector2.new(0, 70),
 }
+local COCKPIT_ROLL_FOLLOW = 0.25 -- how much of the jet's roll the cockpit view keeps in Mouse Aim
 local DEFAULT_CHASE_OFFSET = Vector3.new(0, 12, 80) -- studs (up, behind) if the model has no ChaseCam
 
 local CameraController = {
@@ -54,6 +58,7 @@ local headPitch = Spring.new(0, 14, 1)
 local gShift = Spring.new(0, 8, 0.8)
 local chaseLook = Spring.new(Vector3.new(0, 0, -1), 7, 1)
 local chaseUp = Spring.new(Vector3.new(0, 1, 0), 5, 1)
+local cockpitUp = Spring.new(Vector3.new(0, 1, 0), 6, 1)
 local fov = Spring.new(BASE_FOV, 4, 1)
 local orbitAngle = 0
 local myJetId: number? = nil
@@ -146,11 +151,16 @@ local function cockpitView(root: BasePart, dt: number): CFrame
 	local snap = padlockView(jetCF) or snapView()
 	local yaw = headYaw:Update(dt, if snap then snap.X else InputController.freeLookYaw)
 	local pitch = headPitch:Update(dt, if snap then snap.Y else InputController.freeLookPitch)
-	local base = if InputController.scheme == "MouseAim"
-			and not InputController.freeLook
-			and not snap
-		then safeLookAt(position, InputController.aimDirection, jetCF.UpVector)
-		else CFrame.new(position) * jetCF.Rotation
+	local base: CFrame
+	if InputController.scheme == "MouseAim" and not InputController.freeLook and not snap then
+		-- Mostly level horizon; inverted, the jet's up points down, so fall back to world up.
+		local wanted = Vector3.new(0, 1, 0):Lerp(jetCF.UpVector, COCKPIT_ROLL_FOLLOW)
+		local up = cockpitUp:Update(dt, if wanted.Magnitude > 0.1 then wanted.Unit else Vector3.yAxis)
+		base = safeLookAt(position, InputController.aimDirection, if up.Magnitude > 1e-3 then up else Vector3.yAxis)
+	else
+		cockpitUp:Update(dt, jetCF.UpVector)
+		base = CFrame.new(position) * jetCF.Rotation
+	end
 	return base * CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
 end
 

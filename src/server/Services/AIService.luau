@@ -185,6 +185,16 @@ local function stepPilot(pilot: Pilot, dt: number)
 		pilot.groundClearance = if hit
 			then Units.toMetres(root.Position.Y - hit.Position.Y)
 			else Units.altitudeMetres(root.Position.Y)
+		-- Terrain ahead (hillsides, mountains): the distance to it along the next 5 s of flight counts as
+		-- clearance too, so the brain pulls up before the slope instead of over it.
+		local path = root.AssemblyLinearVelocity * 5
+		if path.Magnitude > 1 then
+			local ahead = workspace:Raycast(root.Position, path, groundParams)
+			if ahead then
+				local distance = Units.toMetres((ahead.Position - root.Position).Magnitude)
+				pilot.groundClearance = math.min(pilot.groundClearance, distance * 0.3)
+			end
+		end
 	end
 	if timers.target <= 0 then
 		timers.target = TARGET_INTERVAL

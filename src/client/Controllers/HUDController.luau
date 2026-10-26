@@ -472,7 +472,7 @@ local function update()
 	local camera = workspace.CurrentCamera :: Camera
 	local viewport = camera.ViewportSize
 	local jetCF = root.CFrame
-	local look, up = jetCF.LookVector, jetCF.UpVector
+	local look = jetCF.LookVector
 
 	-- Size the box in degrees, using pixels-per-degree at the screen centre.
 	local focal = (viewport.Y / 2) / math.tan(math.rad(camera.FieldOfView / 2))
@@ -500,10 +500,12 @@ local function update()
 
 	gunCross.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
-	-- Pitch ladder and horizon: conformal, rotated by bank
+	-- Pitch ladder and horizon: conformal, rotated by the *camera's* bank (the screen's tilt against
+	-- the real horizon), which matches whether the view rolls with the jet or stays level.
 	local flat = Vector3.new(look.X, 0, look.Z)
 	flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
-	local bank = math.deg(math.atan2(-jetCF.RightVector.Y, up.Y))
+	local camCF = camera.CFrame
+	local bank = math.deg(math.atan2(-camCF.RightVector.Y, camCF.UpVector.Y))
 	local h, hVisible = project(camera, flat)
 	horizon.Visible = hVisible and inside(h, 90, 24)
 	horizon.Position = toBox(h)
