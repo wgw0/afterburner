@@ -14,6 +14,8 @@ type Airframe = Types.Airframe
 
 export type Settings = {
 	allowOverG: boolean?, -- pilot override: pull past the safe G limit
+	gLimit: number?, -- cap commanded G at this (AI pilots); overrides the safe limit when given
+	pointNose: boolean?, -- steer the nose onto the aim instead of the flight path (gun tracking)
 	throttle: number?,
 	afterburner: boolean?,
 }
@@ -47,7 +49,8 @@ function Instructor.compute(
 	-- Work in the flight-path frame: the body frame pitched down by the AoA, so "forward" is where the
 	-- jet is actually going. Holding the aim level then holds altitude, and AoA never looks like an
 	-- error to correct.
-	local pathFrame = cf * CFrame.Angles(-state.aoa, 0, 0)
+	local pointNose = settings ~= nil and settings.pointNose == true
+	local pathFrame = if pointNose then cf else cf * CFrame.Angles(-state.aoa, 0, 0)
 	local aim = pathFrame:VectorToObjectSpace(aimDirection.Unit) -- object space: forward is -Z
 	local off = math.acos(math.clamp(-aim.Z, -1, 1))
 
@@ -68,7 +71,10 @@ function Instructor.compute(
 
 	-- Protect the pilot: cap the commanded G below the G-LOC onset unless overridden.
 	local allowOverG = settings ~= nil and settings.allowOverG == true
-	if not allowOverG then
+	local gLimit = settings and settings.gLimit
+	if gLimit then
+		pitch = math.min(pitch, (math.min(gLimit, airframe.MaxG) - 1) / math.max(airframe.MaxG - 1, 1e-3))
+	elseif not allowOverG then
 		local safe = (Flight.INSTRUCTOR_SAFE_G - 1) / math.max(airframe.MaxG - 1, 1e-3)
 		pitch = math.min(pitch, safe)
 	end

@@ -1,7 +1,10 @@
 --!strict
 -- Owns every jet in the world (DEVELOPMENT.md §10): spawning, network ownership, telemetry, crash and
--- collision detection, despawn. Jets are flown by a player (who owns the physics) or by the server
--- (AI and test drones, pilot = nil).
+-- collision detection, out-of-bounds (AIR-04), despawn. Jets are flown by a player (who owns the physics)
+-- or by the server (AI and test drones, pilot = nil).
+--
+-- Every jet has an `identity`: the Player, or an AI pilot record ({ Name, UserId = 0, IsAI = true }).
+-- Kill credit and match scores are keyed by identity, so AI pilots can score and be scored against.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
+local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Units = require(Shared.Units)
@@ -23,24 +27,30 @@ export type Jet = {
 	root: BasePart,
 	airframeId: string,
 	pilot: Player?, -- nil for AI / drones
+	identity: any, -- the Player, or an AI pilot record (kill credit and scores key on this)
 	name: string, -- shown in the kill feed
 	spawnTime: number,
 	lastPosition: Vector3,
+	outSince: number?, -- when it left the play area (AIR-04)
 }
 
 export type SpawnOptions = {
 	name: string?, -- AI display name
 	speed: number?, -- real m/s, default Flight.SPAWN_SPEED
+	identity: any?, -- AI pilot record (players are their own identity)
 }
 
 local CRASH_GRACE = 1.0 -- seconds after spawn before crash checks apply
 local COLLISION_DISTANCE = 16 -- studs between roots counts as a mid-air collision
 local CRASH_REPORT_RANGE = 150 -- studs: a reported crash must be this close to the ground
+local OUT_OF_BOUNDS_SECONDS = 10 -- outside the play area this long and the jet is lost
 
 local AircraftService = {
 	Priority = 20,
 	JetSpawned = Signal.new(), -- (jet)
 	JetDestroyed = Signal.new(), -- (jet, cause, position)
+	-- Set by MatchService: decides whether a player may spawn and where. nil = always, default spawn.
+	spawnGate = nil :: ((Player, string) -> (boolean, CFrame?))?,
 }
 
 local jets: { [number]: Jet } = {}
@@ -85,7 +95,7 @@ function AircraftService:GetJets(): { [number]: Jet }
 	return jets
 end
 
--- Removes a jet. cause: "Shot" | "Crash" | "Collision" | "Respawn" | "PilotLeft" | "Despawn"
+-- Removes a jet. cause: "Shot" | "Crash" | "Collision" | "OutOfBounds" | "Respawn" | "PilotLeft" | "Despawn"
 function AircraftService:Despawn(jet: Jet, cause: string)
 	if jets[jet.id] == nil then
 		return
@@ -178,6 +188,7 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 		root = root,
 		airframeId = airframeId,
 		pilot = pilot,
+		identity = if pilot then pilot else (options and options.identity) or { Name = name, UserId = 0, IsAI = true },
 		name = name,
 		spawnTime = os.clock(),
 		lastPosition = root.Position,
@@ -214,8 +225,24 @@ local function checkCollisions()
 		end
 	end
 
+	local serverNow = workspace:GetServerTimeNow()
 	for _, jet in live do
 		local position = jet.root.Position
+		-- Out of bounds (AIR-04): outside the square play area or above the ceiling for too long
+		local outside = math.max(math.abs(position.X), math.abs(position.Z)) > Scale.MAP_HALF_EXTENT
+			or position.Y > Scale.CEILING
+		if outside then
+			if not jet.outSince then
+				jet.outSince = now
+				jet.model:SetAttribute("OutOfBoundsAt", serverNow + OUT_OF_BOUNDS_SECONDS)
+			elseif now - jet.outSince >= OUT_OF_BOUNDS_SECONDS then
+				AircraftService:Despawn(jet, "OutOfBounds")
+				continue
+			end
+		elseif jet.outSince then
+			jet.outSince = nil
+			jet.model:SetAttribute("OutOfBoundsAt", nil)
+		end
 		local travel = position - jet.lastPosition
 		jet.lastPosition = position
 		local length = travel.Magnitude
@@ -280,7 +307,15 @@ function AircraftService:Init()
 		if AircraftData.get(airframeId) == nil then
 			return
 		end
-		self:Spawn(player, airframeId)
+		local cframe: CFrame? = nil
+		if self.spawnGate then
+			local allowed, at = self.spawnGate(player, airframeId)
+			if not allowed then
+				return
+			end
+			cframe = at
+		end
+		self:Spawn(player, airframeId, cframe)
 	end)
 
 	Net.Server.on("ReportCrash", function(player: Player)
