@@ -62,6 +62,10 @@ local OPTIONAL: { [string]: Rule } = {
 	ThrustVectoring = BOOLEAN,
 	Stealth = num(0, 1),
 	ComponentHealth = TABLE,
+	Missiles = TABLE, -- { { Weapon = id, Count = n } } (cross-checked in Weapons.spec)
+	Radar = TABLE, -- { Range = metres, Cone = degrees half-angle, CanNotch = boolean }
+	RWR = TABLE, -- { LaunchWarning = boolean (IR missile approach warner), Resolution = "Coarse" | "Fine" }
+	Countermeasures = TABLE, -- { Flares = n, Chaff = n }
 }
 
 local function check(field: string, value: any, rule: Rule): string?

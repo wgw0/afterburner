@@ -68,6 +68,10 @@ export type Airframe = {
 	MaxMach: number,
 	Gun: string, -- WeaponData id
 	ComponentHealth: { [string]: number }?, -- overrides DamageModel defaults
+	Missiles: { { Weapon: string, Count: number } }?,
+	Radar: { Range: number, Cone: number, CanNotch: boolean }?, -- CanNotch: pulse-Doppler radar
+	RWR: { LaunchWarning: boolean, Resolution: string }?,
+	Countermeasures: { Flares: number, Chaff: number }?,
 	ThrustVectoring: boolean?,
 	Stealth: number?,
 }
