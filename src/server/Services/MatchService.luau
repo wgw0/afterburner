@@ -17,12 +17,14 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
 local MatchRules = require(Shared.MatchRules)
+local Matchmaking = require(Shared.Matchmaking)
 local Net = require(Shared.Net)
 local Scale = require(Shared.Config.Scale)
 local Signal = require(Shared.Util.Signal)
 
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local AIService = require(script.Parent.AIService)
+local DataService = require(script.Parent.DataService)
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
 
@@ -38,6 +40,7 @@ local MatchService = {
 }
 
 local mode: MatchRules.ModeConfig = MatchRules.MODES.Dogfight
+local band: Matchmaking.Band = Matchmaking.band({}) -- BR band of the current match (MMK-01)
 local state = "Waiting"
 local stateSince = 0
 local scores: { [any]: MatchRules.Score } = {}
@@ -132,11 +135,15 @@ local function canSpawn(identity: any): (boolean, number, number?)
 	return MatchRules.canSpawn(mode, pilot, os.clock())
 end
 
-local function spawnGate(player: Player, _airframeId: string): (boolean, CFrame?)
+local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?, string?)
 	ensureScore(player, player.Name, false, player.UserId)
 	local allowed = canSpawn(player)
 	if not allowed then
 		return false, nil
+	end
+	if mode.Scored and not Matchmaking.allowed(airframeId, band) then
+		local low, high = string.format("%.1f", band.min), string.format("%.1f", band.max)
+		return false, nil, `This match is BR {low}–{high}: pick a jet up to BR {high}`
 	end
 	pilotStates[player].livesUsed += 1
 	return true, MatchService:PickSpawn()
@@ -145,6 +152,22 @@ end
 local function clearJets()
 	for _, jet in AircraftService:GetJets() do
 		AircraftService:Despawn(jet, "Despawn")
+	end
+end
+
+-- The match's BR band from the lineups of the players here (MMK-01), and AI jets to match it.
+local function refreshBand()
+	local lineups = {}
+	for _, player in humans() do
+		local data = DataService:GetData(player)
+		if data then
+			table.insert(lineups, data.Lineup)
+		end
+	end
+	band = Matchmaking.band(lineups)
+	local choices = Matchmaking.aiAirframes(band)
+	for i, pilot in AIService:GetPilots() do
+		AIService:SetAirframe(pilot, choices[(i - 1) % #choices + 1])
 	end
 end
 
@@ -158,7 +181,8 @@ local function syncAIFill()
 		AIService:RemovePilot(pilot)
 	end
 	while #AIService:GetPilots() < wanted do
-		local pilot = AIService:CreatePilot("Normal")
+		local choices = Matchmaking.aiAirframes(band)
+		local pilot = AIService:CreatePilot("Normal", choices[#AIService:GetPilots() % #choices + 1])
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
 	end
 end
@@ -168,6 +192,7 @@ local function startMatch()
 	pilotStates = {}
 	results = nil
 	clearJets()
+	refreshBand()
 	for _, player in humans() do
 		ensureScore(player, player.Name, false, player.UserId)
 	end
@@ -252,6 +277,7 @@ local function broadcast()
 		ranking = ranking,
 		winner = results and results.winner,
 		reason = results and results.reason,
+		br = if mode.Scored then { min = band.min, max = band.max } else nil,
 	})
 end
 
@@ -263,6 +289,7 @@ local function tick(dt: number)
 		end
 	elseif state == "Waiting" then
 		if #humans() > 0 then
+			refreshBand()
 			setState("Countdown")
 		end
 	elseif state == "Countdown" then

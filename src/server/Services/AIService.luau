@@ -14,6 +14,7 @@ local AIBrain = require(Shared.AIBrain)
 local AircraftData = require(Shared.AircraftData)
 local DamageModel = require(Shared.DamageModel)
 local FlightModel = require(Shared.FlightModel)
+local Guidance = require(Shared.Guidance)
 local Instructor = require(Shared.Instructor)
 local Scale = require(Shared.Config.Scale)
 local Units = require(Shared.Units)
@@ -22,6 +23,7 @@ local WeaponData = require(Shared.WeaponData)
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
 local MissileService = require(script.Parent.MissileService)
+local SensorService = require(script.Parent.SensorService)
 
 type Jet = AircraftService.Jet
 
@@ -37,7 +39,7 @@ export type Pilot = {
 	groundClearance: number, -- real metres
 	seed: number,
 	triggerDown: boolean,
-	timers: { decide: number, target: number, ground: number, attributes: number },
+	timers: { decide: number, target: number, ground: number, attributes: number, missile: number },
 	linear: LinearVelocity?,
 	angular: AngularVelocity?,
 }
@@ -88,11 +90,11 @@ function AIService:GetPilots(): { Pilot }
 end
 
 -- Creates a new AI pilot (not yet flying). Returns its record.
-function AIService:CreatePilot(difficulty: string?): Pilot
+function AIService:CreatePilot(difficulty: string?, airframeId: string?): Pilot
 	nextSeed += 1
 	local profileName = difficulty or "Normal"
 	local name = `{CALLSIGNS[(nextSeed - 1) % #CALLSIGNS + 1]} [AI]`
-	local airframeId = AIRFRAMES[(nextSeed - 1) % #AIRFRAMES + 1]
+	airframeId = airframeId or AIRFRAMES[(nextSeed - 1) % #AIRFRAMES + 1]
 	local pilot: Pilot = {
 		identity = { Name = name, UserId = 0, IsAI = true, Difficulty = profileName },
 		profile = (AIBrain.PROFILES :: any)[profileName] or AIBrain.PROFILES.Normal,
@@ -105,12 +107,20 @@ function AIService:CreatePilot(difficulty: string?): Pilot
 		groundClearance = 3000,
 		seed = nextSeed,
 		triggerDown = false,
-		timers = { decide = 0, target = 0, ground = 0, attributes = 0 },
+		timers = { decide = 0, target = 0, ground = 0, attributes = 0, missile = 5 },
 		linear = nil,
 		angular = nil,
 	}
 	table.insert(pilots, pilot)
 	return pilot
+end
+
+-- Changes the jet an AI pilot flies next time it spawns (BR matching).
+function AIService:SetAirframe(pilot: Pilot, airframeId: string)
+	local airframe = AircraftData.get(airframeId)
+	if airframe then
+		pilot.airframe = airframe
+	end
 end
 
 function AIService:RemovePilot(pilot: Pilot)
@@ -162,6 +172,51 @@ local function chooseTarget(pilot: Pilot): Jet?
 	return best
 end
 
+-- Missiles (AI-04): heat-seekers when the seeker sees the target, radar missiles once locked. Paced by
+-- the profile's MissileInterval; retries shortly while a seeker is still settling or a lock is building.
+local function tryMissile(pilot: Pilot, jet: any, target: any)
+	local range = Units.toMetres((target.root.Position - jet.root.Position).Magnitude)
+	local options = {}
+	for _, slot in MissileService:Slots(jet) do
+		local isIR = WeaponData.isIR(slot.spec)
+		table.insert(options, {
+			index = slot.index,
+			class = if isIR then "IR" else "Radar",
+			count = slot.count,
+			minRange = slot.spec.MinRange,
+			maxRange = slot.spec.MaxRange,
+			irLockable = isIR and Guidance.irLockable(
+				slot.spec,
+				jet.root.CFrame,
+				target.root.CFrame,
+				(target.model:GetAttribute("Throttle") :: number?) or 0.85,
+				target.model:GetAttribute("Afterburner") == true
+			),
+		})
+	end
+	local airframe = pilot.airframe :: any
+	local choice, needsLock = AIBrain.chooseMissile(pilot.profile, options, range, airframe.Radar ~= nil)
+	if not choice then
+		pilot.timers.missile = 1
+		return
+	end
+	MissileService:SelectSlot(jet, choice.index)
+	if needsLock and SensorService:GetLock(jet.id) ~= target.id then
+		SensorService:RequestLock(jet, target)
+		pilot.timers.missile = 1 -- give the lock a moment
+		return
+	end
+	if choice.class == "IR" and not MissileService:SeekerReady(jet, target.id) then
+		pilot.timers.missile = 0.3 -- the seeker is still settling on the target
+		return
+	end
+	if MissileService:FireFor(jet, target.id) then
+		pilot.timers.missile = pilot.profile.MissileInterval
+	else
+		pilot.timers.missile = 1
+	end
+end
+
 local function stepPilot(pilot: Pilot, dt: number)
 	local jet = pilot.jet
 	if not (jet and AircraftService:GetJetById(jet.id) and pilot.linear and pilot.angular) then
@@ -178,6 +233,7 @@ local function stepPilot(pilot: Pilot, dt: number)
 	timers.target -= dt
 	timers.ground -= dt
 	timers.attributes -= dt
+	timers.missile -= dt
 
 	if timers.ground <= 0 then
 		timers.ground = GROUND_INTERVAL
@@ -240,6 +296,9 @@ local function stepPilot(pilot: Pilot, dt: number)
 		end
 		if decision.flare then
 			MissileService:DeployCountermeasure(jet, "Flare")
+		end
+		if target and timers.missile <= 0 and (decision.state == "Attack" or decision.state == "Engage") then
+			tryMissile(pilot, jet, target)
 		end
 		if decision.chaff then
 			MissileService:DeployCountermeasure(jet, "Chaff")

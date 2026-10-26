@@ -254,4 +254,41 @@ return function(ctx)
 			expect(d.aim.X).toBeLessThan(0.5)
 		end)
 	end)
+	describe("AI missile choice (AI-04)", function()
+		local normal = AIBrain.PROFILES.Normal
+		local ir = { index = 1, class = "IR", count = 2, minRange = 500, maxRange = 6000, irLockable = true }
+		local radar = { index = 2, class = "Radar", count = 2, minRange = 1000, maxRange = 25000 }
+
+		it("fires a heat-seeker when its seeker sees the target in range", function()
+			local choice, needsLock = AIBrain.chooseMissile(normal, { ir, radar }, 2500, true)
+			expect(choice and choice.index).toBe(1)
+			expect(needsLock).toBe(false)
+		end)
+
+		it("uses the radar missile (after a lock) when the heat-seeker can't see the target", function()
+			local blind = table.clone(ir)
+			blind.irLockable = false
+			local choice, needsLock = AIBrain.chooseMissile(normal, { blind, radar }, 9000, true)
+			expect(choice and choice.index).toBe(2)
+			expect(needsLock).toBe(true)
+		end)
+
+		it(
+			"never fires inside minimum range, beyond its range share, empty, or a radar missile without a radar",
+			function()
+				expect((AIBrain.chooseMissile(normal, { ir }, 400, true))).toBe(nil)
+				expect((AIBrain.chooseMissile(normal, { ir }, 5900, true))).toBe(nil) -- beyond 60% of 6 km
+				local empty = table.clone(ir)
+				empty.count = 0
+				expect((AIBrain.chooseMissile(normal, { empty }, 2500, true))).toBe(nil)
+				expect((AIBrain.chooseMissile(normal, { radar }, 9000, false))).toBe(nil)
+			end
+		)
+
+		it("better pilots fire from further and more often", function()
+			local easy, ace = AIBrain.PROFILES.Easy, AIBrain.PROFILES.Ace
+			expect(ace.MissileRange > easy.MissileRange).toBe(true)
+			expect(ace.MissileInterval < easy.MissileInterval).toBe(true)
+		end)
+	end)
 end
