@@ -20,7 +20,7 @@
 
 ## Results against the exit test
 
-**Partial.** Flight feel is "good-ish" after tuning; HUD needs a design pass before sign-off.
+**Pass** (2026-10-26). After the HUD pass, chase camera, audio and load-time fixes, Will: "feels good, sign off phase 1". Fine-tuning deferred.
 
 ## Findings
 
@@ -39,4 +39,4 @@
 
 ## Follow-ups
 
-- [ ] Will's hands-on verdict on feel, after the fixes
+- [x] Will's hands-on verdict: signed off
