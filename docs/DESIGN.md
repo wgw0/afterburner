@@ -609,7 +609,7 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 - [x] Modules (upgrades) and lineup selection.
 - [x] Battle rating matchmaking: a basic version inside a single place first.
 
-**Exit test:** a fresh account can play from F-5E to a Tier II jet, data survives rejoins, and there's no way to dupe currency.
+**Exit test:** a fresh account can play from F-5E to a Tier II jet, data survives rejoins, and there's no way to dupe currency. ✅ *Signed off 2026-10-26; the two-servers session-lock check is carried to the first multiplayer playtest. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 6: Content and polish for a soft launch (weeks 11–14)
 - [ ] Real jet models for all launch aircraft (about 15). Tiers I–IV plus one or two tasters.

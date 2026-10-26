@@ -189,8 +189,8 @@ Then:
 | **2** | Guns and component damage | ✅ Done |
 | **3** | Missiles, radar, RWR and countermeasures | ✅ Done |
 | **4** | Match loop MVP: FFA, AI pilots, first map, tutorial, touch controls | ✅ Done |
-| **5** | Progression and saving: tech tree Tiers I–III, BR matchmaking | 🟡 Built, awaiting sign-off |
-| **6** | Content and polish for a soft launch: about 15 jets, TDM and Air Superiority | ⚪ |
+| **5** | Progression and saving: tech tree Tiers I–III, BR matchmaking | ✅ Done |
+| **6** | Content and polish for a soft launch: about 15 jets, TDM and Air Superiority | 🟡 Next |
 | **7** | Monetisation: cosmetics shop, VIP, Season 1 pass | ⚪ |
 | **8** | Launch and live ops: Tiers V–VIII, squadrons, ranked, BVR | ⚪ |
 
