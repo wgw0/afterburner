@@ -3,7 +3,7 @@
 -- Grass plain with rolling hills, a rocky mountain range to the west, a beach and sea to the east.
 -- Deterministic (fixed seed), built in chunks so Studio stays responsive. Run each step in Edit mode:
 --   local T = require(game.ServerStorage.Tools.TerrainBuilder)
---   T.ground() T.sea() T.hills() T.mountains()
+--   T.ground() T.sea() T.hills() T.mountains() T.trim()
 -- Undo with workspace.Terrain:Clear().
 
 local Terrain = workspace.Terrain
@@ -13,6 +13,10 @@ local CHUNK = 2048
 local GROUND_TOP = -2 -- just under the baseplate and runway
 local SHORE_X = 6000 -- sea starts east of here
 local SEED = 1985
+-- Nothing is kept below this on land. Hills and mountains are balls that reach hundreds of studs
+-- underground; that hidden volume is most of the terrain data a client must download (see trim()).
+local BURY_DEPTH = -14
+local SEABED = -26
 
 local TerrainBuilder = {}
 
@@ -29,14 +33,15 @@ local function slab(material: Enum.Material, x0: number, x1: number, z0: number,
 end
 
 function TerrainBuilder.ground(): string
-	slab(Enum.Material.Grass, -HALF, SHORE_X - 500, -HALF, HALF, GROUND_TOP - 24, GROUND_TOP)
-	slab(Enum.Material.Sand, SHORE_X - 500, SHORE_X + 300, -HALF, HALF, GROUND_TOP - 24, GROUND_TOP - 1)
+	slab(Enum.Material.Grass, -HALF, SHORE_X - 500, -HALF, HALF, BURY_DEPTH, GROUND_TOP)
+	slab(Enum.Material.Sand, SHORE_X - 500, SHORE_X + 300, -HALF, HALF, BURY_DEPTH, GROUND_TOP - 1)
 	return "ground done"
 end
 
 function TerrainBuilder.sea(): string
-	slab(Enum.Material.Sand, SHORE_X + 300, HALF, -HALF, HALF, -90, -60)
-	slab(Enum.Material.Water, SHORE_X + 300, HALF, -HALF, HALF, -60, GROUND_TOP - 4)
+	-- Shallow on purpose: only the top of the water is ever seen, and depth costs download size.
+	slab(Enum.Material.Sand, SHORE_X + 300, HALF, -HALF, HALF, SEABED - 8, SEABED)
+	slab(Enum.Material.Water, SHORE_X + 300, HALF, -HALF, HALF, SEABED, GROUND_TOP - 4)
 	return "sea done"
 end
 
@@ -96,6 +101,28 @@ function TerrainBuilder.mountains(): string
 		task.wait()
 	end
 	return `mountains done ({count} peaks)`
+end
+
+-- Clears every voxel players can never see: below BURY_DEPTH on land, and below the seabed at sea.
+-- Cuts the data a client has to download on join without changing what's visible.
+-- Hills and mountains reach no deeper than about -900, so -1000 is deep enough.
+-- Optionally pass (part, parts) to clear one west-to-east strip at a time, e.g. trim(1, 4) ... trim(4, 4).
+function TerrainBuilder.trim(part: number?, parts: number?): string
+	local count = parts or 1
+	local index = part or 1
+	local width = (2 * HALF) / count
+	local x0 = -HALF + (index - 1) * width
+	local x1 = x0 + width
+	local before = Terrain:CountCells()
+	local landEnd = math.clamp(SHORE_X + 300, x0, x1)
+	if landEnd > x0 then
+		slab(Enum.Material.Air, x0, landEnd, -HALF, HALF, -1000, BURY_DEPTH)
+	end
+	if x1 > landEnd then
+		slab(Enum.Material.Air, landEnd, x1, -HALF, HALF, -1000, SEABED - 8)
+	end
+	local after = Terrain:CountCells()
+	return `trim {index}/{count}: {before} -> {after} cells`
 end
 
 return TerrainBuilder

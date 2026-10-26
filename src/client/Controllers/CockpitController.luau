@@ -69,7 +69,7 @@ local function makeGauge(
 	dial.Name = name
 	dial.AnchorPoint = Vector2.new(0.5, 0.5)
 	dial.Position = UDim2.fromScale(x, 0.5)
-	dial.Size = UDim2.fromScale(0.2, 0.8)
+	dial.Size = UDim2.fromScale(0.6, 0.6) -- RelativeYY: a round dial, 60% of the panel height
 	dial.SizeConstraint = Enum.SizeConstraint.RelativeYY
 	dial.BackgroundColor3 = DIAL_COLOUR
 	local corner = Instance.new("UICorner")
@@ -171,13 +171,13 @@ local function buildCockpit(jet: Model)
 	local panel = part(
 		"Panel",
 		Vector3.new(3.4, 1.15, 0.12),
-		CFrame.new(0, -1.05, -2.3) * CFrame.Angles(math.rad(-15), 0, 0),
+		CFrame.new(0, -1.12, -2.3) * CFrame.Angles(math.rad(-15), 0, 0),
 		eyeCF,
 		root,
 		PANEL_COLOUR
 	)
 	panel.Parent = model
-	part("Coaming", Vector3.new(3.6, 0.18, 0.6), CFrame.new(0, -0.42, -2.25), eyeCF, root, FRAME_COLOUR).Parent = model
+	part("Coaming", Vector3.new(3.6, 0.14, 0.35), CFrame.new(0, -0.36, -2.5), eyeCF, root, FRAME_COLOUR).Parent = model
 	part("SillL", Vector3.new(0.18, 0.5, 4), CFrame.new(-1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
 	part("SillR", Vector3.new(0.18, 0.5, 4), CFrame.new(1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
 	-- Canopy bow and rails
