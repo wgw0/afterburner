@@ -5,7 +5,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | Phase | Done | Status |
 |---|---|---|
 | 0 Foundation | 9 / 9 | ✅ Complete |
-| 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
+| 1 Flight model prototype | 21 / 21 | ✅ Signed off |
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
 | 4 Match loop MVP | 21 / 21 | ✅ Signed off |
@@ -43,7 +43,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 |:---:|---|---|
 | ✅ | **ACD-01** Airframe schema, registry and startup validator | `AircraftData.spec`: valid airframes load frozen; missing/out-of-range/NaN/bad-enum fields are named; a broken module stops loading with "Broken: missing WingArea" and doesn't blame the good one. |
 | ✅ | **ACD-02** Greybox models for F-5E and MiG-21 following the model contract | `tools/GreyboxBuilder` builds both into `ReplicatedStorage.Assets.Aircraft` (saved in the place). `Model.spec`: both pass the contract. Flown hands-on. |
-| 🟡 | **ACD-03** Model-contract validator script (Studio command plus CI check against the built place) | Studio half done: `AircraftModelContract.validate`, run at server boot (AircraftService refuses to start on a bad model) and in `Model.spec`, which catches a deliberately broken model. **CI half carried over:** CI only builds the code, not the place file, so it can't see models yet. Needs a place-reading tool (e.g. Lune) in CI. |
+| ✅ | **ACD-03** Model-contract validator script (Studio command plus CI check against the built place) | Studio: `AircraftModelContract.validate`, run at server boot (AircraftService refuses to start on a bad model) and in `Model.spec`, which catches a deliberately broken model. CI (finished before Phase 5): `scripts/validate-models.luau` opens the committed `Afterburner.rbxl` with Lune and runs the same validator on every model, and checks every airframe has one. "Model contract OK: 2 models checked, 2 airframes covered"; a broken copy (missing `CockpitEye`, collidable canopy, MiG model deleted) fails with all three named. |
 | ✅ | **FLT-01** `Atmosphere`, `Units` and `Scale` modules with tests | `Units.spec`: conversions round-trip, distances agree with velocity scaling, ceiling ≈ 48,000 ft; atmosphere values at sea level and the tropopause. |
 | ✅ | **FLT-02** `FlightModel.step`, sub-stepping, determinism | `FlightModel.spec`: level flight holds altitude within 2% over 10 s; deterministic; stable and consistent at 20 vs 60 FPS; input state never mutated. |
 | ✅ | **FLT-03** Stall model and buffet flag | Lift falls past critical AoA; slow pull with protections off stalls; the AoA limiter keeps it out of the stall. |
@@ -62,8 +62,6 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | ✅ | **FX-01** Afterburner, contrails, vapour | Afterburner flame and light, wingtip vapour above 5 G, contrails above 7 km, driven by telemetry for other jets. *Contrails and other players' effects not yet seen in a multiplayer test.* |
 | ✅ | **AUD-01** Engine and wind | Engine pitch follows throttle, muffled in the cockpit; wind rises with speed; volumes cut twice after playtest feedback. Placeholder Creator Store sounds, to review before launch. |
 | ✅ | **TST-03** Playtest template and log folder | `docs/playtests/TEMPLATE.md` and the first log with 10 findings. |
-
-**Carried over:** ACD-03 CI half (needs a place-reading tool in CI).
 
 **Also done in Phase 1:** placeholder terrain (`tools/TerrainBuilder`, 70% leaner after `trim()`), streaming tuned (client ready in ~1 s), HUD-07 added to the plan, integrity checks (CI repo checks, module/definition/place specs, startup smoke test). Tests: 49 → 115.
 

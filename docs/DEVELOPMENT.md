@@ -69,9 +69,10 @@
 | **Wally** | Luau package manager | Pinned in `rokit.toml`. `wally.toml` in the repo root |
 | **StyLua** | Formatter | Pinned in `rokit.toml`. Config in `stylua.toml` |
 | **Selene** | Linter | Pinned in `rokit.toml`. Config in `selene.toml` with the `roblox` std |
+| **Lune** | Runs Luau outside Roblox; reads the place file in CI | Pinned in `rokit.toml`. `lune run scripts/validate-models.luau` checks the aircraft models in `Afterburner.rbxl` (ACD-03) |
 | **luau-lsp** | Type checking and autocomplete in your editor | VS Code extension ("Luau Language Server"). Uses `sourcemap.json` from `rojo sourcemap` |
 | **TestRunner** (in-house) | Unit tests for pure modules | `tests/TestRunner.luau`, synced to `ServerStorage.Tests` (§33) |
-| **GitHub Actions** | CI: format check, lint, Rojo build | `.github/workflows/ci.yml` (§35) |
+| **GitHub Actions** | CI: integrity checks, model contract, format check, lint, Rojo build | `.github/workflows/ci.yml` (§35) |
 
 > **Why an in-house test runner instead of Jest-Lua:** Jest-Lua needs a Studio feature flag (`debug.loadmodule`) to be switched on by editing Studio's settings files. A ~200-line runner covers what the pure modules need, runs in Edit mode from the command bar or the Studio MCP tools, and clones modules before requiring them, so edits synced by Rojo are always picked up.
 
@@ -1869,10 +1870,12 @@ Use the **MicroProfiler** (with custom labels via `debug.profilebegin/profileend
 
 On every push and PR:
 1. Install tools with Rokit.
-2. `stylua --check src`
-3. `selene src`
-4. `rojo build default.project.json -o build/Afterburner.rbxl` (proves the project builds).
-5. (Later) run unit tests headlessly.
+2. `bash scripts/ci-checks.sh` (place file present, strict mode, no conflict markers, Rojo paths, every remote declared and used).
+3. `lune run scripts/validate-models.luau` (the aircraft models in the committed place follow the model contract).
+4. `stylua --check src tests tools`
+5. `selene src tests tools`
+6. `rojo build default.project.json -o build/Afterburner.rbxl` (proves the project builds).
+7. (Later) run unit tests headlessly.
 
 ### 35.2 Versioning
 

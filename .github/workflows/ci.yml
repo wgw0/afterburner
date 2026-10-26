@@ -34,6 +34,9 @@ jobs:
       - name: Integrity checks (place file, strict mode, conflicts, Rojo paths, remotes)
         run: bash scripts/ci-checks.sh
 
+      - name: Model contract on the place file (ACD-03)
+        run: lune run scripts/validate-models.luau
+
       - name: StyLua (format check)
         run: stylua --check src tests tools
 
