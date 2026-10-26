@@ -31,6 +31,7 @@ export type Jet = {
 	name: string, -- shown in the kill feed
 	spawnTime: number,
 	lastPosition: Vector3,
+	lastProbes: { [string]: Vector3 }, -- extremities last tick, for the crash check
 	outSince: number?, -- when it left the play area (AIR-04)
 }
 
@@ -45,6 +46,9 @@ local CRASH_GRACE = 1.0 -- seconds after spawn before crash checks apply
 local COLLISION_DISTANCE = 16 -- studs between roots counts as a mid-air collision
 local CRASH_REPORT_RANGE = 150 -- studs: a reported crash must be this close to the ground
 local OUT_OF_BOUNDS_SECONDS = 10 -- outside the play area this long and the jet is lost
+-- Extremities (Root attachments) whose paths are checked too, so a wingtip clipping a hill in a bank or
+-- the nose or tail striking first counts as a crash, not only the centre of mass hitting.
+local CRASH_PROBES = { "GunMuzzle", "WingtipL", "WingtipR", "Nozzle1" }
 
 local AircraftService = {
 	Priority = 20,
@@ -200,8 +204,21 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 		name = name,
 		spawnTime = os.clock(),
 		lastPosition = root.Position,
+		lastProbes = {},
 	}
 	jets[id] = jet
+	-- A belly landing at a shallow angle can slide the hull along the ground without the centre's path
+	-- ever crossing it, so the hull touching the map is a crash too.
+	local hull = model:FindFirstChild("Hull")
+	if hull and hull:IsA("BasePart") then
+		hull.Touched:Connect(function(other: BasePart)
+			if jets[id] == jet and os.clock() - jet.spawnTime >= CRASH_GRACE then
+				if other.CanCollide and not other:IsDescendantOf(jetsFolder) then
+					self:Despawn(jet, "Crash")
+				end
+			end
+		end)
+	end
 	if pilot then
 		jetByPlayer[pilot] = jet
 	end
@@ -254,12 +271,26 @@ local function checkCollisions()
 		local travel = position - jet.lastPosition
 		jet.lastPosition = position
 		local length = travel.Magnitude
+		local crashed = false
 		if length > 0.01 and length < 2000 then
 			-- The path since last tick, extended a little ahead for the nose.
-			local hit = workspace:Raycast(position - travel, travel + travel.Unit * 6, worldParams)
-			if hit then
-				AircraftService:Despawn(jet, "Crash")
+			crashed = workspace:Raycast(position - travel, travel + travel.Unit * 6, worldParams) ~= nil
+		end
+		for _, name in CRASH_PROBES do
+			local probe = jet.root:FindFirstChild(name)
+			if not (probe and probe:IsA("Attachment")) then
+				continue
 			end
+			local here = probe.WorldPosition
+			local last = jet.lastProbes[name]
+			jet.lastProbes[name] = here
+			local step = if last then here - last else Vector3.zero
+			if not crashed and step.Magnitude > 0.01 and step.Magnitude < 2000 then
+				crashed = workspace:Raycast(last :: Vector3, step, worldParams) ~= nil
+			end
+		end
+		if crashed then
+			AircraftService:Despawn(jet, "Crash")
 		end
 	end
 
