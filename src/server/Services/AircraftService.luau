@@ -58,6 +58,14 @@ function AircraftService:GetJets(): { [number]: Jet }
 	return jets
 end
 
+-- With streaming on and no characters, the server streams around each player's ReplicationFocus.
+-- Without a jet, that's the test range, so the menu backdrop is loaded.
+local function idleFocus(): BasePart?
+	local range = workspace:FindFirstChild("TestRange")
+	local strip = range and range:FindFirstChild("Runway") and range.Runway:FindFirstChild("Strip")
+	return if strip and strip:IsA("BasePart") then strip else nil
+end
+
 function AircraftService:Despawn(jet: Jet, cause: string)
 	if jets[jet.id] == nil then
 		return
@@ -65,6 +73,9 @@ function AircraftService:Despawn(jet: Jet, cause: string)
 	jets[jet.id] = nil
 	if jet.pilot and jetByPlayer[jet.pilot] == jet then
 		jetByPlayer[jet.pilot] = nil
+	end
+	if jet.pilot and jet.pilot.Parent then
+		jet.pilot.ReplicationFocus = idleFocus()
 	end
 	self.JetDestroyed:Fire(jet, cause)
 	jet.model:Destroy()
@@ -191,6 +202,14 @@ function AircraftService:Init()
 		jet.model:SetAttribute("Afterburner", afterburner)
 		jet.model:SetAttribute("GLoad", math.round(gLoad * 10) / 10)
 	end)
+
+	local function onPlayerAdded(player: Player)
+		player.ReplicationFocus = idleFocus()
+	end
+	Players.PlayerAdded:Connect(onPlayerAdded)
+	for _, player in Players:GetPlayers() do
+		onPlayerAdded(player)
+	end
 
 	Players.PlayerRemoving:Connect(function(player)
 		local jet = jetByPlayer[player]

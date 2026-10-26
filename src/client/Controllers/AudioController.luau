@@ -31,9 +31,9 @@ local function group(name: string, volume: number): SoundGroup
 	if not g then
 		g = Instance.new("SoundGroup")
 		g.Name = name
-		g.Volume = volume
 		g.Parent = SoundService
 	end
+	(g :: SoundGroup).Volume = volume
 	groups[name] = g :: SoundGroup
 	return g :: SoundGroup
 end
@@ -148,8 +148,8 @@ local function update()
 end
 
 function AudioController:Init()
-	group("Engine", 0.5)
-	group("Wind", 0.4)
+	group("Engine", 0.12)
+	group("Wind", 0.08)
 end
 
 function AudioController:Start()
