@@ -1287,7 +1287,9 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 
 ### 19.3 World settings
 
-- `Workspace.StreamingEnabled = true`, with a streaming target radius tuned so terrain is visible far enough *(tune; test on mobile)*.
+- `Workspace.StreamingEnabled = true`, with a streaming target radius tuned so terrain is visible far enough *(tune; test on mobile)*. **Current (Phase 1):** `StreamingTargetRadius = 8192`, `StreamingMinRadius = 2048`, `StreamOutBehavior = Opportunistic`. These properties **can't be set from scripts** any more (they're hidden from Luau); set them in Studio's Properties panel on Workspace.
+- With no characters, streaming centres on each player's `ReplicationFocus`: the jet's Root while flying, the runway while on the menu (`AircraftService`).
+- Keep terrain data lean: nothing below the surface layer on land and a shallow sea (`tools/TerrainBuilder.trim()`). Buried voxels still have to be downloaded. Trimming took the Phase 1 terrain from 1.42 billion to 429 million cells, and with streaming the client is ready in about 1 s (it was 43 s with streaming off).
 - `Workspace.Gravity` stays at the default. The flight model includes gravity in its own maths, and the `LinearVelocity` constraint (with a high `MaxForce`) sets the velocity outright each step, so Roblox's gravity has no extra effect on a live jet. When a jet dies, its constraints are removed and normal gravity takes over for the wreck.
 - Fog and `Atmosphere` density to hide the edge of streamed terrain.
 
