@@ -6,7 +6,7 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 |---|---|---|
 | 1. Base mesh measured from reference drawings | `tools/blender/f5e_generate.py` (automatic) | ✅ 35 parts, 10,704 triangles, matches the three-view |
 | 2. Refine shapes, add detail | Blender, by hand | ⬜ |
-| 3. Bake + paint PBR textures (Body, Wings, Details) | Blender / Substance Painter, by hand | ⬜ |
+| 3. Bake + paint PBR textures (Body, Wings, Details) | `tools/blender/f5e_paint.py` (automatic) | ✅ "Ghost" two-tone grey skin |
 | 4. Import into Studio | Studio 3D Importer | ⬜ |
 | 5. Assemble (Root, Hull, hitboxes, attachments, hinges, skin) | `AircraftAssembler` tool, reads the manifest | 🟡 built, waiting for the FBX import |
 | 6. Validate | Model contract in Studio and CI (Lune) | ✅ in place |
@@ -76,11 +76,45 @@ The gear is modelled down; in flight the game keeps it retracted (hidden until t
 Every skin for an airframe shares the **same UV layout**, so a skin is only a set of textures:
 
 ```
-ReplicatedStorage.Assets.Skins.F5E
-├── Default        Body / Wings / Details   (SurfaceAppearance each)
-├── Aggressor      Body / Wings / Details
+ReplicatedStorage.Assets.Skins.F5E          (attribute Default = "Ghost")
+├── Ghost          Body / Wings / Details   (SurfaceAppearance each)
+├── Aggressor      Body / Wings / Details   (to come)
 └── ...
 ```
+
+The assembler fits the default skin to the game model (`AircraftAssembler.applySkin`), so re-importing a model keeps its paint.
+
+### Painting (`tools/blender/f5e_paint.py`)
+
+Skins are painted by a script, not by hand, from the same `.blend` whose FBX is in the game (its UV layout is what the textures follow):
+
+```
+blender -b tools/blender/out/F5E_base.blend --python tools/blender/f5e_paint.py -- --out <absolute path>/tools/blender/out/textures --skin Ghost --preview
+```
+
+**How it works.**
+1. For each texture set, Cycles bakes what every texel is: its position on the jet, its normal, which part it belongs to, and its ambient occlusion.
+2. numpy computes the Color, Roughness and Metalness maps from that, plus a height map, which Cycles turns into the tangent-space Normal map (OpenGL).
+
+Because every texel is painted from its 3D position, paint and panel lines run continuously across UV seams.
+
+**What gets painted.**
+- **Panel layout:** fuselage frames and longerons, access panels with fasteners, wing spars and ribs, fuel panels, and rivet rows. All of it is placed with the generator's drawing stations, so it lines up with the shape.
+- **The paint scheme:** two-tone camouflage with a soft demarcation, the anti-glare panel, the radome, non-slip walkways and low-visibility national insignia.
+- **Wear:** each panel's paint is a slightly different shade, grime gathers behind the panel seams, and there's gun and exhaust soot. The leading edges are chipped, the intake lips are bare metal, and the nozzles are titanium with a heat tint and petal seams.
+
+Schemes are entries in `SCHEMES`, so a new skin is mostly a set of colours plus any special markings.
+
+**Into the game.**
+1. Upload the 12 PNGs (`F5E_<Skin>_<Set>_<Map>.png`).
+2. Make one `SurfaceAppearance` per set under `Assets.Skins.F5E.<Skin>`.
+3. Run `AircraftAssembler.applySkin`.
+
+| F-5E skin | Set | Color | Normal | Roughness | Metalness |
+|---|---|---|---|---|---|
+| Ghost | Body | 81835012873669 | 82968577363109 | 105714057801586 | 109834815051063 |
+| Ghost | Wings | 100916008882277 | 104825289967457 | 82890588585642 | 99740436860517 |
+| Ghost | Details | 81974986545670 | 138592182008286 | 107141838096039 | 87789614504400 |
 
 - **Applying a skin** means cloning that skin's `SurfaceAppearance` into each MeshPart of the matching set (every MeshPart carries a `TextureSet` attribute). Roblox doesn't let scripts change a SurfaceAppearance's images at runtime, so skins are swapped as whole instances, never edited.
 - **Cheap colour variants.** A skin can use `AlphaMode = Overlay`: where the Color map's alpha is transparent, the MeshPart's own `Color` shows through. So one texture set gives many paint colours (sell or reward recolours without new art), while markings, weathering and panel lines stay on top.
