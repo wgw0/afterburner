@@ -13,10 +13,12 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Progression = require(Shared.Progression)
 local Countermeasures = require(Shared.Countermeasures)
 local Environment = require(Shared.Config.Environment)
 local Guidance = require(Shared.Guidance)
 local Net = require(Shared.Net)
+local Signal = require(Shared.Util.Signal)
 local Pack = require(Shared.Net.Pack)
 local Signature = require(Shared.Signature)
 local Units = require(Shared.Units)
@@ -56,6 +58,7 @@ type Missile = {
 	owner: Jet?,
 	ownerIdentity: any?, -- who gets credit (Player or AI record)
 	targetId: number?,
+	launchTargetId: number?, -- who it was fired at (for "missile defeated" rewards)
 	state: Guidance.MissileState,
 	seeker: Guidance.IRSeeker?,
 	guiding: boolean,
@@ -66,6 +69,8 @@ type Missile = {
 
 local MissileService = {
 	Priority = 34,
+	-- A missile ended without damaging the jet it was fired at: (targetJet, ownerIdentity, weaponId)
+	MissileDefeated = Signal.new(),
 }
 
 local loadouts: { [number]: Loadout } = {}
@@ -87,7 +92,7 @@ local function setAttributes(loadout: Loadout)
 end
 
 local function onJetSpawned(jet: Jet)
-	local airframe = AircraftData.get(jet.airframeId) :: any
+	local airframe = Progression.airframeForModel(jet.model) :: any
 	if not airframe then
 		return
 	end
@@ -172,6 +177,7 @@ local function spawnMissile(
 		owner = owner,
 		ownerIdentity = owner and owner.identity,
 		targetId = targetId,
+		launchTargetId = targetId,
 		state = Guidance.launch(position, velocity),
 		seeker = if WeaponData.isIR(spec) then Guidance.newIRSeeker(targetId, id * 7 + 13) else nil,
 		guiding = false,
@@ -301,12 +307,16 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 	missiles[missile.id] = nil
 	Net.Server.fireAll("MissileDetonated", missile.id, position, if hitJet then hitJet.id else 0)
 	local blast = missile.spec.ProximityFuse * BLAST_MULTIPLIER
+	local hitTarget = false
 	for _, jet in AircraftService:GetJets() do
 		if missile.owner and jet == missile.owner and missile.state.travelled < 200 then
 			continue -- no self-damage right off the rail
 		end
 		local distance = Units.toMetres((jet.root.Position - position).Magnitude)
 		if distance <= blast then
+			if jet.id == missile.launchTargetId then
+				hitTarget = true
+			end
 			local falloff = math.clamp(1 - distance / blast, 0.3, 1)
 			local damage = missile.spec.Damage * falloff
 			-- The nearest part takes the blast, and the airframe half as much again: a good hit from a full
@@ -326,6 +336,10 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 			CombatService:ApplyDamage(jet, nearest, damage, missile.ownerIdentity, missile.spec.DisplayName)
 			CombatService:ApplyDamage(jet, "Fuselage", damage * 0.5, missile.ownerIdentity, missile.spec.DisplayName)
 		end
+	end
+	local target = missile.launchTargetId and AircraftService:GetJetById(missile.launchTargetId)
+	if target and not hitTarget then
+		MissileService.MissileDefeated:Fire(target, missile.ownerIdentity, missile.weaponId)
 	end
 end
 

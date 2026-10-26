@@ -5,6 +5,9 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
+      },
+      "Packages": {
+        "$path": "Packages"
       }
     },
     "ServerScriptService": {
@@ -18,6 +21,9 @@
       },
       "Tools": {
         "$path": "tools"
+      },
+      "ServerPackages": {
+        "$path": "ServerPackages"
       }
     },
     "StarterPlayer": {

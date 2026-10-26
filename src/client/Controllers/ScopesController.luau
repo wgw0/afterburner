@@ -14,7 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
+local Progression = require(Shared.Progression)
 local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
@@ -230,7 +230,7 @@ local function update()
 	if not (jet and root) then
 		return
 	end
-	local airframe = AircraftData.get(jet:GetAttribute("AirframeId") :: string) :: any
+	local airframe = Progression.airframeForModel(jet) :: any
 	local radar = airframe and airframe.Radar
 	local myCF = root.CFrame
 	local flash = os.clock() % 0.5 < 0.25

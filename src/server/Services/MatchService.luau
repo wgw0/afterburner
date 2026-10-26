@@ -34,6 +34,7 @@ local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
 local MatchService = {
 	Priority = 50,
 	MatchEnded = Signal.new(), -- (ranking, reason)
+	MatchStarted = Signal.new(), -- (mode) a match went live (also Free Flight, which never ends)
 }
 
 local mode: MatchRules.ModeConfig = MatchRules.MODES.Dogfight
@@ -52,6 +53,9 @@ local function setState(newState: string)
 	state = newState
 	stateSince = os.clock()
 	broadcastTimer = BROADCAST_INTERVAL -- send right away
+	if newState == "InProgress" then
+		MatchService.MatchStarted:Fire(mode)
+	end
 end
 
 local function ensureScore(identity: any, name: string, isAI: boolean, userId: number)
