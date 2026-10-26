@@ -4,6 +4,7 @@
 -- props: Data, Screen ("Hangar" | "TechTree" | "Detail" | "Results"), DetailId, Navigate(screen, id?),
 --   plus everything the screens need (see MenuController).
 
+local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
@@ -20,9 +21,25 @@ local TechTree = require(Screens.TechTree)
 
 local e = React.createElement
 
+-- Where the free space starts to the right of Roblox's own top-left buttons (menu, chat, voice), which
+-- draw over our full-screen menu. It changes with the buttons shown, so it's watched.
+local function useTopbarLeft(): number
+	local left, setLeft = React.useState(GuiService.TopbarInset.Min.X)
+	React.useEffect(function()
+		local connection = GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(function()
+			setLeft(GuiService.TopbarInset.Min.X)
+		end)
+		return function()
+			connection:Disconnect()
+		end
+	end, {})
+	return left
+end
+
 local function TopBar(props: any)
 	local data = props.Data
 	local need = Economy.xpToNext(data.PilotLevel)
+	local logoLeft = useTopbarLeft() + 12
 	local function tab(name: string, label: string, order: number)
 		return e(C.Button, {
 			Text = label,
@@ -44,7 +61,7 @@ local function TopBar(props: any)
 		Logo = e(C.Label, {
 			Text = "AFTERBURNER",
 			Size = UDim2.fromOffset(260, Theme.TopBar),
-			Position = UDim2.fromOffset(20, 0),
+			Position = UDim2.fromOffset(math.max(logoLeft, 20), 0),
 			Heavy = true,
 			TextSize = 26,
 			Color = Theme.Accent,
@@ -133,6 +150,7 @@ local function App(props: any)
 				props.Navigate(props.BackTo or "Hangar")
 			end,
 			OnBuyModule = props.OnBuyModule,
+			OnSetModuleFitted = props.OnSetModuleFitted,
 			OnLineup = props.OnLineup,
 		})
 	else

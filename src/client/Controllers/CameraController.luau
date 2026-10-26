@@ -14,7 +14,7 @@
 --   heat-seeker's target, or the nearest spotted jet), within realistic head limits.
 -- When your jet is destroyed (AIR-03 / CAM-06): a short orbit of the explosion, then the kill cam follows
 -- whoever shot you down. While waiting to respawn you spectate other jets (Left/Right arrows to switch).
--- With nothing to watch, the camera orbits the map centre.
+-- With nothing to watch, or with the menus open, the camera slowly orbits the map centre.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -204,7 +204,7 @@ local function chaseView(root: BasePart, dt: number): CFrame
 	return CFrame.new(position) * frame.Rotation
 end
 
--- The menus cover the screen while you're not flying; the spectating view is their backdrop.
+-- The menus cover the screen while you're not flying; a slow orbit of the map is their backdrop.
 local function menuOpen(): boolean
 	local menu = Players.LocalPlayer:FindFirstChild("PlayerGui")
 		and Players.LocalPlayer.PlayerGui:FindFirstChild("AfterburnerMenu")
@@ -238,6 +238,14 @@ local function update(dt: number)
 		return
 	end
 	if not (root and FlightController.jet) then
+		-- Behind the menus: a slow, high orbit of the map (following a jet behind the hangar looked odd)
+		if menuOpen() then
+			orbitAngle += dt * 0.03
+			local focus = Vector3.new(300, 100, 0)
+			local position = focus + Vector3.new(math.cos(orbitAngle) * 1800, 700, math.sin(orbitAngle) * 1800)
+			camera.CFrame = CFrame.lookAt(position, focus)
+			return
+		end
 		-- Spectate while waiting to (re)spawn
 		local jets = {}
 		for _, m in workspace.Jets:GetChildren() do
