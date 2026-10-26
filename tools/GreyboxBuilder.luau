@@ -40,7 +40,7 @@ local SPECS: { [string]: JetSpec } = {
 			{ name = "Nose", size = Vector3.new(0.8, 0.75, 2.2), at = Vector3.new(0, 0, -5.3) },
 			{ name = "FuselageFront", size = Vector3.new(1.35, 1.3, 4.0), at = Vector3.new(0, 0, -2.2) },
 			{ name = "FuselageRear", size = Vector3.new(1.5, 1.25, 6.4), at = Vector3.new(0, 0, 2.9) },
-			{ name = "Canopy", size = Vector3.new(0.75, 0.55, 2.2), at = Vector3.new(0, 0.85, -2.6), glass = true },
+			{ name = "Canopy", size = Vector3.new(0.75, 0.6, 2.2), at = Vector3.new(0, 0.92, -2.6), glass = true },
 			{ name = "IntakeL", size = Vector3.new(0.45, 0.8, 2.0), at = Vector3.new(-0.85, -0.1, -0.6) },
 			{ name = "IntakeR", size = Vector3.new(0.45, 0.8, 2.0), at = Vector3.new(0.85, -0.1, -0.6) },
 			{
@@ -100,7 +100,7 @@ local SPECS: { [string]: JetSpec } = {
 			Tail = { size = Vector3.new(3.4, 2.4, 2.0), at = Vector3.new(0, 0.8, 5.5) },
 		},
 		attachments = {
-			CockpitEye = Vector3.new(0, 0.95, -2.9),
+			CockpitEye = Vector3.new(0, 1.05, -2.9),
 			GunMuzzle = Vector3.new(0, 0.2, -6.2),
 			Hardpoint1 = Vector3.new(-4.0, 0, 1.3),
 			Hardpoint2 = Vector3.new(4.0, 0, 1.3),
@@ -128,7 +128,7 @@ local SPECS: { [string]: JetSpec } = {
 			},
 			{ name = "Fuselage", size = Vector3.new(1.25, 1.25, 11.5), at = Vector3.new(0, 0, -1.6), cylinder = true },
 			{ name = "Rear", size = Vector3.new(1.15, 1.15, 2.6), at = Vector3.new(0, 0, 5.3), cylinder = true },
-			{ name = "Canopy", size = Vector3.new(0.65, 0.55, 1.8), at = Vector3.new(0, 0.7, -3.6), glass = true },
+			{ name = "Canopy", size = Vector3.new(0.65, 0.6, 1.8), at = Vector3.new(0, 0.82, -3.6), glass = true },
 			{ name = "Spine", size = Vector3.new(0.4, 0.35, 6.0), at = Vector3.new(0, 0.6, 0) },
 			{ name = "WingInnerL", size = Vector3.new(1.3, 0.12, 4.6), at = Vector3.new(-1.25, -0.1, 1.6) },
 			{ name = "WingInnerR", size = Vector3.new(1.3, 0.12, 4.6), at = Vector3.new(1.25, -0.1, 1.6) },
@@ -182,7 +182,7 @@ local SPECS: { [string]: JetSpec } = {
 			Tail = { size = Vector3.new(2.8, 2.6, 2.5), at = Vector3.new(0, 0.9, 5.3) },
 		},
 		attachments = {
-			CockpitEye = Vector3.new(0, 0.8, -3.8),
+			CockpitEye = Vector3.new(0, 1.0, -3.8),
 			GunMuzzle = Vector3.new(0, -0.7, -1.5),
 			Hardpoint1 = Vector3.new(-1.8, -0.3, 1.8),
 			Hardpoint2 = Vector3.new(1.8, -0.3, 1.8),
