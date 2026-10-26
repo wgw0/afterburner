@@ -65,7 +65,38 @@ SCHEMES = {
         "walkway": srgb(74, 78, 83),
         "demarcation": -0.10,  # z (m) of the soft upper/lower line on the fuselage sides
     },
+    # Aggressor schemes: camouflage bands wrapped over the whole jet, in the style of the US adversary
+    # squadrons' F-5Es (see the skins reference photos). "camo" colours are listed lightest first.
+    "Desert": {
+        "camo": [srgb(206, 186, 146), srgb(176, 132, 92), srgb(150, 156, 112)],
+        "camo_scale": 2.6,
+        "radome": srgb(28, 28, 30),
+        "antiglare": srgb(54, 50, 46),
+        "insignia": srgb(52, 48, 44),
+        "walkway": srgb(96, 86, 72),
+    },
+    "Pacific": {
+        "camo": [srgb(186, 202, 210), srgb(132, 168, 186), srgb(84, 112, 134)],
+        "camo_scale": 3.0,
+        "radome": srgb(28, 30, 34),
+        "antiglare": srgb(50, 56, 64),
+        "insignia": srgb(46, 54, 62),
+        "walkway": srgb(70, 84, 96),
+    },
+    "Lizard": {
+        "camo": [srgb(160, 160, 118), srgb(118, 128, 82), srgb(78, 90, 60)],
+        "camo_scale": 2.2,
+        "radome": srgb(30, 32, 28),
+        "antiglare": srgb(46, 50, 40),
+        "insignia": srgb(40, 44, 34),
+        "walkway": srgb(66, 72, 52),
+    },
 }
+
+for _scheme in SCHEMES.values():  # fills used by the Details set and outside the UV islands
+    if "camo" in _scheme:
+        _scheme.setdefault("upper", _scheme["camo"][1])
+        _scheme.setdefault("lower", _scheme["camo"][0])
 
 METAL = srgb(176, 178, 182)
 SOOT = srgb(30, 28, 27)
@@ -351,6 +382,18 @@ def make_on(part, ids):
     return on
 
 
+def camouflage(P, scheme):
+    """Hard-edged, wavy camouflage bands from 3D noise, so they wrap continuously over the airframe.
+    The two thresholds split the noise into three roughly equal areas."""
+    scale = scheme["camo_scale"]
+    n = fbm(P, 1.0 / scale, 3, seed=61) + 0.12 * (fbm(P, 5.0 / scale, 2, seed=67) - 0.5)
+    c0, c1, c2 = scheme["camo"]
+    edge = 0.006
+    a = smooth(0.452 - edge, 0.452 + edge, n)[..., None]
+    b = smooth(0.548 - edge, 0.548 + edge, n)[..., None]
+    return c0 * (1 - a) + c1 * (a - b) + c2 * b
+
+
 def paint_airframe(P, N, part, ids, ao, scheme):
     """Body and Wings sets. part: object index per texel (ids: name -> index). Returns colour, rough,
     metal, height."""
@@ -441,13 +484,15 @@ def paint_airframe(P, N, part, ids, ao, scheme):
 
     # ---- Colour ---------------------------------------------------------------------------------
     upper_c, lower_c = scheme["upper"], scheme["lower"]
-    wave = scheme["demarcation"] + 0.05 * np.sin(y * 1.3) + 0.06 * (fbm(P, 1.2, 3, seed=5) - 0.5)
+    wave = scheme.get("demarcation", -0.10) + 0.05 * np.sin(y * 1.3) + 0.06 * (fbm(P, 1.2, 3, seed=5) - 0.5)
     t_upper = smooth(wave - 0.04, wave + 0.04, z)
     horizontal = wing | surf | stab | lerx
     t_upper = np.where(horizontal, (nz > 0).astype(np.float32), t_upper)
     t_upper = np.where(fin | rudder | frame, 1.0, t_upper)
     t_upper = np.where(up & (body | frame), np.maximum(t_upper, 1.0), t_upper)
     colour = lower_c * (1 - t_upper[..., None]) + upper_c * t_upper[..., None]
+    if "camo" in scheme:
+        colour = camouflage(P, scheme)
 
     # Panel-to-panel tone variation
     fidx = np.searchsorted(-np.array([Y(f) for f in FRAMES]), -y)
@@ -759,7 +804,7 @@ def main():
     if args.preview:
         for set_name, paths in written.items():
             apply_preview_material(set_name, paths)
-        render_preview(args.out, gen.AIRFRAME)
+        render_preview(args.out, f"{gen.AIRFRAME}_{args.skin}")
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(args.out, f"{gen.AIRFRAME}_painted.blend"))
 
 

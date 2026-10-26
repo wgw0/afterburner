@@ -2,7 +2,8 @@
 -- Aircraft detail (UI-04): performance bars (stock vs with your modules), the upgrade modules with
 -- their costs and Fit buttons, the loadout, camo, and adding the jet to your lineup.
 -- props: Data, AirframeId, OnBack(), OnBuyModule(id, moduleId) -> (ok, err),
---   OnSetModuleFitted(id, moduleId, fitted) -> (ok, err), OnLineup(ids) -> (ok, err)
+--   OnSetModuleFitted(id, moduleId, fitted) -> (ok, err), OnLineup(ids) -> (ok, err),
+--   OnBuySkin(id, skinId) -> (ok, err), OnSetSkin(id, skinId) -> (ok, err)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,6 +12,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
+local Skins = require(Shared.Skins)
 local WeaponData = require(Shared.WeaponData)
 
 local UI = script.Parent.Parent
@@ -137,6 +139,58 @@ local function ModuleRow(props: any)
 	})
 end
 
+-- One paint scheme: in use, owned (USE), or for sale (BUY).
+local function SkinRow(props: any)
+	local skin, data, airframeId = props.Skin, props.Data, props.AirframeId
+	local pending, setPending = React.useState(false)
+	local message, setMessage = React.useState(nil :: string?)
+	local entry = data.Aircraft[airframeId]
+	local owned = Progression.ownsSkin(data, airframeId, skin.Id)
+	local inUse = Progression.skinFor(data, airframeId) == skin.Id
+	local canBuy, reason = Progression.canBuySkin(data, airframeId, skin.Id)
+	local status = if message
+		then message
+		elseif inUse then "In use"
+		elseif owned then "Owned"
+		elseif not (entry and entry.Owned) then "Buy the jet first"
+		elseif canBuy then `{C.number(skin.Credits or 0)} Cr`
+		else reason
+	return e("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1, LayoutOrder = props.Order }, {
+		Name = e(C.Label, {
+			Text = skin.DisplayName,
+			Size = UDim2.new(1, -100, 0, 20),
+			Bold = inUse,
+			TextSize = 14,
+		}),
+		Status = e(C.Label, {
+			Text = status,
+			Size = UDim2.new(1, -100, 0, 16),
+			Position = UDim2.fromOffset(0, 22),
+			TextSize = 12,
+			Color = if message then Theme.Warn elseif inUse then Theme.Good else Theme.Dim,
+		}),
+		Action = e(C.Button, {
+			Text = if inUse then "IN USE" elseif owned then "USE" else "BUY",
+			Style = if owned then "Ghost" else "Primary",
+			Size = UDim2.fromOffset(88, 36),
+			Position = UDim2.new(1, -88, 0, 4),
+			TextSize = 13,
+			Pending = pending,
+			Disabled = inUse or (not owned and not canBuy),
+			OnClick = function()
+				setPending(true)
+				setMessage(nil)
+				task.spawn(function()
+					local fn = if owned then props.OnSetSkin else props.OnBuySkin
+					local done, err = fn(airframeId, skin.Id)
+					setPending(false)
+					setMessage(if done then nil else err)
+				end)
+			end,
+		}),
+	})
+end
+
 local function AircraftDetail(props: any)
 	local data, id = props.Data, props.AirframeId
 	local lineupPending, setLineupPending = React.useState(false)
@@ -230,8 +284,22 @@ local function AircraftDetail(props: any)
 		})
 	end
 
+	local skinChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
+	skinChildren.Title =
+		e(C.Label, { Text = "SKINS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
+	for i, skin in Skins.list(id) do
+		skinChildren[skin.Id] = e(SkinRow, {
+			Skin = skin,
+			Data = data,
+			AirframeId = id,
+			Order = i,
+			OnBuySkin = props.OnBuySkin,
+			OnSetSkin = props.OnSetSkin,
+		})
+	end
+
 	local inLineup = table.find(data.Lineup, id)
-	local slots = Progression.lineupSlots(data.PilotLevel)
+	local slots = Progression.slotsFor(data)
 
 	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
 		Back = e(C.Button, {
@@ -258,6 +326,7 @@ local function AircraftDetail(props: any)
 		}),
 		Preview = e(JetPreview, {
 			AirframeId = id,
+			Skin = Progression.skinFor(data, id),
 			Size = UDim2.fromScale(0.36, 0.5),
 			Position = UDim2.fromOffset(20, 90),
 		}),
@@ -274,12 +343,6 @@ local function AircraftDetail(props: any)
 			Layout = C.List({ Gap = 8 }),
 			Title = e(C.Label, { Text = "LOADOUT", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 }),
 			Items = e(C.Label, { Text = loadoutText, TextSize = 14, Wrap = true, AutoHeight = true, LayoutOrder = 1 }),
-			Camo = e(C.Label, {
-				Text = `Camo: {entry and entry.Camo or "Default"}`,
-				TextSize = 13,
-				Color = Theme.Dim,
-				LayoutOrder = 2,
-			}),
 		}),
 		Lineup = if entry and entry.Owned
 			then e(C.Panel, {
@@ -320,6 +383,13 @@ local function AircraftDetail(props: any)
 					end,
 				}),
 			})
+			else nil,
+		Skins = if #Skins.list(id) > 0
+			then e(C.Panel, {
+				Size = UDim2.new(0.24, 0, 0, 52 + 50 * #Skins.list(id)),
+				Position = UDim2.new(0.38, 20, 0, 472),
+				Padding = 14,
+			}, skinChildren)
 			else nil,
 		Modules = e(C.Panel, {
 			Size = UDim2.new(0.36, -40, 1, -110),

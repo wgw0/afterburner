@@ -224,6 +224,41 @@ return function(ctx)
 			expect((Progression.buyModule(data, "F5E", "Engine1"))).toBe(false) -- already fitted
 		end)
 
+		it("skins: the default is owned, others are bought once and can be switched", function()
+			local data = PlayerData.template()
+			data.Credits = 12000
+			expect(Progression.skinFor(data, "F5E")).toBe("Ghost")
+			expect(Progression.ownsSkin(data, "F5E", "Ghost")).toBe(true)
+			expect(Progression.ownsSkin(data, "F5E", "Desert")).toBe(false)
+			expect((Progression.setSkin(data, "F5E", "Desert"))).toBe(false) -- not owned
+			expect((Progression.buySkin(data, "F5E", "Desert"))).toBe(true)
+			expect(data.Credits).toBe(12000 - 5000)
+			expect(Progression.skinFor(data, "F5E")).toBe("Desert") -- bought skins go on
+			expect((Progression.buySkin(data, "F5E", "Desert"))).toBe(false) -- already owned
+			expect((Progression.setSkin(data, "F5E", "Ghost"))).toBe(true)
+			expect(Progression.skinFor(data, "F5E")).toBe("Ghost")
+			data.Credits = 100
+			expect((Progression.buySkin(data, "F5E", "Pacific"))).toBe(false) -- can't afford
+			expect((Progression.buySkin(data, "MirageIII", "Desert"))).toBe(false) -- not that jet's skin
+		end)
+
+		it("full access owns every jet, module, skin and lineup slot, and leaves currency alone", function()
+			local data = PlayerData.template()
+			data.Aircraft.F5E.Modules.Engine1 = true
+			local credits = data.Credits
+			Progression.unlockEverything(data)
+			for id in AircraftData.getAll() do
+				expect(data.Aircraft[id].Owned and data.Aircraft[id].Researched).toBe(true)
+			end
+			expect(data.Aircraft.F5E.Modules.Engine1).toBe(true) -- a fitted module stays fitted
+			expect(data.Aircraft.F5E.Modules.Engine2).toBe(false) -- owned, ready to fit
+			expect((Progression.setModuleFitted(data, "F5E", "Engine2", true))).toBe(true)
+			expect(Progression.ownsSkin(data, "F5E", "Lizard")).toBe(true)
+			expect(Progression.slotsFor(data)).toBe(3)
+			expect(data.Credits).toBe(credits)
+			expect((Progression.setLineup(data, { "F5E", "MiG21bis", "F16A" }))).toBe(true)
+		end)
+
 		it("unfitting keeps the module, refitting is free", function()
 			local data = PlayerData.template()
 			data.Aircraft.F5E.RP = 5000

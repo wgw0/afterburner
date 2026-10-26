@@ -76,11 +76,14 @@ The gear is modelled down; in flight the game keeps it retracted (hidden until t
 Every skin for an airframe shares the **same UV layout**, so a skin is only a set of textures:
 
 ```
-ReplicatedStorage.Assets.Skins.F5E          (attribute Default = "Ghost")
+ReplicatedStorage.Assets.Skins.F5E
 ├── Ghost          Body / Wings / Details   (SurfaceAppearance each)
-├── Aggressor      Body / Wings / Details   (to come)
-└── ...
+├── Desert         Body / Wings / Details
+├── Pacific        Body / Wings / Details
+└── Lizard         Body / Wings / Details
 ```
+
+Each skin's name, price and default flag are in `Shared.Config.Skins`. `Shared.Skins.apply` paints a model; the server uses it as jets spawn and the client uses it for menu previews. Ownership is saved per jet as `Aircraft[id].Skins`, and the skin in use as `Aircraft[id].Camo`.
 
 The assembler fits the default skin to the game model (`AircraftAssembler.applySkin`), so re-importing a model keeps its paint.
 
@@ -115,6 +118,17 @@ Schemes are entries in `SCHEMES`, so a new skin is mostly a set of colours plus 
 | Ghost | Body | 81835012873669 | 82968577363109 | 105714057801586 | 109834815051063 |
 | Ghost | Wings | 100916008882277 | 104825289967457 | 82890588585642 | 99740436860517 |
 | Ghost | Details | 81974986545670 | 138592182008286 | 107141838096039 | 87789614504400 |
+| Desert | Body | 71475764434424 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Desert | Wings | 88744784179765 | (as Ghost) | 132928858941635 | (as Ghost) |
+| Desert | Details | 131932789782406 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Pacific | Body | 87157106227464 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Pacific | Wings | 88219907366285 | (as Ghost) | 71010529022486 | (as Ghost) |
+| Pacific | Details | 90139710262027 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Lizard | Body | 117608256949978 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Lizard | Wings | 74353148664969 | (as Ghost) | 87930505872254 | (as Ghost) |
+| Lizard | Details | 83889269655804 | (as Ghost) | (as Ghost) | (as Ghost) |
+
+The normal maps, metalness maps and most roughness maps are identical across schemes (only the paint changes), so Roblox reuses the same images.
 
 - **Applying a skin** means cloning that skin's `SurfaceAppearance` into each MeshPart of the matching set (every MeshPart carries a `TextureSet` attribute). Roblox doesn't let scripts change a SurfaceAppearance's images at runtime, so skins are swapped as whole instances, never edited.
 - **Cheap colour variants.** A skin can use `AlphaMode = Overlay`: where the Color map's alpha is transparent, the MeshPart's own `Color` shows through. So one texture set gives many paint colours (sell or reward recolours without new art), while markings, weathering and panel lines stay on top.

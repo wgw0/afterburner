@@ -137,6 +137,12 @@ render = function()
 		OnBuy = function(id)
 			return PlayerDataController:Buy(id)
 		end,
+		OnBuySkin = function(id, skinId)
+			return PlayerDataController:BuySkin(id, skinId)
+		end,
+		OnSetSkin = function(id, skinId)
+			return PlayerDataController:SetSkin(id, skinId)
+		end,
 		OnSetModuleFitted = function(id, moduleId, fitted)
 			return PlayerDataController:SetModuleFitted(id, moduleId, fitted)
 		end,

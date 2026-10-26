@@ -3,7 +3,8 @@
 -- owning client, and deltas. Pure, so DataService and the tests share it.
 --   Version / Migrations: MIGRATIONS[n](data) upgrades version n-1 to n; run on every load.
 --   Aircraft[id]: { Owned, Researched, RP, Modules = { [moduleId] = fitted (true) or owned but off (false) },
---     Mastery, Camo }
+--     Mastery, Camo (skin in use), Skins = { [skinId] = true } (bought; the default is always owned) }
+--   Flags.AllUnlocked: full access (the game's owner and admins, Progression.unlockEverything)
 --   PilotXP is XP into the current level (TotalXP keeps the lifetime sum).
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
@@ -43,7 +44,7 @@ end
 PlayerData.deepCopy = deepCopy
 
 function PlayerData.newAircraft(owned: boolean): { [string]: any }
-	return { Owned = owned, Researched = owned, RP = 0, Modules = {}, Mastery = 0, Camo = "Default" }
+	return { Owned = owned, Researched = owned, RP = 0, Modules = {}, Mastery = 0, Camo = "Default", Skins = {} }
 end
 
 -- A fresh account.

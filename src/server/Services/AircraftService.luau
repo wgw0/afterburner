@@ -17,6 +17,7 @@ local Flight = require(Shared.Config.Flight)
 local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
+local Skins = require(Shared.Skins)
 local Units = require(Shared.Units)
 local Validate = require(Shared.Util.Validate)
 local WeaponData = require(Shared.WeaponData)
@@ -58,6 +59,8 @@ local AircraftService = {
 	spawnGate = nil :: ((Player, string) -> (boolean, CFrame?))?,
 	-- Set by ProgressionService: the modules a player has fitted to a jet, as a comma list.
 	modulesFor = nil :: ((Player, string) -> string)?,
+	-- Set by ProgressionService: the skin a player's jet spawns in.
+	skinFor = nil :: ((Player, string) -> string?)?,
 }
 
 local jets: { [number]: Jet } = {}
@@ -157,6 +160,15 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 		or (pilot and self.modulesFor and self.modulesFor(pilot, airframeId))
 		or ""
 	model:SetAttribute("Modules", modules)
+	-- Paint: the pilot's chosen skin; AI jets get a random one, for a varied sky
+	local skin = pilot and self.skinFor and self.skinFor(pilot, airframeId)
+	if not pilot then
+		local choices = Skins.list(airframeId)
+		skin = if #choices > 0 then choices[math.random(#choices)].Id else nil
+	end
+	if skin then
+		Skins.apply(model, airframeId, skin)
+	end
 	local gun = WeaponData.get(airframe.Gun)
 	model:SetAttribute("Ammo", if gun then gun.Ammo else 0)
 	model:SetAttribute("GunHeat", 0)

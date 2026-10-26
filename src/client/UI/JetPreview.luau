@@ -1,11 +1,12 @@
 --!strict
 -- A jet on a slow turntable (UI-02): a copy of the aircraft model in a ViewportFrame.
--- props: AirframeId, Size, Position, AnchorPoint.
+-- props: AirframeId, Skin (optional), Size, Position, AnchorPoint.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
+local Skins = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skins"))
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
@@ -22,6 +23,9 @@ local function JetPreview(props: any)
 		end
 		local world = Instance.new("WorldModel")
 		local model = source:Clone() :: Model
+		if props.Skin then
+			Skins.apply(model, props.AirframeId, props.Skin)
+		end
 		for _, d in model:GetDescendants() do
 			if d:IsA("BasePart") then
 				d.Anchored = true
@@ -47,7 +51,7 @@ local function JetPreview(props: any)
 			world:Destroy()
 			camera:Destroy()
 		end
-	end, { props.AirframeId })
+	end, { props.AirframeId, props.Skin })
 
 	return e("ViewportFrame", {
 		ref = viewportRef,

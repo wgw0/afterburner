@@ -223,8 +223,18 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
     - a Motor6D model contract
     - `ControlSurfaceController`
   - *1 / 15: the F-5E base model is in the game.* 35 parts, 10.7k triangles; it passes the contract in Studio and CI and has moving control surfaces. Flown hands-on, cockpit view and missile launch checked.
-  - *Painted:* the "Ghost" two-tone grey PBR skin from `tools/blender/f5e_paint.py`, fitted in game.
-  - *Still to do for the F-5E:* more skins, and the in-game skin picker and ownership.
+  - *Painted:* four PBR skins from `tools/blender/f5e_paint.py`:
+    - Ghost Grey, the free default
+    - Desert, Pacific and Lizard aggressor schemes, at 5,000 Credits each
+  - *Skins in game:*
+    - a skin picker on the aircraft details screen (BUY / USE / IN USE), with the preview showing the chosen skin
+    - ownership saved per jet
+    - the server paints each jet as it spawns; AI jets get random skins
+  - *Full access:* the game's owner gets every jet, module, skin and lineup slot on joining, in test and live. Currency is untouched.
+  - *Checked in play:*
+    - all 8 jets and 3 slots open
+    - skins switched, previewed and saved across sessions
+    - AI F-5Es spawned in mixed skins
 - [ ] **FLT-08** Variable geometry (F-14)
 - [ ] **INP-05** Rebinding UI and persisted bindings
 - [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets

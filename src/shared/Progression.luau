@@ -6,6 +6,7 @@
 local AircraftData = require(script.Parent.AircraftData)
 local Economy = require(script.Parent.Config.Economy)
 local PlayerData = require(script.Parent.PlayerData)
+local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
 
 local Progression = {}
@@ -161,14 +162,19 @@ function Progression.addXP(data: { [string]: any }, amount: number): number
 	return gained
 end
 
-function Progression.lineupSlots(level: number): number
+function Progression.lineupSlots(level: number, allUnlocked: boolean?): number
 	local slots = 1
 	for _, step in Economy.LINEUP_SLOTS do
-		if level >= step.level then
-			slots = step.slots
+		if allUnlocked or level >= step.level then
+			slots = math.max(slots, step.slots)
 		end
 	end
 	return slots
+end
+
+-- Lineup slots for a save (all of them with full access, see unlockEverything).
+function Progression.slotsFor(data: { [string]: any }): number
+	return Progression.lineupSlots(data.PilotLevel, data.Flags and data.Flags.AllUnlocked == true)
 end
 
 -- Applies match rewards to a save. Returns levels gained.
@@ -277,7 +283,7 @@ function Progression.buy(data: { [string]: any }, id: string): (boolean, string?
 	data.Credits -= node.Credits
 	data.Aircraft[id].Owned = true
 	-- A new jet goes straight into a free lineup slot
-	if #data.Lineup < Progression.lineupSlots(data.PilotLevel) then
+	if #data.Lineup < Progression.slotsFor(data) then
 		table.insert(data.Lineup, id)
 	end
 	return true, nil
@@ -460,7 +466,7 @@ function Progression.setLineup(data: { [string]: any }, ids: { any }): (boolean,
 	if type(ids) ~= "table" or #ids == 0 then
 		return false, "Pick at least one jet"
 	end
-	local slots = Progression.lineupSlots(data.PilotLevel)
+	local slots = Progression.slotsFor(data)
 	if #ids > slots then
 		return false, `Only {slots} lineup slot{if slots == 1 then "" else "s"} at your level`
 	end
@@ -480,6 +486,101 @@ function Progression.setLineup(data: { [string]: any }, ids: { any }): (boolean,
 	end
 	data.Lineup = table.clone(ids)
 	return true, nil
+end
+
+-- Skins ------------------------------------------------------------------------------------------
+-- Aircraft[id].Skins[skinId] = true for skins bought; the default skin is always owned. Aircraft[id].Camo
+-- is the skin in use.
+
+function Progression.ownsSkin(data: { [string]: any }, airframeId: string, skinId: string): boolean
+	local entry = data.Aircraft[airframeId]
+	if not (entry and entry.Owned and Skins.get(airframeId, skinId)) then
+		return false
+	end
+	return skinId == Skins.default(airframeId) or (entry.Skins ~= nil and entry.Skins[skinId] == true)
+end
+
+-- The skin a player's jet spawns in: their choice if they own it, otherwise the default.
+function Progression.skinFor(data: { [string]: any }, airframeId: string): string
+	local entry = data.Aircraft[airframeId]
+	local chosen = entry and entry.Camo
+	if type(chosen) == "string" and Progression.ownsSkin(data, airframeId, chosen) then
+		return chosen
+	end
+	return Skins.default(airframeId)
+end
+
+function Progression.canBuySkin(data: { [string]: any }, airframeId: string, skinId: string): (boolean, string?)
+	local entry = data.Aircraft[airframeId]
+	if not (entry and entry.Owned) then
+		return false, "You don't own this jet"
+	end
+	local skin = Skins.get(airframeId, skinId)
+	if not skin then
+		return false, "Unknown skin"
+	end
+	if Progression.ownsSkin(data, airframeId, skinId) then
+		return false, "Already owned"
+	end
+	local price = skin.Credits or 0
+	if data.Credits < price then
+		return false, `Needs {price - data.Credits} more Credits`
+	end
+	return true, nil
+end
+
+-- Buys a skin and puts it on.
+function Progression.buySkin(data: { [string]: any }, airframeId: string, skinId: string): (boolean, string?)
+	local ok, err = Progression.canBuySkin(data, airframeId, skinId)
+	if not ok then
+		return false, err
+	end
+	local entry = data.Aircraft[airframeId]
+	data.Credits -= (Skins.get(airframeId, skinId) :: any).Credits or 0
+	entry.Skins = entry.Skins or {}
+	entry.Skins[skinId] = true
+	entry.Camo = skinId
+	return true, nil
+end
+
+function Progression.setSkin(data: { [string]: any }, airframeId: string, skinId: string): (boolean, string?)
+	if not Progression.ownsSkin(data, airframeId, skinId) then
+		return false, "You don't own that skin"
+	end
+	data.Aircraft[airframeId].Camo = skinId
+	return true, nil
+end
+
+-- Full access --------------------------------------------------------------------------------------
+-- The game's owner (and admins) get every jet, module, skin and lineup slot, in test and live, without
+-- touching currency. Applied on every join, so new content shows up for them straight away.
+
+function Progression.unlockEverything(data: { [string]: any })
+	local ids = {}
+	for id in AircraftData.getAll() do
+		ids[id] = true
+	end
+	for id in ids do
+		local entry = data.Aircraft[id]
+		if not entry then
+			entry = PlayerData.newAircraft(true)
+			data.Aircraft[id] = entry
+		end
+		entry.Owned = true
+		entry.Researched = true
+		for _, def in Economy.MODULES do
+			if entry.Modules[def.Id] == nil then
+				entry.Modules[def.Id] = false -- owned, not fitted
+			end
+		end
+		entry.Skins = entry.Skins or {}
+		for _, skin in Skins.list(id) do
+			if not skin.Default then
+				entry.Skins[skin.Id] = true
+			end
+		end
+	end
+	data.Flags.AllUnlocked = true
 end
 
 return Progression
