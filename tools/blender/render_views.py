@@ -34,6 +34,10 @@ scene.world = scene.world or bpy.data.worlds.new("World")
 for obj in [o for o in scene.objects if o.type == "EMPTY"]:
     obj.hide_render = True
 
+# Frame the views on the jet's bounding box centre (the origin is the centre of gravity, not the middle)
+corners = [o.matrix_world @ Vector(c) for o in scene.objects if o.type == "MESH" for c in o.bound_box]
+mid = Vector([(min(c[k] for c in corners) + max(c[k] for c in corners)) / 2 for k in range(3)])
+
 cam_data = bpy.data.cameras.new("RefCam")
 cam = bpy.data.objects.new("RefCam", cam_data)
 scene.collection.objects.link(cam)
@@ -52,6 +56,7 @@ for name, (eye, target, ortho, scale) in VIEWS.items():
         cam_data.ortho_scale = scale
     else:
         cam_data.lens = 45
+    eye, target = eye + Vector((0, mid.y, 0)), target + Vector((0, mid.y, 0))
     cam.location = eye
     direction = target - eye
     cam.rotation_euler = direction.to_track_quat("-Z", "Y" if name != "top" else "Y").to_euler()

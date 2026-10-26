@@ -4,7 +4,7 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 
 | Stage | Who | Status (F-5E) |
 |---|---|---|
-| 1. Base mesh from published dimensions | `tools/blender/f5e_generate.py` (automatic) | ✅ 35 parts, 8,322 triangles |
+| 1. Base mesh measured from reference drawings | `tools/blender/f5e_generate.py` (automatic) | ✅ 35 parts, 10,704 triangles, matches the three-view |
 | 2. Refine shapes, add detail | Blender, by hand | ⬜ |
 | 3. Bake + paint PBR textures (Body, Wings, Details) | Blender / Substance Painter, by hand | ⬜ |
 | 4. Import into Studio | Studio 3D Importer | ⬜ |
@@ -15,9 +15,9 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 
 ## 1. Structure (F-5E)
 
-**Axes and scale.** Blender: X right, **Y forward (nose toward +Y)**, Z up, metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, the nose direction the game expects. The game uses **1 m = 3.5714 studs**. Every part keeps the real-world size; the assembler scales to studs.
+**Axes and scale.** Blender: X right, **Y forward (nose toward +Y)**, Z up, metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, the nose direction the game expects. The game uses **1 m = 3.5714 studs**. Every part keeps the real-world size; the assembler scales to studs. The **origin is the centre of gravity** (25% of the mean wing chord), because the flight model rotates the jet about its root; the jet pitches and rolls about the right point.
 
-**Budget.** 5,000–12,000 triangles for the whole jet (the F-5E base is 8,322). Roblox allows 20,000 per MeshPart, so the limit is performance, not the engine.
+**Budget.** 5,000–12,000 triangles for the whole jet (the F-5E base is 10,704, about half of it the fuselage). Roblox allows 20,000 per MeshPart, so the limit is performance, not the engine.
 
 **Separate objects.** Nothing is merged. Moving parts have their **origin on the hinge line** with identity rotation (aligned to world axes); the hinge axis and limits are stored on the object (`afterburner_hinge_axis`) and in the manifest.
 
@@ -46,7 +46,7 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 
 The gear is modelled down; in flight the game keeps it retracted (hidden until the takeoff and landing work).
 
-**The manifest** (`tools/blender/out/F5E_manifest.json`, and `tools/Manifests/F5E.luau` for Studio) lists every part with its texture set, kind, pivot and hinge, plus the gameplay data the game already uses: attachment points (`CockpitEye`, `GunMuzzle`, `Nozzle1/2`, `WingtipL/R`, dispensers, `ChaseCam`, `Hardpoint1–3`), the collision hull and the six hitboxes. These are carried over from the greybox F-5E, so the new model plays exactly the same.
+**The manifest** (`tools/blender/out/F5E_manifest.json`, and `tools/Manifests/F5E.luau` for Studio) lists every part with its texture set, kind, pivot and hinge, plus the gameplay data the game already uses: attachment points (`CockpitEye`, `GunMuzzle`, `Nozzle1/2`, `WingtipL/R`, dispensers, `ChaseCam`, `Hardpoint1–3`), the collision hull and the six hitboxes. They are placed on the new model: the cockpit eye is inside the canopy, the muzzle is at the nose guns, the nozzles are at the real exits, and the hitboxes cover the visible parts, so players hit what they aim at. The flight data in `AircraftData` doesn't change.
 
 ---
 
@@ -97,10 +97,21 @@ ReplicatedStorage.Assets.Skins.F5E
 ```
 blender -b --python tools/blender/f5e_generate.py -- --out tools/blender/out --manifest-luau tools/Manifests/F5E.luau
 blender -b tools/blender/out/F5E_base.blend --python tools/blender/render_views.py -- --out <absolute path>/tools/blender/out
+blender -b tools/blender/out/F5E_base.blend --python tools/blender/overlay_reference.py -- --ref <three-view image> --out <absolute path>/tools/blender/out
 stylua tools/Manifests
 ```
 
-This gives `F5E_base.blend` (collections per texture set, one material per set, UVs packed per set), `F5E_base.fbx`, the manifest and reference renders.
+This gives `F5E_base.blend` (collections per texture set, one material per set, UVs packed per set), `F5E_base.fbx`, the manifest, reference renders, and `F5E_overlay_side.png` / `F5E_overlay_top.png`. The overlays draw the model, tinted blue, over the three-view at the drawing's own scale; any mismatch shows as blue outside the red lines.
+
+### References
+
+Each jet's reference images live in `docs/art/reference/<Airframe>/`. That folder is kept out of git (it's excluded locally in `.git/info/exclude`), and `SOURCES.md` inside it records each image's author, licence and link. For the F-5E it holds:
+- the Wikimedia Commons three-view (`Northrop F-5E Tiger II 3-view.svg`)
+- figures from the USAF flight manual T.O. 1F-5E-1
+- museum walkarounds, side profiles, detail shots (intakes, nozzles, canopy, gear)
+- paint schemes for skins
+
+The generator's shapes are measured from the three-view. Its stations are written in the drawing's pixel coordinates (`Y(xd)`, `Z(row)`), so every number can be traced back to the drawing. The scale comes from the published 14.45 m length; it also reproduces the published height and span. Use the photos for what a line drawing can't show, such as gear legs, intake lips and panel lines.
 
 ### Refine (by hand, starting from `F5E_base.blend`)
 
