@@ -8,6 +8,8 @@
 --     must stay on radar) before the request goes to the server, so a radar lock builds up like an IR one.
 --   IR seeker: for the selected heat-seeker, the target it sees and how long it's been held (for the
 --     tone and the HUD). The server keeps its own copy and decides what can actually be fired.
+--     The lock key cages the seeker (off, silent) and uncages it again. With none of the selected
+--     missile left, the seeker is off and nothing is shown as lockable.
 --   RWR: threats the server says are painting you.
 -- Updated 5× a second; the HUD, scopes, camera (padlock) and audio read from here.
 
@@ -54,11 +56,13 @@ local SensorController = {
 	irTargetId = 0, -- what the selected heat-seeker sees, 0 = nothing
 	irHeldFor = 0, -- seconds the seeker has held irTargetId
 	irLocked = false, -- held for the missile's LockTime
+	seekerCaged = false, -- the pilot switched the heat-seeker off (lock key)
 	threats = {} :: { Threat },
 	LockChanged = Signal.new(), -- (id, state)
 }
 
 local losParams: RaycastParams
+local lastMissileId = ""
 
 local function clearLineOfSight(from: Vector3, to: Vector3): boolean
 	return workspace:Raycast(from, to - from, losParams) == nil
@@ -68,6 +72,16 @@ function SensorController:SelectedMissile(): WeaponData.Missile?
 	local jet = FlightController.jet
 	local id = jet and jet:GetAttribute("SelectedMissile") :: string?
 	return if id and id ~= "" then WeaponData.getMissile(id) else nil
+end
+
+-- How many of the selected missile are left.
+function SensorController:MissilesLeft(): number
+	local jet = FlightController.jet
+	local id = jet and jet:GetAttribute("SelectedMissile") :: string?
+	if not (jet and id and id ~= "") then
+		return 0
+	end
+	return (jet:GetAttribute(`Msl_{id}`) :: number?) or 0
 end
 
 function SensorController:GetModel(id: number): Model?
@@ -151,6 +165,13 @@ local function update()
 
 	-- IR seeker for the selected heat-seeker; what the selected missile could lock
 	local missile = self:SelectedMissile()
+	if missile and missile.Id ~= lastMissileId then
+		self.seekerCaged = false -- a newly selected missile starts with its seeker on
+	end
+	lastMissileId = if missile then missile.Id else ""
+	if self:MissilesLeft() == 0 then
+		missile = nil -- nothing left to fire: no seeker, nothing lockable
+	end
 	local bestId, bestDot = 0, -2
 	table.clear(self.lockable)
 	if missile and WeaponData.isRadar(missile) then
@@ -173,7 +194,7 @@ local function update()
 			Net.Client.fire("RadarLockRequest", self.acquiringId)
 		end
 	end
-	if missile and WeaponData.isIR(missile) then
+	if missile and WeaponData.isIR(missile) and not self.seekerCaged then
 		for id, contact in self.contacts do
 			local throttle = (contact.model:GetAttribute("Throttle") :: number?) or 0.85
 			local afterburner = contact.model:GetAttribute("Afterburner") == true
@@ -211,6 +232,7 @@ function SensorController:Init()
 	FlightController.JetChanged:Connect(function()
 		self.lockId = 0
 		self.acquiringId = 0
+		self.seekerCaged = false
 		self.threats = {}
 	end)
 end
@@ -219,6 +241,12 @@ end
 function SensorController:StartRadarLock(id: number)
 	self.acquiringId = id
 	self.acquireStart = os.clock()
+end
+
+-- Switches the heat-seeker off (silent, nothing tracked) or back on.
+function SensorController:ToggleSeeker()
+	self.seekerCaged = not self.seekerCaged
+	self.irTargetId, self.irHeldFor, self.irLocked = 0, 0, false
 end
 
 -- Drops the radar lock, or cancels a lock-on in progress.
