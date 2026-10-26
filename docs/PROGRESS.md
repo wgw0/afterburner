@@ -5,7 +5,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | Phase | Done | Status |
 |---|---|---|
 | 0 Foundation | 9 / 9 | ✅ Complete |
-| 1–8 | 0 / 183 | ⚪ Not started |
+| 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
+| 2–8 | 0 / 162 | ⚪ Not started |
 
 ---
 
@@ -33,27 +34,37 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 1: Flight model prototype
 
-- [ ] **ACD-01** Airframe schema, registry and startup validator
-- [ ] **ACD-02** Greybox models for F-5E and MiG-21 following the model contract
-- [ ] **ACD-03** Model-contract validator script (Studio command plus CI check against the built place)
-- [ ] **FLT-01** `Atmosphere`, `Units` and `Scale` modules with tests
-- [ ] **FLT-02** `FlightModel.step` (steps 1–13), sub-stepping, determinism
-- [ ] **FLT-03** Stall model and buffet flag
-- [ ] **FLT-04** G limit, corner-speed emergence, G stress
-- [ ] **FLT-05** `FlightController` applying the state through `LinearVelocity` and `AngularVelocity`
-- [ ] **FLT-06** Debug tuning panel with export
-- [ ] **FLT-07** Wave drag and supercruise behaviour
-- [ ] **INP-01** InputController with keyboard and mouse, Direct scheme
-- [ ] **INP-02** Instructor plus Mouse Aim scheme, with the aim reticle on the HUD
-- [ ] **CAM-01** Cockpit camera with free look and G head-shake. Debug chase camera
-- [ ] **CAM-02** Greybox analogue cockpit kit with 4 live gauges
-- [ ] **CAM-05** G-LOC, grey-out and red-out effects
-- [ ] **HUD-01** Core flight HUD: speed, altitude, G, throttle, heading, flight path marker, reticle
-- [ ] **HUD-07** HUD visual design pass (added after the first playtest: the Phase 1 HUD is placeholder text)
-- [ ] **AIR-01** Spawn/despawn, network ownership, attributes and the no-character setup
-- [ ] **FX-01** Afterburner, contrails, vapour (own jet + others)
-- [ ] **AUD-01** Engine and wind (cockpit and external)
-- [ ] **TST-03** Playtest template and log folder
+**Signed off by Will on 2026-10-26:** "feels good". Fine-tuning can wait for later. Exit test: flying is fun with no weapons, and the two jets feel different. See the [playtest log](playtests/2026-10-25-phase1-first-flight.md).
+
+| | Task | Evidence |
+|:---:|---|---|
+| ✅ | **ACD-01** Airframe schema, registry and startup validator | `AircraftData.spec`: valid airframes load frozen; missing/out-of-range/NaN/bad-enum fields are named; a broken module stops loading with "Broken: missing WingArea" and doesn't blame the good one. |
+| ✅ | **ACD-02** Greybox models for F-5E and MiG-21 following the model contract | `tools/GreyboxBuilder` builds both into `ReplicatedStorage.Assets.Aircraft` (saved in the place). `Model.spec`: both pass the contract. Flown hands-on. |
+| 🟡 | **ACD-03** Model-contract validator script (Studio command plus CI check against the built place) | Studio half done: `AircraftModelContract.validate`, run at server boot (AircraftService refuses to start on a bad model) and in `Model.spec`, which catches a deliberately broken model. **CI half carried over:** CI only builds the code, not the place file, so it can't see models yet. Needs a place-reading tool (e.g. Lune) in CI. |
+| ✅ | **FLT-01** `Atmosphere`, `Units` and `Scale` modules with tests | `Units.spec`: conversions round-trip, distances agree with velocity scaling, ceiling ≈ 48,000 ft; atmosphere values at sea level and the tropopause. |
+| ✅ | **FLT-02** `FlightModel.step`, sub-stepping, determinism | `FlightModel.spec`: level flight holds altitude within 2% over 10 s; deterministic; stable and consistent at 20 vs 60 FPS; input state never mutated. |
+| ✅ | **FLT-03** Stall model and buffet flag | Lift falls past critical AoA; slow pull with protections off stalls; the AoA limiter keeps it out of the stall. |
+| ✅ | **FLT-04** G limit, corner-speed emergence, G stress | F-5E corner ≈ 348 kt at sea level; holds 7.3 G at its limit; MiG bleeds more in hard turns and the F-5E out-sustains it (11.7 vs 10.8 °/s); G stress builds above 6.5 G and decays. |
+| ✅ | **FLT-05** `FlightController` driving `LinearVelocity`/`AngularVelocity` | Play test: client owns the jet (ReceiveAge 0); speed and altitude stable hands-off; flown hands-on in both jets. |
+| ✅ | **FLT-06** Debug tuning panel with export | Will tuned roll/pitch/yaw live with the P panel; those values are now the defaults. |
+| ✅ | **FLT-07** Wave drag and supercruise behaviour | F-5E stays below Mach 1 on dry thrust at 9 km; MiG-21 goes supersonic in afterburner; wave drag peaks near Mach 1. (Acceleration through Mach 1 is slow; logged for tuning.) |
+| ✅ | **INP-01** InputController, keyboard and mouse, Direct scheme | Keys and Direct mode (M) wired and flown; throttle/afterburner hold logic in use. |
+| ✅ | **INP-02** Instructor plus Mouse Aim with HUD reticle | `Instructor.spec`: correct roll/pitch direction, no inverted roll for small low targets, G cap unless overridden, settles on 90° and behind-above targets without wobble, holds altitude 30 s. Aim reticle confirmed at screen centre. |
+| ✅ | **CAM-01** Cockpit camera with free look and G head-shake; chase camera | Flown hands-on; chase camera reworked to keep the jet centred, with dynamic FOV. |
+| ✅ | **CAM-02** Greybox analogue cockpit with 4 live gauges | Airspeed, altimeter, G, RPM live; dials fixed to round and unobstructed after playtest feedback. |
+| ✅ | **CAM-05** G-LOC, grey-out and red-out | G stress model unit-tested; grey-out, blackout (with level-hold autopilot) and red-out effects implemented. *Lightest-tested item: the effects weren't specifically checked hands-on; worth a look in Phase 2.* |
+| ✅ | **HUD-01** Core flight HUD | Speed, altitude, G, throttle, heading, flight path marker, reticle, warnings. Reticle offset bug found and fixed. |
+| ✅ | **HUD-07** HUD visual design pass | Collimated HUD box with tapes, conformal pitch ladder and FPM; ladder clipping bug found in playtest and fixed. |
+| ✅ | **AIR-01** Spawn/despawn, network ownership, attributes, no characters | Spawn menu → jet appears, owned by the pilot; respawn and crash → despawn work; runway is the idle streaming focus. |
+| ✅ | **FX-01** Afterburner, contrails, vapour | Afterburner flame and light, wingtip vapour above 5 G, contrails above 7 km, driven by telemetry for other jets. *Contrails and other players' effects not yet seen in a multiplayer test.* |
+| ✅ | **AUD-01** Engine and wind | Engine pitch follows throttle, muffled in the cockpit; wind rises with speed; volumes cut twice after playtest feedback. Placeholder Creator Store sounds, to review before launch. |
+| ✅ | **TST-03** Playtest template and log folder | `docs/playtests/TEMPLATE.md` and the first log with 10 findings. |
+
+**Carried over:** ACD-03 CI half (needs a place-reading tool in CI).
+
+**Also done in Phase 1:** placeholder terrain (`tools/TerrainBuilder`, 70% leaner after `trim()`), streaming tuned (client ready in ~1 s), HUD-07 added to the plan, integrity checks (CI repo checks, module/definition/place specs, startup smoke test). Tests: 49 → 115.
+
+**Tuning backlog (for later):** MiG-21 transonic acceleration; overall roll/pitch feel per jet; sound assets; terrain is a placeholder until MAP-02.
 
 ## Phase 2: Guns and damage
 

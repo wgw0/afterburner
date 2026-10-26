@@ -568,14 +568,14 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** the place boots with no errors and the services log that they started. ✅ *Passed. Task-level detail is in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 1: Flight model prototype (weeks 2–3) ← **the most important phase**
-- [ ] Greybox jet (box fuselage plus wings) with network ownership given to the pilot.
-- [ ] `FlightModel` module: thrust, lift, drag, gravity, AoA, G-limit, stall.
-- [ ] `FlightController`: Direct controls first (keyboard and mouse), then Mouse Aim.
-- [ ] Cockpit camera with free look (a greybox cockpit is fine), plus a debug chase camera. Minimal HUD (speed, altitude, G, throttle).
-- [ ] Two contrasting stat blocks (F-5E, MiG-21) to prove the data-driven approach.
-- [ ] A tuning panel (a dev-only GUI) to tweak coefficients live.
+- [x] Greybox jet (box fuselage plus wings) with network ownership given to the pilot.
+- [x] `FlightModel` module: thrust, lift, drag, gravity, AoA, G-limit, stall.
+- [x] `FlightController`: Direct controls first (keyboard and mouse), then Mouse Aim.
+- [x] Cockpit camera with free look (a greybox cockpit is fine), plus a debug chase camera. Minimal HUD (speed, altitude, G, throttle).
+- [x] Two contrasting stat blocks (F-5E, MiG-21) to prove the data-driven approach.
+- [x] A tuning panel (a dev-only GUI) to tweak coefficients live.
 
-**Exit test:** flying is fun on its own, with no weapons. Turning bleeds speed, diving gains it, and the two jets feel different. If this isn't fun, nothing else matters, so iterate here.
+**Exit test:** flying is fun on its own, with no weapons. Turning bleeds speed, diving gains it, and the two jets feel different. If this isn't fun, nothing else matters, so iterate here. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 2: Guns and damage (week 4)
 - [ ] Raycast bullets with travel time, tracers and a lead pipper.
