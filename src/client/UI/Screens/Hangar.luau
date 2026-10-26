@@ -127,6 +127,10 @@ local function Hangar(props: any)
 			setLineupError(if ok then nil else err)
 		end)
 	end
+	-- With every slot full (a new pilot has only one), adding a jet swaps it in for the selected lineup jet,
+	-- or the last slot; otherwise a one-slot pilot could never change jets.
+	local full = #data.Lineup >= slots
+	local swapIndex = (selected and table.find(data.Lineup, selected)) or math.min(slots, #data.Lineup)
 	local ownedChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
 	ownedChildren.Title =
 		e(C.Label, { Text = "YOUR JETS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
@@ -145,20 +149,25 @@ local function Hangar(props: any)
 				Color = if index then Theme.Text else Theme.Dim,
 			}),
 			Toggle = e(C.Button, {
-				Text = if index then "Remove" else "Add",
+				Text = if index then "Remove" elseif full then "Swap" else "Add",
 				Size = UDim2.fromOffset(88, 36),
 				Position = UDim2.new(1, -88, 0.5, -18),
 				TextSize = 13,
 				Pending = pending,
-				Disabled = (index ~= nil and #data.Lineup <= 1) or (index == nil and #data.Lineup >= slots),
+				Disabled = index ~= nil and #data.Lineup <= 1, -- always keep one jet
 				OnClick = function()
 					local ids = table.clone(data.Lineup)
 					if index then
 						table.remove(ids, index)
+					elseif full then
+						ids[swapIndex] = id
 					else
 						table.insert(ids, id)
 					end
 					setLineup(ids)
+					if not index then
+						props.OnSelect(id)
+					end
 				end,
 			}),
 		})
