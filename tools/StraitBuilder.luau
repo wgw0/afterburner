@@ -1,33 +1,75 @@
 --!strict
--- "Strait" blockout (DEVELOPMENT.md §19, MAP-02). Replaces the placeholder terrain from TerrainBuilder.
---   West landmass with a mountain range (valleys cut through it), east landmass with lower hills, and a
---   north-south channel between them with the test range on a central island. In the south the coasts
---   fall away into open sea for long-range fights. One airbase on each landmass, at opposite ends.
--- Deterministic. Run each step in Edit mode (each yields between chunks, so Studio stays responsive):
+--!native
+-- "Strait" terrain (DEVELOPMENT.md §19, MAP-02). A height field written straight into voxels:
+--   * West landmass: rolling lowland and river valleys rising into a ridged mountain range (peaks up to
+--     ~1,750 studs, about 1,300 m real) with passes cut through it for low flying.
+--   * East landmass: hills rising into a lower, broken range.
+--   * A north-south channel between them with the island runway in the middle, rocky islets for terrain
+--     masking, and open sea in the south where the coasts fall away.
+--   * One airbase on each landmass (flattened, asphalt runway, concrete apron, low-poly buildings).
+-- Only a thin shell under the surface is filled (thick enough to close steep slopes) and the sea is
+-- shallow, so the data a client streams stays small.
+-- Deterministic. Run each step in Edit mode; terrain() yields as it goes and can be split into parts:
 --   local S = require(game.ServerStorage.Tools.StraitBuilder)
---   S.clear() S.base() S.island() S.islets() S.relief() S.airbases() S.trim() S.spawns()
--- S.coastX(z) gives the coastline, for checks and props.
+--   S.clear() S.terrain(1, 8) ... S.terrain(8, 8) S.airbases() S.spawns()
+-- S.height(x, z) gives the surface height in studs at any point (spawns and checks use it).
 
 local CollectionService = game:GetService("CollectionService")
 
 local Terrain = workspace.Terrain
 
 local HALF = 20480 -- terrain edge (the play area ends at 20,000)
-local STRIP = 128 -- coast resolution along z
-local GROUND_TOP = -2 -- just under the baseplate and runway
-local LAND_BOTTOM = -12 -- keep land thin: buried voxels still have to be downloaded
-local WATER_TOP = -6
-local SEABED = -20
+local CHUNK = 128 -- studs per WriteVoxels call (small chunks keep the vertical span low on slopes)
+local GRID = 16 -- the height field is sampled every 16 studs and interpolated per 4-stud column
+local WATER = -6 -- sea surface
 local SEED = 2026
 local ISLAND_RADIUS = 3000
-local SPAWN_ALTITUDE = 1200
+local ISLAND_FLAT = 1500 -- the runway area stays flat at y = 0
+local BASE_HEIGHT = 20 -- airbase ground level
+local SPAWN_CLEARANCE = 700 -- spawn at least this far above the ground
 
 local StraitBuilder = {}
 
 StraitBuilder.AIRBASES = {
-	West = { position = Vector3.new(-11500, 0, -9000), heading = 0 },
-	East = { position = Vector3.new(12000, 0, 8500), heading = 0 },
+	West = { position = Vector3.new(-11500, 0, -9000) },
+	East = { position = Vector3.new(12000, 0, 8500) },
 }
+
+local function smoothstep(a: number, b: number, x: number): number
+	local t = math.clamp((x - a) / (b - a), 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
+local function lerp(a: number, b: number, t: number): number
+	return a + (b - a) * t
+end
+
+-- Fractal noise, roughly -1..1
+local function fbm(x: number, z: number, scale: number, octaves: number, seed: number): number
+	local total, amplitude, frequency, norm = 0, 1, 1 / scale, 0
+	for _ = 1, octaves do
+		total += math.noise(x * frequency, z * frequency, seed) * amplitude
+		norm += amplitude
+		amplitude *= 0.5
+		frequency *= 2.03
+	end
+	return total / norm * 1.6
+end
+
+-- Ridged noise, 0..1: sharp crests where the noise crosses zero
+local function ridged(x: number, z: number, scale: number, octaves: number, seed: number): number
+	local total, amplitude, frequency, norm, weight = 0, 1, 1 / scale, 0, 1
+	for _ = 1, octaves do
+		local n = 1 - math.abs(math.noise(x * frequency, z * frequency, seed))
+		n = n * n * weight
+		weight = math.clamp(n * 1.6, 0, 1)
+		total += n * amplitude
+		norm += amplitude
+		amplitude *= 0.5
+		frequency *= 2.1
+	end
+	return total / norm
+end
 
 -- x of the west and east coastlines at z. South of z = 9000 both coasts curve away into open sea.
 function StraitBuilder.coastX(z: number): (number, number)
@@ -37,30 +79,133 @@ function StraitBuilder.coastX(z: number): (number, number)
 	return west, east
 end
 
-local function isLand(p: Vector3, margin: number): boolean
-	local west, east = StraitBuilder.coastX(p.Z)
-	return p.X < west - margin or p.X > east + margin
-end
-
-local function nearAirbase(p: Vector3, radius: number): boolean
-	for _, base in StraitBuilder.AIRBASES do
-		if (Vector3.new(p.X, 0, p.Z) - base.position).Magnitude < radius then
-			return true
+-- Islets in the channel: { x, z, radius, peak }
+local ISLETS = {}
+do
+	local rng = Random.new(SEED + 3)
+	while #ISLETS < 10 do
+		local z = rng:NextNumber(-17000, 8000)
+		local west, east = StraitBuilder.coastX(z)
+		local x = if rng:NextNumber() < 0.5
+			then rng:NextNumber(west + 1400, -ISLAND_RADIUS - 900)
+			else rng:NextNumber(ISLAND_RADIUS + 900, east - 1400)
+		if not (math.abs(z) < ISLAND_RADIUS + 900 and math.abs(x) < ISLAND_RADIUS + 900) then
+			table.insert(ISLETS, { x, z, rng:NextNumber(220, 520), rng:NextNumber(60, 260) })
 		end
 	end
-	return false
 end
 
-local function block(material: Enum.Material, x0: number, x1: number, z0: number, z1: number, y0: number, y1: number)
-	x0, x1 = math.min(x0, x1), math.max(x0, x1)
-	if x1 - x0 < 1 or z1 - z0 < 1 then
-		return
+-- 0 outside an airbase, 1 on it (with an 800-stud blend), plus whether the point is on the runway/apron.
+local function airbaseAt(x: number, z: number): (number, Enum.Material?)
+	for name, base in StraitBuilder.AIRBASES do
+		local dx, dz = x - base.position.X, z - base.position.Z
+		local outside = math.max(math.abs(dx) - 1400, math.abs(dz) - 3800, 0)
+		if outside < 800 then
+			local material: Enum.Material? = nil
+			local side = if name == "West" then 1 else -1
+			if math.abs(dx) < 90 and math.abs(dz) < 3000 then
+				material = Enum.Material.Asphalt
+			elseif dx * side > 250 and dx * side < 1050 and math.abs(dz) < 700 then
+				material = Enum.Material.Concrete
+			elseif dx * side >= 0 and dx * side <= 250 and math.abs(dz) < 40 then
+				material = Enum.Material.Asphalt
+			end
+			return 1 - smoothstep(0, 800, outside), material
+		end
 	end
-	Terrain:FillBlock(
-		CFrame.new((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2),
-		Vector3.new(x1 - x0, y1 - y0, z1 - z0),
-		material
-	)
+	return 0, nil
+end
+
+-- Surface height (studs) at a point.
+function StraitBuilder.height(x: number, z: number): number
+	-- Central island: flat runway area, a low rim of hills, a rocky headland, beaches.
+	local r = math.sqrt(x * x + z * z)
+	local islandEdge = ISLAND_RADIUS + 260 * fbm(x, z, 1400, 2, SEED + 11)
+	if r < islandEdge + 900 then
+		local s = math.clamp((r - ISLAND_FLAT) / (islandEdge - ISLAND_FLAT), 0, 1)
+		local rim = math.sin(s * math.pi) * (40 + 70 * math.max(fbm(x, z, 700, 3, SEED + 12), 0))
+		local headland = 330 * math.exp(-((x + 1600) ^ 2 + (z + 2300) ^ 2) / (420 * 420))
+		local land = rim * smoothstep(0, 0.15, s) + headland
+		if r <= islandEdge then
+			return math.max(land - smoothstep(0.85, 1, s) * 8, WATER + 1 + (1 - s) * 2)
+		end
+		-- Shelving into the sea
+		return lerp(WATER - 2, WATER - 16, smoothstep(islandEdge, islandEdge + 900, r))
+	end
+
+	local west, east = StraitBuilder.coastX(z)
+	local d = math.max(west - x, x - east) + 380 * fbm(x, z, 2200, 3, SEED + 1) -- distance inland
+
+	if d < 0 then
+		-- Sea: shallow shelf, islets
+		local h = lerp(WATER - 2, WATER - 16, smoothstep(0, 700, -d))
+		for _, islet in ISLETS do
+			local dist = math.sqrt((x - islet[1]) ^ 2 + (z - islet[2]) ^ 2)
+			if dist < islet[3] * 1.3 then
+				local shape = 1 - (dist / islet[3]) ^ 2
+				local rough = 1 + 0.35 * fbm(x, z, 120, 2, SEED + 13)
+				h = math.max(h, WATER - 3 + (islet[4] + 6) * shape * rough)
+			end
+		end
+		return h
+	end
+
+	local inland = smoothstep(0, 900, d)
+	local deep = smoothstep(800, 4000, d)
+
+	-- Lowland: gentle rise from the beach, rolling hills, hilly patches
+	local h = WATER + 3 + 60 * inland
+	h += inland * (55 + 70 * fbm(x, z, 2600, 4, SEED + 2))
+	local hilly = smoothstep(-0.2, 0.5, fbm(x, z, 7000, 2, SEED + 3))
+	h += inland * hilly * 260 * math.max(fbm(x, z, 1500, 4, SEED + 4), 0) ^ 1.4
+
+	-- Mountains (west high, east lower), with passes
+	local ridgeW = -15600 + 900 * math.sin(z / 3100)
+	local ridgeE = 15800 + 700 * math.sin(z / 2700 + 1)
+	local maskW = math.exp(-((x - ridgeW) / 2900) ^ 2)
+	local maskE = math.exp(-((x - ridgeE) / 2300) ^ 2)
+	local passes = 0.25 + 0.75 * smoothstep(-0.25, 0.35, math.noise(z / 4300, 3.1, SEED + 5))
+	local crest = ridged(x, z, 2600, 5, SEED + 6)
+	h += deep * passes * (maskW * (300 + 1450 * crest) + maskE * (160 + 620 * crest))
+
+	-- River valleys wind down toward the sea
+	local v = math.abs(math.noise(x / 5600, z / 5600, SEED + 7) + 0.25 * math.noise(x / 1400, z / 1400, SEED + 8))
+	local valley = 1 - smoothstep(0.02, 0.14, v)
+	h = lerp(h, WATER + 10 + 0.15 * (h - WATER), valley * inland * 0.75)
+
+	-- Airbases are flattened
+	local base = airbaseAt(x, z)
+	if base > 0 then
+		h = lerp(h, BASE_HEIGHT, base)
+	end
+	return h
+end
+
+local function surfaceMaterial(x: number, z: number, h: number, slope: number): Enum.Material
+	local _, baseMaterial = airbaseAt(x, z)
+	if baseMaterial then
+		return baseMaterial
+	end
+	if h < WATER + 0.5 then
+		return Enum.Material.Sand
+	end
+	if h < WATER + 6 and slope < 0.5 then
+		return Enum.Material.Sand
+	end
+	local jitter = 120 * math.noise(x / 400, z / 400, SEED + 20)
+	if h > 1250 + jitter and slope < 0.85 then
+		return Enum.Material.Snow
+	end
+	if slope > 0.85 or h > 950 + jitter then
+		return Enum.Material.Rock
+	end
+	if slope > 0.5 or h > 650 + jitter then
+		return Enum.Material.Ground
+	end
+	if math.noise(x / 900, z / 900, SEED + 21) > 0.25 then
+		return Enum.Material.LeafyGrass
+	end
+	return Enum.Material.Grass
 end
 
 function StraitBuilder.clear(): string
@@ -68,157 +213,136 @@ function StraitBuilder.clear(): string
 	return "terrain cleared"
 end
 
--- Land, beaches and sea, one strip at a time. Pass (part, parts) to build in pieces, e.g. base(1, 4).
-function StraitBuilder.base(part: number?, parts: number?): string
+-- Writes one CHUNK × CHUNK area whose corner is (x0, z0).
+local function writeChunk(x0: number, z0: number)
+	local columns = CHUNK // 4
+	-- Height field samples covering the chunk plus one grid step around it
+	local samples = CHUNK // GRID + 3
+	local grid = table.create(samples)
+	for i = 1, samples do
+		local row = table.create(samples)
+		local gx = x0 + (i - 2) * GRID
+		for k = 1, samples do
+			row[k] = StraitBuilder.height(gx, z0 + (k - 2) * GRID)
+		end
+		grid[i] = row
+	end
+	local function at(px: number, pz: number): number
+		local fx = (px - x0) / GRID + 2
+		local fz = (pz - z0) / GRID + 2
+		local i, k = math.floor(fx), math.floor(fz)
+		local tx, tz = fx - i, fz - k
+		local a = grid[i][k] + (grid[i + 1][k] - grid[i][k]) * tx
+		local b = grid[i][k + 1] + (grid[i + 1][k + 1] - grid[i][k + 1]) * tx
+		return a + (b - a) * tz
+	end
+
+	-- Column heights including a one-column border (for slopes and shell thickness)
+	local heights = table.create(columns + 2)
+	for i = 0, columns + 1 do
+		local row = table.create(columns + 2)
+		for k = 0, columns + 1 do
+			row[k + 1] = at(x0 + (i - 1) * 4 + 2, z0 + (k - 1) * 4 + 2)
+		end
+		heights[i + 1] = row
+	end
+
+	local low, high = math.huge, -math.huge
+	local bottoms = table.create(columns)
+	local slopes = table.create(columns)
+	for i = 1, columns do
+		local bRow, sRow = table.create(columns), table.create(columns)
+		for k = 1, columns do
+			local h = heights[i + 1][k + 1]
+			local n1, n2 = heights[i][k + 1], heights[i + 2][k + 1]
+			local n3, n4 = heights[i + 1][k], heights[i + 1][k + 2]
+			local drop = math.max(h - n1, h - n2, h - n3, h - n4, 0)
+			local bottom = h - math.max(8, drop + 6)
+			bRow[k] = bottom
+			sRow[k] = math.sqrt((n2 - n1) ^ 2 + (n4 - n3) ^ 2) / 8
+			low = math.min(low, bottom)
+			high = math.max(high, h, WATER)
+		end
+		bottoms[i], slopes[i] = bRow, sRow
+	end
+
+	local y0 = math.floor(low / 4) * 4
+	local y1 = math.ceil(high / 4) * 4 + 4
+	local layers = (y1 - y0) // 4
+	local materials = table.create(columns)
+	local occupancy = table.create(columns)
+	local air, water = Enum.Material.Air, Enum.Material.Water
+	for i = 1, columns do
+		local mx, ox = table.create(layers), table.create(layers)
+		local px = x0 + (i - 1) * 4 + 2
+		for j = 1, layers do
+			mx[j] = table.create(columns, air)
+			ox[j] = table.create(columns, 0)
+		end
+		for k = 1, columns do
+			local h = heights[i + 1][k + 1]
+			local bottom = bottoms[i][k]
+			local surface = surfaceMaterial(px, z0 + (k - 1) * 4 + 2, h, slopes[i][k])
+			local under = if surface == Enum.Material.Snow or surface == Enum.Material.Rock
+				then Enum.Material.Rock
+				elseif surface == Enum.Material.Sand then Enum.Material.Sand
+				else Enum.Material.Ground
+			for j = 1, layers do
+				local yb = y0 + (j - 1) * 4
+				local solid = math.clamp((h - yb) / 4, 0, 1)
+				if yb + 4 > bottom and solid > 0 then
+					mx[j][k] = if h - yb < 8 then surface else under
+					ox[j][k] = solid
+				end
+				if solid < 0.5 and yb < WATER then
+					-- Water above the ground, up to the sea surface (partial in the top voxel)
+					mx[j][k] = water
+					ox[j][k] = math.clamp((WATER - yb) / 4, 0, 1)
+				end
+			end
+		end
+		materials[i], occupancy[i] = mx, ox
+	end
+	local region = Region3.new(Vector3.new(x0, y0, z0), Vector3.new(x0 + CHUNK, y1, z0 + CHUNK))
+	Terrain:WriteVoxels(region, 4, materials, occupancy)
+end
+
+-- Builds the terrain, one west-to-east strip of the map per part: terrain(1, 8) ... terrain(8, 8).
+function StraitBuilder.terrain(part: number?, parts: number?): string
 	local count = parts or 1
 	local index = part or 1
-	local strips = (2 * HALF) // STRIP
+	local strips = (2 * HALF) // CHUNK
 	local first = (index - 1) * strips // count
 	local last = index * strips // count - 1
-	for i = first, last do
-		local z0 = -HALF + i * STRIP
-		local z1 = z0 + STRIP
-		local west, east = StraitBuilder.coastX(z0 + STRIP / 2)
-		west = math.max(west, -HALF)
-		east = math.min(east, HALF)
-		block(Enum.Material.Grass, -HALF, west - 300, z0, z1, LAND_BOTTOM, GROUND_TOP)
-		block(Enum.Material.Sand, west - 300, west + 150, z0, z1, LAND_BOTTOM, GROUND_TOP - 2)
-		block(Enum.Material.Sand, west + 150, east - 150, z0, z1, SEABED - 4, SEABED)
-		block(Enum.Material.Water, west + 150, east - 150, z0, z1, SEABED, WATER_TOP)
-		block(Enum.Material.Sand, east - 150, east + 300, z0, z1, LAND_BOTTOM, GROUND_TOP - 2)
-		block(Enum.Material.Grass, east + 300, HALF, z0, z1, LAND_BOTTOM, GROUND_TOP)
-		if i % 2 == 0 then
-			task.wait()
+	local started = os.clock()
+	local budget = os.clock()
+	for sx = first, last do
+		for sz = 0, strips - 1 do
+			writeChunk(-HALF + sx * CHUNK, -HALF + sz * CHUNK)
+			if os.clock() - budget > 0.05 then
+				task.wait()
+				budget = os.clock()
+			end
 		end
 	end
-	return `base {index}/{count} done`
+	return string.format("terrain %d/%d done in %.0f s", index, count, os.clock() - started)
 end
 
--- The central island keeps the test range (it spans about x -600..1200, z -1800..900).
-function StraitBuilder.island(): string
-	-- Strips like base(), so the surface matches the land (FillCylinder rounds the top up a voxel).
-	local outer = ISLAND_RADIUS + 350
-	for z0 = -outer, outer - 1, STRIP do
-		local zc = z0 + STRIP / 2
-		local sandHalf = math.sqrt(math.max(outer * outer - zc * zc, 0))
-		local grassHalf = math.sqrt(math.max(ISLAND_RADIUS * ISLAND_RADIUS - zc * zc, 0))
-		block(Enum.Material.Air, -sandHalf, sandHalf, z0, z0 + STRIP, GROUND_TOP, GROUND_TOP + 16)
-		block(Enum.Material.Sand, -sandHalf, sandHalf, z0, z0 + STRIP, LAND_BOTTOM, GROUND_TOP - 2)
-		block(Enum.Material.Grass, -grassHalf, grassHalf, z0, z0 + STRIP, LAND_BOTTOM, GROUND_TOP)
-		task.wait()
-	end
-	-- A rocky headland on the island's north side, clear of the range, as a landmark.
-	Terrain:FillBall(Vector3.new(-1600, GROUND_TOP - 120, -2300), 380, Enum.Material.Rock)
-	return "island done"
-end
-
--- Rocky islets in the channel for terrain masking at sea level.
-function StraitBuilder.islets(): string
-	local rng = Random.new(SEED + 3)
-	for _ = 1, 9 do
-		local z = rng:NextNumber(-17000, 8000)
-		local west, east = StraitBuilder.coastX(z)
-		local x = if rng:NextNumber() < 0.5
-			then rng:NextNumber(west + 1200, -ISLAND_RADIUS - 900)
-			else rng:NextNumber(ISLAND_RADIUS + 900, east - 1200)
-		if math.abs(z) < ISLAND_RADIUS + 900 and math.abs(x) < ISLAND_RADIUS + 900 then
-			continue
-		end
-		local r = rng:NextNumber(160, 420)
-		Terrain:FillBall(Vector3.new(x, GROUND_TOP - r * 0.55, z), r, Enum.Material.Rock)
-		task.wait()
-	end
-	return "islets done"
-end
-
--- Mountains on the west (with passes cut through for low flying), lower hills on the east, scattered
--- hills on both landmasses away from the coast and the airbases.
-function StraitBuilder.relief(): string
-	local rng = Random.new(SEED)
-	local peaks = 0
-	for i = 0, 50 do
-		local z = -19500 + i * 560
-		local west = StraitBuilder.coastX(z)
-		if i % 7 == 3 or i % 7 == 4 or west < -15500 then
-			continue -- a pass through the range, or the coast has curved away
-		end
-		local x = -16200 + math.sin(i * 0.4) * 900 + rng:NextNumber(-300, 300)
-		local r = rng:NextNumber(420, 680)
-		local lift = rng:NextNumber(0.1, 0.4)
-		local centre = Vector3.new(x, GROUND_TOP + r * lift, z)
-		Terrain:FillBall(centre, r, Enum.Material.Rock)
-		Terrain:FillBall(centre + Vector3.new(rng:NextNumber(-800, -450), -r * 0.55, 0), r * 0.75, Enum.Material.Ground)
-		Terrain:FillBall(centre + Vector3.new(rng:NextNumber(450, 800), -r * 0.55, 0), r * 0.75, Enum.Material.Ground)
-		if lift > 0.28 then
-			Terrain:FillBall(centre + Vector3.new(0, r * 0.62, 0), r * 0.42, Enum.Material.Snow)
-		end
-		peaks += 1
-		task.wait()
-	end
-	-- East: a lower, broken ridge
-	for i = 0, 34 do
-		local z = -19500 + i * 640
-		local _, east = StraitBuilder.coastX(z)
-		if i % 5 == 2 or east > 15500 then
-			continue
-		end
-		local x = 16500 + math.sin(i * 0.55) * 700 + rng:NextNumber(-300, 300)
-		local r = rng:NextNumber(300, 480)
-		local centre = Vector3.new(x, GROUND_TOP - r * rng:NextNumber(0.1, 0.4), z)
-		Terrain:FillBall(centre, r, Enum.Material.Ground)
-		Terrain:FillBall(centre + Vector3.new(0, r * 0.35, 0), r * 0.6, Enum.Material.Rock)
-		peaks += 1
-		task.wait()
-	end
-	local hills = 0
-	for _ = 1, 320 do
-		local p = Vector3.new(rng:NextNumber(-HALF + 500, HALF - 500), 0, rng:NextNumber(-HALF + 500, HALF - 500))
-		if not isLand(p, 900) or nearAirbase(p, 5000) then
-			continue
-		end
-		local r = rng:NextNumber(150, 480)
-		local material = if rng:NextNumber() < 0.3 then Enum.Material.LeafyGrass else Enum.Material.Grass
-		Terrain:FillBall(Vector3.new(p.X, GROUND_TOP - r * 0.65, p.Z), r, material)
-		hills += 1
-		if hills % 6 == 0 then
-			task.wait()
-		end
-	end
-	return `relief done ({peaks} peaks, {hills} hills)`
-end
-
--- Clears buried voxels nobody can see (hills and mountains are balls reaching far underground).
--- Pass (part, parts) to clear one west-to-east strip at a time, e.g. trim(1, 4) ... trim(4, 4).
-function StraitBuilder.trim(part: number?, parts: number?): string
-	local count = parts or 1
-	local index = part or 1
-	local width = (2 * HALF) / count
-	local x0 = -HALF + (index - 1) * width
-	local before = Terrain:CountCells()
-	for x = x0, x0 + width - 1, 1024 do
-		for z = -HALF, HALF - 1, 1024 do
-			block(Enum.Material.Air, x, math.min(x + 1024, x0 + width), z, z + 1024, -1000, SEABED - 4)
-			task.wait()
-		end
-	end
-	return `trim {index}/{count}: {before} -> {Terrain:CountCells()} cells`
-end
-
-local function prop(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, material: Enum.Material?)
+local function prop(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, material: Enum.Material)
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Anchored = true
 	part.Size = size
 	part.CFrame = cf
 	part.Color = colour
-	part.Material = material or Enum.Material.SmoothPlastic
+	part.Material = material
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
 	return part
 end
 
--- Runways (terrain asphalt), aprons and low-poly blocks for hangars and a control tower.
+-- Low-poly hangars and a control tower at each airbase (the runway and apron are terrain).
 function StraitBuilder.airbases(): string
 	local map = workspace:FindFirstChild("Map") or Instance.new("Folder")
 	map.Name = "Map"
@@ -231,35 +355,14 @@ function StraitBuilder.airbases(): string
 		local folder = Instance.new("Folder")
 		folder.Name = `Airbase{name}`
 		local p = base.position
-		-- The runway (north-south, about 1.7 km), a taxiway and the apron. relief() keeps hills away.
-		block(Enum.Material.Asphalt, p.X - 90, p.X + 90, p.Z - 3000, p.Z + 3000, LAND_BOTTOM, GROUND_TOP)
 		local side = if name == "West" then 1 else -1
-		block(
-			Enum.Material.Concrete,
-			p.X + side * 250,
-			p.X + side * 1050,
-			p.Z - 700,
-			p.Z + 700,
-			LAND_BOTTOM,
-			GROUND_TOP
-		)
-		block(
-			Enum.Material.Asphalt,
-			math.min(p.X, p.X + side * 250),
-			math.max(p.X, p.X + side * 250),
-			p.Z - 40,
-			p.Z + 40,
-			LAND_BOTTOM,
-			GROUND_TOP
-		)
-		task.wait()
 		local grey = Color3.fromRGB(120, 125, 130)
 		for h = -1, 1 do
 			prop(
 				folder,
 				"Hangar",
 				Vector3.new(220, 90, 180),
-				CFrame.new(p.X + side * 1250, GROUND_TOP + 45, p.Z + h * 260),
+				CFrame.new(p.X + side * 1250, BASE_HEIGHT + 45, p.Z + h * 260),
 				grey,
 				Enum.Material.Metal
 			)
@@ -268,7 +371,7 @@ function StraitBuilder.airbases(): string
 			folder,
 			"Tower",
 			Vector3.new(50, 170, 50),
-			CFrame.new(p.X + side * 1150, GROUND_TOP + 85, p.Z - 560),
+			CFrame.new(p.X + side * 1150, BASE_HEIGHT + 85, p.Z - 560),
 			Color3.fromRGB(205, 200, 190),
 			Enum.Material.Concrete
 		)
@@ -276,7 +379,7 @@ function StraitBuilder.airbases(): string
 			folder,
 			"TowerCab",
 			Vector3.new(80, 30, 80),
-			CFrame.new(p.X + side * 1150, GROUND_TOP + 185, p.Z - 560),
+			CFrame.new(p.X + side * 1150, BASE_HEIGHT + 185, p.Z - 560),
 			Color3.fromRGB(60, 90, 110),
 			Enum.Material.Glass
 		)
@@ -285,7 +388,8 @@ function StraitBuilder.airbases(): string
 	return "airbases done"
 end
 
--- Airborne spawn points (tagged SpawnPoint, Type "Air"): six over each landmass, facing the channel.
+-- Airborne spawn points (tagged SpawnPoint, Type "Air"): six over each landmass, facing the channel,
+-- at least SPAWN_CLEARANCE above the ground under and ahead of them.
 function StraitBuilder.spawns(): string
 	local map = workspace:FindFirstChild("Map") or Instance.new("Folder")
 	map.Name = "Map"
@@ -296,7 +400,14 @@ function StraitBuilder.spawns(): string
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "SpawnPoints"
-	local function add(name: string, team: string, position: Vector3)
+	local function add(name: string, team: string, x: number, z: number)
+		local facing = Vector3.new(-x, 0, -z * 0.5).Unit
+		local highest = 0
+		for step = 0, 4 do
+			local p = Vector3.new(x, 0, z) + facing * step * 500
+			highest = math.max(highest, StraitBuilder.height(p.X, p.Z))
+		end
+		local position = Vector3.new(x, math.max(1200, highest + SPAWN_CLEARANCE), z)
 		local part = Instance.new("Part")
 		part.Name = name
 		part.Anchored = true
@@ -305,7 +416,7 @@ function StraitBuilder.spawns(): string
 		part.CanTouch = false
 		part.Transparency = 1
 		part.Size = Vector3.new(8, 8, 8)
-		part.CFrame = CFrame.lookAt(position, Vector3.new(0, position.Y, position.Z * 0.5))
+		part.CFrame = CFrame.lookAt(position, position + facing)
 		part:SetAttribute("Type", "Air")
 		part:SetAttribute("Team", team)
 		part:SetAttribute("Altitude", position.Y)
@@ -315,8 +426,8 @@ function StraitBuilder.spawns(): string
 	for i = 0, 5 do
 		local z = -15000 + i * 3600
 		local west, east = StraitBuilder.coastX(z)
-		add(`West{i + 1}`, "West", Vector3.new(math.max(west - 2500, -17500), SPAWN_ALTITUDE, z))
-		add(`East{i + 1}`, "East", Vector3.new(math.min(east + 2500, 17500), SPAWN_ALTITUDE, z + 1800))
+		add(`West{i + 1}`, "West", math.max(west - 2500, -17500), z)
+		add(`East{i + 1}`, "East", math.min(east + 2500, 17500), z + 1800)
 	end
 	folder.Parent = map
 	return "spawns done (12)"

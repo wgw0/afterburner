@@ -83,11 +83,28 @@ local function spawnCandidates(): { CFrame }
 	return list
 end
 
--- The spawn furthest from every other jet, so nobody spawns into a fight.
+-- Each spawn point offers a few slots (beside, above and behind it), so a full server never stacks two
+-- jets on the same spot (found in the 24-jet stress test: they collided on spawn).
+local SLOT_OFFSETS = {
+	Vector3.zero,
+	Vector3.new(-500, 0, 0),
+	Vector3.new(500, 0, 0),
+	Vector3.new(0, 300, 600),
+	Vector3.new(-500, 300, 600),
+	Vector3.new(500, 300, 600),
+}
+
+-- The spawn slot furthest from every other jet, so nobody spawns into a fight (or into another jet).
 function MatchService:PickSpawn(): CFrame
 	local best, bestScore = nil, -math.huge
 	local jets = AircraftService:GetJets()
-	for _, candidate in spawnCandidates() do
+	local slots = {}
+	for _, point in spawnCandidates() do
+		for _, offset in SLOT_OFFSETS do
+			table.insert(slots, point * CFrame.new(offset))
+		end
+	end
+	for _, candidate in slots do
 		local nearest = math.huge
 		for _, jet in jets do
 			nearest = math.min(nearest, (jet.root.Position - candidate.Position).Magnitude)
