@@ -35,10 +35,6 @@ local CockpitController = {
 }
 
 local cockpit: Model?
--- Parts of your own jet that block the cockpit view (nose, canopy, forward fuselage), hidden locally
--- while in cockpit view so they don't cover the instrument panel.
-local hiddenParts: { BasePart } = {}
-local CENTRELINE_HALF_WIDTH = 4 -- studs either side of the centreline
 local gauges: { [string]: Gauge } = {}
 
 local function part(name: string, size: Vector3, offset: CFrame, eye: CFrame, root: BasePart, colour: Color3): Part
@@ -157,10 +153,6 @@ local function destroyCockpit()
 		cockpit = nil
 	end
 	table.clear(gauges)
-	for _, part in hiddenParts do
-		part.LocalTransparencyModifier = 0
-	end
-	table.clear(hiddenParts)
 end
 
 local function buildCockpit(jet: Model)
@@ -238,34 +230,6 @@ local function buildCockpit(jet: Model)
 	gauges.G = makeGauge(surface, "GMeter", "G", 0.62, -3, 9, { -3, 0, 3, 6, 9 })
 	gauges.RPM = makeGauge(surface, "RPM", "RPM %", 0.86, 0, 110, { 0, 50, 70, 90, 100, 110 })
 
-	-- Anything along the centreline that reaches forward of the pilot's eye would sit between the eye
-	-- and the panel: the nose, canopy and forward fuselage. Wings and tail stay visible.
-	local eyeZ = eye.Position.Z
-	for _, part in jet:GetDescendants() do
-		if part:IsA("BasePart") and part ~= root and part.Transparency < 1 and not part:IsDescendantOf(model) then
-			local localCF = root.CFrame:ToObjectSpace(part.CFrame)
-			local half = part.Size / 2
-			local frontmost = math.huge
-			for _, corner in
-				{
-					Vector3.new(half.X, half.Y, half.Z),
-					Vector3.new(-half.X, half.Y, half.Z),
-					Vector3.new(half.X, -half.Y, half.Z),
-					Vector3.new(half.X, half.Y, -half.Z),
-					Vector3.new(-half.X, -half.Y, half.Z),
-					Vector3.new(-half.X, half.Y, -half.Z),
-					Vector3.new(half.X, -half.Y, -half.Z),
-					Vector3.new(-half.X, -half.Y, -half.Z),
-				}
-			do
-				frontmost = math.min(frontmost, (localCF * corner).Z)
-			end
-			if frontmost < eyeZ and math.abs(localCF.Position.X) < CENTRELINE_HALF_WIDTH then
-				table.insert(hiddenParts, part)
-			end
-		end
-	end
-
 	model.Parent = jet
 	cockpit = model
 end
@@ -285,9 +249,6 @@ local function update(dt: number)
 		return
 	end
 	local visible = CameraController.mode == "Cockpit"
-	for _, part in hiddenParts do
-		part.LocalTransparencyModifier = if visible then 1 else 0
-	end
 	for _, d in cockpit:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.LocalTransparencyModifier = if visible then 0 else 1
