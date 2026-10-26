@@ -146,7 +146,7 @@ local function build()
 		print(export())
 	end)
 
-	for i, weapon in { "AIM9P", "R27R" } do
+	for i, weapon in { "AIM9P", "R27R", "AIM120A" } do
 		local launchButton = Instance.new("TextButton")
 		launchButton.LayoutOrder = 103 + i
 		launchButton.Size = UDim2.new(1, 0, 0, 24)
@@ -156,7 +156,8 @@ local function build()
 		launchButton.TextSize = 13
 		launchButton.Text = if weapon == "AIM9P"
 			then "LAUNCH AIM-9P AT ME (heat-seeker)"
-			else "LAUNCH R-27R AT ME (radar)"
+			elseif weapon == "R27R" then "LAUNCH R-27R AT ME (radar)"
+			else "LAUNCH AIM-120A AT ME (active radar)"
 		launchButton.Parent = panel
 		launchButton.Activated:Connect(function()
 			Net.Client.fire("DebugLaunchAtMe", weapon)

@@ -255,4 +255,60 @@ return function(ctx)
 			local _ = RAD
 		end)
 	end)
+	describe("active radar missiles (MSL-07)", function()
+		local spec = WeaponData.getMissile("AIM120A") :: any
+		local missile = { position = Vector3.zero, velocity = Vector3.new(0, 0, -600), age = 2, travelled = 1000 }
+		local function target(z: number)
+			return { position = Vector3.new(0, 0, z), velocity = Vector3.new(0, 0, -200) }
+		end
+
+		it("ARH missiles must say where their seeker goes active", function()
+			local broken = table.clone(spec)
+			broken.ActiveRange = nil
+			expect(#WeaponData.validate("AIM120A", broken) > 0).toBe(true)
+			expect(#WeaponData.validate("AIM120A", spec)).toBe(0)
+		end)
+
+		it("midcourse: steers at the true target while the launcher keeps its lock", function()
+			local arh = Guidance.newARH(Vector3.new(0, 0, -50000), Vector3.zero, 0)
+			local p = Guidance.arhTrack(arh, missile, spec, target(-40000), true, false, 0.1, 1)
+			expect(p).toBe(Vector3.new(0, 0, -40000))
+			expect(arh.active).toBe(false)
+		end)
+
+		it("lock lost in midcourse: flies to the last known position, extrapolated (not dumb)", function()
+			local arh = Guidance.newARH(Vector3.new(0, 0, -40000), Vector3.new(100, 0, 0), 0)
+			local p = Guidance.arhTrack(arh, missile, spec, target(-40000), false, false, 0.1, 2) :: Vector3
+			expect(p ~= nil).toBe(true)
+			expect(p.X > 0).toBe(true) -- moved with the last known velocity
+			expect(arh.lost).toBe(false)
+		end)
+
+		it("goes active inside ActiveRange, then keeps tracking without the launcher", function()
+			local near = require(ctx.Shared.Units).toStuds(spec.ActiveRange * 0.8) -- well inside
+			local arh = Guidance.newARH(Vector3.new(0, 0, -near), Vector3.zero, 0)
+			Guidance.arhTrack(arh, missile, spec, target(-near), true, false, 0.1, 1)
+			expect(arh.active).toBe(true)
+			local p = Guidance.arhTrack(arh, missile, spec, target(-near + 50), false, false, 0.1, 1.1)
+			expect(p).toBe(Vector3.new(0, 0, -near + 50))
+		end)
+
+		it("an active seeker loses a target outside its gimbal or one that notches for over a second", function()
+			local arh = Guidance.newARH(nil, nil, 0)
+			arh.active = true
+			local behind = { position = Vector3.new(0, 0, 5000), velocity = Vector3.zero }
+			expect((Guidance.arhTrack(arh, missile, spec, behind, true, false, 0.1, 1))).toBe(nil)
+			expect(arh.lost).toBe(true)
+			local notched = Guidance.newARH(nil, nil, 0)
+			notched.active = true
+			for _ = 1, 9 do
+				Guidance.arhTrack(notched, missile, spec, target(-5000), false, true, 0.1, 1)
+			end
+			expect(notched.lost).toBe(false) -- 0.9 s
+			for _ = 1, 3 do
+				Guidance.arhTrack(notched, missile, spec, target(-5000), false, true, 0.1, 1)
+			end
+			expect(notched.lost).toBe(true)
+		end)
+	end)
 end
