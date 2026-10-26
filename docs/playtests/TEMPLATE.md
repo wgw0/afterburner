@@ -21,7 +21,7 @@
 
 | # | Finding | Severity | Who saw it | Action |
 |---|---|---|---|---|
-| 1 | | 🔴 blocker / 🟠 major / 🟡 minor / 💡 idea | | task ID or "won't fix" |
+| 1 | | blocker / major / minor / idea | | task ID or "won't fix" |
 
 ## Numbers (if measured)
 
@@ -34,4 +34,4 @@
 
 ## Follow-ups
 
-- [ ] Issue / task created for each 🔴 and 🟠 finding
+- [ ] Issue / task created for each blocker and major finding

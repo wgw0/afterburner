@@ -1,25 +1,23 @@
 # Aircraft model pipeline
 
-How every jet goes from Blender into the game: a modular, mid-poly model with animated control surfaces and swappable PBR skins. The jets are rebuilt in the order players meet them; the **F-5E Tiger II** is first.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces and swappable PBR skins. Jets are rebuilt in the order players meet them. The F-5E Tiger II is done; the MiG-21bis is next.
 
-| Stage | Who | Status (F-5E) |
+| Stage | Tool | F-5E |
 |---|---|---|
-| 1. Base mesh measured from reference drawings | `tools/blender/f5e_generate.py` (automatic) | ✅ 35 parts, 10,704 triangles, matches the three-view |
-| 2. Refine shapes, add detail | Blender, by hand | ⬜ |
-| 3. Bake + paint PBR textures (Body, Wings, Details) | `tools/blender/f5e_paint.py` (automatic) | ✅ "Ghost" two-tone grey skin |
-| 4. Import into Studio | Studio 3D Importer | ⬜ |
-| 5. Assemble (Root, Hull, hitboxes, attachments, hinges, skin) | `AircraftAssembler` tool, reads the manifest | 🟡 built, waiting for the FBX import |
-| 6. Validate | Model contract in Studio and CI (Lune) | ✅ in place |
-
----
+| 1. Base mesh measured from reference drawings | `tools/blender/f5e_generate.py` | Done: 35 parts, 10,704 triangles, matches the three-view |
+| 2. Hand refinement in Blender | Blender | Skipped so far; optional |
+| 3. PBR textures (Body, Wings, Details) | `tools/blender/f5e_paint.py` | Done: Ghost, Desert, Pacific and Lizard skins |
+| 4. Import into Studio | Studio 3D Importer | Done |
+| 5. Assemble (Root, Hull, hitboxes, attachments, hinges, skin) | `tools/AircraftAssembler.luau`, reading the manifest | Done |
+| 6. Validate | Model contract in Studio and CI (Lune) | Passing |
 
 ## 1. Structure (F-5E)
 
-**Axes and scale.** Blender: X right, **Y forward (nose toward +Y)**, Z up, metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, the nose direction the game expects. The game uses **1 m = 3.5714 studs**. Every part keeps the real-world size; the assembler scales to studs. The **origin is the centre of gravity** (25% of the mean wing chord), because the flight model rotates the jet about its root; the jet pitches and rolls about the right point.
+Blender axes are X right, Y forward (the nose points to +Y) and Z up, in metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, which is the nose direction the game expects. The game uses 1 m = 3.5714 studs. Every part is modelled at real size and the assembler converts to studs. The model's origin is the centre of gravity (25% of the mean wing chord), because the flight model rotates the jet about its root part.
 
-**Budget.** 5,000–12,000 triangles for the whole jet (the F-5E base is 10,704, about half of it the fuselage). Roblox allows 20,000 per MeshPart, so the limit is performance, not the engine.
+The budget is 5,000 to 12,000 triangles for the whole jet. The F-5E has 10,704, about half of them in the fuselage. Roblox allows 20,000 per MeshPart, so the limit comes from performance, not the engine.
 
-**Separate objects.** Nothing is merged. Moving parts have their **origin on the hinge line** with identity rotation (aligned to world axes); the hinge axis and limits are stored on the object (`afterburner_hinge_axis`) and in the manifest.
+Nothing is merged. Each moving part is its own object, with its origin on its hinge line and no rotation. The hinge axis and limits are stored on the object (`afterburner_hinge_axis`) and in the manifest.
 
 | Part | Texture set | Kind | Pivot / hinge | Deflection |
 |---|---|---|---|---|
@@ -44,99 +42,80 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 | NoseGearWheel, MainGearWheelL / R | Details | GearWheel | axle | spin |
 | NoseGearDoorL / R, MainGearDoorL / R | Details | GearDoor | door hinge | 0 … 85° |
 
-The gear is modelled down; in flight the game keeps it retracted (hidden until the takeoff and landing work).
+The gear is modelled down. Jets spawn in the air, so the assembler hides it until there is a takeoff and landing feature to use it.
 
-**The manifest** (`tools/blender/out/F5E_manifest.json`, and `tools/Manifests/F5E.luau` for Studio) lists every part with its texture set, kind, pivot and hinge, plus the gameplay data the game already uses: attachment points (`CockpitEye`, `GunMuzzle`, `Nozzle1/2`, `WingtipL/R`, dispensers, `ChaseCam`, `Hardpoint1–3`), the collision hull and the six hitboxes. They are placed on the new model: the cockpit eye is inside the canopy, the muzzle is at the nose guns, the nozzles are at the real exits, and the hitboxes cover the visible parts, so players hit what they aim at. The flight data in `AircraftData` doesn't change.
+The manifest (`tools/blender/out/F5E_manifest.json`, and `tools/Manifests/F5E.luau` for Studio) lists every part with its texture set, kind, bounding box, pivot and hinge. It also carries the gameplay data: the attachment points (`CockpitEye`, `GunMuzzle`, `Nozzle1/2`, `WingtipL/R`, the dispensers, `ChaseCam`, `Hardpoint1–3`), the collision hull and the six hitboxes. These are placed on the model itself: the cockpit eye is inside the canopy, the muzzle is at the nose guns, the nozzles are at the real exits, and the hitboxes cover the visible parts. The flight data in `AircraftData` is separate and didn't change.
 
----
-
-## 2. Textures and skins (PBR)
+## 2. Textures and skins
 
 ### Texture sets
 
 | Set | Parts | Size | Maps |
 |---|---|---|---|
-| **Body** | fuselage, intakes, LERX, fin, rudder, canopy frame | 1024² | Color, Normal, Roughness, Metalness |
-| **Wings** | wings, flaps, ailerons, LE flaps, stabilators | 1024² | Color, Normal, Roughness, Metalness |
-| **Details** | nozzles, afterburners, gear, seat, rails, pitot | 512² | Color, Normal, Roughness, Metalness |
-| **Glass** | canopy | none | flat values (see below) |
+| Body | fuselage, intakes, LERX, fin, rudder, canopy frame | 1024² | Color, Normal, Roughness, Metalness |
+| Wings | wings, flaps, ailerons, LE flaps, stabilators | 1024² | Color, Normal, Roughness, Metalness |
+| Details | nozzles, afterburners, gear, seat, rails, pitot | 512² | Color, Normal, Roughness, Metalness |
+| Glass | canopy | none | flat values |
 
-1024² is the largest image Roblox accepts. Two 1024² sets give the airframe twice the texel density of one, which matters for close-up hangar views.
+1024² is the largest image Roblox accepts, and two 1024² sets give the airframe twice the texel density of one, which shows in hangar close-ups. Paint is matte (roughness 0.55 to 0.7, metalness 0). Exhausts are bare titanium and steel (metalness 0.8 to 1, roughness 0.3 to 0.45). Panel gaps, rivets and fasteners are only in the normal map, with no geometry of their own.
 
-**Look.**
-- **Paint:** matte tactical paint, roughness 0.55–0.7, metalness 0.
-- **Weathering:** in Color and Roughness: exhaust soot behind the nozzles, gun-port soot, walkway scuffs, rain streaks.
-- **Exhausts:** exposed titanium and steel at metalness 0.8–1, roughness 0.3–0.45, with heat tint near the nozzles.
-- **Panel gaps, rivets, fasteners:** only in the Normal map. No extra geometry for them.
+The canopy doesn't use Roblox's `Glass` material, because Glass draws opaque in front of water. It is SmoothPlastic at transparency 0.6, reflectance 0.15, with a blue-grey tint.
 
-**Canopy glass.** Don't use Roblox's `Glass` material, which draws opaque over water. The canopy uses SmoothPlastic with transparency 0.55–0.65, reflectance 0.15 and a faint blue-grey tint (or a `SurfaceAppearance` with `AlphaMode = Transparency` and roughness 0).
+### How skins work
 
-### How skins work (built for selling them)
-
-Every skin for an airframe shares the **same UV layout**, so a skin is only a set of textures:
+All skins for an airframe share the same UV layout, so a skin is just a set of textures:
 
 ```
 ReplicatedStorage.Assets.Skins.F5E
-├── Ghost          Body / Wings / Details   (SurfaceAppearance each)
+├── Ghost          Body / Wings / Details   (a SurfaceAppearance each)
 ├── Desert         Body / Wings / Details
 ├── Pacific        Body / Wings / Details
 └── Lizard         Body / Wings / Details
 ```
 
-Each skin's name, price and default flag are in `Shared.Config.Skins`. `Shared.Skins.apply` paints a model; the server uses it as jets spawn and the client uses it for menu previews. Ownership is saved per jet as `Aircraft[id].Skins`, and the skin in use as `Aircraft[id].Camo`.
+Each skin's name, price and default flag are in `Shared.Config.Skins`. `Shared.Skins.apply` paints a model by cloning each SurfaceAppearance into the MeshParts whose `TextureSet` attribute matches. Scripts can't change a SurfaceAppearance's images at runtime, so skins are swapped as whole instances. The server paints every jet as it spawns, so all players see the same paint; AI jets get a random skin. The client uses the same function for the hangar previews.
 
-The assembler fits the default skin to the game model (`AircraftAssembler.applySkin`), so re-importing a model keeps its paint.
+Ownership is saved per jet in `Aircraft[id].Skins`, and the skin in use in `Aircraft[id].Camo`. The default skin is always owned. The others cost 5,000 Credits for now and will move to the shop (Wings or Robux, and season-pass rewards) in Phase 7. The assembler fits the default skin when it builds a model, so a re-import keeps its paint.
+
+Two ideas for later. A skin can use `AlphaMode = Overlay`, where transparent areas of the colour map show the MeshPart's own `Color`, so one texture set could be sold in several colours. Per-player text such as callsigns would go on small `SurfaceGui` panels rather than into the textures.
+
+One skin on one jet is two 1024² sets and one 512² set, four maps each. A server full of the same jet shares one copy of each texture.
 
 ### Painting (`tools/blender/f5e_paint.py`)
 
-Skins are painted by a script, not by hand, from the same `.blend` whose FBX is in the game (its UV layout is what the textures follow):
+Skins are painted by a script from the same `.blend` whose FBX is in the game, since the textures follow its UV layout:
 
 ```
 blender -b tools/blender/out/F5E_base.blend --python tools/blender/f5e_paint.py -- --out <absolute path>/tools/blender/out/textures --skin Ghost --preview
 ```
 
-**How it works.**
-1. For each texture set, Cycles bakes what every texel is: its position on the jet, its normal, which part it belongs to, and its ambient occlusion.
-2. numpy computes the Color, Roughness and Metalness maps from that, plus a height map, which Cycles turns into the tangent-space Normal map (OpenGL).
+For each texture set, Cycles bakes what every texel is: its position on the jet, its normal, which part it belongs to and its ambient occlusion. numpy then computes the Color, Roughness and Metalness maps and a height map, and Cycles bakes the height map into the tangent-space normal map (OpenGL, which Roblox expects). Every texel is painted from its 3D position, so paint and panel lines run across UV seams without a break.
 
-Because every texel is painted from its 3D position, paint and panel lines run continuously across UV seams.
+The panel layout has fuselage frames and longerons, access panels with fasteners, wing spars and ribs, fuel panels and rivet rows, all placed at the generator's drawing stations so they line up with the shape. On top go the paint scheme, an anti-glare panel, the radome, non-slip walkways and low-visibility insignia, then wear: a slightly different shade per panel, grime behind the seams, gun and exhaust soot, chipped leading edges, bare-metal intake lips, and titanium nozzles with a heat tint and petal seams.
 
-**What gets painted.**
-- **Panel layout:** fuselage frames and longerons, access panels with fasteners, wing spars and ribs, fuel panels, and rivet rows. All of it is placed with the generator's drawing stations, so it lines up with the shape.
-- **The paint scheme:** two-tone camouflage with a soft demarcation, the anti-glare panel, the radome, non-slip walkways and low-visibility national insignia.
-- **Wear:** each panel's paint is a slightly different shade, grime gathers behind the panel seams, and there's gun and exhaust soot. The leading edges are chipped, the intake lips are bare metal, and the nozzles are titanium with a heat tint and petal seams.
+A scheme is an entry in `SCHEMES`. Ghost is two-tone, with a soft line between the upper and lower colours. The aggressor schemes (Desert, Pacific, Lizard) list three camouflage colours; the script cuts 3D noise into hard-edged wavy bands, so the pattern wraps continuously over the whole jet.
 
-Schemes are entries in `SCHEMES`, so a new skin is mostly a set of colours plus any special markings.
-
-**Into the game.**
-1. Upload the 12 PNGs (`F5E_<Skin>_<Set>_<Map>.png`).
-2. Make one `SurfaceAppearance` per set under `Assets.Skins.F5E.<Skin>`.
-3. Run `AircraftAssembler.applySkin`.
+To get a skin into the game:
+1. Upload the 12 PNGs (`F5E_<Skin>_<Set>_<Map>.png`). The F-5E's were uploaded through the Studio MCP connection; the Asset Manager's Bulk Import works too. Don't bulk-import the meshes, because that uploads each mesh on its own and loses the layout.
+2. Make one `SurfaceAppearance` per set (ColorMap, NormalMap, RoughnessMap, MetalnessMap) under `Assets.Skins.F5E.<Skin>`.
+3. Add the skin to `Shared.Config.Skins`.
 
 | F-5E skin | Set | Color | Normal | Roughness | Metalness |
 |---|---|---|---|---|---|
 | Ghost | Body | 81835012873669 | 82968577363109 | 105714057801586 | 109834815051063 |
 | Ghost | Wings | 100916008882277 | 104825289967457 | 82890588585642 | 99740436860517 |
 | Ghost | Details | 81974986545670 | 138592182008286 | 107141838096039 | 87789614504400 |
-| Desert | Body | 71475764434424 | (as Ghost) | (as Ghost) | (as Ghost) |
-| Desert | Wings | 88744784179765 | (as Ghost) | 132928858941635 | (as Ghost) |
-| Desert | Details | 131932789782406 | (as Ghost) | (as Ghost) | (as Ghost) |
-| Pacific | Body | 87157106227464 | (as Ghost) | (as Ghost) | (as Ghost) |
-| Pacific | Wings | 88219907366285 | (as Ghost) | 71010529022486 | (as Ghost) |
-| Pacific | Details | 90139710262027 | (as Ghost) | (as Ghost) | (as Ghost) |
-| Lizard | Body | 117608256949978 | (as Ghost) | (as Ghost) | (as Ghost) |
-| Lizard | Wings | 74353148664969 | (as Ghost) | 87930505872254 | (as Ghost) |
-| Lizard | Details | 83889269655804 | (as Ghost) | (as Ghost) | (as Ghost) |
+| Desert | Body | 71475764434424 | as Ghost | as Ghost | as Ghost |
+| Desert | Wings | 88744784179765 | as Ghost | 132928858941635 | as Ghost |
+| Desert | Details | 131932789782406 | as Ghost | as Ghost | as Ghost |
+| Pacific | Body | 87157106227464 | as Ghost | as Ghost | as Ghost |
+| Pacific | Wings | 88219907366285 | as Ghost | 71010529022486 | as Ghost |
+| Pacific | Details | 90139710262027 | as Ghost | as Ghost | as Ghost |
+| Lizard | Body | 117608256949978 | as Ghost | as Ghost | as Ghost |
+| Lizard | Wings | 74353148664969 | as Ghost | 87930505872254 | as Ghost |
+| Lizard | Details | 83889269655804 | as Ghost | as Ghost | as Ghost |
 
-The normal maps, metalness maps and most roughness maps are identical across schemes (only the paint changes), so Roblox reuses the same images.
-
-- **Applying a skin** means cloning that skin's `SurfaceAppearance` into each MeshPart of the matching set (every MeshPart carries a `TextureSet` attribute). Roblox doesn't let scripts change a SurfaceAppearance's images at runtime, so skins are swapped as whole instances, never edited.
-- **Cheap colour variants.** A skin can use `AlphaMode = Overlay`: where the Color map's alpha is transparent, the MeshPart's own `Color` shows through. So one texture set gives many paint colours (sell or reward recolours without new art), while markings, weathering and panel lines stay on top.
-- **Numbers and squadron markings** go in the skin's Color map. Per-player text (callsigns) is a later feature using `SurfaceGui` on small flat panels.
-- **Ownership and selling.** The save already has `Cosmetics.Camos` and `Aircraft[id].Camo`. The server checks ownership and stamps the skin id on the jet at spawn (a `Camo` attribute). The skin is applied on the server, so every player sees it. Sold through the shop in Phase 7 (Wings or Robux, plus season-pass rewards).
-- **Memory.** One skin per jet in a match is about 2 × 1024² + 512² × 4 maps. A full server of the same jet shares one copy of each texture.
-
----
+Only the paint changes between schemes, so the normal maps, metalness maps and most roughness maps are byte-identical, and Roblox gave them the same asset IDs.
 
 ## 3. Blender workflow
 
@@ -149,83 +128,59 @@ blender -b tools/blender/out/F5E_base.blend --python tools/blender/overlay_refer
 stylua tools/Manifests
 ```
 
-This gives `F5E_base.blend` (collections per texture set, one material per set, UVs packed per set), `F5E_base.fbx`, the manifest, reference renders, and `F5E_overlay_side.png` / `F5E_overlay_top.png`. The overlays draw the model, tinted blue, over the three-view at the drawing's own scale; any mismatch shows as blue outside the red lines.
+This writes `F5E_base.blend` (a collection and a material per texture set, UVs packed per set), `F5E_base.fbx`, the manifest, reference renders, and `F5E_overlay_side.png` and `F5E_overlay_top.png`. The overlays draw the model tinted blue over the three-view at the drawing's own scale, so any mismatch shows as blue outside the red lines. Re-running the generator changes the UV layout only if the shapes change; after that the skins have to be repainted and the model re-imported.
 
 ### References
 
-Each jet's reference images live in `docs/art/reference/<Airframe>/`. That folder is kept out of git (it's excluded locally in `.git/info/exclude`), and `SOURCES.md` inside it records each image's author, licence and link. For the F-5E it holds:
-- the Wikimedia Commons three-view (`Northrop F-5E Tiger II 3-view.svg`)
-- figures from the USAF flight manual T.O. 1F-5E-1
-- museum walkarounds, side profiles, detail shots (intakes, nozzles, canopy, gear)
-- paint schemes for skins
+Each jet's reference images are in `docs/art/reference/<Airframe>/`. The folder is kept out of git (it's excluded locally in `.git/info/exclude`), and its `SOURCES.md` records each image's author, licence and link. For the F-5E it has the Wikimedia Commons three-view (`Northrop F-5E Tiger II 3-view.svg`), figures from the USAF flight manual T.O. 1F-5E-1, museum walkarounds, side profiles, detail shots of the intakes, nozzles, canopy and gear, and paint-scheme photos.
 
-The generator's shapes are measured from the three-view. Its stations are written in the drawing's pixel coordinates (`Y(xd)`, `Z(row)`), so every number can be traced back to the drawing. The scale comes from the published 14.45 m length; it also reproduces the published height and span. Use the photos for what a line drawing can't show, such as gear legs, intake lips and panel lines.
+The generator's shapes are measured from the three-view. Its stations are written in the drawing's pixel coordinates (`Y(xd)`, `Z(row)`), so every number can be traced back to the drawing. The scale comes from the published 14.45 m length, and it also reproduces the published height and span. The photos are for what a line drawing can't show, such as gear legs and intake lips.
 
-### Refine (by hand, starting from `F5E_base.blend`)
+### Hand refinement (optional)
 
-1. **Work on one half.** For symmetrical parts, delete the −X half, add a **Mirror** modifier (axis X, Clipping on, Merge on), and keep editing the +X side. Apply the modifier before export.
-2. **Fuselage curves.** Keep the lofted section loops as your edge flow. Shape with proportional editing (Connected only), never by adding loops at random. For the F-5E's shark nose chine, add one loop either side of the chine line and pull it out.
-3. **Intakes.** Keep the D-section loops. Add a **Bevel** modifier on the lip (width 0.02 m, 2 segments, Limit Method: Weight; bevel-weight only the lip edges). Add a thin splitter plate as a separate object on the fuselage.
-4. **Wings and tail.** The airfoil sections are already correct; don't subdivide them. Mark the leading edges sharp only if a Bevel modifier rounds them (Limit Method: Angle 30°, 1 segment). Keep the surfaces as separate objects and leave their origins where they are.
-5. **Smoothing.** Use smooth shading by angle (30–35°). Use a **Subdivision Surface** modifier only while shaping. If you apply it, apply level 1 at most on the fuselage, then check the triangle count.
-6. **High-poly for baking.** Duplicate the Body and Wings objects into a `HighPoly` collection. Add Subdivision level 2, then cut panel lines with knife and Bevel, and add rivet rows with an array of small cylinders (or Boolean). Never export this collection.
-7. **Bake.** In Cycles, select the high-poly then the mid-poly and bake Normal (Selected to Active, cage extrusion ~0.02 m) into each set's 1024² image. Also bake Ambient Occlusion and Curvature as masks for weathering.
-8. **Paint.** In Blender texture paint or Substance Painter, paint Color, Roughness and Metalness per set. Export PNGs named `F5E_<Set>_<Map>.png` (for example `F5E_Body_Normal.png`), in OpenGL normal format (Roblox expects OpenGL, Y+).
-9. **Re-run the checks.** Keep the object names, origins and texture sets the same, so the manifest stays valid. If anything moves, re-run the generator or update the manifest.
+The F-5E went into the game straight from the generator. If a jet needs more shape than the generator gives, refine `F5E_base.blend` by hand:
 
----
+1. For symmetrical parts, delete the −X half, add a Mirror modifier (axis X, Clipping and Merge on) and edit the +X side. Apply the modifier before export.
+2. Keep the lofted section loops as the fuselage's edge flow and shape with proportional editing (Connected only). For the F-5E's shark-nose chine, add one loop each side of the chine line and pull it out.
+3. Keep the intakes' D-section loops. Bevel the lip (0.02 m, 2 segments, Limit Method: Weight, with bevel weight on the lip edges only).
+4. Don't subdivide the wings and tail: their airfoil sections are already right. Keep the moving surfaces as separate objects with their origins where they are.
+5. Use smooth shading by angle (30 to 35°). Use Subdivision Surface only while shaping; if you apply it, apply level 1 at most on the fuselage and check the triangle count.
+6. Keep the object names, origins and texture sets, so the manifest stays valid. If anything moves, re-run the generator or update the manifest, then repaint.
 
 ## 4. Roblox Studio import checklist
 
-**Export (Blender → FBX).** The generator does this; repeat these settings if you export by hand:
-- [ ] Selected objects only: mesh objects, no empties, no HighPoly collection.
-- [ ] Scale 1.0, **Apply Scalings: FBX All**, **Apply Unit** on.
-- [ ] **Forward: −Z Forward, Up: Y Up**, Apply Transform (bake space transform) on.
-- [ ] Geometry: Smoothing Face, Apply Modifiers on, no leaf bones.
-- [ ] Object names unchanged (`AileronL`, `Fuselage`…): the assembler finds parts by name.
+Export (the generator does this; use the same settings if you export by hand):
+- [ ] Mesh objects only: no empties, no high-poly collection.
+- [ ] Scale 1.0, Apply Scalings: FBX All, Apply Unit on.
+- [ ] Forward −Z, Up Y, Apply Transform on.
+- [ ] Smoothing: Face. Apply Modifiers on. No leaf bones.
+- [ ] Object names unchanged (`AileronL`, `Fuselage`...), because the assembler finds parts by name.
 
-**Import (Studio → File → Import 3D).**
-- [ ] Import as a **single Model** (not as separate assets). This keeps every part in place relative to the others.
-- [ ] **Anchored** on, "Insert using scene position" on.
-- [ ] File unit: **Meter**. If the importer still gets the scale or axes wrong, the assembler corrects them (below).
-- [ ] Textures: don't import materials. Skins are made separately (below).
-- [ ] Run the **AircraftAssembler** in the command bar (Edit mode):
+Import (Studio → File → Import 3D):
+- [ ] Import as one Model, with Merge Meshes off.
+- [ ] Anchored on, so the imported copy doesn't fall during play tests. Scale unit Meter.
+- [ ] Upload to Roblox on. Material import doesn't matter: the FBX has no textures, and the assembler clears them anyway.
+- [ ] Run the assembler in the command bar (Edit mode):
   ```lua
   print(require(game.ServerStorage.Tools.AircraftAssembler).install("F5E", workspace.F5E_base))
   ```
-  It matches the imported MeshParts to `tools/Manifests/F5E.luau` by name and builds the game model in `ReplicatedStorage.Assets.Aircraft.F5E`:
-  - it works out any scale or axis change from where the parts landed (nose, nozzles, wings), then puts every part exactly at its manifest position
-  - Root, Hull, the six hitboxes and the attachment points
-  - **Motor6D joints on the hinge points** for the control surfaces and gear, with `Control`, `HingeAxis`, `HingeMin` and `HingeMax` attributes
-  - WeldConstraints for the static parts
-  - Massless and collisions off, CollisionFidelity Box, RenderFidelity Automatic
-  - `TextureSet` and `Kind` attributes on each part
-  - a flat colour per texture set until the skins exist
-  - gear hidden, since jets spawn in the air
+- [ ] Move the imported Model to `ServerStorage` afterwards.
 
-  It runs the model contract before installing, and prints a report: the scale, whether axes were corrected, and how closely the layout fits. The model it replaces moves to `ServerStorage.ReplacedModels` (nothing is deleted), and the imported Model is left as it was.
+The assembler matches the imported MeshParts to `tools/Manifests/F5E.luau` by name. It works out any scale or axis change from where the nose, nozzles and wings landed (the F-5E import came in facing backwards and was turned round), then puts every part exactly at its manifest position. It builds Root, Hull, the six hitboxes and the attachment points; joins the moving parts to Root with Motor6Ds at their hinge points (with `Control`, `HingeAxis`, `HingeMin` and `HingeMax` attributes) and the rest with WeldConstraints; sets every part massless and non-colliding; tags each part with `TextureSet` and `Kind`; hides the gear; and fits the default skin. It checks the model contract before installing and prints a report with the scale, any axis correction and how closely the layout fits. The model it replaces moves to `ServerStorage.ReplacedModels`, so nothing is deleted.
 
-**Textures (Asset Manager).**
-- [ ] Use **Bulk Import** for the PNGs (12 per skin). This is the right tool for images.
-- [ ] Don't bulk-import the meshes: Bulk Import uploads each mesh as a standalone asset and loses the hierarchy and positions.
-- [ ] Create a `SurfaceAppearance` per set (ColorMap, NormalMap, RoughnessMap, MetalnessMap), named after the set, under `Assets.Skins.F5E.<SkinId>`.
+The hinges are set from the manifest, not from the imported pivots. The importer places MeshParts by their bounding boxes, and its pivot handling has changed between Studio versions, so this keeps the hinge axes exact whatever it does.
 
-**Why pivots don't depend on the importer.** The 3D importer positions MeshParts by their bounding boxes, and pivot handling has changed between Studio versions. The control-surface hinges are set from the manifest, so the flight scripts get exact hinge axes whatever the importer does with origins.
-
-**Checks.**
+Checks:
 - [ ] The model contract passes in Studio (`Model.spec`) and in CI (`lune run scripts/validate-models.luau`).
-- [ ] The nose points −Z: the contract fails if `GunMuzzle` is behind the centre.
-- [ ] In play: the control surfaces move with the stick, and the cockpit eye sits inside the canopy.
-
----
+- [ ] The nose points −Z (the contract fails if `GunMuzzle` is behind the centre).
+- [ ] In play, the control surfaces move with the stick and the cockpit eye sits inside the canopy.
 
 ## 5. Game side
 
-- **AircraftAssembler** (`tools/AircraftAssembler.luau`): manifest + imported model → contract-ready jet (see the checklist). ✅
-- **Model contract** (`AircraftModelContract`): parts join Root by a WeldConstraint or a Motor6D; hinged parts need `Control`, `HingeAxis`, `HingeMin` and `HingeMax`; up to 60 parts. ✅
-- **ControlSurfaceController** (client) with the rules in `Shared.ControlSurfaces`. ✅
-  - It sets each surface's Motor6D `Transform` locally, so it costs no network traffic.
-  - Your own jet follows your stick. Other players' and AI jets follow their measured body rates, so they need no extra replication.
-  - Ailerons follow roll, stabilators pitch and the rudder yaw. The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps.
-  - The surfaces move at 120°/s, and jets more than 1,500 studs from the camera are skipped.
-- **Skins** (next): `Assets.Skins`, applying the `Camo` attribute at spawn, and the skin picker on the aircraft detail screen. ⬜
+`tools/AircraftAssembler.luau` turns the manifest and the imported model into a contract-ready jet (section 4).
+
+`AircraftModelContract` lets parts join Root by a WeldConstraint or a Motor6D. Hinged parts need `Control`, `HingeAxis`, `HingeMin` and `HingeMax`, and a jet can have up to 60 parts.
+
+`ControlSurfaceController` moves the surfaces with the rules in `Shared.ControlSurfaces`. It sets each Motor6D's `Transform` on the client only, so it costs no network traffic. Your own jet follows your stick. Other players' jets and AI jets follow how they are actually moving: pitch and roll from their body rates, the rudder from sideslip (in a banked turn the yaw rate is large while the rudder stays near centre). The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps. Surfaces move at 120°/s, and jets more than 1,500 studs from the camera are skipped.
+
+`Shared.Skins`, `Shared.Config.Skins` and the skin picker on the aircraft detail screen handle skins (section 2).

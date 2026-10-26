@@ -1,4 +1,4 @@
-# Afterburner: Development Instruction Set
+# Afterburner: development instruction set
 
 > The engineering companion to [DESIGN.md](DESIGN.md). DESIGN.md says **what** the game is. This document says **exactly what to build**: every system's files, public API, data, network messages, algorithms, tasks and acceptance tests.
 
@@ -92,8 +92,8 @@ Keep the dependency list short. Everything else (Signal, Trove, Spring, networki
 ### 0.3 Coding standards
 
 - `--!strict` at the top of every module. Use `--!nonstrict` only with a comment explaining why.
-- **Naming:** `PascalCase` for modules, services, types and public functions. `camelCase` for locals and private functions. `SCREAMING_SNAKE` for constants.
-- **One module, one job.** Pure maths (flight, ballistics, guidance, economy) lives in `shared` with **no Roblox instance access**, so it can be unit tested and reused by the server and AI.
+- Naming: `PascalCase` for modules, services, types and public functions. `camelCase` for locals and private functions. `SCREAMING_SNAKE` for constants.
+- One module, one job. Pure maths (flight, ballistics, guidance, economy) lives in `shared` with **no Roblox instance access**, so it can be unit tested and reused by the server and AI.
 - Services and controllers expose a typed table. No globals and no `_G`.
 - Every server function that receives client data **validates first** (§16).
 - No `wait()`, `spawn()` or `delay()`. Use `task.wait`, `task.spawn` and `task.delay`.
@@ -145,7 +145,9 @@ Keep **separate experiences** for test and production, so DataStores, MemoryStor
 
 ## 1. Project structure and boot
 
-### 1.1 Full source tree (target)
+### 1.1 Source tree
+
+The tree as built. Modules planned for later phases are listed after it.
 
 ```
 src/
@@ -153,21 +155,35 @@ src/
 │   ├── Config/
 │   │   ├── Scale.luau               -- world/speed scale factors
 │   │   ├── Flight.luau              -- global flight constants (air density curve, g)
-│   │   ├── Combat.luau              -- damage, ranges, lock times (public values)
-│   │   ├── Matchmaking.luau         -- BR bands, team sizes
+│   │   ├── Economy.luau             -- rewards, costs, modules, lineup slots
+│   │   ├── Settings.luau            -- known settings keys, ranges, defaults
+│   │   ├── Skins.luau               -- paint schemes per airframe, prices
 │   │   └── Environment.luau         -- reads the environment attribute
+│   ├── Boot.luau                    -- Init/Start loader for services and controllers
 │   ├── Types.luau                   -- shared type definitions
 │   ├── Units.luau                   -- SI <-> studs, knots, feet, Mach
 │   ├── Atmosphere.luau              -- density, speed of sound vs altitude
 │   ├── FlightModel.luau             -- pure: forces, AoA, limits, step()
 │   ├── Instructor.luau              -- pure: mouse-aim autopilot
 │   ├── Ballistics.luau              -- pure: bullet step, lead solution
-│   ├── Guidance.luau                -- pure: proportional navigation, seeker cones
+│   ├── Guidance.luau                -- pure: proportional navigation, seekers, ARH tracking
 │   ├── Signature.luau               -- pure: IR/RCS signature maths
+│   ├── Countermeasures.luau         -- pure: flare and chaff physics, decoy rolls
+│   ├── DamageModel.luau             -- pure: component health, flight modifiers, kill credit
+│   ├── PoseHistory.luau             -- pure: pose ring buffer and interpolation (lag compensation)
+│   ├── MovementCheck.luau           -- pure: speed, teleport and acceleration checks
+│   ├── AIBrain.luau                 -- pure: AI pilot decisions
+│   ├── MatchRules.luau              -- modes as data, respawn rules
+│   ├── LessonRunner.luau            -- pure: tutorial lesson steps
+│   ├── Matchmaking.luau             -- BR bands, AI airframe choice
+│   ├── PlayerData.luau              -- save schema, migrations, replica, deltas
+│   ├── Progression.luau             -- rewards, research, purchase, modules, skins, lineup
+│   ├── TechTree.luau                -- research graph (nodes, edges, costs)
+│   ├── Skins.luau                   -- applies a skin's SurfaceAppearances to a jet model
+│   ├── ControlSurfaces.luau         -- pure: stick/body rates -> surface deflections
+│   ├── AircraftModelContract.luau   -- model validator (§5.3)
 │   ├── AircraftData/                -- one module per airframe + init (registry)
 │   ├── WeaponData/                  -- one module per weapon + init (registry)
-│   ├── CosmeticData/                -- camos, trails, kill markers
-│   ├── TechTree.luau                -- research graph (nodes, edges, costs)
 │   ├── Net/
 │   │   ├── init.luau                -- typed remote wrapper (§4)
 │   │   ├── Definitions.luau         -- every remote declared here
@@ -181,55 +197,64 @@ src/
 │       └── Validate.luau            -- type/range/finite checks
 ├── server/                          → ServerScriptService.Server
 │   ├── Main.server.luau
-│   ├── Config/                      -- server-only (economy, anti-cheat)
-│   ├── Vendor/                      -- vendored libraries (if needed)
+│   ├── Lib/
+│   │   └── Telemetry.luau           -- analytics wrapper (§30)
 │   └── Services/
-│       ├── ConfigService.luau
 │       ├── DataService.luau
+│       ├── DiagnosticsService.luau
 │       ├── AircraftService.luau
 │       ├── HistoryService.luau      -- position history for lag compensation
 │       ├── CombatService.luau       -- guns + damage
-│       ├── MissileService.luau
-│       ├── SensorService.luau       -- lock validation, data link
-│       ├── CountermeasureService.luau
+│       ├── MissileService.luau      -- missiles + countermeasures
+│       ├── SensorService.luau       -- lock validation, RWR
 │       ├── AntiCheatService.luau
 │       ├── MatchService.luau
-│       ├── Modes/                   -- FFA, TDM, AirSuperiority, StrikeEscort, PvE, Duel, BVR
 │       ├── AIService.luau
-│       ├── AI/                      -- behaviour states
+│       ├── DroneService.luau        -- target drones (test environment)
 │       ├── ProgressionService.luau
-│       ├── ChallengeService.luau
-│       ├── SeasonService.luau
-│       ├── SquadronService.luau
-│       ├── ShopService.luau
-│       ├── MatchmakingService.luau
-│       ├── TeleportService.luau     -- wrapper named AfterburnerTeleport to avoid confusion
-│       ├── AnalyticsService.luau    -- wrapper named Telemetry
-│       ├── AdminService.luau
-│       └── ModerationService.luau
+│       └── AdminService.luau
 └── client/                          → StarterPlayer.StarterPlayerScripts.Client
     ├── Main.client.luau
-    └── Controllers/
-        ├── InputController.luau
-        ├── FlightController.luau
-        ├── CameraController.luau
-        ├── CockpitController.luau
-        ├── HUDController.luau
-        ├── WeaponController.luau
-        ├── RadarController.luau
-        ├── RWRController.luau
-        ├── CountermeasureController.luau
-        ├── MissileViewController.luau   -- interpolates server missiles
-        ├── EffectsController.luau
-        ├── AudioController.luau
-        ├── UIController.luau            -- mounts the React app
-        ├── UI/                          -- React components (Hangar, TechTree, Shop…)
-        ├── SettingsController.luau
-        ├── TutorialController.luau
-        └── DebugController.luau         -- test-environment-only tuning panel
+    ├── Controllers/
+    │   ├── PlayerDataController.luau
+    │   ├── SettingsController.luau
+    │   ├── DiagnosticsController.luau
+    │   ├── InputController.luau
+    │   ├── FlightController.luau
+    │   ├── SensorController.luau        -- radar and RWR picture
+    │   ├── WeaponController.luau
+    │   ├── CameraController.luau
+    │   ├── CockpitController.luau
+    │   ├── ControlSurfaceController.luau -- animates control surfaces on every nearby jet
+    │   ├── HUDController.luau
+    │   ├── ScopesController.luau        -- radar and situation displays
+    │   ├── GEffectsController.luau      -- grey-out, blackout, red-out
+    │   ├── EffectsController.luau
+    │   ├── MissileViewController.luau   -- interpolates server missiles
+    │   ├── CombatFxController.luau
+    │   ├── AudioController.luau
+    │   ├── ToneController.luau          -- seeker, lock and RWR tones
+    │   ├── MatchController.luau
+    │   ├── TutorialController.luau
+    │   ├── TouchController.luau
+    │   ├── MenuController.luau          -- owns menu state, mounts the React app
+    │   └── DebugController.luau         -- test-environment-only tuning panel
+    └── UI/                              -- React: App, Components, Theme, JetPreview, Screens/
+
+tests/                               → ServerStorage.Tests (TestRunner, *.spec, Smoke)
+tools/                               → ServerStorage.Tools (Studio tools, run from the command bar)
+├── GreyboxBuilder.luau, TerrainBuilder.luau, StraitBuilder.luau, EconomySim.luau, ExploitTest.luau
+├── AircraftAssembler.luau           -- imported FBX + manifest -> game-ready jet
+├── Manifests/                       -- per-airframe model manifests written by the Blender generator
+└── blender/                         -- Blender scripts (not synced): f5e_generate.py, f5e_paint.py,
+                                        overlay_reference.py, render_views.py
+scripts/                             -- CI: ci-checks.sh, validate-models.luau (Lune)
+docs/art/                            -- art pipeline; reference images are kept out of git
 ```
 
-> Some file names clash with Roblox service names (`TeleportService`, `AnalyticsService`). Name those modules `AfterburnerTeleport` and `Telemetry` to avoid confusion.
+Planned for later phases and not built yet: `ConfigService` (§31.1), `ChallengeService`, `SeasonService`, `SquadronService`, `ShopService`, `MatchmakingService`, `AfterburnerTeleport` (the TeleportService wrapper), `ModerationService`, and per-mode modules if modes outgrow the data in `MatchRules`.
+
+> Some module names would clash with Roblox service names (`TeleportService`, `AnalyticsService`). Those are named `AfterburnerTeleport` and `Telemetry`.
 
 ### 1.2 Boot sequence
 
@@ -482,7 +507,7 @@ Every aircraft model **must** follow this contract, or the game won't load it. A
 | Attachments (on `Root`) | `CockpitEye`, `GunMuzzle`, `Hardpoint1..N`, `Nozzle1..N`, `WingtipL`, `WingtipR`, `FlareDispenser`, `ChaffDispenser`, `ChaseCam` |
 | Joints | Every other part joins `Root` directly: a `WeldConstraint`, or for moving parts a `Motor6D` (`Part0 = Root`) with `Control`, `HingeAxis`, `HingeMin` and `HingeMax` attributes. `ControlSurfaceController` sets each Motor6D's `Transform` on the client (visual only). Controls: `AileronL/R`, `Stabilator`, `Rudder`, `Flap`, `LEFlap`, plus `Gear`, `GearDoor`, `Wheel` (gear is hidden in flight) |
 | Part budget | ≤ 60 parts per jet. Use MeshParts. 5k–12k triangles for the visual model ([art pipeline](art/AIRCRAFT_PIPELINE.md)). |
-| Textures | Camo surfaces use `SurfaceAppearance` or `Texture` named `CamoSlot` so cosmetics can swap them |
+| Textures and skins | Each MeshPart carries a `TextureSet` attribute (`Body`, `Wings`, `Details`, `Glass`). A skin is a folder of `SurfaceAppearance`s, one per set, in `ReplicatedStorage.Assets.Skins.<Airframe>.<Skin>`; `Shared.Skins.apply` clones them onto the matching parts. No scripts inside the model. |
 
 ### 5.4 Weapon schema
 
@@ -538,9 +563,9 @@ FlightModel.maxSustainedTurnRate(airframe, speed, altitude) -> number
 9. **Linear integration.** `a = (L + D + T + W) / mass`. `velocity += a × dt`. Clamp the speed to `MaxMach × speedOfSound × 1.05`.
 10. **Rotation.**
     - Target rates come from input: `pitchRate = input.pitch × MaxPitchRate × authority(q)`, and the same for roll and yaw.
-    - **G limit:** the pitch rate is capped so `gLoad = |v| × pitchRate / g + cos(bank)` ≤ `MaxG` (and ≥ `MinG`). This is what makes corner speed emerge naturally.
+    - G limit: the pitch rate is capped so `gLoad = |v| × pitchRate / g + cos(bank)` ≤ `MaxG` (and ≥ `MinG`). This is what makes corner speed emerge naturally.
     - **Authority** scales with dynamic pressure (sluggish when slow, capped when fast), except with `ThrustVectoring`, which keeps a minimum pitch authority at low `q`.
-    - **Weathervaning:** if not stalled, velocity is rotated towards the nose a little each step (the jet "flies where it points"). The amount scales with `q`. This is what stops it skidding like a spaceship.
+    - Weathervaning: if not stalled, velocity is rotated towards the nose a little each step (the jet "flies where it points"). The amount scales with `q`. This is what stops it skidding like a spaceship.
     - Integrate the orientation with the angular velocity.
 11. **Fuel.** `fuel -= burnRate(throttle, afterburner) × dt`.
 12. **G stress.** `gStress` rises when `gLoad > 6` *(tune)* in proportion to the excess, and decays below. At `gStress ≥ 1`, the client triggers G-LOC (§8.5).
@@ -565,9 +590,9 @@ Using constraints, rather than setting the CFrame directly, keeps the movement p
 
 ### 6.4 Special airframe behaviour
 
-- **Variable geometry (F-14):** the sweep angle follows a speed schedule. Interpolate `CLMax`, `CD0` and `InducedK` between "wings forward" and "wings back" values. Drive the visual wing pivots from the same value.
-- **Thrust vectoring:** keeps pitch and yaw authority at low `q`, and allows post-stall rotation, but the airspeed bleeds very quickly.
-- **Supercruise:** emerges naturally if the dry thrust beats the transonic drag. Validate it in tests for the Typhoon and F-22.
+- Variable geometry (F-14): the sweep angle follows a speed schedule. Interpolate `CLMax`, `CD0` and `InducedK` between "wings forward" and "wings back" values. Drive the visual wing pivots from the same value.
+- Thrust vectoring: keeps pitch and yaw authority at low `q`, and allows post-stall rotation, but the airspeed bleeds very quickly.
+- Supercruise: emerges naturally if the dry thrust beats the transonic drag. Validate it in tests for the Typhoon and F-22.
 
 ### 6.5 Debug tuning panel (test environment only)
 
@@ -602,7 +627,7 @@ Automated (TestRunner):
 Manual (Studio):
 
 - Flying feels responsive at 60 FPS and still stable at 20 FPS (throttle Studio's frame rate to check sub-stepping).
-- **The Phase 1 exit test:** flying is fun with no weapons, and the two jets feel clearly different.
+- The Phase 1 exit test: flying is fun with no weapons, and the two jets feel clearly different.
 
 ---
 
@@ -678,12 +703,13 @@ The cockpit view is the primary camera (DESIGN §2.4).
 | **Cockpit** (default) | Camera at the `CockpitEye` attachment. Head turns with free look. Small G-driven head movement (the head shifts down under positive G) through a `Spring`. |
 | **Padlock** | Cockpit view that tracks the nearest or selected enemy, clamped to realistic head limits (about ±160° yaw, −20° to +90° pitch) with smoothing. |
 | **Chase** (fallback / debug) | Behind and above the jet from the `ChaseCam` attachment, spring-smoothed. Mouse Aim reticle projected in front. |
-| **Free orbit** | When dead or spectating. |
+| **Map orbit** | With the menus open: a slow, high orbit of the map behind the hangar. |
+| **Spectate** | Waiting to respawn with the menus closed: follow other jets (◀ ▶ to switch). |
 | **Kill cam** | After death: show the killer for 3 s. |
 
 - Set `Camera.CameraType = Scriptable` and drive it on `RenderStepped` (`BindToRenderStep` at `Enum.RenderPriority.Camera.Value + 1`).
 - FOV: default 70°, slider 60–90° in settings. Zoom key narrows it to 35° for spotting.
-- **Look-back snap views:** snap views for left, right, back and up with a short lerp.
+- Look-back snap views: snap views for left, right, back and up with a short lerp.
 
 ### 8.2 Cockpit kits
 
@@ -699,14 +725,15 @@ Each era kit (DESIGN §2.4) is a Model in `ReplicatedStorage.Assets.Cockpits`:
 - The kit is **cloned locally on the client** into the pilot's jet (it's only ever seen by the pilot, so it isn't replicated). It's positioned relative to `CockpitEye`.
 - Per-airframe extras go in an optional `CockpitOverrides` model (frame shape, canopy rails).
 - The external model hides its own cockpit parts (`LocalTransparencyModifier = 1`) while in cockpit view, so they don't block the camera.
+- Until the era kits exist, `CockpitController` builds a greybox analogue kit on the client. It finds the cockpit sill from the lowest point of the jet's `Canopy` part (a one-piece mesh fuselage's bounding box reaches up to the spine, so it can't be used for this) and leaves out its own canopy bow when the jet has a `CanopyFrame`.
 
 ### 8.3 Instruments
 
 `CockpitController` drives every gauge from `FlightState` through one shared instrument library:
 
-- **Needle gauge:** rotates an `ImageLabel` needle by value → angle mapping, smoothed with a `Spring`.
-- **Tape / digital readout:** `TextLabel` updates throttled to 15 Hz.
-- **MFD pages:** radar (B-scope or PPI), RWR, stores (weapons), engine/fuel. The page set depends on the kit.
+- Needle gauge: rotates an `ImageLabel` needle by value → angle mapping, smoothed with a `Spring`.
+- Tape / digital readout: `TextLabel` updates throttled to 15 Hz.
+- MFD pages: radar (B-scope or PPI), RWR, stores (weapons), engine/fuel. The page set depends on the kit.
 
 Instruments update only while in cockpit view.
 
@@ -718,8 +745,8 @@ The HUD is drawn on a `SurfaceGui` on the HUD glass for analogue and glass cockp
 
 From `gStress` (FLT step 12):
 
-- **Grey-out:** a `ColorCorrectionEffect` lowers saturation, and a vignette `ImageLabel` closes in from 0.6 stress onward.
-- **Blackout (G-LOC):** at 1.0, the screen goes black for 3 s *(tune)* and the controls are locked to neutral (the instructor holds the jet level). Recovery fades back in.
+- Grey-out: a `ColorCorrectionEffect` lowers saturation, and a vignette `ImageLabel` closes in from 0.6 stress onward.
+- Blackout (G-LOC): at 1.0, the screen goes black for 3 s *(tune)* and the controls are locked to neutral (the instructor holds the jet level). Recovery fades back in.
 - **Red-out** at strong negative G: a red tint.
 
 ### 8.6 Tasks
@@ -834,7 +861,7 @@ type Jet = {
 
 - Causes: shot down (killer known), crash (terrain/collision), out of bounds too long, fuel exhaustion crash, pilot left, match end.
 - On death: explosion FX event, wreck debris (client-side, pooled), credit the kill/assists (§12.4), then clean up after 0.1 s.
-- **Crashes:** the server listens to `Hull.Touched` with terrain or other jets, and the client also reports collisions. The server decides, using speed and a check that the jet was actually near the surface.
+- Crashes are decided by the server. Every tick it checks the path the jet's centre travelled since the last tick, and the paths of the nose, wingtips and tail (the `GunMuzzle`, `WingtipL`, `WingtipR` and `Nozzle1` attachments), against the map. The `Hull` touching the map also counts, because a shallow belly hit can slide along the ground without the centre's path crossing it. The pilot's client stops the jet on impact and reports it; the server accepts the report only if the jet is near the ground. Mid-air collisions are a separate distance check between jets.
 
 ### 10.4 Out of bounds
 
@@ -887,9 +914,9 @@ sequenceDiagram
 
 ### 11.3 Gunsights
 
-- **Tier I–II:** fixed-depression sight with a lead pipper only when a target is within 1.2 km display range.
-- **Tier III+:** LCOS-style predictive pipper using target acceleration.
-- **Tier V+:** EEGS-style funnel drawn from simulated bullet stream points.
+- Tier I–II: fixed-depression sight with a lead pipper only when a target is within 1.2 km display range.
+- Tier III+: LCOS-style predictive pipper using target acceleration.
+- Tier V+: EEGS-style funnel drawn from simulated bullet stream points.
 
 ### 11.4 Lag compensation (HistoryService)
 
@@ -983,21 +1010,22 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 ### 13.2 Missile simulation (`shared/Guidance.luau` + MissileService)
 
-- **Motor:** thrust acceleration for `MotorBurnTime`, then coast. Drag `∝ ρ v² × DragCoef`. Gravity on.
-- **Guidance:** proportional navigation: `a_cmd = N × Vc × LOS_rate`, with `N = NavConstant` (3–4). Limit `|a_cmd|` to `MaxG × g × (currentSpeed / launchSpeed)²` clamped to `[0.2, 1]` of max (so slow missiles turn badly).
-- **Loft (ARH/SARH at long range):** aim above the target for the first part of the flight to save energy *(Tier IV+)*.
-- **Seeker:** each tick, check the target is within `GimbalLimitDeg` of the missile's nose. If not, guidance is lost (the missile flies ballistic).
-- **Guidance type:**
+- Motor: thrust acceleration for `MotorBurnTime`, then coast. Drag `∝ ρ v² × DragCoef`. Gravity on.
+- Guidance: proportional navigation: `a_cmd = N × Vc × LOS_rate`, with `N = NavConstant` (3–4). Limit `|a_cmd|` to `MaxG × g × (currentSpeed / launchSpeed)²` clamped to `[0.2, 1]` of max (so slow missiles turn badly).
+- Loft (ARH/SARH at long range): aim above the target for the first part of the flight to save energy *(Tier IV+)*.
+- Seeker: each tick, check the target is within `GimbalLimitDeg` of the missile's nose. If not, guidance is lost (the missile flies ballistic).
+- Guidance type:
   - `IR_*`: tracks the strongest heat source in the seeker cone (target or flares, §15).
   - `SARH`: needs the **launcher's radar lock to persist** every tick (check the shooter's lock state in SensorService). Lock lost → missile goes dumb.
   - `ARH`: uses the launcher's lock updates (data link) until within `ActiveRange`, then its own seeker (chaff/notch rules apply). If the launcher's lock drops before active, it flies to the last known position and can reacquire if the target is in its cone when going active.
-- **Energy check:** below `MinSpeedForGuidance`, the missile stops guiding and self-destructs after 2 s.
+- Energy check: below `MinSpeedForGuidance`, the missile stops guiding and self-destructs after 2 s.
 
 ### 13.3 Client presentation (MissileViewController)
 
 - Spawns a pooled visual (missile mesh, smoke trail, motor flame) on `MissileSpawned`.
 - Interpolates positions with a 100 ms buffer between `MissileState` updates, and extrapolates up to 200 ms if packets are late.
 - Shows the motor flame only during the burn time, then just the smoke fading out. That shows players when a missile has run out of energy.
+- A new missile is drawn in the present (extrapolated from its launch velocity) and starts on its launcher's rail as this client draws the launcher, then eases onto the interpolated track over 1 s. Otherwise the 100 ms buffer would show it starting tens of metres behind the jet that fired it.
 - The targeted player gets `MissileWarning` events (direction, type) for the RWR and HUD.
 
 ### 13.4 Tasks
@@ -1031,14 +1059,14 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 ### 14.2 Radar (client display, server validation)
 
-- `RadarController` sweeps the airframe's radar cone. Each target is detected if:
+- `SensorController` sweeps the airframe's radar cone. Each target is detected if:
   - within `Radar.Range × Signature.rcsFactor(target)` (stealth shrinks it), and
   - within the cone, and
   - line of sight to terrain, and
-  - **not notched:** for pulse-Doppler radars (`CanNotch = true`), a target whose radial velocity relative to the radar is below 30 m/s *(tune)* and which is below the radar (look-down) is filtered out.
+  - not notched: for pulse-Doppler radars (`CanNotch = true`), a target whose radial velocity relative to the radar is below 30 m/s *(tune)* and which is below the radar (look-down) is filtered out.
 - Contacts appear on the radar MFD and as HUD boxes.
-- **Lock:** press lock on a contact. The client shows the lock building. It sends `RadarLockRequest(targetId)` and the server validates the same rules (range, cone, notch, LOS with a server raycast) and starts tracking the **lock state**. The server re-checks the lock 5 times a second. If any rule fails, the lock is broken and both pilots are told.
-- **TWS (track-while-scan, Tier IV+):** track several targets and fire ARH at them without a hard lock (the targets don't get a lock warning until the missile goes active).
+- Lock: press lock on a contact. The client shows the lock building. It sends `RadarLockRequest(targetId)` and the server validates the same rules (range, cone, notch, LOS with a server raycast) and starts tracking the **lock state**. The server re-checks the lock 5 times a second. If any rule fails, the lock is broken and both pilots are told.
+- TWS (track-while-scan, Tier IV+): track several targets and fire ARH at them without a hard lock (the targets don't get a lock warning until the missile goes active).
 
 ### 14.3 RWR
 
@@ -1053,8 +1081,8 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 ### 14.5 Signatures (`shared/Signature.luau`)
 
-- **IR signature:** base heat × throttle factor (afterburner ×3) × aspect factor (rear 1.0, side 0.5, front 0.25 for rear-aspect seekers) × altitude/background factor.
-- **RCS:** base × airframe `Stealth` × aspect (front smaller for stealth jets) × weapon bay state (opening bays raises it briefly).
+- IR signature: base heat × throttle factor (afterburner ×3) × aspect factor (rear 1.0, side 0.5, front 0.25 for rear-aspect seekers) × altitude/background factor.
+- RCS: base × airframe `Stealth` × aspect (front smaller for stealth jets) × weapon bay state (opening bays raises it briefly).
 
 ### 14.6 Tasks
 
@@ -1088,7 +1116,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 ### 15.2 Chaff
 
 - Same deployment flow. Each chaff bundle gives a radar missile a chance to lose track, decided once per bundle per missile. The chance is much higher while the target is in the notch (low radial velocity) *(tune: ×3)*.
-- Chaff can also break a radar lock (smaller chance), giving the target a moment to escape.
+- Chaff can also break a radar lock (smaller chance). That gives the target a moment to escape.
 
 ### 15.3 Tasks
 
@@ -1296,13 +1324,15 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 
 ### 19.4 Asset pipeline (aircraft, props)
 
-1. Model in Blender at real scale (metres), forward = −Y in Blender, which becomes −Z in Roblox after import *(confirm with a test export)*.
-2. Keep separate meshes for the hull, control surfaces and camo zones.
-3. Export FBX. Import with Studio's 3D Importer.
-4. Assemble into the model contract (§5.3). Run the validator.
-5. Save to `ReplicatedStorage.Assets.Aircraft` in the place and commit the place file.
+The full workflow is in [docs/art/AIRCRAFT_PIPELINE.md](art/AIRCRAFT_PIPELINE.md). In short, for each jet:
 
-Early on, AI mesh generation in Studio can produce placeholder props quickly. Final aircraft should be hand-made or carefully checked for accuracy.
+1. A Blender script builds the model at real scale (metres, nose toward +Y in Blender, which the FBX export turns into −Z in Roblox), measured from reference drawings, with every control surface and gear part as its own object pivoted on its hinge. `tools/blender/overlay_reference.py` checks it against the three-view.
+2. The script exports the FBX and a manifest (`tools/Manifests/<Id>.luau`) with each part's bounds, pivot, hinge and texture set, plus the attachments, hull and hitboxes.
+3. Import the FBX with Studio's 3D Importer as one model, then run `AircraftAssembler.install("<Id>", <import>)`. It corrects the importer's scale and axes, places every part from the manifest, adds the Motor6D hinges, Root, Hull, hitboxes and attachments, fits the default skin and runs the contract (§5.3). The model it replaces moves to `ServerStorage.ReplacedModels`.
+4. Paint skins with `tools/blender/f5e_paint.py` (procedural PBR textures from the same `.blend`), upload them and store each as `Assets.Skins.<Id>.<Skin>`.
+5. Save the place and commit the place file.
+
+The F-5E is the first jet through this pipeline. The other airframes still use the greybox models from `tools/GreyboxBuilder`.
 
 ### 19.5 Tasks
 
@@ -1401,7 +1431,8 @@ The schema from DESIGN §9.3, plus:
 
 - `Version` (number) and a `Migrations` table: `Migrations[n](data)` upgrades version `n-1` to `n`. Run on load. Covered by unit tests with fixtures of every old version.
 - Bounded lists. For example, `ProcessedReceipts` keeps the most recent 100 purchase IDs. Roblox only re-sends a receipt until it's been marked granted, so a recent-history list is enough to stop double grants (§27.3).
-- A `Flags` table for one-off things (`TutorialComplete`, `FirstPurchaseOffered`).
+- A `Flags` table for one-off things (`TutorialComplete`, `FirstPurchaseOffered`, and `AllUnlocked` for full access, §31.2).
+- Per airframe, `Aircraft[id]` holds `Owned`, `Researched`, `RP`, `Modules` (`true` = fitted, `false` = owned but taken off), `Mastery`, `Skins` (skins bought; the default is always owned) and `Camo` (the skin in use).
 
 ### 22.3 Other DataStores
 
@@ -1446,7 +1477,7 @@ All of these are server-side. The client calls them through remotes with IDs onl
 - `MatchService` records events (kill, assist, missile defeated, zone captured, survived, win).
 - `ProgressionService` turns events into XP/RP/Credits using `server/Config/Economy.luau` (the values from DESIGN §7.2), multiplied by: the tier multiplier, the win bonus, first-win-of-the-day, VIP (§27), active boosters (capped at ×2 total) and the premium-jet RP bonus.
 - RP goes to the airframe that earned it. A small share *(tune: 10%)* goes to a "free RP" pool spendable anywhere, so players aren't stuck.
-- **Anti-farming:** rewards per kill on the same victim drop after 3 kills in a match. Kills of AI give 50%. AFK detection (no input for 60 s) gives no survival or win bonus.
+- Anti-farming: rewards per kill on the same victim drop after 3 kills in a match. Kills of AI give 50%. AFK detection (no input for 60 s) gives no survival or win bonus.
 
 ### 23.3 Research and purchase rules
 
@@ -1463,13 +1494,13 @@ All of these are server-side. The client calls them through remotes with IDs onl
 
 ### 23.5 Upgrade modules
 
-- Per airframe: Engine I/II, Airframe I/II, Avionics I/II, Weapons (unlocks specific missiles), Countermeasures.
-- Each module has an RP cost (from that jet) and a Credit cost, and a `Modifiers` effect passed into the FlightModel or the loadout.
+- Per airframe: Engine I/II, Airframe I/II, Avionics I and Countermeasures I are built. Avionics II and a Weapons module (unlocking specific missiles) are planned.
+- Each module has an RP cost (from that jet) and a Credit cost, and effects passed into the FlightModel or the loadout. Buying a module fits it (`BuyModule`). An owned module can be taken off and refitted for free (`SetModuleFitted`); one can't come off while a module that requires it is fitted, or go back on without its prerequisite.
 - Stock is about 85–90% of fully upgraded performance (DESIGN §7.4).
 
 ### 23.6 Economy simulation
 
-Before Phase 5 ends, write a **simple spreadsheet or script** that simulates a player's progression with average match results, so the playtime targets in DESIGN §7.3 can be checked (Tier II in 2–3 h, F-22 in 100–130 h). Re-run it whenever an economy value changes.
+A script simulates a player's progression with average match results, so the playtime targets in DESIGN §7.3 can be checked (Tier II in 2–3 h, F-22 in 100–130 h). It is `tools/EconomySim.luau`, run by `Economy.spec`. Re-run it whenever an economy value changes.
 
 ### 23.7 Tasks
 
@@ -1493,7 +1524,8 @@ Before Phase 5 ends, write a **simple spreadsheet or script** that simulates a p
 
 - **React (react-lua)** for all menus: hangar, tech tree, shop, settings, results, season pass. One root `ScreenGui` with a router.
 - The HUD is **not** React (§9).
-- A small design system in `client/Controllers/UI/Theme.luau`: colours, fonts, spacing, button and panel components. Use the same look as the README banner (dark navy, orange afterburner accents, HUD green).
+- `MenuController` owns the menu state and mounts the React app (`client/UI/App.luau`).
+- A small design system in `client/UI/Theme.luau`: colours, fonts, spacing, button and panel components. Use the same look as the README banner (dark navy, orange afterburner accents, HUD green).
 
 ### 24.2 Screens
 
@@ -1502,7 +1534,7 @@ Before Phase 5 ends, write a **simple spreadsheet or script** that simulates a p
 | **Hangar (home)** | 3D jet on a turntable (`ViewportFrame` or a real hangar room the camera looks at), airframe name/BR/tier, lineup slots, Play button, currencies, notifications |
 | **Play / mode select** | Modes with player counts, queue status, BR band of your lineup |
 | **Tech tree** | Three branch columns by tier, nodes with state (locked, researchable, researched, owned), RP progress bars, cost, research/buy buttons, a pan/zoom view |
-| **Aircraft detail** | Stats (speed, turn, climb as bars), modules, loadout editor, camo selector, mastery |
+| **Aircraft detail** | Stats (speed, turn, climb as bars), modules (buy, fit, unfit), loadout, skin picker with preview, lineup, mastery |
 | **Shop** | Featured rotation, categories, bundles, previews, Robux/Wings prices |
 | **Season pass** | Tier track (free and premium), progress, claim buttons |
 | **Challenges** | Daily/weekly lists with progress, reroll |
@@ -1551,7 +1583,7 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 
 - Queue key: `queue:{mode}:{brBand}` using a `MemoryStoreSortedMap` (entries: `userId → {lineupBR, partyId, joinTime, region?}`), or `MemoryStoreQueue` per bucket.
 - BR bands are fixed-width buckets (for example 0.33 wide) so matching can look at neighbouring buckets as the wait grows (±1.0 to start, ±1.7 at most, DESIGN §5.2).
-- **One matchmaker at a time:** lobby servers try to take a lease (`MemoryStoreHashMap` key `matchmaker:lease` written with `UpdateAsync` and a short expiry). The lease holder runs the matching loop every 2 s. If it disappears, another server takes over when the lease expires.
+- One matchmaker at a time: lobby servers try to take a lease (`MemoryStoreHashMap` key `matchmaker:lease` written with `UpdateAsync` and a short expiry). The lease holder runs the matching loop every 2 s. If it disappears, another server takes over when the lease expires.
 - When a match forms:
   1. Write the match record to `MemoryStoreHashMap` `match:{matchId}` (mode, map, players, teams, BR band, AI fill count).
   2. Reserve a server and teleport the players (`TeleportService:TeleportAsync` with `TeleportOptions.ShouldReserveServer = true`, then later groups with the returned `ReservedServerAccessCode`), passing `matchId` in the teleport data.
@@ -1647,6 +1679,7 @@ ShopService:OwnsPass(player, passKey) -> boolean  -- cached, verified with UserO
 
 - The catalogue (prices, rotation, bundles) is served from config, with the weekly rotation chosen deterministically from the week number.
 - Wings purchases (cosmetics, premium jets) are transactions inside `DataService:Update`: check the balance → deduct → grant → log.
+- Skins exist ahead of the shop. `Config/Skins.luau` defines each airframe's skins (name, Credit price, which one is the default) and `Progression` handles ownership: `BuySkin` buys and fits one, `SetSkin` switches between owned skins. The aircraft detail screen has the picker. The server paints each jet as it spawns with the pilot's skin (`Shared.Skins.apply`), and AI jets get a random one. The F-5E has Ghost Grey (default), Desert, Pacific and Lizard aggressor schemes at 5,000 Credits each; Robux and Wings prices come with this shop.
 
 ### 27.3 ProcessReceipt (critical)
 
@@ -1748,7 +1781,7 @@ end
 - **Funnels** (`AnalyticsService:LogFunnelStepEvent`): first session (join → tutorial 1 → tutorial 3 → first match → first kill → first research).
 - **Economy** (`LogEconomyEvent`): every Credits/Wings source and sink.
 - **Custom events** (`LogCustomEvent`): match end (mode, duration, BR band), deaths by cause, per-airframe K/D and win rate, missile fire/hit/defeat rates by class, matchmaking wait times, anti-cheat strikes.
-- **Progression:** `LogProgressionEvent` for tier reached.
+- Progression: `LogProgressionEvent` for tier reached.
 
 ### 30.2 Rules
 
@@ -1776,8 +1809,9 @@ end
 
 ### 31.2 AdminService
 
-- Admin list by UserId (or group rank) in server config.
-- Commands (through a test-environment-only console panel or `TextChatCommand`s for admins): `/give`, `/resetdata` (test only), `/setbr`, `/event double_xp on`, `/kick`, `/announce`, `/spawnbot`, `/matchend`.
+- Admins (`AdminService:IsAdmin`) are everyone in Studio plus the game's owners (`IsOwner`): the creator, the owner of the group that owns the game, and the `ADMINS` list of user IDs.
+- Owners get full access when their save loads, in test and live (`Progression.unlockEverything`): every jet, every module (owned, not fitted), every skin and all lineup slots (`Flags.AllUnlocked`). Currency is left alone. It re-applies on every join, so new content shows up for them at once. Studio's local test players are not owners, so a fresh account can still be tested.
+- Commands run through the `AdminCommand` remote; the debug panel (test environment) is the UI. Built: `data.inspect`, `data.reset`, `give.credits`, `give.xp`, `give.rp`, `unlock` and `kick`. Data-changing commands only run in the test environment; inspection and kicks work everywhere. Planned with ConfigService and live ops: `setbr`, event flags (double XP), `announce`, `spawnbot`, `matchend`.
 - Every admin action is logged.
 
 ### 31.3 Live ops calendar
@@ -1907,36 +1941,36 @@ On every push and PR:
 
 | Remote | Direction | Type | Arguments | Rate limit *(tune)* | Section |
 |---|---|---|---|---|---|
-| `PlayerDataUpdate` | S→C | Reliable | `delta: table` | — | §22 |
+| `PlayerDataUpdate` | S→C | Reliable | `delta: table` | n/a | §22 |
 | `RequestSpawn` | C→S | Reliable | `airframeId: string` | 1/s | §10 |
-| `JetSpawned` | S→C | Reliable | `jetId, airframeId, pilotUserId` | — | §10 |
-| `JetDestroyed` | S→All | Reliable | `jetId, killerId?, cause` | — | §10 |
-| `DamageState` | S→C (pilot) | Reliable | `components: {[string]: number}` | — | §12 |
+| `JetSpawned` | S→C | Reliable | `jetId, airframeId, pilotUserId` | n/a | §10 |
+| `JetDestroyed` | S→All | Reliable | `jetId, killerId?, cause` | n/a | §10 |
+| `DamageState` | S→C (pilot) | Reliable | `components: {[string]: number}` | n/a | §12 |
 | `GunFire` | C→S | Reliable | `isStart: boolean, serverTime: number, seed: number` | 10/s | §11 |
-| `GunFireFx` | S→Others | Reliable | `jetId, isStart, seed, serverTime` | — | §11 |
-| `HitConfirm` | S→C | Reliable | `targetJetId, component` | — | §11 |
+| `GunFireFx` | S→Others | Reliable | `jetId, isStart, seed, serverTime` | n/a | §11 |
+| `HitConfirm` | S→C | Reliable | `targetJetId, component` | n/a | §11 |
 | `SelectWeapon` | C→S | Reliable | `slotIndex: number` | 5/s | §11 |
 | `RadarLockRequest` | C→S | Reliable | `targetJetId: number?` (nil = unlock) | 5/s | §14 |
-| `LockState` | S→C | Reliable | `targetJetId?, state` | — | §14 |
-| `RWRUpdate` | S→C | Reliable | `threats: {...}` | — | §14 |
-| `DataLinkContacts` | S→C | Unreliable | packed contacts | — | §14 |
+| `LockState` | S→C | Reliable | `targetJetId?, state` | n/a | §14 |
+| `RWRUpdate` | S→C | Reliable | `threats: {...}` | n/a | §14 |
+| `DataLinkContacts` | S→C | Unreliable | packed contacts | n/a | §14 |
 | `MissileFire` | C→S | Reliable | `slotIndex, targetJetId?` | 4/s | §13 |
-| `MissileSpawned` | S→All (in range) | Reliable | `missileId, weaponId, ownerJetId, pos, vel` | — | §13 |
-| `MissileState` | S→C (in range) | Unreliable | packed buffer | — | §13 |
-| `MissileDetonated` | S→All (in range) | Reliable | `missileId, pos, hitJetId?` | — | §13 |
-| `MissileWarning` | S→C (target) | Reliable | `missileId, bearing, type` | — | §13 |
+| `MissileSpawned` | S→All (in range) | Reliable | `missileId, weaponId, ownerJetId, pos, vel` | n/a | §13 |
+| `MissileState` | S→C (in range) | Unreliable | packed buffer | n/a | §13 |
+| `MissileDetonated` | S→All (in range) | Reliable | `missileId, pos, hitJetId?` | n/a | §13 |
+| `MissileWarning` | S→C (target) | Reliable | `missileId, bearing, type` | n/a | §13 |
 | `CountermeasureDeploy` | C→S | Reliable | `kind: "Flare" \| "Chaff"` | 8/s | §15 |
-| `CountermeasureFx` | S→Others | Reliable | `jetId, kind, serverTime` | — | §15 |
-| `MatchState` | S→All | Reliable | `state, timeLeft, scores` | — | §17 |
-| `KillFeed` | S→All | Reliable | `killer, victim, weapon, assists` | — | §17 |
-| `MatchResults` | S→C | Reliable | `results, rewards` | — | §17 |
+| `CountermeasureFx` | S→Others | Reliable | `jetId, kind, serverTime` | n/a | §15 |
+| `MatchState` | S→All | Reliable | `state, timeLeft, scores` | n/a | §17 |
+| `KillFeed` | S→All | Reliable | `killer, victim, weapon, assists` | n/a | §17 |
+| `MatchResults` | S→C | Reliable | `results, rewards` | n/a | §17 |
 | `ResearchAircraft` / `BuyAircraft` / `BuyModule` | Function | Reliable | IDs only → (ok, error) | 2/s | §23 |
 | `SetLineup` / `SetLoadout` / `EquipCosmetic` | C→S | Reliable | IDs only | 2/s | §23–27 |
 | `QueueJoin` / `QueueLeave` | C→S | Reliable | `modeId` | 1/s | §25 |
-| `QueueStatus` | S→C | Reliable | `state, waitTime, estimate` | — | §25 |
+| `QueueStatus` | S→C | Reliable | `state, waitTime, estimate` | n/a | §25 |
 | `ShopPurchase` | C→S | Reliable | `itemId` (Wings items) | 2/s | §27 |
 | `PromptProduct` | C→S | Reliable | `productKey` | 2/s | §27 |
-| `GetCatalogue` | C→S | RemoteFunction | — | 1/5s | §27 |
+| `GetCatalogue` | C→S | RemoteFunction | none | 1/5s | §27 |
 | `ClaimReward` | C→S | Reliable | `source, id` (season tier, challenge) | 2/s | §26 |
 | `RerollChallenge` | C→S | Reliable | `challengeId` | 1/s | §26 |
 | `SaveSettings` | C→S | Reliable | `settings: table` (validated per field) | 1/s | §29 |
