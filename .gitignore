@@ -29,3 +29,6 @@ desktop.ini
 
 # Blender generator output (regenerate with tools/blender/*.py)
 tools/blender/out/
+
+# Python bytecode (tools/blender scripts import each other)
+__pycache__/
