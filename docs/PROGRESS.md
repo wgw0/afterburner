@@ -216,6 +216,14 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 - [ ] **ACD-06** Stat blocks for the 15 launch jets (balancing spreadsheet → data modules)
 - [ ] **ACD-07** Final art models for the 15 launch jets (Blender → MeshParts; see §19.4 pipeline)
+  - *Pipeline built ([art pipeline](art/AIRCRAFT_PIPELINE.md)):*
+    - a Blender generator measured from reference drawings
+    - a reference-overlay check
+    - `AircraftAssembler`
+    - a Motor6D model contract
+    - `ControlSurfaceController`
+  - *1 / 15: the F-5E base model is in the game.* 35 parts, 10.7k triangles; it passes the contract in Studio and CI and has moving control surfaces. Flown hands-on, cockpit view and missile launch checked.
+  - *Still to do for the F-5E:* PBR textures and skins.
 - [ ] **FLT-08** Variable geometry (F-14)
 - [ ] **INP-05** Rebinding UI and persisted bindings
 - [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
