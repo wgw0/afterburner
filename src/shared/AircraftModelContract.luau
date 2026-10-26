@@ -65,7 +65,9 @@ function Contract.validate(model: Instance): { string }
 		end
 	end
 	local muzzle = root:FindFirstChild("GunMuzzle")
-	if muzzle and muzzle:IsA("Attachment") and muzzle.Position.Z >= 0 then
+	-- CFrame.Position rather than Position: same value in Roblox, and Position isn't stored in the file,
+	-- so the CI check (Lune, outside Roblox) can't read it.
+	if muzzle and muzzle:IsA("Attachment") and muzzle.CFrame.Position.Z >= 0 then
 		fail("GunMuzzle is behind the centre of mass; the nose must point along -Z")
 	end
 
