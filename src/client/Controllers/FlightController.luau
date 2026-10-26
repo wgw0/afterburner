@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local DamageModel = require(Shared.DamageModel)
 local Flight = require(Shared.Config.Flight)
 local FlightModel = require(Shared.FlightModel)
 local Instructor = require(Shared.Instructor)
@@ -32,6 +33,8 @@ local FlightController = {
 	state = nil :: FlightState?,
 	input = nil :: Types.ControlInput?,
 	glocUntil = 0,
+	damage = {} :: { [string]: number }, -- component health fractions from the server
+	mods = nil :: any, -- flight model modifiers from damage
 	JetChanged = Signal.new(), -- (jet or nil)
 	Crashed = Signal.new(),
 }
@@ -64,6 +67,8 @@ local function adoptJet(model: Model)
 	local speed = Units.velocityFromStuds(root.AssemblyLinearVelocity.Magnitude)
 	FlightController.state = FlightModel.newState(root.CFrame, math.max(speed, Flight.SPAWN_SPEED), airframe)
 	FlightController.glocUntil = 0
+	FlightController.damage = {}
+	FlightController.mods = nil
 	crashed = false
 	InputController:ResetForJet(root.CFrame)
 	InputController:SetEnabled(true)
@@ -110,7 +115,7 @@ local function step(dt: number)
 		else InputController:GetControlInput(state, airframe)
 	FlightController.input = input
 
-	local nextState = FlightModel.step(state, input, airframe, dt)
+	local nextState = FlightModel.step(state, input, airframe, dt, FlightController.mods)
 	if unconscious then
 		-- Recovery begins as consciousness returns.
 		nextState.gStress = if now + dt >= FlightController.glocUntil then Flight.GLOC_RECOVERY_STRESS else 1
@@ -151,6 +156,13 @@ function FlightController:IsUnconscious(): boolean
 	return os.clock() < self.glocUntil
 end
 
+function FlightController:Init()
+	Net.Client.on("DamageState", function(fractions: { [string]: number })
+		self.damage = fractions
+		self.mods = DamageModel.modifiers(fractions)
+	end)
+end
+
 function FlightController:Start()
 	local jets = workspace:WaitForChild("Jets")
 	jets.ChildAdded:Connect(function(child)
@@ -163,7 +175,11 @@ function FlightController:Start()
 			adoptJet(child :: Model)
 		end
 	end
-	RunService.PreSimulation:Connect(step)
+	RunService.PreSimulation:Connect(function(dt)
+		debug.profilebegin("FlightController.step")
+		step(dt)
+		debug.profileend()
+	end)
 end
 
 return FlightController
