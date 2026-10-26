@@ -600,7 +600,7 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 - [x] Tutorial flight (lessons 1–3).
 - [x] Mobile touch controls (playable, not polished).
 
-**Exit test:** 8 players and bots have a full match. Run an internal playtest with friends and write down every complaint.
+**Exit test:** 8 players and bots have a full match. Run an internal playtest with friends and write down every complaint. ✅ *Signed off 2026-10-26 on solo and 24-bot matches; the multiplayer playtest is still to run. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 5: Progression and saving (weeks 9–10)
 - [ ] DataService with ProfileStore and the schema (§9.3).
