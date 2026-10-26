@@ -1,6 +1,7 @@
 --!strict
--- The rules every aircraft model must follow (DEVELOPMENT.md §5.3). validate() returns a list of
--- problems (empty = OK). Checked at server boot for every airframe and by Model.spec in tests.
+-- The rules every aircraft model must follow (DEVELOPMENT.md §5.3, docs/art/AIRCRAFT_PIPELINE.md).
+-- validate() returns a list of problems (empty = OK). Checked at server boot for every airframe, by
+-- Model.spec in tests and by scripts/validate-models.luau in CI.
 
 local Contract = {}
 
@@ -16,7 +17,9 @@ Contract.ATTACHMENTS = {
 	"Nozzle1",
 	"Hardpoint1",
 }
-Contract.MAX_PARTS = 40
+Contract.MAX_PARTS = 60
+-- Parts hinged on a Motor6D (control surfaces, gear) say what drives them in a Control attribute
+Contract.HINGE_ATTRIBUTES = { "Control", "HingeAxis", "HingeMin", "HingeMax" }
 
 function Contract.validate(model: Instance): { string }
 	local problems = {}
@@ -88,14 +91,23 @@ function Contract.validate(model: Instance): { string }
 				if d ~= hull and not isHitbox and (d.CanCollide or d.CanTouch or d.CanQuery) then
 					fail(`visual part {d.Name} must have CanCollide, CanTouch and CanQuery off`)
 				end
-				local welded = false
-				for _, weld in d:GetChildren() do
-					if weld:IsA("WeldConstraint") and (weld.Part0 == root or weld.Part1 == root) then
+				-- Joined straight to Root: a WeldConstraint, or a Motor6D (Part0 = Root) for moving parts
+				local welded, hinged = false, false
+				for _, joint in d:GetChildren() do
+					if joint:IsA("WeldConstraint") and (joint.Part0 == root or joint.Part1 == root) then
 						welded = true
+					elseif joint:IsA("Motor6D") and joint.Part0 == root and joint.Part1 == d then
+						hinged = true
 					end
 				end
-				if not welded then
-					fail(`{d.Name} must be welded directly to Root`)
+				if not (welded or hinged) then
+					fail(`{d.Name} must be welded or hinged (Motor6D) directly to Root`)
+				elseif hinged then
+					for _, attribute in Contract.HINGE_ATTRIBUTES do
+						if d:GetAttribute(attribute) == nil then
+							fail(`hinged part {d.Name} is missing its {attribute} attribute`)
+						end
+					end
 				end
 			end
 		end

@@ -48,5 +48,19 @@ return function(ctx)
 			expect(string.find(text, "contains a script", 1, true) ~= nil).toBe(true)
 			expect(string.find(text, "WingL must have CanCollide", 1, true) ~= nil).toBe(true)
 		end)
+
+		it("catches a hinged part without its hinge attributes", function()
+			local source = folder and folder:FindFirstChild("F5E")
+			local hinged = source and source:FindFirstChildWhichIsA("Motor6D", true)
+			if not (source and hinged and hinged.Part1) then
+				return -- greybox model: nothing hinged yet
+			end
+			local broken = source:Clone()
+			local part = broken:FindFirstChild((hinged.Part1 :: BasePart).Name) :: BasePart
+			part:SetAttribute("Control", nil)
+			local text = table.concat(Contract.validate(broken), "\n")
+			broken:Destroy()
+			expect(string.find(text, "missing its Control attribute", 1, true) ~= nil).toBe(true)
+		end)
 	end)
 end

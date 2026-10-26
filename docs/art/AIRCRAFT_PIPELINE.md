@@ -8,7 +8,7 @@ How every jet goes from Blender into the game: a modular, mid-poly model with an
 | 2. Refine shapes, add detail | Blender, by hand | ⬜ |
 | 3. Bake + paint PBR textures (Body, Wings, Details) | Blender / Substance Painter, by hand | ⬜ |
 | 4. Import into Studio | Studio 3D Importer | ⬜ |
-| 5. Assemble (Root, Hull, hitboxes, attachments, hinges, skin) | `AircraftAssembler` tool, reads the manifest | ⬜ to build |
+| 5. Assemble (Root, Hull, hitboxes, attachments, hinges, skin) | `AircraftAssembler` tool, reads the manifest | 🟡 built, waiting for the FBX import |
 | 6. Validate | Model contract in Studio and CI (Lune) | ✅ in place |
 
 ---
@@ -139,18 +139,23 @@ The generator's shapes are measured from the three-view. Its stations are writte
 **Import (Studio → File → Import 3D).**
 - [ ] Import as a **single Model** (not as separate assets). This keeps every part in place relative to the others.
 - [ ] **Anchored** on, "Insert using scene position" on.
-- [ ] File unit: **Meter**. The assembler checks the imported length against the manifest (14.45 m = 51.6 studs) and rescales if the importer got it wrong.
+- [ ] File unit: **Meter**. If the importer still gets the scale or axes wrong, the assembler corrects them (below).
 - [ ] Textures: don't import materials. Skins are made separately (below).
-- [ ] Put the imported Model in `ServerStorage` and run the **AircraftAssembler** with its manifest. It builds the game model in `ReplicatedStorage.Assets.Aircraft.F5E`:
-  - Root, Hull and the six hitboxes
-  - the attachment points
-  - **Motor6D joints on the hinge points** for the control surfaces and gear
+- [ ] Run the **AircraftAssembler** in the command bar (Edit mode):
+  ```lua
+  print(require(game.ServerStorage.Tools.AircraftAssembler).install("F5E", workspace.F5E_base))
+  ```
+  It matches the imported MeshParts to `tools/Manifests/F5E.luau` by name and builds the game model in `ReplicatedStorage.Assets.Aircraft.F5E`:
+  - it works out any scale or axis change from where the parts landed (nose, nozzles, wings), then puts every part exactly at its manifest position
+  - Root, Hull, the six hitboxes and the attachment points
+  - **Motor6D joints on the hinge points** for the control surfaces and gear, with `Control`, `HingeAxis`, `HingeMin` and `HingeMax` attributes
   - WeldConstraints for the static parts
-  - Massless, collisions off, CollisionFidelity Box, RenderFidelity Automatic
-  - a `TextureSet` attribute on each part
-  - the Default skin
+  - Massless and collisions off, CollisionFidelity Box, RenderFidelity Automatic
+  - `TextureSet` and `Kind` attributes on each part
+  - a flat colour per texture set until the skins exist
+  - gear hidden, since jets spawn in the air
 
-  It then runs the model contract.
+  It runs the model contract before installing, and prints a report: the scale, whether axes were corrected, and how closely the layout fits. The model it replaces moves to `ServerStorage.ReplacedModels` (nothing is deleted), and the imported Model is left as it was.
 
 **Textures (Asset Manager).**
 - [ ] Use **Bulk Import** for the PNGs (12 per skin). This is the right tool for images.
@@ -166,9 +171,13 @@ The generator's shapes are measured from the three-view. Its stations are writte
 
 ---
 
-## 5. Game-side work still to do (before the first new model goes in)
+## 5. Game side
 
-1. **AircraftAssembler** (Studio tool): manifest + imported model → contract-ready jet (see the checklist).
-2. **Model contract update**: allow MeshParts, Motor6D joints for parts of kind `ControlSurface`, `Gear`, `GearDoor` and `GearWheel` (instead of welds), a `TextureSet` attribute, and a part limit of 60.
-3. **ControlSurfaceController** (client): drives the Motor6Ds from each jet's flight input (ailerons from roll, stabilators from pitch, rudder from yaw, flaps from speed and AoA), and replicates the same animation for other players' jets from telemetry.
-4. **Skins**: `Assets.Skins`, applying the `Camo` attribute at spawn, and the skin picker on the aircraft detail screen.
+- **AircraftAssembler** (`tools/AircraftAssembler.luau`): manifest + imported model → contract-ready jet (see the checklist). ✅
+- **Model contract** (`AircraftModelContract`): parts join Root by a WeldConstraint or a Motor6D; hinged parts need `Control`, `HingeAxis`, `HingeMin` and `HingeMax`; up to 60 parts. ✅
+- **ControlSurfaceController** (client) with the rules in `Shared.ControlSurfaces`. ✅
+  - It sets each surface's Motor6D `Transform` locally, so it costs no network traffic.
+  - Your own jet follows your stick. Other players' and AI jets follow their measured body rates, so they need no extra replication.
+  - Ailerons follow roll, stabilators pitch and the rudder yaw. The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps.
+  - The surfaces move at 120°/s, and jets more than 1,500 studs from the camera are skipped.
+- **Skins** (next): `Assets.Skins`, applying the `Camo` attribute at spawn, and the skin picker on the aircraft detail screen. ⬜
