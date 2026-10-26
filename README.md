@@ -9,9 +9,9 @@
 [![Platform](https://img.shields.io/badge/platform-Roblox-000000?style=for-the-badge&logo=roblox&logoColor=white)](https://create.roblox.com)
 [![Language](https://img.shields.io/badge/language-Luau-00A2FF?style=for-the-badge&logo=lua&logoColor=white)](https://luau.org)
 [![Tooling](https://img.shields.io/badge/sync-Rojo-E13835?style=for-the-badge)](https://rojo.space)
-[![Status](https://img.shields.io/badge/status-pre--alpha-FF8A3D?style=for-the-badge)](#-roadmap)
+[![Status](https://img.shields.io/badge/status-pre--alpha-FF8A3D?style=for-the-badge)](#roadmap)
 
-[**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Progress**](docs/PROGRESS.md) · [**Roadmap**](#-roadmap) · [**Getting started**](#-getting-started) · [**Project layout**](#-project-layout)
+[**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Progress**](docs/PROGRESS.md) · [**Roadmap**](#roadmap) · [**Getting started**](#getting-started) · [**Project layout**](#project-layout)
 
 </div>
 
@@ -122,6 +122,8 @@ flowchart LR
 
 The full breakdown is in [design doc §9](docs/DESIGN.md#9-technical-architecture).
 
+<a id="project-layout"></a>
+
 ## 📁 Project layout
 
 Scripts live as files in this repo and are synced into Studio with [Rojo](https://rojo.space). The map, terrain and models live in the place file.
@@ -151,6 +153,8 @@ afterburner/
 require(game.ServerStorage.Tests.TestRunner).run()
 ```
 
+<a id="getting-started"></a>
+
 ## 🚀 Getting started
 
 **You'll need:** [Roblox Studio](https://create.roblox.com), [Git](https://git-scm.com) and [Rokit](https://github.com/rojo-rbx/rokit). Rokit installs the pinned Rojo version for you.
@@ -179,6 +183,8 @@ Then:
 
 > [!TIP]
 > Edit scripts in your code editor, not in Studio, while Rojo is connected. Otherwise Rojo overwrites your Studio edits. Save the place (Ctrl+S) when you change the map or models, and commit the `.rbxl` along with your code.
+
+<a id="roadmap"></a>
 
 ## 🗺️ Roadmap
 
