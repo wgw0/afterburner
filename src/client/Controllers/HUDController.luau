@@ -53,6 +53,10 @@ local altTape: Tape
 local headingTape: Tape
 local readouts: { [string]: TextLabel } = {}
 local warningLabel: TextLabel
+local cautionLabel: TextLabel
+local terrainParams: RaycastParams
+local terrainCheckAt = 0
+local terrainAhead = false
 local aimReticle: Frame
 local fuelLabel: TextLabel
 local helpLabel: TextLabel
@@ -259,6 +263,10 @@ local function build(): ScreenGui
 	warningLabel.AnchorPoint = Vector2.new(0.5, 0.5)
 	warningLabel.Size = UDim2.fromOffset(240, 28)
 	warningLabel.TextColor3 = RED
+	cautionLabel = text(box, 15)
+	cautionLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	cautionLabel.Size = UDim2.fromOffset(300, 18)
+	cautionLabel.TextColor3 = AMBER
 
 	-- Outside the HUD box
 	aimReticle = circle(gui, 30, 1.5, AIM_WHITE)
@@ -613,22 +621,47 @@ local function update()
 		)
 	end
 
-	-- Warnings, most urgent first
-	local warning = ""
-	if state.velocity.Y < -30 and Units.feet(state.altitude) < 2500 then
-		warning = "PULL UP"
-	elseif state.stalled then
-		warning = "STALL"
-	elseif airframe and state.gLoad > airframe.MaxG * 0.97 then
-		warning = "OVER-G"
-	elseif state.gStress > 0.6 then
-		warning = "G-LIMIT"
-	elseif airframe and state.fuel < airframe.Fuel * 0.15 then
-		warning = "BINGO"
+	-- Warnings (HUD-04): every active condition, most urgent first. The top one flashes in red; the rest
+	-- are listed underneath in amber.
+	local now = os.clock()
+	if now >= terrainCheckAt then
+		-- Terrain ahead: is the ground on the flight path within the next 4 seconds?
+		terrainCheckAt = now + 0.2
+		local path = Units.velocityToStuds(state.velocity) * 4
+		terrainAhead = path.Magnitude > 1 and workspace:Raycast(root.Position, path, terrainParams) ~= nil
+	end
+	local warnings = {}
+	local outAt = jetModel and jetModel:GetAttribute("OutOfBoundsAt") :: number?
+	if outAt then
+		table.insert(warnings, `RETURN TO BATTLE AREA {math.max(math.ceil(outAt - workspace:GetServerTimeNow()), 0)}`)
+	end
+	if terrainAhead and state.velocity.Y < 0 then
+		table.insert(warnings, "PULL UP")
+	end
+	if jetModel and jetModel:GetAttribute("OnFire") then
+		table.insert(warnings, "ENGINE FIRE")
+	end
+	if state.stalled then
+		table.insert(warnings, "STALL")
+	end
+	if airframe and state.gLoad > airframe.MaxG * 0.97 then
+		table.insert(warnings, "OVER-G")
+	end
+	if state.gStress > 0.6 then
+		table.insert(warnings, "G-LIMIT")
+	end
+	local damage = FlightController.damage
+	if damage and (damage.Engine or 1) < 0.5 then
+		table.insert(warnings, "ENGINE DAMAGE")
+	end
+	if airframe and state.fuel < airframe.Fuel * 0.15 then
+		table.insert(warnings, "BINGO FUEL")
 	end
 	warningLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72)
-	warningLabel.Text = warning
-	warningLabel.Visible = warning ~= "" and (os.clock() % 0.6) < 0.4
+	warningLabel.Text = warnings[1] or ""
+	warningLabel.Visible = #warnings > 0 and (now % 0.6) < 0.4
+	cautionLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72 + 24)
+	cautionLabel.Text = table.concat(warnings, "  ·  ", 2)
 
 	-- Targets: markers on other jets, and the gun lead indicator on the best one ahead
 	local myPosition = root.Position
@@ -807,11 +840,18 @@ local function update()
 		fuelLabel.Text =
 			string.format("FUEL %d KG  %d%%", math.round(state.fuel), math.round(state.fuel / airframe.Fuel * 100))
 	end
+	helpLabel.Visible = InputController.device == "KeyboardMouse"
+	fuelLabel.Position = if InputController.device == "Touch"
+		then UDim2.new(0, 20, 1, -230)
+		else UDim2.new(0, 20, 1, -20)
 	helpLabel.Text =
 		`{if InputController.scheme == "MouseAim" then "MOUSE AIM" else "DIRECT"} · M scheme · V camera · Z zoom · P tuning`
 end
 
 function HUDController:Start()
+	terrainParams = RaycastParams.new()
+	terrainParams.FilterType = Enum.RaycastFilterType.Exclude
+	terrainParams.FilterDescendantsInstances = { workspace:WaitForChild("Jets") }
 	self.gui = build()
 	Net.Client.on("HitConfirm", function()
 		hitUntil = os.clock() + 0.12

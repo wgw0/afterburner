@@ -330,7 +330,15 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 		else { killer = nil, assists = {}, forcedCrash = false }
 	local killer: any? = credit.killer
 	local killerUserId = if killer and typeof(killer) == "Instance" then (killer :: Player).UserId else 0
-	Net.Server.fireAll("JetDestroyed", jet.id, killerUserId, cause, position)
+	local killerJetId = 0
+	if killer then
+		for id, other in AircraftService:GetJets() do
+			if other.identity == killer then
+				killerJetId = id
+			end
+		end
+	end
+	Net.Server.fireAll("JetDestroyed", jet.id, killerUserId, cause, position, killerJetId)
 
 	-- Quiet removals (respawning or leaving with nobody's damage on you) don't go in the kill feed.
 	local quiet = killer == nil and (cause == "Respawn" or cause == "PilotLeft" or cause == "Despawn")

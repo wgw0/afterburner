@@ -594,11 +594,11 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** a fired missile is dangerous but defeatable, and players can learn *why* they died. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 4: Match loop, MVP (weeks 7–8)
-- [ ] Free-for-all mode: spawn in, a score limit and timer, an end screen with rewards.
-- [ ] Simple AI pilots (pursuit plus basic evasion) to fill servers.
-- [ ] A first real map ("Strait"), at least a blockout version.
-- [ ] Tutorial flight.
-- [ ] Mobile touch controls (playable, not polished).
+- [x] Free-for-all mode: spawn in, a score limit and timer, an end screen (rewards arrive with progression in Phase 5).
+- [x] Simple AI pilots (pursuit plus basic evasion) to fill servers.
+- [x] A first real map ("Strait"), at least a blockout version.
+- [x] Tutorial flight (lessons 1–3).
+- [x] Mobile touch controls (playable, not polished).
 
 **Exit test:** 8 players and bots have a full match. Run an internal playtest with friends and write down every complaint.
 

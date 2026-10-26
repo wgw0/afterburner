@@ -318,7 +318,14 @@ function MatchService:Init()
 	end)
 
 	if Environment.isTest() then
+		-- A mode id, or "EndMatch" to end the running match now (to check the results screen).
 		Net.Server.on("DebugSetMode", function(_player: Player, modeId: string)
+			if modeId == "EndMatch" then
+				if state == "InProgress" and mode.Scored then
+					endMatch("TimeLimit")
+				end
+				return
+			end
 			self:SetMode(modeId)
 		end)
 	end

@@ -9,8 +9,9 @@
 -- Snap views (CAM-03): hold Left Alt + an arrow to look left / right / back / up.
 -- Padlock (CAM-04): hold X or the middle mouse button to keep your head on the target (your lock, your
 --   heat-seeker's target, or the nearest spotted jet), within realistic head limits.
--- When your jet is destroyed, the camera orbits the explosion for a few seconds (AIR-03).
--- With no jet, the camera orbits the test range.
+-- When your jet is destroyed (AIR-03 / CAM-06): a short orbit of the explosion, then the kill cam follows
+-- whoever shot you down. While waiting to respawn you spectate other jets (Left/Right arrows to switch).
+-- With nothing to watch, the camera orbits the map centre.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -30,7 +31,8 @@ local BASE_FOV = 70
 local ZOOM_FOV = 35
 local SPEED_FOV = 10 -- extra degrees at high speed
 local G_FOV = 6 -- extra degrees in a hard pull
-local DEATH_CAM_SECONDS = 3.5
+local DEATH_CAM_SECONDS = 4.5
+local WRECK_SECONDS = 1.5 -- of the death cam spent on the wreck before following the killer
 local PADLOCK_YAW_LIMIT = math.rad(160)
 local PADLOCK_PITCH_MIN, PADLOCK_PITCH_MAX = math.rad(-25), math.rad(90)
 local SNAP_VIEWS: { [Enum.KeyCode]: Vector2 } = { -- (yaw, pitch) in degrees
@@ -57,11 +59,36 @@ local orbitAngle = 0
 local myJetId: number? = nil
 local deathUntil = 0
 local deathPosition = Vector3.zero
+local killerJetId = 0
+local spectateIndex = 1
+local spectateLabel: TextLabel
+
+local function jetById(id: number): Model?
+	for _, m in workspace.Jets:GetChildren() do
+		if m:IsA("Model") and m:GetAttribute("JetId") == id then
+			return m
+		end
+	end
+	return nil
+end
+
+-- A follow camera behind any jet (kill cam, spectating).
+local function followCamera(model: Model, dt: number): CFrame?
+	local root = model.PrimaryPart
+	if not root then
+		return nil
+	end
+	local look = chaseLook:Update(dt, root.CFrame.LookVector)
+	look = if look.Magnitude > 1e-3 then look.Unit else root.CFrame.LookVector
+	local position = root.Position - look * 90 + Vector3.new(0, 22, 0)
+	return CFrame.lookAt(position, root.Position + look * 60)
+end
 
 -- Head angles (yaw, pitch) that keep the padlock target in view, or nil when not padlocking.
 local function padlockView(jetCF: CFrame): Vector2?
 	local held = UserInputService:IsKeyDown(Enum.KeyCode.X)
 		or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
+		or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonR3)
 	local target = if held then SensorController:PadlockTarget() else nil
 	local targetRoot = target and target.PrimaryPart
 	InputController.padlocked = targetRoot ~= nil
@@ -173,13 +200,45 @@ local function update(dt: number)
 	camera.FieldOfView = fov:Update(dt, targetFov())
 
 	local root = FlightController.root
+	spectateLabel.Visible = false
 	if os.clock() < deathUntil then
-		orbitAngle += dt * 0.25
-		local offset = Vector3.new(math.cos(orbitAngle) * 160, 60, math.sin(orbitAngle) * 160)
-		camera.CFrame = CFrame.lookAt(deathPosition + offset, deathPosition)
+		local killer = if killerJetId ~= 0 then jetById(killerJetId) else nil
+		local follow = killer
+			and os.clock() > deathUntil - DEATH_CAM_SECONDS + WRECK_SECONDS
+			and followCamera(killer, dt)
+		if follow then
+			camera.CFrame = follow
+			spectateLabel.Text = `Shot down by {killer and killer:GetAttribute("PilotName") or "?"}`
+			spectateLabel.Visible = true
+		else
+			orbitAngle += dt * 0.25
+			local offset = Vector3.new(math.cos(orbitAngle) * 160, 60, math.sin(orbitAngle) * 160)
+			camera.CFrame = CFrame.lookAt(deathPosition + offset, deathPosition)
+		end
 		return
 	end
 	if not (root and FlightController.jet) then
+		-- Spectate while waiting to (re)spawn
+		local jets = {}
+		for _, m in workspace.Jets:GetChildren() do
+			if m:IsA("Model") and m.PrimaryPart then
+				table.insert(jets, m)
+			end
+		end
+		table.sort(jets, function(a, b)
+			return (a:GetAttribute("JetId") :: number) < (b:GetAttribute("JetId") :: number)
+		end)
+		if #jets > 0 then
+			spectateIndex = (spectateIndex - 1) % #jets + 1
+			local target = jets[spectateIndex]
+			local follow = followCamera(target, dt)
+			if follow then
+				camera.CFrame = follow
+				spectateLabel.Text = `Spectating {target:GetAttribute("PilotName") or "?"}  ·  ◀ ▶ to switch`
+				spectateLabel.Visible = true
+				return
+			end
+		end
 		orbitAngle += dt * 0.05
 		local focus = Vector3.new(300, 100, 0)
 		local position = focus + Vector3.new(math.cos(orbitAngle) * 1400, 600, math.sin(orbitAngle) * 1400)
@@ -204,17 +263,49 @@ function CameraController:Init()
 		if processed then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.V then
+		if input.KeyCode == Enum.KeyCode.V or input.KeyCode == Enum.KeyCode.ButtonSelect then
 			self:SetMode(if self.mode == "Cockpit" then "Chase" else "Cockpit")
 		end
 	end)
-	Net.Client.on("JetDestroyed", function(jetId: number, _killer: number, cause: string, position: Vector3)
-		local died = cause == "Shot" or cause == "Crash" or cause == "Collision"
-		if jetId == myJetId and died then
-			deathUntil = os.clock() + DEATH_CAM_SECONDS
-			deathPosition = position
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "AfterburnerSpectate"
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 22
+	spectateLabel = Instance.new("TextLabel")
+	spectateLabel.AnchorPoint = Vector2.new(0.5, 1)
+	spectateLabel.Position = UDim2.new(0.5, 0, 1, -24)
+	spectateLabel.Size = UDim2.fromOffset(520, 28)
+	spectateLabel.BackgroundTransparency = 1
+	spectateLabel.Font = Enum.Font.GothamBold
+	spectateLabel.TextSize = 18
+	spectateLabel.TextColor3 = Color3.new(1, 1, 1)
+	spectateLabel.TextStrokeTransparency = 0.4
+	spectateLabel.Visible = false
+	spectateLabel.Parent = gui
+	gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or FlightController.jet then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.Right or input.KeyCode == Enum.KeyCode.DPadRight then
+			spectateIndex += 1
+		elseif input.KeyCode == Enum.KeyCode.Left or input.KeyCode == Enum.KeyCode.DPadLeft then
+			spectateIndex -= 1
 		end
 	end)
+
+	Net.Client.on(
+		"JetDestroyed",
+		function(jetId: number, _killer: number, cause: string, position: Vector3, killerJet: number)
+			local died = cause == "Shot" or cause == "Crash" or cause == "Collision" or cause == "OutOfBounds"
+			if jetId == myJetId and died then
+				deathUntil = os.clock() + DEATH_CAM_SECONDS
+				deathPosition = position
+				killerJetId = killerJet or 0
+			end
+		end
+	)
 	FlightController.JetChanged:Connect(function(jet)
 		if jet then
 			myJetId = jet:GetAttribute("JetId") :: number?

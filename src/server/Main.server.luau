@@ -1,6 +1,8 @@
 --!strict
 local LogService = game:GetService("LogService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Boot = require(Shared.Boot)
@@ -28,9 +30,44 @@ LogService.MessageOut:Connect(function(message, messageType)
 	end
 end)
 
+-- Server step cost (PRF-02): time spent in the services' Heartbeat handlers each frame. One handler is
+-- connected before the services start and one after, so between them they bracket the services' work
+-- whichever order Roblox fires connections in. Published as ServerStorage attributes once a second.
+local edgeA: number?, edgeB: number? = nil, nil
+local stepTotal, stepPeak, stepFrames, stepClock = 0, 0, 0, 0
+local function recordStep(dt: number)
+	if not (edgeA and edgeB) then
+		return
+	end
+	local cost = math.abs(edgeB - edgeA) * 1000
+	edgeA, edgeB = nil, nil
+	stepTotal += cost
+	stepPeak = math.max(stepPeak, cost)
+	stepFrames += 1
+	stepClock += dt
+	if stepClock >= 1 then
+		ServerStorage:SetAttribute("ServerStepMs", math.round(stepTotal / stepFrames * 100) / 100)
+		ServerStorage:SetAttribute("ServerStepPeakMs", math.round(stepPeak * 100) / 100)
+		ServerStorage:SetAttribute("ServerHz", math.round(stepFrames / stepClock * 10) / 10)
+		stepTotal, stepPeak, stepFrames, stepClock = 0, 0, 0, 0
+	end
+end
+RunService.PreSimulation:Connect(function()
+	edgeA, edgeB = nil, nil
+end)
+RunService.Heartbeat:Connect(function(dt)
+	edgeA = os.clock()
+	recordStep(dt)
+end)
+
 Net.Server.init()
 Boot.run(script.Parent:WaitForChild("Services"), "Service", function()
 	ReplicatedStorage:SetAttribute("ServerBootFailures", Boot.startFailures)
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+	edgeB = os.clock()
+	recordStep(dt)
 end)
 
 ReplicatedStorage:SetAttribute("ServerReady", true)

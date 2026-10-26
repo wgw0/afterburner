@@ -56,6 +56,18 @@ MatchRules.MODES = table.freeze({
 		CountdownSeconds = 8,
 		ResultsSeconds = 12,
 	} :: ModeConfig),
+	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
+	Stress = table.freeze({
+		Id = "Stress",
+		DisplayName = "Stress test (24 jets)",
+		ScoreLimit = 0,
+		TimeLimit = 0,
+		Respawn = { Type = "Timer", Delay = 2 },
+		AIFill = 24,
+		Scored = true,
+		CountdownSeconds = 3,
+		ResultsSeconds = 5,
+	} :: ModeConfig),
 })
 
 function MatchRules.newScore(name: string, isAI: boolean, userId: number): Score
