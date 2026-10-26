@@ -20,10 +20,13 @@ end
 function Smoke.server(): (boolean, string)
 	local ready = waitForAttribute("ServerReady") == true
 	task.wait(1) -- give Start functions a moment to fail if they're going to
+	task.wait(2) -- let loops run for a moment so runtime errors show up
 	local failures = ReplicatedStorage:GetAttribute("ServerBootFailures")
+	local runtime = ReplicatedStorage:GetAttribute("ServerRuntimeErrors")
 	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	local ok = ready and failures == 0 and remotes ~= nil
-	return ok, `server ready={ready} startFailures={failures} remotes={remotes and #remotes:GetChildren() or "missing"}`
+	local ok = ready and failures == 0 and runtime == 0 and remotes ~= nil
+	return ok,
+		`server ready={ready} startFailures={failures} runtimeErrors={runtime} remotes={remotes and #remotes:GetChildren() or "missing"}`
 end
 
 -- Paste-able client check (clients can't require from ServerStorage).
@@ -32,8 +35,9 @@ local RS = game:GetService("ReplicatedStorage")
 local deadline = os.clock() + 15
 while RS:GetAttribute("ClientReady") == nil and os.clock() < deadline do task.wait(0.1) end
 task.wait(1)
-local ready, failures = RS:GetAttribute("ClientReady") == true, RS:GetAttribute("ClientBootFailures")
-return (ready and failures == 0) and "PASS" or "FAIL", ("client ready=%s startFailures=%s"):format(tostring(ready), tostring(failures))
+task.wait(2)
+local ready, failures, runtime = RS:GetAttribute("ClientReady") == true, RS:GetAttribute("ClientBootFailures"), RS:GetAttribute("ClientRuntimeErrors")
+return (ready and failures == 0 and runtime == 0) and "PASS" or "FAIL", ("client ready=%s startFailures=%s runtimeErrors=%s"):format(tostring(ready), tostring(failures), tostring(runtime))
 ]]
 
 return Smoke

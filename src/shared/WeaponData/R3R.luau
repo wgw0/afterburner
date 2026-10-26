@@ -20,6 +20,6 @@ return {
 	FlareResistance = 1,
 	ChaffResistance = 0.2,
 	ProximityFuse = 8,
-	Damage = 110,
+	Damage = 140,
 	Lifetime = 25,
 }

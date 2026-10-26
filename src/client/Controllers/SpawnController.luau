@@ -124,7 +124,7 @@ function SpawnController:Start()
 		local index = table.find(keys, input.KeyCode)
 		if index and order[index] and not FlightController.jet then
 			request(order[index])
-		elseif input.KeyCode == Enum.KeyCode.R and self.lastAirframe then
+		elseif input.KeyCode == Enum.KeyCode.R and self.lastAirframe and not FlightController.jet then -- R cycles missiles in flight
 			request(self.lastAirframe)
 		end
 	end)

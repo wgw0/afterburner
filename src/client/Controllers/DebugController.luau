@@ -72,7 +72,7 @@ local function build()
 
 	local panel = Instance.new("Frame")
 	panel.Position = UDim2.new(1, -360, 0, 70)
-	panel.Size = UDim2.fromOffset(340, 720)
+	panel.Size = UDim2.fromOffset(340, 780)
 	panel.BackgroundColor3 = Color3.fromRGB(10, 14, 22)
 	panel.BackgroundTransparency = 0.15
 	panel.Parent = gui
@@ -145,6 +145,23 @@ local function build()
 	exportButton.Activated:Connect(function()
 		print(export())
 	end)
+
+	for i, weapon in { "AIM9P", "R27R" } do
+		local launchButton = Instance.new("TextButton")
+		launchButton.LayoutOrder = 103 + i
+		launchButton.Size = UDim2.new(1, 0, 0, 24)
+		launchButton.BackgroundColor3 = Color3.fromRGB(110, 40, 40)
+		launchButton.Font = Enum.Font.GothamBold
+		launchButton.TextColor3 = Color3.new(1, 1, 1)
+		launchButton.TextSize = 13
+		launchButton.Text = if weapon == "AIM9P"
+			then "LAUNCH AIM-9P AT ME (heat-seeker)"
+			else "LAUNCH R-27R AT ME (radar)"
+		launchButton.Parent = panel
+		launchButton.Activated:Connect(function()
+			Net.Client.fire("DebugLaunchAtMe", weapon)
+		end)
+	end
 
 	for i, mode in { "ahead", "circle" } do
 		local droneButton = Instance.new("TextButton")

@@ -38,6 +38,7 @@ local InputController = {
 	override = false,
 	enabled = false, -- true while flying (mouse locked)
 	uiOpen = false, -- a panel is open: free the mouse and freeze aim/stick
+	padlocked = false, -- the camera is padlocked on a target: mouse aim holds still
 	SchemeChanged = Signal.new(),
 	LastInput = nil :: ControlInput?,
 }
@@ -170,7 +171,7 @@ local function update(dt: number)
 		self.freeLookPitch =
 			math.clamp(self.freeLookPitch - delta.Y * FREE_LOOK_SENSITIVITY, -math.rad(30), math.rad(90))
 	else
-		if self.scheme == "MouseAim" then
+		if self.scheme == "MouseAim" and not self.padlocked then
 			rotateAim(delta)
 		else
 			stick = Vector2.new(

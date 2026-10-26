@@ -18,10 +18,12 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Ballistics = require(Shared.Ballistics)
 local Net = require(Shared.Net)
 local Units = require(Shared.Units)
+local Guidance = require(Shared.Guidance)
 local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
+local SensorController = require(script.Parent.SensorController)
 
 local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
@@ -62,6 +64,16 @@ local killFeed: Frame
 local feedLines: { { label: TextLabel, expires: number } } = {}
 local targetMarkers: { [Model]: { box: Frame, label: TextLabel } } = {}
 local markerLayer: Frame
+-- HUD-03: missiles
+local seekerCircle: Frame
+local lockBox: Frame
+local lockLabel: TextLabel
+local zoneBar: Frame
+local zoneMarks: { [string]: Frame } = {}
+local zoneCaret: TextLabel
+local shootCue: TextLabel
+local missileWarning: TextLabel
+local warningArrow: TextLabel
 
 local TARGET_RANGE = 5000 -- real metres: show markers on jets within this
 local LEAD_RANGE = 1600 -- real metres: show the gun lead indicator within this
@@ -239,7 +251,7 @@ local function build(): ScreenGui
 	for _, name in { "G", "Mach", "AoA" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Left)
 	end
-	for _, name in { "VS", "Throttle", "Gun" } do
+	for _, name in { "VS", "Throttle", "Gun", "Missile", "CM" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Right)
 	end
 
@@ -269,6 +281,28 @@ local function build(): ScreenGui
 	helpLabel.Size = UDim2.fromOffset(560, 16)
 	helpLabel.TextTransparency = 0.35
 
+	-- IR seeker circle: sits on the boresight while searching, jumps onto the target, solid when locked.
+	seekerCircle = circle(box, 46, 1.5, GREEN)
+	seekerCircle.Visible = false
+
+	-- Launch zone: a vertical scale left of the altitude tape. Caret = target range.
+	zoneBar = line(box, 2, 100)
+	zoneBar.Visible = false
+	for _, mark in { "Max", "NoEscape", "Min" } do
+		local m = line(zoneBar, 12, 2)
+		m.AnchorPoint = Vector2.new(0, 0.5)
+		zoneMarks[mark] = m
+	end
+	zoneCaret = text(zoneBar, 16)
+	zoneCaret.AnchorPoint = Vector2.new(1, 0.5)
+	zoneCaret.Size = UDim2.fromOffset(16, 16)
+	zoneCaret.Text = "◀"
+	shootCue = text(box, 22)
+	shootCue.AnchorPoint = Vector2.new(0.5, 0.5)
+	shootCue.Size = UDim2.fromOffset(120, 26)
+	shootCue.Text = "SHOOT"
+	shootCue.Visible = false
+
 	-- Gun lead indicator: put the gun cross on it to hit the target.
 	leadMarker = circle(box, 22, 2, GREEN)
 	local leadDot = line(leadMarker, 4, 4)
@@ -288,6 +322,36 @@ local function build(): ScreenGui
 	markerLayer.BackgroundTransparency = 1
 	markerLayer.Size = UDim2.fromScale(1, 1)
 	markerLayer.Parent = gui
+
+	-- Radar lock box (whole screen, so it shows even outside the HUD)
+	lockBox = Instance.new("Frame")
+	lockBox.AnchorPoint = Vector2.new(0.5, 0.5)
+	lockBox.Size = UDim2.fromOffset(40, 40)
+	lockBox.BackgroundTransparency = 1
+	local lockStroke = Instance.new("UIStroke")
+	lockStroke.Color = GREEN
+	lockStroke.Thickness = 2
+	lockStroke.Parent = lockBox
+	lockBox.Visible = false
+	lockBox.Parent = gui
+	lockLabel = text(gui, 14)
+	lockLabel.AnchorPoint = Vector2.new(0.5, 1)
+	lockLabel.Size = UDim2.fromOffset(200, 16)
+	lockLabel.Visible = false
+
+	missileWarning = text(gui, 34)
+	missileWarning.AnchorPoint = Vector2.new(0.5, 0.5)
+	missileWarning.Position = UDim2.new(0.5, 0, 0.5, 190)
+	missileWarning.Size = UDim2.fromOffset(300, 40)
+	missileWarning.TextColor3 = RED
+	missileWarning.Text = "MISSILE"
+	missileWarning.Visible = false
+	warningArrow = text(gui, 40)
+	warningArrow.AnchorPoint = Vector2.new(0.5, 0.5)
+	warningArrow.Size = UDim2.fromOffset(44, 44)
+	warningArrow.TextColor3 = RED
+	warningArrow.Text = "▲"
+	warningArrow.Visible = false
 
 	killFeed = Instance.new("Frame")
 	killFeed.BackgroundTransparency = 1
@@ -531,6 +595,22 @@ local function update()
 		local jammed = jetModel:GetAttribute("GunJammed") == true
 		readouts.Gun.Text = if jammed then "GUN JAM" elseif heat > 0.75 then `GUN {ammo} HOT` else `GUN {ammo}`
 		readouts.Gun.TextColor3 = if jammed or ammo == 0 then RED elseif heat > 0.75 then AMBER else GREEN
+		local selected = jetModel:GetAttribute("SelectedMissile") :: string?
+		local selectedSpec = if selected and selected ~= "" then WeaponData.getMissile(selected) else nil
+		readouts.Missile.Position = UDim2.fromOffset(rightX, bottomY - 20)
+		if selectedSpec then
+			local count = (jetModel:GetAttribute(`Msl_{selected}`) :: number?) or 0
+			readouts.Missile.Text = `{selectedSpec.DisplayName} x{count}`
+			readouts.Missile.TextColor3 = if count == 0 then RED else GREEN
+		else
+			readouts.Missile.Text = ""
+		end
+		readouts.CM.Position = UDim2.fromOffset(leftX, bottomY - 20)
+		readouts.CM.Text = string.format(
+			"FLR %d  CHF %d",
+			(jetModel:GetAttribute("Flares") :: number?) or 0,
+			(jetModel:GetAttribute("Chaff") :: number?) or 0
+		)
 	end
 
 	-- Warnings, most urgent first
@@ -605,6 +685,99 @@ local function update()
 			leadMarker.Visible = visible and inside(p, 10, 10)
 			leadMarker.Position = toBox(p)
 		end
+	end
+
+	-- Missiles: seeker circle, lock box, launch zone, shoot cue (HUD-03)
+	local selectedId = jetModel and jetModel:GetAttribute("SelectedMissile") :: string?
+	local missileSpec = if selectedId and selectedId ~= "" then WeaponData.getMissile(selectedId) else nil
+	local isIR = missileSpec ~= nil and WeaponData.isIR(missileSpec)
+	local targetModel: Model? = nil
+	if missileSpec and isIR and SensorController.irTargetId ~= 0 then
+		targetModel = SensorController:GetModel(SensorController.irTargetId)
+	elseif missileSpec and not isIR and SensorController.lockId ~= 0 then
+		targetModel = SensorController:GetModel(SensorController.lockId)
+	end
+
+	seekerCircle.Visible = isIR
+	if isIR then
+		local seekerStroke = seekerCircle:FindFirstChildOfClass("UIStroke") :: UIStroke
+		local seekRoot = targetModel and targetModel.PrimaryPart
+		if seekRoot then
+			local p = project(camera, (seekRoot.Position - camera.CFrame.Position).Unit)
+			seekerCircle.Position = toBox(p)
+			seekerStroke.Thickness = if SensorController.irLocked then 3 else 1.5
+			seekerCircle.Visible = SensorController.irLocked or (os.clock() % 0.3 < 0.2)
+		else
+			seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+			seekerStroke.Thickness = 1.5
+		end
+	end
+
+	local lockModel = if SensorController.lockId ~= 0 then SensorController:GetModel(SensorController.lockId) else nil
+	local lockRoot = lockModel and lockModel.PrimaryPart
+	lockBox.Visible = false
+	lockLabel.Visible = false
+	if lockRoot then
+		local screen, onScreen = camera:WorldToViewportPoint(lockRoot.Position)
+		if onScreen and screen.Z > 0 then
+			lockBox.Visible = true
+			lockLabel.Visible = true
+			lockBox.Position = UDim2.fromOffset(screen.X, screen.Y)
+			lockLabel.Position = UDim2.fromOffset(screen.X, screen.Y - 24)
+			local rel = lockRoot.Position - myPosition
+			local closure = -(Units.velocityFromStuds(lockRoot.AssemblyLinearVelocity) - myVelocity):Dot(rel.Unit)
+			lockLabel.Text =
+				string.format("%.1f km  %+d kt", Units.toMetres(rel.Magnitude) / 1000, math.round(Units.knots(closure)))
+		end
+	end
+
+	zoneBar.Visible = false
+	shootCue.Visible = false
+	local zoneRoot = targetModel and targetModel.PrimaryPart
+	if missileSpec and zoneRoot then
+		local rMax, rNoEscape, rMin = Guidance.launchZone(
+			missileSpec,
+			myPosition,
+			myVelocity,
+			zoneRoot.Position,
+			Units.velocityFromStuds(zoneRoot.AssemblyLinearVelocity)
+		)
+		local range = Units.toMetres((zoneRoot.Position - myPosition).Magnitude)
+		local scaleMax = rMax * 1.3
+		local barH = math.floor(boxH * 0.5)
+		zoneBar.Visible = true
+		zoneBar.Size = UDim2.fromOffset(2, barH)
+		zoneBar.Position = UDim2.fromOffset(boxW - 108, (boxH - barH) / 2)
+		local function y(r: number): number
+			return barH * (1 - math.clamp(r / scaleMax, 0, 1))
+		end
+		zoneMarks.Max.Position = UDim2.fromOffset(0, y(rMax))
+		zoneMarks.NoEscape.Position = UDim2.fromOffset(0, y(rNoEscape))
+		zoneMarks.Min.Position = UDim2.fromOffset(0, y(rMin))
+		zoneCaret.Position = UDim2.fromOffset(-2, y(range))
+		local inZone = range >= rMin and range <= rMax
+		local ready = if isIR then SensorController.irLocked else SensorController.lockId ~= 0
+		shootCue.Visible = inZone and ready
+		shootCue.Position = UDim2.fromOffset(boxW / 2, boxH * 0.62)
+	end
+
+	-- Missile warning: any missile guiding on you that your RWR can hear
+	local launch: Vector3? = nil
+	for _, threat in SensorController.threats do
+		if threat.kind == "Launch" then
+			launch = threat.position
+		end
+	end
+	missileWarning.Visible = launch ~= nil and (os.clock() % 0.4 < 0.28)
+	warningArrow.Visible = launch ~= nil
+	if launch then
+		-- Arrow around the screen centre, pointing at the threat (camera space)
+		local rel = camera.CFrame:PointToObjectSpace(launch)
+		local angle = math.atan2(rel.X, rel.Y)
+		local radius = math.min(viewport.X, viewport.Y) * 0.32
+		warningArrow.Position =
+			UDim2.fromOffset(viewport.X / 2 + math.sin(angle) * radius, viewport.Y / 2 - math.cos(angle) * radius)
+		warningArrow.Rotation = math.deg(angle)
 	end
 
 	hitMarker.Position = UDim2.fromOffset(boxW / 2, boxH / 2)

@@ -15,6 +15,7 @@ local Net = require(Shared.Net)
 local Pool = require(Shared.Util.Pool)
 
 local FlightController = require(script.Parent.FlightController)
+local MissileViewController = require(script.Parent.MissileViewController)
 local WeaponController = require(script.Parent.WeaponController)
 
 local FIRE_TEXTURE = "rbxasset://textures/particles/fire_main.dds"
@@ -281,6 +282,7 @@ function CombatFxController:Start()
 	FlightController.JetChanged:Connect(function()
 		lastDamageTotal = 6
 	end)
+	MissileViewController.Exploded:Connect(explosion)
 	RunService.RenderStepped:Connect(updateMuzzles)
 end
 
