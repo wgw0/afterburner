@@ -147,6 +147,45 @@ local function makeGauge(
 	}
 end
 
+local PANEL_DISTANCE = -2.3 -- studs ahead of the eye
+local PANEL_TOP_BELOW_EYE = -0.32 -- studs (eye space)
+local PANEL_CLEARANCE = 0.06 -- studs above the fuselage top
+local PANEL_MIN_HEIGHT = 0.55
+
+-- Height of the jet's forward fuselage top under the panel, in eye space (negative = below the eye).
+-- Looks at the jet's own solid parts on the centreline that span the panel's distance ahead.
+local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment): number
+	local eyePos = eye.Position -- root space
+	local zNear, zFar = eyePos.Z + PANEL_DISTANCE + 1, eyePos.Z + PANEL_DISTANCE - 1
+	local highest = -math.huge
+	for _, part in jet:GetChildren() do
+		if not part:IsA("BasePart") or part == root or part.Transparency >= 0.3 then
+			continue -- skips the invisible root, hull and the glass canopy
+		end
+		local localCF = root.CFrame:ToObjectSpace(part.CFrame)
+		if math.abs(localCF.Position.X) > 4 then
+			continue
+		end
+		local half = part.Size / 2
+		local minZ, maxZ, maxY = math.huge, -math.huge, -math.huge
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				for _, sz in { -1, 1 } do
+					local corner = localCF * Vector3.new(half.X * sx, half.Y * sy, half.Z * sz)
+					minZ, maxZ, maxY = math.min(minZ, corner.Z), math.max(maxZ, corner.Z), math.max(maxY, corner.Y)
+				end
+			end
+		end
+		if minZ <= zNear and maxZ >= zFar then
+			highest = math.max(highest, maxY)
+		end
+	end
+	if highest == -math.huge then
+		return -1.2
+	end
+	return highest - eyePos.Y
+end
+
 local function destroyCockpit()
 	if cockpit then
 		cockpit:Destroy()
@@ -167,17 +206,28 @@ local function buildCockpit(jet: Model)
 	local model = Instance.new("Model")
 	model.Name = "LocalCockpit"
 
-	-- Instrument panel below and ahead of the eye, tilted toward the pilot.
+	-- The panel sits on top of the jet's forward fuselage, like a real instrument panel, so the
+	-- airframe never covers it: bottom just above the fuselage top, top a little below eye level.
+	local top, bottom = PANEL_TOP_BELOW_EYE, fuselageTopBelowEye(jet, root, eye) + PANEL_CLEARANCE
+	local height = math.max(top - bottom, PANEL_MIN_HEIGHT)
 	local panel = part(
 		"Panel",
-		Vector3.new(3.4, 1.15, 0.12),
-		CFrame.new(0, -1.12, -2.3) * CFrame.Angles(math.rad(-15), 0, 0),
+		Vector3.new(3.4, height, 0.12),
+		CFrame.new(0, bottom + height / 2, PANEL_DISTANCE) * CFrame.Angles(math.rad(-12), 0, 0),
 		eyeCF,
 		root,
 		PANEL_COLOUR
 	)
 	panel.Parent = model
-	part("Coaming", Vector3.new(3.6, 0.14, 0.35), CFrame.new(0, -0.36, -2.5), eyeCF, root, FRAME_COLOUR).Parent = model
+	part(
+		"Coaming",
+		Vector3.new(3.6, 0.12, 0.35),
+		CFrame.new(0, top + 0.07, PANEL_DISTANCE - 0.2),
+		eyeCF,
+		root,
+		FRAME_COLOUR
+	).Parent =
+		model
 	part("SillL", Vector3.new(0.18, 0.5, 4), CFrame.new(-1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
 	part("SillR", Vector3.new(0.18, 0.5, 4), CFrame.new(1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
 	-- Canopy bow and rails
