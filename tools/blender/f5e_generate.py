@@ -1,10 +1,11 @@
 """
 Afterburner: F-5E Tiger II base mesh generator (Blender 4.x / 5.x).
 
-Builds a mid-poly, modular F-5E at real-world size from published dimensions:
-  * a lofted fuselage (area-ruled, superellipse sections), intakes, LERX, canopy and frame
+Builds a mid-poly, modular F-5E at real-world size, measured from reference drawings:
+  * a lofted fuselage (shark nose, flat-topped cockpit section, dorsal spine, area-ruled waist),
+    D-section intakes, LERX, canopy and frame
   * wings, leading-edge flaps, trailing-edge flaps and ailerons cut from real airfoil sections
-  * all-moving stabilators, fin and rudder
+  * all-moving stabilators, fin with dorsal fillet, rudder
   * twin nozzles with afterburner cones, ejection seat, wingtip rails, pitot
   * landing gear (struts, wheels, doors) as separate parts
 Every moving part is its own object with its origin on its hinge line (rotation left at identity,
@@ -20,7 +21,8 @@ and, with --manifest-luau, the same manifest as a Luau module for the Studio ass
 Axes. Blender: X right, Y forward (the nose points +Y), Z up. With the FBX exporter's default
 Forward -Z / Up Y, Blender +Y becomes -Z, which is the nose direction the game's model contract uses.
 The manifest is written in Roblox axes: x right, y up, z aft (nose toward -z). Units: metres
-(1 m = 3.5714 studs in the game).
+(1 m = 3.5714 studs in the game). The origin sits at the centre of gravity (25% of the mean
+aerodynamic chord), the point the flight model rotates the jet about.
 
 Run headless:
   blender -b --python tools/blender/f5e_generate.py -- --out tools/blender/out \
@@ -41,69 +43,148 @@ AIRFRAME = "F5E"
 STUDS_PER_METRE = 1 / 0.28
 
 # ---------------------------------------------------------------------------------------------------
-# Published dimensions (F-5E): length 14.45 m, span 8.13 m over the wingtip rails, height 4.08 m,
-# wing area 17.3 m², leading-edge sweep ~32°, thin wing (~4.8%), all-moving stabilators.
-# Stations are along Y (nose tip at +7.2, tail at -7.25).
+# Reference. Shapes are measured from the Wikimedia Commons three-view "Northrop F-5E Tiger II
+# 3-view.svg" (side view nose left, top view below it), cross-checked against the USAF flight manual
+# T.O. 1F-5E-1 figure 2-8 and walkaround photos (see docs/art/reference/F5E/SOURCES.md, kept out of
+# git). Measurements are in the drawing's pixels on a 2000 px wide copy:
+#   xd   distance along the side and top views (pitot tip at 22.9, nozzle exit at 1545.8)
+#   row  height in the side view (row 290 is z = 0; smaller rows are higher)
+# The scale comes from the published length, 14.45 m pitot to nozzle; it also reproduces the
+# published height (4.08 m) and span (8.13 m over the rails).
 # ---------------------------------------------------------------------------------------------------
 
-# Fuselage key sections: (y, half width, top z, bottom z, superellipse exponent)
-FUSELAGE = [
-    (7.20, 0.015, 0.02, -0.02, 2.0),
-    (6.90, 0.10, 0.11, -0.09, 2.0),
-    (6.40, 0.22, 0.24, -0.19, 2.1),
-    (5.60, 0.36, 0.40, -0.31, 2.2),
-    (4.70, 0.48, 0.54, -0.41, 2.4),
-    (3.80, 0.54, 0.63, -0.48, 2.6),
-    (2.70, 0.60, 0.70, -0.55, 2.8),
-    (1.70, 0.66, 0.68, -0.58, 3.0),
-    (0.60, 0.70, 0.64, -0.60, 3.2),
-    (-0.80, 0.66, 0.62, -0.61, 3.2),  # area-rule waist at the wing
-    (-2.40, 0.70, 0.60, -0.60, 3.0),
-    (-4.20, 0.70, 0.57, -0.56, 2.8),
-    (-5.80, 0.66, 0.52, -0.50, 2.6),
-    (-6.80, 0.62, 0.48, -0.44, 2.5),
-    (-7.25, 0.60, 0.46, -0.42, 2.5),
-]
-FUSELAGE_STATIONS = 44
-FUSELAGE_SEGMENTS = 40
+REF_PX_PER_M = (1545.8 - 22.9) / 14.45
+REF_PITOT_XD = 22.9
+REF_Z0_ROW = 290.0
+CG_FROM_PITOT = 8.825  # metres from the pitot tip back to 25% MAC, which becomes the origin
 
-# Wing planform (one side, x outboard): root at the fuselage side, tip before the rail.
-WING_ROOT_X, WING_TIP_X = 0.68, 3.85
-WING_ROOT_LE, WING_ROOT_TE = 0.95, -2.45
-WING_SWEEP_LE = math.radians(32)
-WING_TIP_CHORD = 0.70
-WING_Z = -0.10
+
+def Y(xd):
+    """Blender Y (forward) at a drawing station."""
+    return CG_FROM_PITOT - (xd - REF_PITOT_XD) / REF_PX_PER_M
+
+
+def Z(row):
+    """Blender Z (up) at a side-view row."""
+    return (REF_Z0_ROW - row) / REF_PX_PER_M
+
+
+# Fuselage stations: (xd, half width, bottom z, shoulder z, top z, spine half width, exponent).
+# The section is a superellipse body (half width x bottom..shoulder) blended with a narrower dorsal
+# spine rising to the top z behind the canopy. Under the canopy the top is the cockpit sill.
+FUSELAGE = [
+    (95, 0.012, -0.34, -0.32, -0.32, 0.0, 2.0),  # radome tip
+    (110, 0.073, -0.39, -0.27, -0.27, 0.0, 2.0),
+    (150, 0.181, -0.45, -0.19, -0.19, 0.0, 2.1),
+    (190, 0.266, -0.49, -0.11, -0.11, 0.0, 2.2),  # shark nose: wider than deep
+    (230, 0.335, -0.51, -0.03, -0.03, 0.0, 2.3),
+    (290, 0.406, -0.525, 0.083, 0.083, 0.0, 2.5),
+    (350, 0.456, -0.53, 0.207, 0.207, 0.0, 2.7),
+    (410, 0.478, -0.53, 0.323, 0.323, 0.0, 3.0),
+    (465, 0.48, -0.53, 0.44, 0.44, 0.0, 3.3),  # windscreen base
+    (560, 0.48, -0.53, 0.47, 0.47, 0.0, 3.5),
+    (650, 0.49, -0.53, 0.49, 0.49, 0.0, 3.5),  # intake lips start
+    (690, 0.52, -0.53, 0.49, 0.62, 0.40, 3.5),  # spine rises inside the canopy's rear
+    (720, 0.54, -0.53, 0.49, 0.88, 0.43, 3.5),
+    (750, 0.56, -0.53, 0.49, 0.93, 0.44, 3.5),
+    (850, 0.66, -0.52, 0.47, 0.86, 0.42, 3.4),
+    (965, 0.757, -0.50, 0.43, 0.79, 0.38, 3.3),  # intakes merged
+    (1060, 0.74, -0.48, 0.42, 0.72, 0.34, 3.2),  # area-rule waist at the wing
+    (1150, 0.79, -0.44, 0.42, 0.66, 0.30, 3.1),
+    (1230, 0.76, -0.40, 0.44, 0.53, 0.22, 3.0),
+    (1300, 0.735, -0.36, 0.44, 0.50, 0.20, 2.9),
+    (1390, 0.656, -0.29, 0.45, 0.47, 0.0, 2.8),
+    (1470, 0.574, -0.17, 0.45, 0.45, 0.0, 2.6),
+    (1500, 0.53, -0.12, 0.43, 0.43, 0.0, 2.5),  # nozzles start
+]
+FUSELAGE_RINGS = 60
+FUSELAGE_SEGMENTS = 44
+
+# Intakes: (xd, outer half width, top z, bottom z). The lip is swept back 0.34 m from inner to outer.
+INTAKES = [
+    (655, 0.90, 0.20, -0.43),
+    (690, 0.95, 0.30, -0.46),
+    (772, 1.00, 0.42, -0.48),
+    (855, 0.88, 0.42, -0.46),
+    (930, 0.80, 0.34, -0.40),
+    (1000, 0.74, 0.22, -0.28),
+]
+INTAKE_LIP_SWEEP = 0.34
+
+# LERX outer edge (half width, xd), from the intake to where it meets the wing leading edge
+LERX_EDGE = [(0.92, 700), (1.09, 750), (1.28, 790), (1.34, 850), (1.37, 885)]
+LERX_INNER = 0.80
+
+# Canopy: (xd, half width at the sill, top z)
+CANOPY = [
+    (465, 0.10, 0.45),
+    (490, 0.32, 0.55),
+    (520, 0.41, 0.69),
+    (553, 0.44, 0.86),  # windscreen bow
+    (590, 0.445, 0.95),
+    (650, 0.44, 0.983),
+    (700, 0.41, 0.97),
+    (735, 0.32, 0.95),
+    (755, 0.18, 0.935),  # fairs into the spine
+]
+CANOPY_FRAMES = (553, 668)  # windscreen bow and the canopy's rear frame
+
+
+def _on(line, x):
+    (x0, y0), (x1, y1) = line
+    return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+
+
+# Wing planform (one side, x outboard). Measured leading and trailing edges (half width, Y).
+_WING_LE = ((0.83, Y(851)), (3.87, Y(1030)))
+_WING_TE = ((0.83, Y(1147)), (3.87, Y(1117)))
+WING_ROOT_X, WING_TIP_X = 0.72, 3.87
+WING_ROOT_LE, WING_ROOT_TE = _on(_WING_LE, WING_ROOT_X), _on(_WING_TE, WING_ROOT_X)
+WING_SWEEP_LE = math.atan((WING_ROOT_LE - _WING_LE[1][1]) / (WING_TIP_X - WING_ROOT_X))
+WING_TIP_CHORD = _WING_LE[1][1] - _WING_TE[1][1]
+WING_Z = Z(312)
 WING_THICKNESS = 0.048
 # Chord fractions and spans of the moving surfaces
 LE_FLAP_CHORD = 0.13
 TE_HINGE = 0.75
-TE_FLAP_SPAN = (0.72, 2.35)
-AILERON_SPAN = (2.40, 3.62)
+TE_FLAP_SPAN = (0.85, 2.17)
+AILERON_SPAN = (2.21, 3.06)
+RAIL_Y, RAIL_LENGTH = (Y(1010) + Y(1150)) / 2, Y(1010) - Y(1150)
 
-# Stabilator (all-moving), fin and rudder
-STAB_ROOT_X, STAB_TIP_X = 0.50, 2.15
-STAB_ROOT_LE, STAB_ROOT_CHORD = -5.55, 1.55
-STAB_SWEEP_LE = math.radians(35)
-STAB_TIP_CHORD = 0.55
-STAB_Z = -0.02
+# Stabilator (all-moving)
+STAB_ROOT_X, STAB_TIP_X = 0.70, 2.10
+STAB_ROOT_LE, STAB_ROOT_CHORD = Y(1293), (1450 - 1293) / REF_PX_PER_M
+STAB_SWEEP_LE = math.atan((Y(1293) - Y(1388)) / (STAB_TIP_X - STAB_ROOT_X))
+STAB_TIP_CHORD = 0.49
+STAB_Z = Z(298)
 STAB_THICKNESS = 0.05
-FIN_ROOT_Z, FIN_TIP_Z = 0.50, 2.60
-FIN_ROOT_LE, FIN_ROOT_CHORD = -3.95, 3.00
-FIN_SWEEP_LE = math.radians(43)
-FIN_TIP_CHORD = 0.85
+
+# Fin and rudder (root embedded slightly in the spine)
+FIN_ROOT_Z, FIN_TIP_Z = 0.46, Z(18.9)
+FIN_ROOT_LE, FIN_ROOT_CHORD = Y(1183), (1476 - 1183) / REF_PX_PER_M
+FIN_SWEEP_LE = math.atan((Y(1183) - Y(1336)) / (FIN_TIP_Z - Z(237)))
+FIN_TIP_CHORD = 0.68
 FIN_THICKNESS = 0.05
 RUDDER_HINGE = 0.72
-RUDDER_SPAN = (0.80, 2.35)
+RUDDER_SPAN = (0.52, Z(137))
 
-# Gameplay data carried over from the greybox F-5E (Roblox axes, metres), so the jet plays the same.
-HULL = {"size": [1.4, 1.4, 13.0], "at": [0, 0, -0.3]}
+# Engines: twin J85 nozzles
+NOZZLE_X, NOZZLE_Z, NOZZLE_R = 0.265, Z(274.6), 0.245
+NOZZLE_Y0, NOZZLE_Y1 = Y(1500), Y(1545.8)
+
+# Gear, measured from the side view (wheel circles) and the manual's top view (track 3.4 m)
+NOSE_WHEEL = {"at": (0, Y(469), Z(428.5)), "radius": 0.233, "width": 0.14}
+MAIN_WHEEL = {"at": (1.70, Y(1005), Z(420)), "radius": 0.266, "width": 0.18}
+
+# Gameplay data in Roblox axes (metres), matched to this model. Roblox z = -Blender Y.
+HULL = {"size": [1.5, 1.3, 13.4], "at": [0, 0, -1.25]}
 HITBOXES = {
-    "Cockpit": {"size": [1.2, 1.2, 2.0], "at": [0, 0.4, -2.6]},
-    "Fuselage": {"size": [1.5, 1.4, 6.0], "at": [0, 0, -0.5]},
-    "Engine": {"size": [1.5, 1.3, 3.5], "at": [0, 0, 4.5]},
-    "WingL": {"size": [3.3, 0.5, 2.4], "at": [-2.4, 0, 1.0]},
-    "WingR": {"size": [3.3, 0.5, 2.4], "at": [2.4, 0, 1.0]},
-    "Tail": {"size": [3.4, 2.4, 2.0], "at": [0, 0.8, 5.5]},
+    "Cockpit": {"size": [1.0, 1.1, 2.6], "at": [0, 0.45, -3.6]},
+    "Fuselage": {"size": [1.6, 1.3, 8.8], "at": [0, 0, -2.5]},
+    "Engine": {"size": [1.6, 1.2, 3.7], "at": [0, 0.12, 3.75]},
+    "WingL": {"size": [3.1, 0.4, 2.4], "at": [-2.35, round(WING_Z, 2), 0.6]},
+    "WingR": {"size": [3.1, 0.4, 2.4], "at": [2.35, round(WING_Z, 2), 0.6]},
+    "Tail": {"size": [4.2, 2.6, 2.6], "at": [0, 1.0, 3.7]},
 }
 
 # ---------------------------------------------------------------------------------------------------
@@ -128,9 +209,31 @@ def lerp(a, b, t):
     return a + (b - a) * t
 
 
-def catmull(p0, p1, p2, p3, t):
+def pchip(xs, ys, x):
+    """Monotone cubic interpolation (Fritsch-Carlson) through (xs, ys); xs increasing. No overshoot."""
+    n = len(xs)
+    if x <= xs[0]:
+        return ys[0]
+    if x >= xs[-1]:
+        return ys[-1]
+    h = [xs[i + 1] - xs[i] for i in range(n - 1)]
+    d = [(ys[i + 1] - ys[i]) / h[i] for i in range(n - 1)]
+    m = [d[0]] + [0.0] * (n - 2) + [d[-1]]
+    for i in range(1, n - 1):
+        if d[i - 1] * d[i] > 0:
+            w1, w2 = 2 * h[i] + h[i - 1], h[i] + 2 * h[i - 1]
+            m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+    i = max(k for k in range(n - 1) if xs[k] <= x)
+    t = (x - xs[i]) / h[i]
     t2, t3 = t * t, t * t * t
-    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+    return ((2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h[i] * m[i]
+            + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h[i] * m[i + 1])
+
+
+def table_at(table, xd):
+    """Interpolates every column of a station table at xd (column 0 is xd)."""
+    xs = [row[0] for row in table]
+    return tuple(pchip(xs, [row[k] for row in table], xd) for k in range(1, len(table[0])))
 
 
 def naca_half_thickness(x, ratio):
@@ -185,6 +288,12 @@ def make_object(name, verts, faces, col, set_name, kind="Static", origin=(0, 0, 
     ox, oy, oz = origin
     mesh.from_pydata([(v[0] - ox, v[1] - oy, v[2] - oz) for v in verts], [], faces)
     mesh.validate(clean_customdata=False)
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh)
+    bm.free()
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
     obj.location = origin
@@ -312,126 +421,167 @@ def hinge_line(root_le, root_te, tip_le, tip_te, fraction, s0, s1):
 
 
 # ---------------------------------------------------------------------------------------------------
+# Fuselage sections
+# ---------------------------------------------------------------------------------------------------
+
+
+def _superellipse_hit(origin_z, dx, dz, a, cz, b, e):
+    """Distance along the ray (0, origin_z) + t (dx, dz) to the superellipse |x/a|^e + |(z-cz)/b|^e = 1
+    (the origin must be inside it)."""
+    lo, hi = 0.0, 4.0
+    for _ in range(40):
+        t = (lo + hi) / 2
+        f = abs(t * dx / a) ** e + abs((origin_z + t * dz - cz) / b) ** e
+        lo, hi = (t, hi) if f < 1 else (lo, t)
+    return (lo + hi) / 2
+
+
+def fuselage_params(xd):
+    hw, zb, zs, zt, wsp, e = table_at(FUSELAGE, xd)
+    return max(hw, 0.004), zb, zs, max(zt, zs), max(wsp, 0.0), e
+
+
+def fuselage_ring(xd, segments=FUSELAGE_SEGMENTS):
+    """Section points (x, z) at a station, going round from the top centre. The body superellipse and
+    the dorsal spine are blended with a smooth maximum so the spine rises out of the shoulders."""
+    hw, zb, zs, zt, wsp, e = fuselage_params(xd)
+    cz = (zs + zb) / 2
+    hb = max((zs - zb) / 2, 0.004)
+    spine = wsp > 0.02 and zt - zs > 0.01
+    pts = []
+    for i in range(segments):
+        ang = math.pi / 2 - 2 * math.pi * i / segments
+        dx, dz = math.cos(ang), math.sin(ang)
+        r = _superellipse_hit(cz, dx, dz, hw, cz, hb, e)
+        if spine:
+            rs = _superellipse_hit(cz, dx, dz, wsp, cz, zt - cz, 2.6)
+            k = 10.0
+            r = (r**k + rs**k) ** (1 / k)
+        pts.append((r * dx, cz + r * dz))
+    return pts
+
+
+def fuselage_surface_z(xd, x):
+    """Height of the fuselage's upper surface at lateral offset x (for seating the canopy)."""
+    ring = fuselage_ring(xd, 96)
+    upper = [p for p in ring[: len(ring) // 4 + 1]]  # top centre round to the right side
+    for (x0, z0), (x1, z1) in zip(upper, upper[1:]):
+        if x0 <= x <= x1 or x1 <= x <= x0:
+            t = 0 if x1 == x0 else (x - x0) / (x1 - x0)
+            return lerp(z0, z1, t)
+    return upper[-1][1]
+
+
+def fuselage_stations():
+    """Ring stations from the radome tip to the nozzles, closer together at the nose."""
+    x0, x1 = FUSELAGE[0][0], FUSELAGE[-1][0]
+    return [x0 + (x1 - x0) * (k / (FUSELAGE_RINGS - 1)) ** 1.25 for k in range(FUSELAGE_RINGS)]
+
+
+# ---------------------------------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------------------------------
 
 
-def fuselage_section(t):
-    """Interpolated fuselage section at parameter t (0 = nose, 1 = tail) with Catmull-Rom."""
-    keys = FUSELAGE
-    seg = t * (len(keys) - 1)
-    i = min(int(seg), len(keys) - 2)
-    local = seg - i
-    p = [keys[max(i - 1, 0)], keys[i], keys[i + 1], keys[min(i + 2, len(keys) - 1)]]
-    return tuple(catmull(p[0][k], p[1][k], p[2][k], p[3][k], local) for k in range(5))
-
-
-def fuselage_top(y):
-    """Top of the fuselage (z) at station y, for seating the canopy, LERX and fin."""
-    best = None
-    for k in range(400):
-        sec = fuselage_section(k / 399)
-        if best is None or abs(sec[0] - y) < abs(best[0] - y):
-            best = sec
-    return best
-
-
 def build_fuselage(col):
     rings = []
-    for k in range(FUSELAGE_STATIONS):
-        y, hw, zt, zb, e = fuselage_section(k / (FUSELAGE_STATIONS - 1))
-        ring = []
-        for i in range(FUSELAGE_SEGMENTS):
-            ang = 2 * math.pi * i / FUSELAGE_SEGMENTS
-            c, s = math.cos(ang), math.sin(ang)
-            x = hw * math.copysign(abs(c) ** (2 / e), c)
-            z = math.copysign(abs(s) ** (2 / e), s) * (zt if s >= 0 else -zb)
-            ring.append((x, y, z))
-        rings.append(ring)
+    for xd in fuselage_stations():
+        y = Y(xd)
+        rings.append([(x, y, z) for x, z in fuselage_ring(xd)])
     verts, faces = lofted(rings, cap_start=True, cap_end=True)
-    make_object("Fuselage", verts, flip_faces(faces), col, "Body")
+    make_object("Fuselage", verts, faces, col, "Body")
 
 
 def build_intakes(col):
-    """Side intakes: D-section ducts hugging the fuselage (flat side against the skin), with a lip and a
-    recessed mouth, blending back into the fuselage behind the wing root."""
-    parts = []
-    stations = [  # (y, bulge out from the skin, top z, bottom z, inset of the mouth)
-        (1.95, 0.30, 0.26, -0.34),
-        (1.40, 0.30, 0.27, -0.35),
-        (0.40, 0.26, 0.26, -0.33),
-        (-0.60, 0.16, 0.22, -0.28),
-        (-1.40, 0.04, 0.16, -0.20),
-    ]
+    """Side intakes: D-section ducts against the fuselage (flat side on the skin), with a swept lip and
+    a recessed mouth, fading into the fuselage over the wing root."""
 
-    def ring(y, bulge, zt, zb, side, scale=1.0, dy=0.0):
-        _, hw, _, _, _ = fuselage_section(min(max((7.2 - y) / 14.45, 0), 1))
-        inner = hw - 0.05
+    def ring(xd, outer, zt, zb, side, scale=1.0, dxd=0.0, sweep=True):
+        hw = fuselage_params(xd)[0]
+        inner = hw - 0.06
         zc = (zt + zb) / 2
         hz = (zt - zb) / 2 * scale
-        b = bulge * scale
+        b = (outer - inner) * scale
+        y0 = Y(xd + dxd)
         pts = []
-        # Outer half (bottom -> top), superellipse for a slightly squared D
-        for i in range(13):
+        for i in range(13):  # outer half, bottom -> top: a slightly squared D
             ang = -math.pi / 2 + math.pi * i / 12
             c, s_ = math.cos(ang), math.sin(ang)
-            x = inner + (0.02 + b * (abs(c) ** 0.6))
+            off = 0.02 + b * (abs(c) ** 0.6)
+            x = inner + off
             z = zc + math.copysign(abs(s_) ** 0.8, s_) * hz
-            pts.append((side * x, y + dy, z))
-        # Flat inner side (top -> bottom)
-        for i in range(1, 4):
+            y = y0 - (INTAKE_LIP_SWEEP * off / max(outer - inner, 0.01) if sweep else 0.0)
+            pts.append((side * x, y, z))
+        for i in range(1, 4):  # flat inner side, top -> bottom
             z = zc + hz - 2 * hz * i / 4
-            pts.append((side * inner, y + dy, z))
+            pts.append((side * inner, y0, z))
         return pts
 
+    parts = []
     for side in (1, -1):
-        y0, b0, t0, z0 = stations[0]
-        rings = [ring(y0 - 0.45, b0, t0, z0, side, 0.78), ring(y0, b0, t0, z0, side, 0.84, 0.02)]
-        rings += [ring(y, b, t, z, side) for (y, b, t, z) in stations]
-        verts, faces = lofted(rings, cap_start=True, cap_end=False)
-        parts.append((verts, faces if side < 0 else flip_faces(faces)))
+        xd0, o0, t0, b0 = INTAKES[0]
+        rings = [ring(xd0, o0, t0, b0, side, 0.78, 45), ring(xd0, o0, t0, b0, side, 0.86, -2)]
+        rings += [ring(xd, o, t, b, side, sweep=(k == 0)) for k, (xd, o, t, b) in enumerate(INTAKES)]
+        parts.append(lofted(rings, cap_start=True, cap_end=False))
     verts, faces = merge(*parts)
     make_object("Intakes", verts, faces, col, "Body")
 
 
 def build_lerx(col):
+    """Leading-edge root extensions: thin strakes with a sharp outer edge, from the intakes to the wing."""
     parts = []
+    z, th = WING_Z + 0.01, 0.025
     for side in (1, -1):
-        y0, y1 = 2.3, WING_ROOT_LE
-        pts = [(0.60, y0), (0.86, y1 + 0.15), (0.86, y1 - 0.05), (0.60, y1 - 0.05)]
-        v_top = [(side * x, y, 0.08) for x, y in pts]
-        v_bot = [(side * x, y, 0.03) for x, y in pts]
-        verts = v_top + v_bot
-        faces = [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
-        parts.append((verts, faces if side > 0 else flip_faces(faces)))
+        top, bottom, edge = [], [], []
+        for hw, xd in LERX_EDGE:
+            y = Y(xd)
+            top.append((side * LERX_INNER, y, z + th))
+            bottom.append((side * LERX_INNER, y, z - th))
+            edge.append((side * hw, y, z))
+        n = len(edge)
+        verts = top + bottom + edge
+        faces = []
+        for i in range(n - 1):
+            faces.append((i, i + 1, 2 * n + i + 1, 2 * n + i))  # upper surface
+            faces.append((n + i, 2 * n + i, 2 * n + i + 1, n + i + 1))  # lower surface
+            faces.append((i, n + i, n + i + 1, i + 1))  # inner face (inside the fuselage)
+        faces.append((0, 2 * n, n))  # front
+        faces.append((n - 1, 2 * n - 1, 3 * n - 1))  # back (inside the wing root)
+        parts.append((verts, faces))
     verts, faces = merge(*parts)
     make_object("LERX", verts, faces, col, "Body")
 
 
+def canopy_ring(xd, grow=0.0, steps=17):
+    """Canopy section: a superellipse arch from the fuselage surface up to the canopy top."""
+    w, top = table_at(CANOPY, xd)
+    w += grow
+    top += grow
+    base = fuselage_surface_z(xd, min(w, fuselage_params(xd)[0] * 0.98)) - 0.03
+    y = Y(xd)
+    pts = []
+    for i in range(steps):
+        ang = math.pi * i / (steps - 1)
+        c, s = math.cos(ang), math.sin(ang)
+        x = w * math.copysign(abs(c) ** (2 / 2.4), c)
+        pts.append((x, y, base + (top - base) * abs(s) ** (2 / 2.4)))
+    return pts
+
+
 def build_canopy(col_glass, col_body):
-    rings = []
-    stations = [3.95, 3.6, 3.2, 2.8, 2.4, 2.0, 1.75]
-    widths = [0.20, 0.36, 0.44, 0.46, 0.45, 0.40, 0.30]
-    heights = [0.05, 0.38, 0.60, 0.70, 0.68, 0.55, 0.30]
-    for y, w, h in zip(stations, widths, heights):
-        base = fuselage_top(y)[2] - 0.04
-        ring = []
-        for i in range(17):
-            ang = math.pi * i / 16
-            ring.append((math.cos(ang) * w, y, base + math.sin(ang) * h))
-        rings.append(ring)
+    first, last = CANOPY[0][0], CANOPY[-1][0]
+    rings = [canopy_ring(first + (last - first) * k / 15) for k in range(16)]
     verts, faces = lofted(rings, cap_start=True, cap_end=True)
     make_object("Canopy", verts, faces, col_glass, "Glass")
-    # Frame: windscreen arch and rear arch, slightly proud of the glass
+    # Frame: the windscreen bow and the rear frame, slightly proud of the glass
     frame_parts = []
-    for y, w, h in ((3.32, 0.47, 0.66), (1.78, 0.33, 0.33)):
-        base = fuselage_top(y)[2] - 0.04
-        outer = [(math.cos(math.pi * i / 16) * (w + 0.02), y, base + math.sin(math.pi * i / 16) * (h + 0.02)) for i in range(17)]
-        inner = [(math.cos(math.pi * i / 16) * (w - 0.02), y, base + math.sin(math.pi * i / 16) * (h - 0.01)) for i in range(17)]
-        front = [(p[0], p[1] + 0.03, p[2]) for p in outer]
-        back = [(p[0], p[1] - 0.03, p[2]) for p in outer]
-        verts = front + back + [(p[0], p[1] + 0.03, p[2]) for p in inner] + [(p[0], p[1] - 0.03, p[2]) for p in inner]
-        n = 17
+    for xd in CANOPY_FRAMES:
+        outer = canopy_ring(xd, 0.02)
+        inner = canopy_ring(xd, -0.015)
+        d = 0.03
+        verts = ([(p[0], p[1] + d, p[2]) for p in outer] + [(p[0], p[1] - d, p[2]) for p in outer]
+                 + [(p[0], p[1] + d, p[2]) for p in inner] + [(p[0], p[1] - d, p[2]) for p in inner])
+        n = len(outer)
         faces = []
         for i in range(n - 1):
             faces.append((i, i + 1, n + i + 1, n + i))  # outer skin
@@ -465,7 +615,7 @@ def build_wings(col):
         # Main wing box: behind the LE flap, ahead of the trailing-edge surfaces (full chord at the tip)
         box_parts = [
             panel(root_le, root_te, tip_le, tip_te, up, WING_THICKNESS, LE_FLAP_CHORD, TE_HINGE, 0, frac(AILERON_SPAN[1]), 8, 10),
-            panel(root_le, root_te, tip_le, tip_te, up, WING_THICKNESS, 0.0, 1.0, frac(AILERON_SPAN[1]), 1.0, 1, 12),
+            panel(root_le, root_te, tip_le, tip_te, up, WING_THICKNESS, 0.0, 1.0, frac(AILERON_SPAN[1]), 1.0, 2, 12),
             # Inboard of the flap: a small fixed trailing edge strip
             panel(root_le, root_te, tip_le, tip_te, up, WING_THICKNESS, TE_HINGE, 1.0, 0, frac(TE_FLAP_SPAN[0]), 1, 4),
             # Between flap and aileron
@@ -493,8 +643,7 @@ def build_wings(col):
                         hinge={"axis": tuple(m([tuple((b - a))])[0]), "min": lims[0], "max": lims[1], "control": control})
 
         # Wingtip launch rail
-        rail_y = tip_le_y - WING_TIP_CHORD * 0.5
-        v, f = box((WING_TIP_X + 0.08, rail_y, WING_Z), (0.08, 2.4, 0.10))
+        v, f = box((WING_TIP_X + 0.04, RAIL_Y, WING_Z), (0.08, RAIL_LENGTH, 0.10))
         make_object(f"WingtipRail{name}", m(v), mf(f), col, "Details")
 
 
@@ -526,10 +675,24 @@ def build_tail(col):
     def frac(z):
         return (z - FIN_ROOT_Z) / h
 
+    # Dorsal fillet: a thin wedge from the spine curving up (concave) into the fin's leading edge
+    fillet_z = 0.88
+    le_y = FIN_ROOT_LE - (fillet_z - FIN_ROOT_Z) * math.tan(FIN_SWEEP_LE)
+    outline = [(Y(1140), 0.60)]  # front, low on the spine
+    for t in (0.35, 0.65):  # concave top edge: close to the spine first, then rising steeply
+        outline.append((lerp(Y(1140), le_y, t), lerp(0.62, fillet_z, t**2.2)))
+    outline += [(le_y, fillet_z), (FIN_ROOT_LE - 0.3, FIN_ROOT_Z)]
+    half = [0.05, 0.04, 0.03, 0.02, 0.05]
+    n = len(outline)
+    fv = [(-h, y, z) for (y, z), h in zip(outline, half)] + [(h, y, z) for (y, z), h in zip(outline, half)]
+    ff = [tuple(range(n)), tuple(reversed(range(n, 2 * n)))]
+    ff += [(i, n + i, n + (i + 1) % n, (i + 1) % n) for i in range(n)]
+
     fin_parts = [
         panel(fin_root_le, fin_root_te, fin_tip_le, fin_tip_te, side_n, FIN_THICKNESS, 0.0, RUDDER_HINGE, 0, 1, 8, 10),
         panel(fin_root_le, fin_root_te, fin_tip_le, fin_tip_te, side_n, FIN_THICKNESS, RUDDER_HINGE, 1.0, 0, frac(RUDDER_SPAN[0]), 1, 4),
-        panel(fin_root_le, fin_root_te, fin_tip_le, fin_tip_te, side_n, FIN_THICKNESS, RUDDER_HINGE, 1.0, frac(RUDDER_SPAN[1]), 1, 1, 4),
+        panel(fin_root_le, fin_root_te, fin_tip_le, fin_tip_te, side_n, FIN_THICKNESS, RUDDER_HINGE, 1.0, frac(RUDDER_SPAN[1]), 1, 3, 4),
+        (fv, ff),
     ]
     v, f = merge(*fin_parts)
     make_object("Fin", v, f, col, "Body")
@@ -542,27 +705,33 @@ def build_tail(col):
 
 def build_engines(col):
     for side, name in ((1, "R"), (-1, "L")):
-        x = side * 0.28
-        nv, nf = cylinder((x, -6.85, -0.02), (x, -7.45, -0.02), 0.30, 20, radius1=0.28, caps=False)
-        iv, i_f = cylinder((x, -6.85, -0.02), (x, -7.45, -0.02), 0.26, 20, radius1=0.25, caps=False)
+        x = side * NOZZLE_X
+        p0, p1 = (x, NOZZLE_Y0 + 0.05, NOZZLE_Z), (x, NOZZLE_Y1, NOZZLE_Z)
+        nv, nf = cylinder(p0, p1, NOZZLE_R + 0.015, 20, radius1=NOZZLE_R, caps=False)
+        iv, i_f = cylinder(p0, p1, NOZZLE_R - 0.025, 20, radius1=NOZZLE_R - 0.03, caps=False)
+        # Close the lip between the outer and inner walls at the exit
+        n = 20
+        lip = [(n + i, n + (i + 1) % n, len(nv) + n + (i + 1) % n, len(nv) + n + i) for i in range(n)]
         verts, faces = merge((nv, nf), (iv, flip_faces(i_f)))
+        faces += lip
         make_object(f"Nozzle{name}", verts, faces, col, "Details", "Nozzle", extra={"engine": name})
-        cv, cf = cylinder((x, -7.30, -0.02), (x, -6.95, -0.02), 0.24, 16, radius1=0.04, caps=True)
+        cv, cf = cylinder((x, NOZZLE_Y1 + 0.12, NOZZLE_Z), (x, NOZZLE_Y0 + 0.05, NOZZLE_Z), NOZZLE_R - 0.04, 16,
+                          radius1=0.04, caps=True)
         make_object(f"Afterburner{name}", cv, cf, col, "Details", "Afterburner", extra={"engine": name})
 
 
 def build_seat(col):
     parts = [
-        box((0, 2.62, 0.10), (0.48, 0.50, 0.10)),  # pan
-        box((0, 2.36, 0.48), (0.48, 0.12, 0.78)),  # back
-        box((0, 2.40, 0.98), (0.36, 0.20, 0.26)),  # headbox
+        box((0, 3.10, 0.02), (0.48, 0.50, 0.10)),  # pan
+        box((0, 2.82, 0.36), (0.48, 0.12, 0.66)),  # back
+        box((0, 2.86, 0.80), (0.36, 0.20, 0.26)),  # headbox
     ]
     verts, faces = merge(*parts)
     make_object("EjectionSeat", verts, faces, col, "Details")
 
 
 def build_pitot(col):
-    v, f = cylinder((0, 7.15, 0.0), (0, 7.75, 0.0), 0.018, 8)
+    v, f = cylinder((0, Y(95) + 0.02, Z(324.8)), (0, Y(REF_PITOT_XD), Z(324.8)), 0.022, 8)
     make_object("Pitot", v, f, col, "Details")
 
 
@@ -575,28 +744,31 @@ def wheel(centre, radius, width, axis_x=True, segments=18):
 
 def build_gear(col):
     """Gear modelled down; pivots at the retraction hinges (the game keeps it retracted in flight)."""
-    nose_top = (0, 4.55, -0.42)
-    v, f = cylinder(nose_top, (0, 4.55, -1.20), 0.05, 10)
+    nx, ny, nz = NOSE_WHEEL["at"]
+    nose_top = (0, ny + 0.16, -0.50)
+    v, f = cylinder(nose_top, (0, ny, nz + 0.08), 0.05, 10)
     make_object("NoseGearStrut", v, f, col, "Details", "Gear", origin=nose_top,
                 hinge={"axis": (1, 0, 0), "min": 0, "max": 95, "control": "Gear"})
-    v, f = wheel((0, 4.55, -1.30), 0.22, 0.15)
-    make_object("NoseGearWheel", v, f, col, "Details", "GearWheel", origin=(0, 4.55, -1.30),
+    v, f = wheel(NOSE_WHEEL["at"], NOSE_WHEEL["radius"], NOSE_WHEEL["width"])
+    make_object("NoseGearWheel", v, f, col, "Details", "GearWheel", origin=NOSE_WHEEL["at"],
                 hinge={"axis": (1, 0, 0), "min": -720, "max": 720, "control": "Wheel"})
+    mx, my, mz = MAIN_WHEEL["at"]
     for side, name in ((1, "R"), (-1, "L")):
-        top = (side * 0.62, -1.55, -0.50)
-        v, f = cylinder(top, (side * 0.98, -1.55, -1.30), 0.07, 10)
+        top = (side * 1.45, my + 0.04, WING_Z - 0.09)  # nearly vertical leg (walkaround photos)
+        v, f = cylinder(top, (side * (mx - 0.12), my, mz + 0.08), 0.07, 10)
         make_object(f"MainGearStrut{name}", v, f, col, "Details", "Gear", origin=top,
                     hinge={"axis": (0, 1, 0), "min": 0, "max": 90, "control": "Gear"})
-        v, f = wheel((side * 1.06, -1.55, -1.42), 0.32, 0.18)
-        make_object(f"MainGearWheel{name}", v, f, col, "Details", "GearWheel", origin=(side * 1.06, -1.55, -1.42),
+        centre = (side * mx, my, mz)
+        v, f = wheel(centre, MAIN_WHEEL["radius"], MAIN_WHEEL["width"])
+        make_object(f"MainGearWheel{name}", v, f, col, "Details", "GearWheel", origin=centre,
                     hinge={"axis": (1, 0, 0), "min": -720, "max": 720, "control": "Wheel"})
-        # Main door (hinged along the fuselage bottom)
-        v, f = box((side * 0.70, -1.55, -0.85), (0.04, 1.05, 0.62))
-        make_object(f"MainGearDoor{name}", v, f, col, "Details", "GearDoor", origin=(side * 0.55, -1.55, -0.56),
+        # Main door (hinged along the wing root's underside)
+        v, f = box((side * 1.30, my, WING_Z - 0.38), (0.04, 1.0, 0.55))
+        make_object(f"MainGearDoor{name}", v, f, col, "Details", "GearDoor", origin=(side * 1.28, my, WING_Z - 0.10),
                     hinge={"axis": (0, 1, 0), "min": 0, "max": 85, "control": "GearDoor"})
         # Nose doors
-        v, f = box((side * 0.16, 4.55, -0.62), (0.03, 0.80, 0.36))
-        make_object(f"NoseGearDoor{name}", v, f, col, "Details", "GearDoor", origin=(side * 0.14, 4.55, -0.44),
+        v, f = box((side * 0.16, ny + 0.10, -0.645), (0.03, 0.70, 0.25))
+        make_object(f"NoseGearDoor{name}", v, f, col, "Details", "GearDoor", origin=(side * 0.14, ny + 0.10, -0.52),
                     hinge={"axis": (0, 1, 0), "min": 0, "max": 85, "control": "GearDoor"})
 
 
@@ -647,17 +819,17 @@ def unwrap_sets():
 
 ATTACHMENTS = {
     # Blender axes; converted to Roblox axes in the manifest
-    "CockpitEye": (0, 2.75, 1.18),
-    "GunMuzzle": (0, 6.20, 0.25),
-    "Nozzle1": (-0.28, -7.45, -0.02),
-    "Nozzle2": (0.28, -7.45, -0.02),
-    "WingtipL": (-(WING_TIP_X + 0.08), -1.30, WING_Z),
-    "WingtipR": (WING_TIP_X + 0.08, -1.30, WING_Z),
-    "FlareDispenser": (0, -5.00, -0.55),
-    "ChaffDispenser": (0, -4.60, -0.55),
-    "ChaseCam": (0, -22.0, 3.5),
-    "Hardpoint1": (-(WING_TIP_X + 0.08), -1.30, WING_Z - 0.12),
-    "Hardpoint2": (WING_TIP_X + 0.08, -1.30, WING_Z - 0.12),
+    "CockpitEye": (0, 3.15, 0.80),
+    "GunMuzzle": (0, Y(290), Z(278)),  # the two nose guns sit either side of this point
+    "Nozzle1": (-NOZZLE_X, NOZZLE_Y1, NOZZLE_Z),
+    "Nozzle2": (NOZZLE_X, NOZZLE_Y1, NOZZLE_Z),
+    "WingtipL": (-(WING_TIP_X + 0.08), RAIL_Y, WING_Z),
+    "WingtipR": (WING_TIP_X + 0.08, RAIL_Y, WING_Z),
+    "FlareDispenser": (0, -3.40, -0.33),
+    "ChaffDispenser": (0, -3.00, -0.37),
+    "ChaseCam": (0, -20.5, 3.5),
+    "Hardpoint1": (-(WING_TIP_X + 0.08), RAIL_Y, WING_Z - 0.12),
+    "Hardpoint2": (WING_TIP_X + 0.08, RAIL_Y, WING_Z - 0.12),
     "Hardpoint3": (0, 0.0, -0.80),
 }
 
