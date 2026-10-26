@@ -8,7 +8,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
-| 4–8 | 0 / 118 | ⚪ Not started |
+| 4 Match loop MVP | 21 / 21 | 🟡 Built, awaiting sign-off |
+| 5–8 | 0 / 97 | ⚪ Not started |
 
 ---
 
@@ -66,7 +67,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 **Also done in Phase 1:** placeholder terrain (`tools/TerrainBuilder`, 70% leaner after `trim()`), streaming tuned (client ready in ~1 s), HUD-07 added to the plan, integrity checks (CI repo checks, module/definition/place specs, startup smoke test). Tests: 49 → 115.
 
-**Tuning backlog (for later):** MiG-21 transonic acceleration; overall roll/pitch feel per jet; sound assets; terrain is a placeholder until MAP-02.
+**Tuning backlog (for later):** MiG-21 transonic acceleration; overall roll/pitch feel per jet; sound assets. (The placeholder terrain was replaced by the Strait blockout in Phase 4.)
 
 ## Phase 2: Guns and damage
 
@@ -136,27 +137,35 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 4: Match loop MVP
 
-- [ ] **INP-03** Gamepad support
-- [ ] **INP-04** Touch controls (virtual stick, buttons, auto-throttle, aim-assist)
-- [ ] **CAM-06** Kill cam and spectate
-- [ ] **HUD-04** Warnings system with priorities (stall, terrain, fuel, bounds)
-- [ ] **HUD-06** Mobile scaling pass
-- [ ] **AIR-04** Out-of-bounds and ceiling handling
-- [ ] **SEC-01** Movement checks with strike system and corrections
-- [ ] **SEC-02** Exploit test suite: a test-only client script that tries speed hacks, teleports and remote spam, used to check the defences
-- [ ] **SEC-03** Logging pipeline for violations (analytics + server-side log)
-- [ ] **MCH-01** MatchService state machine and Mode interface
-- [ ] **MCH-02** Free Flight and Dogfight FFA
-- [ ] **MCH-03** Configurable respawn rules (both types)
-- [ ] **MCH-04** Scoreboard and results screen
-- [ ] **AI-01** Server-side flight for AI jets (shared FlightModel + Instructor)
-- [ ] **AI-02** Patrol/Engage/Attack with gun use
-- [ ] **AI-03** Defend state (missile defence, flares, break turn)
-- [ ] **MAP-02** "Strait" blockout: terrain shape, airbases, spawns
-- [ ] **TUT-01** Lesson framework (steps, prompts, highlights, conditions)
-- [ ] **TUT-02** Lessons 1–3
-- [ ] **ANL-01** Telemetry wrapper
-- [ ] **PRF-02** Full-match stress test (bots fill to 24 jets)
+**Built and tested; waiting for Will's sign-off.** Exit test (8 players and bots have a full match, then an internal playtest with friends) still to run. Solo matches against 7 AI pilots, and a 24-jet stress match, were run in Studio.
+
+| | Task | Evidence |
+|:---:|---|---|
+| ✅ | **INP-03** Gamepad support | Left stick pitch/roll (deadzone + expo), LB/RB rudder, RT/LT throttle (hold RT at 100% for afterburner), right stick look; A gun, X missile, Y lock, B flare, D-pad chaff/cycle, Select camera, R3 padlock, Start scoreboard; menu selection on the first jet. Simulated buttons in play: flare 30 → 29, chaff 30 → 29, Select switched camera. *Sticks and triggers need a real pad.* |
+| ✅ | **INP-04** Touch controls (virtual stick, buttons, auto-throttle, aim-assist) | Virtual stick, throttle slider with afterburner detent, FIRE/MSL/LOCK/FLR/CHF/WPN/CAM, auto-throttle holding ~420 kt (on by default, AUTO button), gun aim-assist toward the lead when firing near a target. Laid out and checked in play with the debug "Toggle touch UI". *Needs a real phone: multi-touch, feel, aim-assist strength.* |
+| ✅ | **CAM-06** Kill cam and spectate | Live: shot down by an AI → camera follows the killer, "Shot down by Viper [AI]"; menu says "You were shot down by Viper [AI]" (AI names fixed in testing). Spectating other jets with ◀ ▶ while waiting to spawn. |
+| ✅ | **HUD-04** Warnings system with priorities (stall, terrain, fuel, bounds) | Every active warning listed, most urgent first: RETURN TO BATTLE AREA (countdown), PULL UP (terrain on the flight path within 4 s), ENGINE FIRE, STALL, OVER-G, G-LIMIT, ENGINE DAMAGE, BINGO FUEL. Top one flashes red, the rest in amber. *Not yet seen hands-on.* |
+| ✅ | **HUD-06** Mobile scaling pass | On touch: scopes shrink to 70% and move to the top corners (moved below the Roblox top bar after the first look), fuel moves above the stick, key help hidden. |
+| ✅ | **AIR-04** Out-of-bounds and ceiling handling | Outside ±20,000 studs or above the ceiling: 10 s countdown, then despawn. Live: an AI jet moved to x = 20,600 got the warning (9 s left after 1 s) and was despawned after 10 s. |
+| ✅ | **SEC-01** Movement checks with strike system and corrections | `MovementCheck`: speed, teleport and acceleration checks; 3 strikes → reset to the last good position, 3 resets → kick. `MatchRules.spec`: honest max-G flying never flagged, crash stops exempt (found in testing). 24-jet stress match: 0 strikes. |
+| ✅ | **SEC-02** Exploit test suite | `tools/ExploitTest`: CFrame speed hack → 6 strikes, 2 resets; teleport → kicked. Remote spam is covered by the NET-02 rate limits. |
+| ✅ | **SEC-03** Logging pipeline for violations | `AntiCheatStrike` / `AntiCheatKick` telemetry events and `AntiCheatViolations` / `Resets` / `Kicks` counters in ServerStorage; kicks counted once (found in testing). |
+| ✅ | **MCH-01** MatchService state machine and Mode interface | Waiting → Countdown → InProgress → Results, verified live; modes are data in `MatchRules`; the spawn gate follows the state. |
+| ✅ | **MCH-02** Free Flight and Dogfight FFA | Dogfight: 15 kills or 10 minutes, AI fill to 8. Free Flight: no scoring, drones allowed. Switched live with the debug buttons. |
+| ✅ | **MCH-03** Configurable respawn rules (both types) | Timer and Lives rules; `MatchRules.spec`. Dogfight uses a 5 s timer until the respawn decision (DESIGN §11). |
+| ✅ | **MCH-04** Scoreboard and results screen | Banner with mode, time and leader; hold Tab / Start for the scoreboard (Roblox's player list took Tab, now hidden); results screen with winner, ranking and next-match countdown. All checked in play. Rewards on the end screen come with Phase 5. |
+| ✅ | **AI-01** Server-side flight for AI jets (shared FlightModel + Instructor) | AI jets fly the same flight model as players, server-side; 23 at once in the stress test. |
+| ✅ | **AI-02** Patrol/Engage/Attack with gun use | `Dogfight.spec`: a Normal pilot shoots down a target ahead (10/10); an Ace beats an Easy pilot 6–0 (4 draws). Live: AI pilots score kills, including on me. |
+| ✅ | **AI-03** Defend state (missile defence, flares, break turn) | `Dogfight.spec`: break, idle and flares against a heat-seeker after the reaction time; notch and chaff against a radar missile; pull up near the ground. |
+| ✅ | **MAP-02** "Strait" blockout: terrain shape, airbases, spawns | `tools/StraitBuilder`: west landmass with a mountain range (passes cut through), east landmass with lower hills, a north-south channel with the test range on a central island, open sea to the south, islets for masking, airbases west and east (runway, apron, hangars, tower), 12 tagged `SpawnPoint` parts. `Place.spec` checks the spawns are in bounds and clear of terrain. Terrain trimmed to 718 M cells for a 41 × 41 km area (old placeholder: 429 M cells for 24.5 km). |
+| ✅ | **TUT-01** Lesson framework (steps, prompts, highlights, conditions) | `LessonRunner` (pure, `MatchRules.spec`) plus `TutorialController`: prompt panel with step counter and hint, world props, completion message. Training row on the spawn menu. |
+| ✅ | **TUT-02** Lessons 1–3 | 1 Basic flight (pitch, roll, afterburner, 6 rings), 2 Energy (dive, zoom climb, hard turn, recover), 3 Guns (3 drones). Live: lesson 1 steps 1–3 passed and the rings were laid out; drones spawn in Free Flight. *Runs on Free Flight servers only (reserved training servers are TUT-04). Lessons 2–3 not yet played end to end.* |
+| ✅ | **ANL-01** Telemetry wrapper | `Telemetry.event`: pcall'd, tagged with the environment, recent-event log; `MatchEnded`, `Death` and anti-cheat events seen firing in play. |
+| ✅ | **PRF-02** Full-match stress test (bots fill to 24 jets) | Debug "Stress" mode fills to 24 jets. Once the map had streamed in, the server held **60 Hz**; the services' Heartbeat work cost **1.1 ms average, 4.5 ms peak** per frame (new meter in `Main.server`). Dips to 40–53 Hz only while Studio streamed the new map (server, client and renderer share one process in Studio). |
+
+**Also done in Phase 4:** AI difficulty profiles (Easy/Normal/Hard/Ace) and the Extend state, early parts of AI-04/05; debug panel buttons for mode switching, the stress mode, ending a match and forcing the touch UI; server step-cost meter (`ServerStepMs`, `ServerStepPeakMs`, `ServerHz` attributes). Tests: 202 → 269.
+
+**To check with real devices and players:** gamepad sticks, touch on a phone, HUD warnings hands-on, lessons 2–3 end to end, an 8-player match.
 
 ## Phase 5: Progression and saving
 

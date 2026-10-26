@@ -178,6 +178,53 @@ local function build()
 		end)
 	end
 
+	-- Phase 4 helpers: switch the match mode, force the touch UI on (to test it with a mouse)
+	local extras = {
+		{
+			"MODE: FREE FLIGHT",
+			function()
+				Net.Client.fire("DebugSetMode", "FreeFlight")
+			end,
+		},
+		{
+			"MODE: DOGFIGHT",
+			function()
+				Net.Client.fire("DebugSetMode", "Dogfight")
+			end,
+		},
+		{
+			"MODE: STRESS (24 JETS)",
+			function()
+				Net.Client.fire("DebugSetMode", "Stress")
+			end,
+		},
+		{
+			"END MATCH NOW",
+			function()
+				Net.Client.fire("DebugSetMode", "EndMatch")
+			end,
+		},
+		{
+			"TOGGLE TOUCH UI",
+			function()
+				InputController.forceTouch = not InputController.forceTouch
+				InputController:SetDevice(if InputController.forceTouch then "Touch" else "KeyboardMouse")
+			end,
+		},
+	}
+	for i, extra in extras do
+		local extraButton = Instance.new("TextButton")
+		extraButton.LayoutOrder = 106 + i
+		extraButton.Size = UDim2.new(1, 0, 0, 24)
+		extraButton.BackgroundColor3 = Color3.fromRGB(40, 80, 60)
+		extraButton.Font = Enum.Font.GothamBold
+		extraButton.TextColor3 = Color3.new(1, 1, 1)
+		extraButton.TextSize = 13
+		extraButton.Text = extra[1] :: string
+		extraButton.Parent = panel
+		extraButton.Activated:Connect(extra[2] :: () -> ())
+	end
+
 	readout = Instance.new("TextLabel")
 	readout.LayoutOrder = 110
 	readout.Size = UDim2.new(1, 0, 0, 200)

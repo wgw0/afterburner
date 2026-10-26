@@ -99,5 +99,28 @@ return function(ctx)
 		it("the test range is present", function()
 			expect(workspace:FindFirstChild("TestRange") ~= nil).toBe(true)
 		end)
+
+		it("the map has airborne spawn points inside the play area, clear of terrain", function()
+			local CollectionService = game:GetService("CollectionService")
+			local Scale = require(ReplicatedStorage.Shared.Config.Scale)
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Include
+			params.FilterDescendantsInstances = { workspace.Terrain }
+			local count = 0
+			for _, part in CollectionService:GetTagged("SpawnPoint") do
+				if not (part:IsA("BasePart") and part:IsDescendantOf(workspace)) then
+					continue
+				end
+				expect(part:GetAttribute("Type")).toBe("Air")
+				local p = part.Position
+				local inside = math.abs(p.X) < Scale.MAP_HALF_EXTENT and math.abs(p.Z) < Scale.MAP_HALF_EXTENT
+				expect(inside).toBe(true)
+				-- Nothing solid within 300 studs below or 1,500 studs ahead
+				expect(workspace:Raycast(p, Vector3.new(0, -300, 0), params)).toBe(nil)
+				expect(workspace:Raycast(p, part.CFrame.LookVector * 1500, params)).toBe(nil)
+				count += 1
+			end
+			expect(count >= 8).toBe(true)
+		end)
 	end)
 end

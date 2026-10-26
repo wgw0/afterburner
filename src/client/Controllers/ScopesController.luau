@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 
 local FlightController = require(script.Parent.FlightController)
+local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
 
 local GREEN = Color3.fromRGB(110, 255, 150)
@@ -203,8 +204,32 @@ local function update()
 	end
 end
 
+-- HUD-06: on touch the bottom of the screen belongs to the stick and buttons, so the scopes shrink and
+-- move to the top corners.
+local function applyLayout()
+	local compact = InputController.device == "Touch"
+	for _, f in { radarPanel, rwrPanel } do
+		local scale = f:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+		scale.Scale = if compact then 0.7 else 1
+		scale.Parent = f
+	end
+	if compact then
+		radarPanel.AnchorPoint = Vector2.new(0, 0)
+		radarPanel.Position = UDim2.fromOffset(12, 130)
+		rwrPanel.AnchorPoint = Vector2.new(1, 0)
+		rwrPanel.Position = UDim2.new(1, -12, 0, 130)
+	else
+		radarPanel.AnchorPoint = Vector2.new(0.5, 1)
+		radarPanel.Position = UDim2.new(0.5, -130, 1, -16)
+		rwrPanel.AnchorPoint = Vector2.new(0.5, 1)
+		rwrPanel.Position = UDim2.new(0.5, 130, 1, -16)
+	end
+end
+
 function ScopesController:Start()
 	build()
+	applyLayout()
+	InputController.DeviceChanged:Connect(applyLayout)
 	RunService.RenderStepped:Connect(update)
 end
 

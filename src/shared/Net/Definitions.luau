@@ -39,8 +39,8 @@ local definitions: { [string]: Definition } = {
 	HitFx = { direction = "ServerToClient", reliable = false, args = { "integer", "Vector3" } },
 	-- Your jet's component health as fractions (0..1)
 	DamageState = { direction = "ServerToClient", args = { "table" } },
-	-- A jet was destroyed: jetId, killer's UserId (0 = none or AI), cause, world position
-	JetDestroyed = { direction = "ServerToClient", args = { "integer", "integer", "string", "Vector3" } },
+	-- A jet was destroyed: jetId, killer's UserId (0 = none or AI), cause, world position, killer's jet (0 = none)
+	JetDestroyed = { direction = "ServerToClient", args = { "integer", "integer", "string", "Vector3", "integer" } },
 	-- Kill feed line: killer name ("" = none), victim name, weapon or cause, assist names
 	KillFeed = { direction = "ServerToClient", args = { "string", "string", "string", "table" } },
 
@@ -70,7 +70,7 @@ local definitions: { [string]: Definition } = {
 	MatchState = { direction = "ServerToClient", args = { "table" } },
 
 	-- Diagnostics (test environment only): exercises the Net layer end to end.
-	-- Switch game mode: "FreeFlight" | "Dogfight"
+	-- Switch game mode: "FreeFlight" | "Dogfight" | "Stress", or "EndMatch" to end the running match now
 	DebugSetMode = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Fire a missile at yourself from 1.8 km behind, to practise defending (weapon id)
 	DebugLaunchAtMe = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },

@@ -242,6 +242,23 @@ local function toggleLock()
 	end
 end
 
+-- Public actions (touch buttons, tutorial)
+function WeaponController:SetTrigger(down: boolean)
+	setTrigger(down)
+end
+
+function WeaponController:FireMissile()
+	fireMissile()
+end
+
+function WeaponController:ToggleLock()
+	toggleLock()
+end
+
+function WeaponController:CycleMissile()
+	cycleMissile()
+end
+
 function WeaponController:IsFiring(model: Model): boolean
 	local stream = streams[model]
 	return stream ~= nil and stream.firing
@@ -261,24 +278,29 @@ function WeaponController:Init()
 			setTrigger(true)
 		end
 	end)
+	-- Keyboard and gamepad (INP-03): A gun (hold), X missile, Y lock, B flare, D-pad down chaff,
+	-- D-pad up cycle missile.
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or InputController.uiOpen or not FlightController.jet then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.R then
+		local key = input.KeyCode
+		if key == Enum.KeyCode.ButtonA then
+			setTrigger(true)
+		elseif key == Enum.KeyCode.R or key == Enum.KeyCode.DPadUp then
 			cycleMissile()
-		elseif input.KeyCode == Enum.KeyCode.Space then
+		elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.ButtonX then
 			fireMissile()
-		elseif input.KeyCode == Enum.KeyCode.T then
+		elseif key == Enum.KeyCode.T or key == Enum.KeyCode.ButtonY then
 			toggleLock()
-		elseif input.KeyCode == Enum.KeyCode.F then
+		elseif key == Enum.KeyCode.F or key == Enum.KeyCode.ButtonB then
 			Net.Client.fire("CountermeasureDeploy", "Flare")
-		elseif input.KeyCode == Enum.KeyCode.C then
+		elseif key == Enum.KeyCode.C or key == Enum.KeyCode.DPadDown then
 			Net.Client.fire("CountermeasureDeploy", "Chaff")
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonA then
 			setTrigger(false)
 		end
 	end)
