@@ -13,6 +13,10 @@ return {
 			set = "Body",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, -0.02, -1.4752 },
+				size = { 1.5799, 1.9002, 13.3313 },
+			},
 			triangles = 5280,
 		},
 		{
@@ -20,6 +24,10 @@ return {
 			set = "Body",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, -0.03, -1.2001 },
+				size = { 2.04, 0.9, 3.2925 },
+			},
 			triangles = 480,
 		},
 		{
@@ -27,6 +35,10 @@ return {
 			set = "Body",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, -0.1987, -1.5227 },
+				size = { 2.74, 0.05, 1.7554 },
+			},
 			triangles = 52,
 		},
 		{
@@ -34,6 +46,10 @@ return {
 			set = "Glass",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, 0.6292, -3.2543 },
+				size = { 0.8897, 0.7065, 2.7517 },
+			},
 			triangles = 544,
 		},
 		{
@@ -41,6 +57,10 @@ return {
 			set = "Body",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, 0.6109, -3.2496 },
+				size = { 0.92, 0.7796, 1.1512 },
+			},
 			triangles = 256,
 		},
 		{
@@ -48,6 +68,10 @@ return {
 			set = "Wings",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 2.295, -0.2087, 0.5983 },
+				size = { 3.15, 0.1382, 2.5059 },
+			},
 			triangles = 568,
 		},
 		{
@@ -55,6 +79,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { 1.89, -0.2087, -0.1001 },
+			bounds = {
+				centre = { 1.89, -0.2087, -0.2874 },
+				size = { 2.34, 0.118, 1.4834 },
+			},
 			hinge = {
 				axis = { 0.9037, 0, 0.4282 },
 				min = 0,
@@ -68,6 +96,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { 1.51, -0.2087, 1.1861 },
+			bounds = {
+				centre = { 1.51, -0.2087, 1.4897 },
+				size = { 1.32, 0.0698, 0.6989 },
+			},
 			hinge = {
 				axis = { 0.9976, 0, 0.0693 },
 				min = 0,
@@ -81,6 +113,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { 2.635, -0.2087, 1.2642 },
+			bounds = {
+				centre = { 2.635, -0.2087, 1.4732 },
+				size = { 0.85, 0.0476, 0.4771 },
+			},
 			hinge = {
 				axis = { 0.9976, 0, 0.0693 },
 				min = -20,
@@ -94,6 +130,10 @@ return {
 			set = "Details",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 3.91, -0.2087, 1.2053 },
+				size = { 0.08, 0.1, 1.3284 },
+			},
 			triangles = 12,
 		},
 		{
@@ -101,6 +141,10 @@ return {
 			set = "Wings",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { -2.295, -0.2087, 0.5983 },
+				size = { 3.15, 0.1382, 2.5059 },
+			},
 			triangles = 568,
 		},
 		{
@@ -108,6 +152,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { -1.89, -0.2087, -0.1001 },
+			bounds = {
+				centre = { -1.89, -0.2087, -0.2874 },
+				size = { 2.34, 0.118, 1.4834 },
+			},
 			hinge = {
 				axis = { -0.9037, 0, 0.4282 },
 				min = 0,
@@ -121,6 +169,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { -1.51, -0.2087, 1.1861 },
+			bounds = {
+				centre = { -1.51, -0.2087, 1.4897 },
+				size = { 1.32, 0.0698, 0.6989 },
+			},
 			hinge = {
 				axis = { -0.9976, 0, 0.0693 },
 				min = 0,
@@ -134,6 +186,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { -2.635, -0.2087, 1.2642 },
+			bounds = {
+				centre = { -2.635, -0.2087, 1.4732 },
+				size = { 0.85, 0.0476, 0.4771 },
+			},
 			hinge = {
 				axis = { -0.9976, 0, 0.0693 },
 				min = -20,
@@ -147,6 +203,10 @@ return {
 			set = "Details",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { -3.91, -0.2087, 1.2053 },
+				size = { 0.08, 0.1, 1.3284 },
+			},
 			triangles = 12,
 		},
 		{
@@ -154,6 +214,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { 0.7, -0.0759, 3.7477 },
+			bounds = {
+				centre = { 1.4, -0.0759, 3.9712 },
+				size = { 1.4, 0.0737, 1.4897 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = -20,
@@ -167,6 +231,10 @@ return {
 			set = "Wings",
 			kind = "ControlSurface",
 			pivot = { -0.7, -0.0759, 3.7477 },
+			bounds = {
+				centre = { -1.4, -0.0759, 3.9712 },
+				size = { 1.4, 0.0737, 1.4897 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = -20,
@@ -180,6 +248,10 @@ return {
 			set = "Body",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, 1.5162, 3.3686 },
+				size = { 0.139, 2.1123, 3.1881 },
+			},
 			triangles = 472,
 		},
 		{
@@ -187,6 +259,10 @@ return {
 			set = "Body",
 			kind = "ControlSurface",
 			pivot = { 0, 0.9859, 4.1767 },
+			bounds = {
+				centre = { 0, 0.9859, 4.5576 },
+				size = { 0.0778, 0.9317, 0.7751 },
+			},
 			hinge = {
 				axis = { 0, 0.9999, -0.0143 },
 				min = -30,
@@ -200,6 +276,10 @@ return {
 			set = "Details",
 			kind = "Nozzle",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0.265, 0.1461, 5.3827 },
+				size = { 0.52, 0.52, 0.4846 },
+			},
 			engine = "R",
 			triangles = 120,
 		},
@@ -208,6 +288,10 @@ return {
 			set = "Details",
 			kind = "Afterburner",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0.265, 0.1461, 5.3227 },
+				size = { 0.41, 0.41, 0.3646 },
+			},
 			engine = "R",
 			triangles = 64,
 		},
@@ -216,6 +300,10 @@ return {
 			set = "Details",
 			kind = "Nozzle",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { -0.265, 0.1461, 5.3827 },
+				size = { 0.52, 0.52, 0.4846 },
+			},
 			engine = "L",
 			triangles = 120,
 		},
@@ -224,6 +312,10 @@ return {
 			set = "Details",
 			kind = "Afterburner",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { -0.265, 0.1461, 5.3227 },
+				size = { 0.41, 0.41, 0.3646 },
+			},
 			engine = "L",
 			triangles = 64,
 		},
@@ -232,6 +324,10 @@ return {
 			set = "Details",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, 0.45, -3.055 },
+				size = { 0.48, 0.96, 0.59 },
+			},
 			triangles = 36,
 		},
 		{
@@ -239,6 +335,10 @@ return {
 			set = "Details",
 			kind = "Static",
 			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, -0.3302, -8.4929 },
+				size = { 0.044, 0.044, 0.6641 },
+			},
 			triangles = 32,
 		},
 		{
@@ -246,6 +346,10 @@ return {
 			set = "Details",
 			kind = "Gear",
 			pivot = { 0, -0.5, -4.7522 },
+			bounds = {
+				centre = { 0, -0.8671, -4.6722 },
+				size = { 0.0951, 0.7554, 0.2577 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = 0,
@@ -259,6 +363,10 @@ return {
 			set = "Details",
 			kind = "GearWheel",
 			pivot = { 0, -1.3142, -4.5922 },
+			bounds = {
+				centre = { 0, -1.3142, -4.5922 },
+				size = { 0.14, 0.4589, 0.466 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = -720,
@@ -272,6 +380,10 @@ return {
 			set = "Details",
 			kind = "Gear",
 			pivot = { 1.45, -0.2987, 0.4536 },
+			bounds = {
+				centre = { 1.515, -0.7261, 0.4736 },
+				size = { 0.2616, 0.8768, 0.1798 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,
@@ -285,6 +397,10 @@ return {
 			set = "Details",
 			kind = "GearWheel",
 			pivot = { 1.7, -1.2335, 0.4936 },
+			bounds = {
+				centre = { 1.7, -1.2335, 0.4936 },
+				size = { 0.18, 0.5239, 0.532 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = -720,
@@ -298,6 +414,10 @@ return {
 			set = "Details",
 			kind = "GearDoor",
 			pivot = { 1.28, -0.3087, 0.4936 },
+			bounds = {
+				centre = { 1.3, -0.5887, 0.4936 },
+				size = { 0.04, 0.55, 1 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,
@@ -311,6 +431,10 @@ return {
 			set = "Details",
 			kind = "GearDoor",
 			pivot = { 0.14, -0.52, -4.6922 },
+			bounds = {
+				centre = { 0.16, -0.645, -4.6922 },
+				size = { 0.03, 0.25, 0.7 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,
@@ -324,6 +448,10 @@ return {
 			set = "Details",
 			kind = "Gear",
 			pivot = { -1.45, -0.2987, 0.4536 },
+			bounds = {
+				centre = { -1.515, -0.7261, 0.4736 },
+				size = { 0.2616, 0.8768, 0.1798 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,
@@ -337,6 +465,10 @@ return {
 			set = "Details",
 			kind = "GearWheel",
 			pivot = { -1.7, -1.2335, 0.4936 },
+			bounds = {
+				centre = { -1.7, -1.2335, 0.4936 },
+				size = { 0.18, 0.5239, 0.532 },
+			},
 			hinge = {
 				axis = { 1, 0, 0 },
 				min = -720,
@@ -350,6 +482,10 @@ return {
 			set = "Details",
 			kind = "GearDoor",
 			pivot = { -1.28, -0.3087, 0.4936 },
+			bounds = {
+				centre = { -1.3, -0.5887, 0.4936 },
+				size = { 0.04, 0.55, 1 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,
@@ -363,6 +499,10 @@ return {
 			set = "Details",
 			kind = "GearDoor",
 			pivot = { -0.14, -0.52, -4.6922 },
+			bounds = {
+				centre = { -0.16, -0.645, -4.6922 },
+				size = { 0.03, 0.25, 0.7 },
+			},
 			hinge = {
 				axis = { 0, 0, -1 },
 				min = 0,

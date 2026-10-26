@@ -301,7 +301,19 @@ def make_object(name, verts, faces, col, set_name, kind="Static", origin=(0, 0, 
     obj.data.materials.append(material(set_name))
     obj["afterburner_set"] = set_name
     obj["afterburner_kind"] = kind
-    entry = {"name": name, "set": set_name, "kind": kind, "pivot": to_roblox(origin)}
+    # Bounding box (Roblox axes): the assembler matches imported MeshParts against it to undo any scale or
+    # axis change the importer made, and to place each part exactly.
+    lo = [min(v[k] for v in verts) for k in range(3)]
+    hi = [max(v[k] for v in verts) for k in range(3)]
+    centre = [(lo[k] + hi[k]) / 2 for k in range(3)]
+    size = [hi[k] - lo[k] for k in range(3)]
+    entry = {
+        "name": name,
+        "set": set_name,
+        "kind": kind,
+        "pivot": to_roblox(origin),
+        "bounds": {"centre": to_roblox(centre), "size": [round(size[0], 4), round(size[2], 4), round(size[1], 4)]},
+    }
     if hinge:
         axis = Vector(hinge["axis"]).normalized()
         entry["hinge"] = {

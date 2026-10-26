@@ -480,8 +480,8 @@ Every aircraft model **must** follow this contract, or the game won't load it. A
 | Collision | **One** simple hull part (`Hull`), `CanCollide = true`. All visual parts have `CanCollide = false`, `CanTouch = false`, `CanQuery = false`, `Massless = true` |
 | Hitboxes | Invisible parts in a `Hitboxes` folder: `Cockpit`, `Fuselage`, `Engine`, `WingL`, `WingR`, `Tail`. `CanQuery = true` and only queried by the server's combat raycasts |
 | Attachments (on `Root`) | `CockpitEye`, `GunMuzzle`, `Hardpoint1..N`, `Nozzle1..N`, `WingtipL`, `WingtipR`, `FlareDispenser`, `ChaffDispenser`, `ChaseCam` |
-| Moving parts | Optional `ControlSurfaces` folder: `ElevatorL/R`, `AileronL/R`, `Rudder`, each with a `Motor6D` driven by the client for visuals |
-| Part budget | ≤ 40 parts per jet. Use MeshParts. ≤ 20k triangles total. |
+| Joints | Every other part joins `Root` directly: a `WeldConstraint`, or for moving parts a `Motor6D` (`Part0 = Root`) with `Control`, `HingeAxis`, `HingeMin` and `HingeMax` attributes. `ControlSurfaceController` sets each Motor6D's `Transform` on the client (visual only). Controls: `AileronL/R`, `Stabilator`, `Rudder`, `Flap`, `LEFlap`, plus `Gear`, `GearDoor`, `Wheel` (gear is hidden in flight) |
+| Part budget | ≤ 60 parts per jet. Use MeshParts. 5k–12k triangles for the visual model ([art pipeline](art/AIRCRAFT_PIPELINE.md)). |
 | Textures | Camo surfaces use `SurfaceAppearance` or `Texture` named `CamoSlot` so cosmetics can swap them |
 
 ### 5.4 Weapon schema
@@ -1850,7 +1850,7 @@ end
 | Server heartbeat | ≥ 55 Hz with 16 players + 8 bots |
 | Client memory | < 1.2 GB on PC, < 700 MB on mobile *(check with the Developer Console)* |
 | Network per client | < 50 KB/s down average in a full match |
-| Jet model | ≤ 40 parts, ≤ 20k tris |
+| Jet model | ≤ 60 parts, 5k–12k tris |
 | Effects | All pooled. No more than 200 active particles per jet on High |
 | Script time | Client FlightController + HUD < 2 ms per frame. Server CombatService + MissileService < 4 ms per tick |
 
