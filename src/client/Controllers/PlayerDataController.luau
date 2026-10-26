@@ -74,6 +74,10 @@ function PlayerDataController:BuyModule(airframeId: string, moduleId: string): (
 	return ask("BuyModule", airframeId, moduleId)
 end
 
+function PlayerDataController:SetModuleFitted(airframeId: string, moduleId: string, fitted: boolean): (boolean, string?)
+	return ask("SetModuleFitted", airframeId, moduleId, fitted)
+end
+
 function PlayerDataController:SetLineup(ids: { string }): (boolean, string?)
 	return ask("SetLineup", ids)
 end

@@ -137,6 +137,9 @@ render = function()
 		OnBuy = function(id)
 			return PlayerDataController:Buy(id)
 		end,
+		OnSetModuleFitted = function(id, moduleId, fitted)
+			return PlayerDataController:SetModuleFitted(id, moduleId, fitted)
+		end,
 		OnBuyModule = function(id, moduleId)
 			return PlayerDataController:BuyModule(id, moduleId)
 		end,
