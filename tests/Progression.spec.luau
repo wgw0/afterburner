@@ -224,6 +224,44 @@ return function(ctx)
 			expect((Progression.buyModule(data, "F5E", "Engine1"))).toBe(false) -- already fitted
 		end)
 
+		it("unfitting keeps the module, refitting is free", function()
+			local data = PlayerData.template()
+			data.Aircraft.F5E.RP = 5000
+			data.Credits = 50000
+			expect((Progression.buyModule(data, "F5E", "Engine1"))).toBe(true)
+			local rp, credits = data.Aircraft.F5E.RP, data.Credits
+			expect((Progression.setModuleFitted(data, "F5E", "Engine1", false))).toBe(true)
+			expect(data.Aircraft.F5E.Modules.Engine1).toBe(false)
+			expect((Progression.buyModule(data, "F5E", "Engine1"))).toBe(false) -- owned: no second purchase
+			expect((Progression.setModuleFitted(data, "F5E", "Engine1", true))).toBe(true)
+			expect(data.Aircraft.F5E.Modules.Engine1).toBe(true)
+			expect(data.Aircraft.F5E.RP).toBe(rp)
+			expect(data.Credits).toBe(credits)
+			expect((Progression.setModuleFitted(data, "F5E", "Airframe1", true))).toBe(false) -- not bought
+		end)
+
+		it("a module can't come off under one built on it, or go on without its base", function()
+			local data = PlayerData.template()
+			data.Aircraft.F5E.RP = 5000
+			data.Credits = 50000
+			expect((Progression.buyModule(data, "F5E", "Engine1"))).toBe(true)
+			expect((Progression.buyModule(data, "F5E", "Engine2"))).toBe(true)
+			local ok, err = Progression.setModuleFitted(data, "F5E", "Engine1", false)
+			expect(ok).toBe(false)
+			expect(string.find(err or "", "Unfit", 1, true) ~= nil).toBe(true)
+			expect((Progression.setModuleFitted(data, "F5E", "Engine2", false))).toBe(true)
+			expect((Progression.setModuleFitted(data, "F5E", "Engine1", false))).toBe(true)
+			expect((Progression.setModuleFitted(data, "F5E", "Engine2", true))).toBe(false) -- Engine I is off
+		end)
+
+		it("unfitted modules have no effect and don't ride on the jet", function()
+			local f5 = AircraftData.get("F5E") :: any
+			local off = Progression.applyModules(f5, { Engine1 = false, Airframe1 = true })
+			expect(off.MaxThrust).toBe(f5.MaxThrust)
+			expect(off.MaxG > f5.MaxG).toBe(true)
+			expect(Progression.encodeModules({ Engine1 = false, Airframe1 = true })).toBe("Airframe1")
+		end)
+
 		it("modules change a copy of the airframe, never the original", function()
 			local f5 = AircraftData.get("F5E") :: any
 			local upgraded = Progression.applyModules(

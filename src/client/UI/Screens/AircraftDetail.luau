@@ -1,7 +1,8 @@
 --!strict
 -- Aircraft detail (UI-04): performance bars (stock vs with your modules), the upgrade modules with
 -- their costs and Fit buttons, the loadout, camo, and adding the jet to your lineup.
--- props: Data, AirframeId, OnBack(), OnBuyModule(id, moduleId) -> (ok, err), OnLineup(ids) -> (ok, err)
+-- props: Data, AirframeId, OnBack(), OnBuyModule(id, moduleId) -> (ok, err),
+--   OnSetModuleFitted(id, moduleId, fitted) -> (ok, err), OnLineup(ids) -> (ok, err)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -60,9 +61,24 @@ local function ModuleRow(props: any)
 	local pending, setPending = React.useState(false)
 	local message, setMessage = React.useState(nil :: string?)
 	local entry = data.Aircraft[airframeId]
-	local fitted = entry and entry.Modules[def.Id]
+	local state = entry and entry.Modules[def.Id] -- true fitted, false owned but off, nil not owned
+	local fitted, owned = state == true, state ~= nil
 	local rp, credits = Progression.moduleCost(airframeId, def)
-	local ok, reason = Progression.canBuyModule(data, airframeId, def.Id)
+	local ok, reason
+	if owned then
+		ok, reason = Progression.canSetModuleFitted(data, airframeId, def.Id, not fitted)
+	else
+		ok, reason = Progression.canBuyModule(data, airframeId, def.Id)
+	end
+	local function run(action: () -> (boolean, string?))
+		setPending(true)
+		setMessage(nil)
+		task.spawn(function()
+			local done, err = action()
+			setPending(false)
+			setMessage(if done then nil else err)
+		end)
+	end
 	return e(C.Panel, {
 		Size = UDim2.new(1, 0, 0, 64),
 		LayoutOrder = props.Order,
@@ -84,32 +100,40 @@ local function ModuleRow(props: any)
 			TextSize = 12,
 		}),
 		Cost = e(C.Label, {
-			Text = if fitted then "Fitted" else message or (if ok then `{rp} RP · {C.number(credits)} Cr` else reason),
+			Text = message or (if fitted
+				then (if ok then "Fitted" else `Fitted · {reason}`)
+				elseif owned then (if ok then "Owned · not fitted" else `Owned · {reason}`)
+				elseif ok then `{rp} RP · {C.number(credits)} Cr`
+				else reason),
 			Size = UDim2.new(1, -150, 0, 16),
 			Position = UDim2.fromOffset(12, 44),
-			Color = if fitted then Theme.Good elseif message or not ok then Theme.Warn else Theme.Text,
+			Color = if message
+				then Theme.Warn
+				elseif fitted then Theme.Good
+				elseif not ok then Theme.Warn
+				else Theme.Text,
 			TextSize = 12,
 		}),
-		Action = if fitted
-			then nil
-			else e(C.Button, {
-				Text = "FIT",
-				Style = "Primary",
-				Size = UDim2.fromOffset(120, 40),
-				Position = UDim2.new(1, -132, 0.5, -20),
-				TextSize = 14,
-				Pending = pending,
-				Disabled = not ok,
-				OnClick = function()
-					setPending(true)
-					setMessage(nil)
-					task.spawn(function()
-						local done, err = props.OnBuyModule(airframeId, def.Id)
-						setPending(false)
-						setMessage(if done then nil else err)
+		Action = e(C.Button, {
+			Text = if fitted then "UNFIT" elseif owned then "FIT" else "BUY",
+			Style = if fitted then "Ghost" else "Primary",
+			Size = UDim2.fromOffset(120, 40),
+			Position = UDim2.new(1, -132, 0.5, -20),
+			TextSize = 14,
+			Pending = pending,
+			Disabled = not ok,
+			OnClick = function()
+				if owned then
+					run(function()
+						return props.OnSetModuleFitted(airframeId, def.Id, not fitted)
 					end)
-				end,
-			}),
+				else
+					run(function()
+						return props.OnBuyModule(airframeId, def.Id)
+					end)
+				end
+			end,
+		}),
 	})
 end
 
@@ -194,6 +218,7 @@ local function AircraftDetail(props: any)
 				AirframeId = id,
 				Order = i + 1,
 				OnBuyModule = props.OnBuyModule,
+				OnSetModuleFitted = props.OnSetModuleFitted,
 			})
 		end
 	else

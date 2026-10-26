@@ -284,6 +284,8 @@ function Progression.buy(data: { [string]: any }, id: string): (boolean, string?
 end
 
 -- Modules ----------------------------------------------------------------------------------------
+-- Aircraft[id].Modules[moduleId] is true when the module is fitted, false when it's owned but taken
+-- off. Buying fits it; fitting and unfitting an owned module afterwards is free.
 
 function Progression.moduleDef(moduleId: string): Economy.ModuleDef?
 	for _, def in Economy.MODULES do
@@ -309,8 +311,8 @@ function Progression.canBuyModule(data: { [string]: any }, airframeId: string, m
 	if not def then
 		return false, "Unknown module"
 	end
-	if entry.Modules[moduleId] then
-		return false, "Already fitted"
+	if entry.Modules[moduleId] ~= nil then
+		return false, if entry.Modules[moduleId] then "Already fitted" else "Already owned: fit it"
 	end
 	if def.Requires and not entry.Modules[def.Requires] then
 		local required = Progression.moduleDef(def.Requires)
@@ -340,14 +342,65 @@ function Progression.buyModule(data: { [string]: any }, airframeId: string, modu
 	return true, nil
 end
 
+-- Whether an owned module can be fitted (fitted = true) or taken off. A module can't come off while a
+-- module built on it (its Requires) is fitted, and goes back on only once its own Requires is fitted.
+function Progression.canSetModuleFitted(
+	data: { [string]: any },
+	airframeId: string,
+	moduleId: string,
+	fitted: boolean
+): (boolean, string?)
+	local entry = data.Aircraft[airframeId]
+	if not (entry and entry.Owned) then
+		return false, "You don't own this jet"
+	end
+	local def = Progression.moduleDef(moduleId)
+	if not def or type(fitted) ~= "boolean" then
+		return false, "Unknown module"
+	end
+	local state = entry.Modules[moduleId]
+	if state == nil then
+		return false, "Buy this module first"
+	end
+	if state == fitted then
+		return false, if fitted then "Already fitted" else "Not fitted"
+	end
+	if fitted then
+		if def.Requires and not entry.Modules[def.Requires] then
+			local required = Progression.moduleDef(def.Requires)
+			return false, `Fit {if required then required.DisplayName else def.Requires} first`
+		end
+	else
+		for _, other in Economy.MODULES do
+			if other.Requires == moduleId and entry.Modules[other.Id] then
+				return false, `Unfit {other.DisplayName} first`
+			end
+		end
+	end
+	return true, nil
+end
+
+function Progression.setModuleFitted(
+	data: { [string]: any },
+	airframeId: string,
+	moduleId: string,
+	fitted: boolean
+): (boolean, string?)
+	local ok, err = Progression.canSetModuleFitted(data, airframeId, moduleId, fitted)
+	if ok then
+		data.Aircraft[airframeId].Modules[moduleId] = fitted
+	end
+	return ok, err
+end
+
 -- The airframe with its fitted modules applied (a modified copy; the original is never changed).
 function Progression.applyModules(airframe: { [string]: any }, modules: { [string]: boolean }?): { [string]: any }
 	local result = table.clone(airframe)
 	if not modules then
 		return result
 	end
-	for moduleId in modules do
-		local def = Progression.moduleDef(moduleId)
+	for moduleId, fitted in modules do
+		local def = fitted and Progression.moduleDef(moduleId)
 		if def then
 			for effect, value in def.Effects do
 				-- "<Field>X" multiplies, "<Field>Plus" adds

@@ -79,6 +79,12 @@ local definitions: { [string]: Definition } = {
 	ResearchAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
 	BuyAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
 	BuyModule = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
+	-- Fit (true) or take off (false) a module the player already owns
+	SetModuleFitted = {
+		direction = "Function",
+		args = { "string", "string", "boolean" },
+		rate = { burst = 4, perSecond = 2 },
+	},
 	SetLineup = { direction = "Function", args = { "table" }, rate = { burst = 4, perSecond = 2 } },
 	-- Your spawn request was refused: reason
 	SpawnRefused = { direction = "ServerToClient", args = { "string" } },

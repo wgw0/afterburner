@@ -2,7 +2,8 @@
 -- Player save data (DESIGN §9.3, DEVELOPMENT.md §22.2): schema v1, migrations, the replica sent to the
 -- owning client, and deltas. Pure, so DataService and the tests share it.
 --   Version / Migrations: MIGRATIONS[n](data) upgrades version n-1 to n; run on every load.
---   Aircraft[id]: { Owned, Researched, RP, Modules = { [moduleId] = true }, Mastery, Camo }
+--   Aircraft[id]: { Owned, Researched, RP, Modules = { [moduleId] = fitted (true) or owned but off (false) },
+--     Mastery, Camo }
 --   PilotXP is XP into the current level (TotalXP keeps the lifetime sum).
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
