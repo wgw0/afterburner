@@ -8,7 +8,9 @@
 --     masking, and open sea in the south where the coasts fall away.
 --   * One airbase on each landmass (flattened, asphalt runway, concrete apron, low-poly buildings).
 -- Only a thin shell under the surface is filled (thick enough to close steep slopes) and the sea is
--- shallow, so the data a client streams stays small.
+-- shallow, so the data a client streams stays small. Heights are rounded to whole studs and each column
+-- uses one material: free-floating heights gave every surface voxel a different fill level, which
+-- doesn't compress (the place file was 80 MB before rounding).
 -- Deterministic. Run each step in Edit mode; terrain() yields as it goes and can be split into parts:
 --   local S = require(game.ServerStorage.Tools.StraitBuilder)
 --   S.clear() S.terrain(1, 8) ... S.terrain(8, 8) S.airbases() S.spawns()
@@ -242,7 +244,7 @@ local function writeChunk(x0: number, z0: number)
 	for i = 0, columns + 1 do
 		local row = table.create(columns + 2)
 		for k = 0, columns + 1 do
-			row[k + 1] = at(x0 + (i - 1) * 4 + 2, z0 + (k - 1) * 4 + 2)
+			row[k + 1] = math.round(at(x0 + (i - 1) * 4 + 2, z0 + (k - 1) * 4 + 2))
 		end
 		heights[i + 1] = row
 	end
@@ -283,15 +285,11 @@ local function writeChunk(x0: number, z0: number)
 			local h = heights[i + 1][k + 1]
 			local bottom = bottoms[i][k]
 			local surface = surfaceMaterial(px, z0 + (k - 1) * 4 + 2, h, slopes[i][k])
-			local under = if surface == Enum.Material.Snow or surface == Enum.Material.Rock
-				then Enum.Material.Rock
-				elseif surface == Enum.Material.Sand then Enum.Material.Sand
-				else Enum.Material.Ground
 			for j = 1, layers do
 				local yb = y0 + (j - 1) * 4
 				local solid = math.clamp((h - yb) / 4, 0, 1)
 				if yb + 4 > bottom and solid > 0 then
-					mx[j][k] = if h - yb < 8 then surface else under
+					mx[j][k] = surface
 					ox[j][k] = solid
 				end
 				if solid < 0.5 and yb < WATER then
