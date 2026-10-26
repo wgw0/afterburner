@@ -159,6 +159,24 @@ local PANEL_MIN_HEIGHT = 0.55
 -- Looks at the jet's own solid parts on the centreline that span the panel's distance ahead.
 local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment): number
 	local eyePos = eye.Position -- root space
+	-- The canopy glass sits on the cockpit sill, so its lowest point is the fuselage top around the
+	-- pilot. Bounding boxes can't tell: a one-piece mesh fuselage's box reaches up to the spine.
+	local canopy = jet:FindFirstChild("Canopy")
+	if canopy and canopy:IsA("BasePart") then
+		local localCF = root.CFrame:ToObjectSpace(canopy.CFrame)
+		local half = canopy.Size / 2
+		local lowest = math.huge
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				for _, sz in { -1, 1 } do
+					lowest = math.min(lowest, (localCF * Vector3.new(half.X * sx, half.Y * sy, half.Z * sz)).Y)
+				end
+			end
+		end
+		if lowest < eyePos.Y then
+			return lowest - eyePos.Y
+		end
+	end
 	local zNear, zFar = eyePos.Z + PANEL_DISTANCE + 1, eyePos.Z + PANEL_DISTANCE - 1
 	local highest = -math.huge
 	for _, part in jet:GetChildren() do
@@ -233,26 +251,29 @@ local function buildCockpit(jet: Model)
 		model
 	part("SillL", Vector3.new(0.18, 0.5, 4), CFrame.new(-1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
 	part("SillR", Vector3.new(0.18, 0.5, 4), CFrame.new(1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
-	-- Canopy bow and rails
-	part(
-		"BowL",
-		Vector3.new(0.05, 1.7, 0.05),
-		CFrame.new(-0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(-18)),
-		eyeCF,
-		root,
-		FRAME_COLOUR
-	).Parent =
-		model
-	part(
-		"BowR",
-		Vector3.new(0.05, 1.7, 0.05),
-		CFrame.new(0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(18)),
-		eyeCF,
-		root,
-		FRAME_COLOUR
-	).Parent =
-		model
-	part("BowTop", Vector3.new(1.3, 0.05, 0.05), CFrame.new(0, 1.05, -1.9), eyeCF, root, FRAME_COLOUR).Parent = model
+	-- Canopy bow and rails, unless the jet's model has its own canopy frame
+	if not jet:FindFirstChild("CanopyFrame") then
+		part(
+			"BowL",
+			Vector3.new(0.05, 1.7, 0.05),
+			CFrame.new(-0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(-18)),
+			eyeCF,
+			root,
+			FRAME_COLOUR
+		).Parent =
+			model
+		part(
+			"BowR",
+			Vector3.new(0.05, 1.7, 0.05),
+			CFrame.new(0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(18)),
+			eyeCF,
+			root,
+			FRAME_COLOUR
+		).Parent =
+			model
+		part("BowTop", Vector3.new(1.3, 0.05, 0.05), CFrame.new(0, 1.05, -1.9), eyeCF, root, FRAME_COLOUR).Parent =
+			model
+	end
 	-- Gunsight glass (analogue kit)
 	local sight = part(
 		"Gunsight",

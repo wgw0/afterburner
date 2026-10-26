@@ -17,9 +17,23 @@ local Units = require(Shared.Units)
 local INTERP_DELAY = 0.1
 local MAX_EXTRAPOLATE = 0.2
 local CHAFF_LIFETIME = 4
+-- A missile is drawn INTERP_DELAY in the past while the jet that fired it is drawn now, so at launch it
+-- would appear tens of metres behind its rail. A new missile is drawn in the present instead
+-- (extrapolated from its launch velocity), starting on the rail as this client sees the launcher, and
+-- eases back to the interpolated track over LAUNCH_BLEND seconds.
+local LAUNCH_BLEND = 1.0
 
 type Snapshot = { time: number, position: Vector3, velocity: Vector3, burning: boolean }
-type MissileView = { part: BasePart, trail: Trail, flame: PointLight, snapshots: { Snapshot } }
+type MissileView = {
+	part: BasePart,
+	trail: Trail,
+	flame: PointLight,
+	snapshots: { Snapshot },
+	ownerJetId: number,
+	born: number, -- os.clock() when it appeared
+	railOffset: Vector3?, -- from its drawn launch point to the launcher's rail, faded out over LAUNCH_BLEND
+	railChecked: boolean,
+}
 type FlareView = { flare: Countermeasures.Flare, part: BasePart, light: PointLight }
 
 local MissileViewController = {
@@ -65,7 +79,41 @@ local function newMissileView(position: Vector3, velocity: Vector3): MissileView
 	flame.Brightness = 4
 	flame.Parent = a0
 	part.Parent = folder
-	return { part = part, trail = trail, flame = flame, snapshots = {} }
+	return {
+		part = part,
+		trail = trail,
+		flame = flame,
+		snapshots = {},
+		ownerJetId = 0,
+		born = os.clock(),
+		railChecked = false,
+	}
+end
+
+-- The launcher's hardpoint the missile left from, as this client draws the launcher right now: the one
+-- whose sideways offset matches the launch point (the lag behind the jet is along its flight path).
+local function launchRail(ownerJetId: number, position: Vector3): Attachment?
+	local jets = workspace:FindFirstChild("Jets")
+	if not (jets and ownerJetId ~= 0) then
+		return nil
+	end
+	for _, model in jets:GetChildren() do
+		local root = model:IsA("Model") and model:GetAttribute("JetId") == ownerJetId and model.PrimaryPart
+		if root then
+			local side = root.CFrame:PointToObjectSpace(position).X
+			local best, bestGap = nil, math.huge
+			for _, a in root:GetChildren() do
+				if a:IsA("Attachment") and string.match(a.Name, "^Hardpoint%d+$") then
+					local gap = math.abs(a.Position.X - side)
+					if gap < bestGap then
+						best, bestGap = a, gap
+					end
+				end
+			end
+			return best
+		end
+	end
+	return nil
 end
 
 local function sample(view: MissileView, renderTime: number): (Vector3?, Vector3?, boolean)
@@ -160,10 +208,26 @@ local function spawnChaff(position: Vector3)
 end
 
 local function update(dt: number)
-	local renderTime = workspace:GetServerTimeNow() - INTERP_DELAY
+	local serverNow = workspace:GetServerTimeNow()
+	local clock = os.clock()
 	for _, view in views do
-		local position, velocity, burning = sample(view, renderTime)
+		local t = math.min((clock - view.born) / LAUNCH_BLEND, 1)
+		local ease = t * t * (3 - 2 * t) -- 0 at launch, 1 once settled
+		local position, velocity, burning = sample(view, serverNow - INTERP_DELAY * ease)
 		if position and velocity then
+			if not view.railChecked then
+				view.railChecked = true
+				local rail = launchRail(view.ownerJetId, position)
+				if rail and (rail.WorldPosition - position).Magnitude < 400 then
+					view.railOffset = rail.WorldPosition - position
+				end
+			end
+			if view.railOffset then
+				position += view.railOffset * (1 - ease)
+				if t >= 1 then
+					view.railOffset = nil
+				end
+			end
 			local dir = if velocity.Magnitude > 1 then velocity.Unit else view.part.CFrame.LookVector
 			view.part.CFrame = CFrame.lookAt(position, position + dir)
 			view.flame.Brightness = if burning then 4 + math.random() * 2 else 0
@@ -204,6 +268,12 @@ function MissileViewController:Init()
 		"MissileSpawned",
 		function(id: number, _weapon: string, ownerJetId: number, position: Vector3, velocity: Vector3)
 			local view = newMissileView(position, velocity)
+			view.ownerJetId = ownerJetId
+			-- Show it on the rail from the first frame, before update() sets up the blend
+			local rail = launchRail(ownerJetId, position)
+			if rail and (rail.WorldPosition - position).Magnitude < 400 then
+				view.part.CFrame = CFrame.lookAt(rail.WorldPosition, rail.WorldPosition + velocity)
+			end
 			table.insert(
 				view.snapshots,
 				{ time = workspace:GetServerTimeNow(), position = position, velocity = velocity, burning = true }
