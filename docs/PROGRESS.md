@@ -170,6 +170,12 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
   - Cockpit Mouse Aim keeps the horizon mostly level (25% of the jet's roll) like the chase view, so the mouse's directions don't rotate mid-turn; the HUD horizon now follows the camera's roll.
   - AI pilots look ahead along their flight path for terrain, not just straight down.
   - Spawn points offer six slots each: with 23 AI jets they had been spawning on top of each other and colliding (24 collisions in the first seconds of a stress match; none after the fix).
+- Second round of playtest feedback (Will): raise the eye, the gunsight goes opaque over water, the RWR's plane emoji is hard to read, the lock-on is confusing, and are there lock sounds?
+  - Lock symbology: grey box = contact, green circle = lockable, green square = locking, red square = locked; a big red FIRE above the HUD when locked and in the launch zone (OUT OF RANGE / TOO CLOSE otherwise). Radar locks now build up over a 1 s lock-on like IR locks. Checked in play against a drone: green square → red square → TOO CLOSE → FIRE.
+  - The round scope is now a situation display: green jet symbol, the selected missile's lock cone, contact dots (red locked, green lockable), RWR marks on the rim.
+  - Tones from one sine (`Assets.Audio.Tone`): IR growl and lock tone, radar lock-on beeps and lock beep, RWR search beep, lock double-beep, missile alarm. Checked through the sound state (pitch and volume switching), not by ear.
+  - Cockpit eye 0.2 m higher, panel top lower (about 15° view over the nose), fixed-size dials, canopy hidden from inside, gunsight no longer Glass (Roblox draws Glass opaque over water).
+  - Terrain heights rounded to whole studs: the place file went from 80 MB to 25 MB with no visible change.
 
 **Also done in Phase 4:** AI difficulty profiles (Easy/Normal/Hard/Ace) and the Extend state, early parts of AI-04/05; debug panel buttons for mode switching, the stress mode, ending a match and forcing the touch UI; server step-cost meter (`ServerStepMs`, `ServerStepPeakMs`, `ServerHz` attributes). Tests: 202 → 269.
 
