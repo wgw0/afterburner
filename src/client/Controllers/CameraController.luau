@@ -6,6 +6,8 @@
 --     so the jet always stays centred on screen. In Mouse Aim the view follows the aim with a level
 --     horizon; in Direct it follows the jet's nose, smoothed.
 -- Field of view widens a little with speed and G for a sense of speed (Z zooms in).
+-- Snap views (CAM-03): hold Left Alt + an arrow to look left / right / back / up.
+-- When your jet is destroyed, the camera orbits the explosion for a few seconds (AIR-03).
 -- With no jet, the camera orbits the test range.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +15,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Spring = require(Shared.Util.Spring)
 local Units = require(Shared.Units)
@@ -24,6 +27,13 @@ local BASE_FOV = 70
 local ZOOM_FOV = 35
 local SPEED_FOV = 10 -- extra degrees at high speed
 local G_FOV = 6 -- extra degrees in a hard pull
+local DEATH_CAM_SECONDS = 3.5
+local SNAP_VIEWS: { [Enum.KeyCode]: Vector2 } = { -- (yaw, pitch) in degrees
+	[Enum.KeyCode.Left] = Vector2.new(100, 5),
+	[Enum.KeyCode.Right] = Vector2.new(-100, 5),
+	[Enum.KeyCode.Down] = Vector2.new(170, 25),
+	[Enum.KeyCode.Up] = Vector2.new(0, 70),
+}
 local DEFAULT_CHASE_OFFSET = Vector3.new(0, 12, 80) -- studs (up, behind) if the model has no ChaseCam
 
 local CameraController = {
@@ -39,6 +49,22 @@ local chaseLook = Spring.new(Vector3.new(0, 0, -1), 7, 1)
 local chaseUp = Spring.new(Vector3.new(0, 1, 0), 5, 1)
 local fov = Spring.new(BASE_FOV, 4, 1)
 local orbitAngle = 0
+local myJetId: number? = nil
+local deathUntil = 0
+local deathPosition = Vector3.zero
+
+-- Snap view offsets while Left Alt is held, else nil.
+local function snapView(): Vector2?
+	if not UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) then
+		return nil
+	end
+	for key, view in SNAP_VIEWS do
+		if UserInputService:IsKeyDown(key) then
+			return Vector2.new(math.rad(view.X), math.rad(view.Y))
+		end
+	end
+	return nil
+end
 
 local function safeLookAt(position: Vector3, direction: Vector3, up: Vector3): CFrame
 	if math.abs(direction.Unit:Dot(up.Unit)) > 0.999 then
@@ -69,9 +95,12 @@ local function cockpitView(root: BasePart, dt: number): CFrame
 	local shift = gShift:Update(dt, math.clamp((g - 1) * 0.04, -0.15, 0.35))
 	local position = eyeCF.Position - jetCF.UpVector * shift
 
-	local yaw = headYaw:Update(dt, InputController.freeLookYaw)
-	local pitch = headPitch:Update(dt, InputController.freeLookPitch)
-	local base = if InputController.scheme == "MouseAim" and not InputController.freeLook
+	local snap = snapView()
+	local yaw = headYaw:Update(dt, if snap then snap.X else InputController.freeLookYaw)
+	local pitch = headPitch:Update(dt, if snap then snap.Y else InputController.freeLookPitch)
+	local base = if InputController.scheme == "MouseAim"
+			and not InputController.freeLook
+			and not snap
 		then safeLookAt(position, InputController.aimDirection, jetCF.UpVector)
 		else CFrame.new(position) * jetCF.Rotation
 	return base * CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
@@ -123,6 +152,12 @@ local function update(dt: number)
 	camera.FieldOfView = fov:Update(dt, targetFov())
 
 	local root = FlightController.root
+	if os.clock() < deathUntil then
+		orbitAngle += dt * 0.25
+		local offset = Vector3.new(math.cos(orbitAngle) * 160, 60, math.sin(orbitAngle) * 160)
+		camera.CFrame = CFrame.lookAt(deathPosition + offset, deathPosition)
+		return
+	end
 	if not (root and FlightController.jet) then
 		orbitAngle += dt * 0.05
 		local focus = Vector3.new(300, 100, 0)
@@ -132,6 +167,10 @@ local function update(dt: number)
 	end
 
 	camera.CFrame = if CameraController.mode == "Cockpit" then cockpitView(root, dt) else chaseView(root, dt)
+end
+
+function CameraController:InDeathCam(): boolean
+	return os.clock() < deathUntil
 end
 
 function CameraController:SetMode(mode: "Cockpit" | "Chase")
@@ -148,7 +187,17 @@ function CameraController:Init()
 			self:SetMode(if self.mode == "Cockpit" then "Chase" else "Cockpit")
 		end
 	end)
+	Net.Client.on("JetDestroyed", function(jetId: number, _killer: number, cause: string, position: Vector3)
+		local died = cause == "Shot" or cause == "Crash" or cause == "Collision"
+		if jetId == myJetId and died then
+			deathUntil = os.clock() + DEATH_CAM_SECONDS
+			deathPosition = position
+		end
+	end)
 	FlightController.JetChanged:Connect(function(jet)
+		if jet then
+			myJetId = jet:GetAttribute("JetId") :: number?
+		end
 		local root = jet and jet.PrimaryPart
 		if root then
 			chaseLook:Reset(root.CFrame.LookVector)

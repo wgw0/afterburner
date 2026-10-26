@@ -100,9 +100,12 @@ end
 
 -- The ControlInput for this frame.
 function InputController:GetControlInput(state: FlightState, airframe: any): ControlInput
-	local keyRoll = keyAxis(Enum.KeyCode.E, Enum.KeyCode.Q) + keyAxis(Enum.KeyCode.Right, Enum.KeyCode.Left)
+	-- Arrows fly the jet unless Left Alt is held (then they're snap views, see CameraController).
+	local arrows = not UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt)
+	local keyRoll = keyAxis(Enum.KeyCode.E, Enum.KeyCode.Q)
+		+ (if arrows then keyAxis(Enum.KeyCode.Right, Enum.KeyCode.Left) else 0)
 	local keyYaw = keyAxis(Enum.KeyCode.D, Enum.KeyCode.A)
-	local keyPitch = keyAxis(Enum.KeyCode.Down, Enum.KeyCode.Up) -- pull back = nose up
+	local keyPitch = if arrows then keyAxis(Enum.KeyCode.Down, Enum.KeyCode.Up) else 0 -- pull back = nose up
 
 	local result: ControlInput
 	if self.scheme == "MouseAim" then

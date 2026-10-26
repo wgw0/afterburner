@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Environment = require(Shared.Config.Environment)
+local Net = require(Shared.Net)
 local FlightModel = require(Shared.FlightModel)
 local Units = require(Shared.Units)
 
@@ -71,7 +72,7 @@ local function build()
 
 	local panel = Instance.new("Frame")
 	panel.Position = UDim2.new(1, -360, 0, 70)
-	panel.Size = UDim2.fromOffset(340, 640)
+	panel.Size = UDim2.fromOffset(340, 720)
 	panel.BackgroundColor3 = Color3.fromRGB(10, 14, 22)
 	panel.BackgroundTransparency = 0.15
 	panel.Parent = gui
@@ -145,8 +146,23 @@ local function build()
 		print(export())
 	end)
 
+	for i, mode in { "ahead", "circle" } do
+		local droneButton = Instance.new("TextButton")
+		droneButton.LayoutOrder = 100 + i
+		droneButton.Size = UDim2.new(1, 0, 0, 24)
+		droneButton.BackgroundColor3 = Color3.fromRGB(43, 58, 85)
+		droneButton.Font = Enum.Font.GothamBold
+		droneButton.TextColor3 = Color3.new(1, 1, 1)
+		droneButton.TextSize = 13
+		droneButton.Text = if mode == "ahead" then "SPAWN TARGET DRONE (AHEAD)" else "SPAWN TARGET DRONE (CIRCLING)"
+		droneButton.Parent = panel
+		droneButton.Activated:Connect(function()
+			Net.Client.fire("DebugSpawnDrone", mode)
+		end)
+	end
+
 	readout = Instance.new("TextLabel")
-	readout.LayoutOrder = 101
+	readout.LayoutOrder = 110
 	readout.Size = UDim2.new(1, 0, 0, 200)
 	readout.BackgroundTransparency = 1
 	readout.Font = Enum.Font.Code

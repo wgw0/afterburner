@@ -10,6 +10,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Net = require(Shared.Net)
 
+local CameraController = require(script.Parent.CameraController)
 local FlightController = require(script.Parent.FlightController)
 
 local ORANGE = Color3.fromRGB(255, 138, 61)
@@ -128,11 +129,35 @@ function SpawnController:Start()
 		end
 	end)
 
+	local myJetId: number? = nil
 	FlightController.JetChanged:Connect(function(jet)
-		gui.Enabled = jet == nil
+		if jet then
+			myJetId = jet:GetAttribute("JetId") :: number?
+			gui.Enabled = false
+			return
+		end
+		-- Let the death camera play before the menu comes back.
+		task.spawn(function()
+			while CameraController:InDeathCam() do
+				task.wait(0.1)
+			end
+			gui.Enabled = FlightController.jet == nil
+		end)
 	end)
-	FlightController.Crashed:Connect(function()
-		statusLabel.Text = "You crashed. Pick a jet or press R to fly again."
+	Net.Client.on("JetDestroyed", function(jetId: number, killerUserId: number, cause: string)
+		if jetId ~= myJetId then
+			return
+		end
+		local killer = if killerUserId ~= 0 then Players:GetPlayerByUserId(killerUserId) else nil
+		local reason = if cause == "Shot"
+			then "You were shot down"
+			elseif cause == "Collision" then "Mid-air collision"
+			elseif cause == "Crash" then "You crashed"
+			else "Your jet was lost"
+		if killer then
+			reason ..= if cause == "Shot" then ` by {killer.Name}` else ` (forced by {killer.Name})`
+		end
+		statusLabel.Text = `{reason}. Pick a jet or press R to fly again.`
 	end)
 	gui.Enabled = FlightController.jet == nil
 end

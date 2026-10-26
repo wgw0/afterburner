@@ -31,5 +31,6 @@ return {
 	MaxRollRate = 65, -- scaled from the F-5E playtest tuning
 	MaxPitchRate = 17,
 	MaxYawRate = 8,
+	Gun = "GSh23L",
 	MaxMach = 2.05,
 }

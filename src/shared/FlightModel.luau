@@ -206,10 +206,12 @@ local function substep(
 		* math.clamp(f.q / Flight.Q_REFERENCE, 0.2, 1)
 		* highSpeedFade
 		* ((mods and mods.roll) or 1)
+	-- Damage: a hurt wing makes less lift, so the jet rolls toward it (FLT-10)
+	rollTarget += ((mods and mods.rollBias) or 0) * math.clamp(f.q / Flight.Q_REFERENCE, 0.2, 1.5)
 	local rollRate = s.rollRate + (rollTarget - s.rollRate) * math.min(1, h * Flight.ROLL_RATE_RESPONSE)
 
 	-- Yaw: rudder plus weathervane stability (nose swings toward the airflow)
-	local yawRate = math.clamp(input.yaw, -1, 1) * airframe.MaxYawRate * RAD * auth
+	local yawRate = math.clamp(input.yaw, -1, 1) * airframe.MaxYawRate * RAD * auth * ((mods and mods.yaw) or 1)
 		+ Flight.SIDESLIP_STABILITY * f.sideslip
 
 	-- Rotate: pitch about right, roll about forward, yaw-right about -up

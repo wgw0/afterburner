@@ -30,10 +30,12 @@ export type FlightState = {
 }
 
 export type Modifiers = {
-	thrust: number?,
-	lift: number?,
-	roll: number?,
-	pitch: number?,
+	thrust: number?, -- multiplier
+	lift: number?, -- multiplier
+	roll: number?, -- roll authority multiplier
+	pitch: number?, -- pitch authority multiplier
+	yaw: number?, -- yaw authority multiplier
+	rollBias: number?, -- rad/s of uncommanded roll (damaged wing), right positive
 }
 
 export type Airframe = {
@@ -64,6 +66,8 @@ export type Airframe = {
 	MaxPitchRate: number, -- deg/s
 	MaxYawRate: number, -- deg/s
 	MaxMach: number,
+	Gun: string, -- WeaponData id
+	ComponentHealth: { [string]: number }?, -- overrides DamageModel defaults
 	ThrustVectoring: boolean?,
 	Stealth: number?,
 }

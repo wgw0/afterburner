@@ -21,6 +21,7 @@ local function num(min: number, max: number, integer: boolean?): Rule
 end
 local STRING: Rule = { kind = "string" }
 local BOOLEAN: Rule = { kind = "boolean" }
+local TABLE: Rule = { kind = "table" }
 local function enum(values: { string }): Rule
 	return { kind = "enum", values = values }
 end
@@ -54,17 +55,23 @@ local REQUIRED: { [string]: Rule } = {
 	MaxPitchRate = num(5, 90),
 	MaxYawRate = num(1, 60),
 	MaxMach = num(0.5, 3.5),
+	Gun = STRING, -- a WeaponData id (cross-checked in WeaponData.spec and at server boot)
 }
 
 local OPTIONAL: { [string]: Rule } = {
 	ThrustVectoring = BOOLEAN,
 	Stealth = num(0, 1),
+	ComponentHealth = TABLE,
 }
 
 local function check(field: string, value: any, rule: Rule): string?
 	if rule.kind == "string" then
 		if type(value) ~= "string" or value == "" then
 			return `{field} must be a non-empty string`
+		end
+	elseif rule.kind == "table" then
+		if type(value) ~= "table" then
+			return `{field} must be a table`
 		end
 	elseif rule.kind == "boolean" then
 		if type(value) ~= "boolean" then

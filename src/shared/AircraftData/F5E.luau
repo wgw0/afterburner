@@ -31,5 +31,6 @@ return {
 	MaxRollRate = 80, -- playtest-tuned 2026-10-25
 	MaxPitchRate = 20,
 	MaxYawRate = 10,
+	Gun = "M39A2_Twin",
 	MaxMach = 1.6,
 }

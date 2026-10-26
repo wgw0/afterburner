@@ -15,7 +15,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Ballistics = require(Shared.Ballistics)
+local Net = require(Shared.Net)
 local Units = require(Shared.Units)
+local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
@@ -51,6 +54,20 @@ local warningLabel: TextLabel
 local aimReticle: Frame
 local fuelLabel: TextLabel
 local helpLabel: TextLabel
+-- HUD-02: guns
+local leadMarker: Frame
+local hitMarker: TextLabel
+local hitUntil = 0
+local killFeed: Frame
+local feedLines: { { label: TextLabel, expires: number } } = {}
+local targetMarkers: { [Model]: { box: Frame, label: TextLabel } } = {}
+local markerLayer: Frame
+
+local TARGET_RANGE = 5000 -- real metres: show markers on jets within this
+local LEAD_RANGE = 1600 -- real metres: show the gun lead indicator within this
+local LEAD_CONE = 30 -- degrees off the nose
+local FEED_SECONDS = 7
+local FEED_LINES = 5
 
 ---------------------------------------------------------------------------
 -- Building blocks
@@ -222,7 +239,7 @@ local function build(): ScreenGui
 	for _, name in { "G", "Mach", "AoA" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Left)
 	end
-	for _, name in { "VS", "Throttle" } do
+	for _, name in { "VS", "Throttle", "Gun" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Right)
 	end
 
@@ -251,6 +268,37 @@ local function build(): ScreenGui
 	helpLabel.Position = UDim2.new(1, -20, 1, -20)
 	helpLabel.Size = UDim2.fromOffset(560, 16)
 	helpLabel.TextTransparency = 0.35
+
+	-- Gun lead indicator: put the gun cross on it to hit the target.
+	leadMarker = circle(box, 22, 2, GREEN)
+	local leadDot = line(leadMarker, 4, 4)
+	leadDot.AnchorPoint = Vector2.new(0.5, 0.5)
+	leadDot.Position = UDim2.fromScale(0.5, 0.5)
+	leadMarker.Visible = false
+
+	hitMarker = text(box, 30)
+	hitMarker.AnchorPoint = Vector2.new(0.5, 0.5)
+	hitMarker.Size = UDim2.fromOffset(40, 34)
+	hitMarker.Text = "✕"
+	hitMarker.TextColor3 = AMBER
+	hitMarker.Visible = false
+
+	-- Markers on other jets, drawn over the whole screen (not clipped to the HUD box).
+	markerLayer = Instance.new("Frame")
+	markerLayer.BackgroundTransparency = 1
+	markerLayer.Size = UDim2.fromScale(1, 1)
+	markerLayer.Parent = gui
+
+	killFeed = Instance.new("Frame")
+	killFeed.BackgroundTransparency = 1
+	killFeed.AnchorPoint = Vector2.new(1, 0)
+	killFeed.Position = UDim2.new(1, -20, 0, 70)
+	killFeed.Size = UDim2.fromOffset(420, FEED_LINES * 22)
+	killFeed.Parent = gui
+	local layout = Instance.new("UIListLayout")
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = killFeed
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	return gui
@@ -295,6 +343,41 @@ local function layoutTape(tape: Tape, t: TapeLayout)
 		if labelled then
 			label.Text = t.format(tickValue)
 		end
+	end
+end
+
+local function marker(model: Model): { box: Frame, label: TextLabel }
+	local existing = targetMarkers[model]
+	if existing then
+		return existing
+	end
+	local f = Instance.new("Frame")
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Size = UDim2.fromOffset(26, 26)
+	f.BackgroundTransparency = 1
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = RED
+	stroke.Thickness = 1.5
+	stroke.Parent = f
+	f.Parent = markerLayer
+	local l = text(markerLayer, 13)
+	l.AnchorPoint = Vector2.new(0.5, 0)
+	l.Size = UDim2.fromOffset(160, 16)
+	l.TextColor3 = RED
+	local entry = { box = f, label = l }
+	targetMarkers[model] = entry
+	return entry
+end
+
+local function addFeedLine(message: string, colour: Color3)
+	local l = text(killFeed, 15, Enum.TextXAlignment.Right)
+	l.Size = UDim2.fromOffset(420, 20)
+	l.Text = message
+	l.TextColor3 = colour
+	l.LayoutOrder = math.floor(os.clock() * 1000)
+	table.insert(feedLines, { label = l, expires = os.clock() + FEED_SECONDS })
+	while #feedLines > FEED_LINES do
+		table.remove(feedLines, 1).label:Destroy()
 	end
 end
 
@@ -440,6 +523,15 @@ local function update()
 		readouts.Throttle.Text = if input.afterburner then "AB" else `THR {math.round(input.throttle * 100)}`
 		readouts.Throttle.TextColor3 = if input.afterburner then AMBER else GREEN
 	end
+	local jetModel = FlightController.jet
+	if jetModel then
+		readouts.Gun.Position = UDim2.fromOffset(rightX, bottomY)
+		local ammo = (jetModel:GetAttribute("Ammo") :: number?) or 0
+		local heat = (jetModel:GetAttribute("GunHeat") :: number?) or 0
+		local jammed = jetModel:GetAttribute("GunJammed") == true
+		readouts.Gun.Text = if jammed then "GUN JAM" elseif heat > 0.75 then `GUN {ammo} HOT` else `GUN {ammo}`
+		readouts.Gun.TextColor3 = if jammed or ammo == 0 then RED elseif heat > 0.75 then AMBER else GREEN
+	end
 
 	-- Warnings, most urgent first
 	local warning = ""
@@ -457,6 +549,78 @@ local function update()
 	warningLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72)
 	warningLabel.Text = warning
 	warningLabel.Visible = warning ~= "" and (os.clock() % 0.6) < 0.4
+
+	-- Targets: markers on other jets, and the gun lead indicator on the best one ahead
+	local myPosition = root.Position
+	local myVelocity = state.velocity
+	local gun = jetModel and WeaponData.get(jetModel:GetAttribute("Gun") :: string)
+	local bestOff, bestModel = math.huge, nil
+	local seen: { [Model]: boolean } = {}
+	for _, model in workspace.Jets:GetChildren() do
+		if not model:IsA("Model") or model == jetModel then
+			continue
+		end
+		local otherRoot = model.PrimaryPart
+		if not otherRoot then
+			continue
+		end
+		local range = Units.toMetres((otherRoot.Position - myPosition).Magnitude)
+		if range > TARGET_RANGE then
+			continue
+		end
+		seen[model] = true
+		local m = marker(model)
+		local screen, onScreen = camera:WorldToViewportPoint(otherRoot.Position)
+		m.box.Visible = onScreen and screen.Z > 0
+		m.label.Visible = m.box.Visible
+		m.box.Position = UDim2.fromOffset(screen.X, screen.Y)
+		m.label.Position = UDim2.fromOffset(screen.X, screen.Y + 16)
+		m.label.Text = string.format("%s %.1fkm", (model:GetAttribute("PilotName") :: string?) or "?", range / 1000)
+		local off = math.deg(math.acos(math.clamp((otherRoot.Position - myPosition).Unit:Dot(look), -1, 1)))
+		if range <= LEAD_RANGE and off <= LEAD_CONE and off < bestOff then
+			bestOff, bestModel = off, model
+		end
+	end
+	for model, m in targetMarkers do
+		if not seen[model] then
+			m.box:Destroy()
+			m.label:Destroy()
+			targetMarkers[model] = nil
+		end
+	end
+
+	leadMarker.Visible = false
+	if gun and bestModel and bestModel.PrimaryPart then
+		local target = bestModel.PrimaryPart
+		local dir = Ballistics.leadDirection(
+			myPosition,
+			myVelocity,
+			target.Position,
+			Units.velocityFromStuds(target.AssemblyLinearVelocity),
+			gun.MuzzleVelocity,
+			gun.Lifetime
+		)
+		if dir then
+			local p, visible = project(camera, dir)
+			leadMarker.Visible = visible and inside(p, 10, 10)
+			leadMarker.Position = toBox(p)
+		end
+	end
+
+	hitMarker.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	hitMarker.Visible = os.clock() < hitUntil
+
+	local now = os.clock()
+	for i = #feedLines, 1, -1 do
+		local entry = feedLines[i]
+		local left = entry.expires - now
+		if left <= 0 then
+			entry.label:Destroy()
+			table.remove(feedLines, i)
+		else
+			entry.label.TextTransparency = math.clamp(1 - left, 0, 1)
+		end
+	end
 
 	-- Outside the box
 	if InputController.scheme == "MouseAim" then
@@ -476,6 +640,18 @@ end
 
 function HUDController:Start()
 	self.gui = build()
+	Net.Client.on("HitConfirm", function()
+		hitUntil = os.clock() + 0.12
+	end)
+	Net.Client.on("KillFeed", function(killer: string, victim: string, weapon: string, assists: { string })
+		local me = Players.LocalPlayer.Name
+		local message = if killer ~= "" then `{killer} ▸ {victim}  [{weapon}]` else `{victim}  [{weapon}]`
+		if #assists > 0 then
+			message ..= `  +{table.concat(assists, ", ")}`
+		end
+		local involved = killer == me or victim == me or table.find(assists, me) ~= nil
+		addFeedLine(message, if involved then AMBER else GREEN)
+	end)
 	-- After the camera has moved this frame, so projections match what's on screen.
 	RunService:BindToRenderStep("AfterburnerHUD", Enum.RenderPriority.Camera.Value + 2, update)
 end

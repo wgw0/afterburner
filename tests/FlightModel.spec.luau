@@ -152,6 +152,24 @@ return function(ctx)
 		end)
 	end)
 
+	describe("damage modifiers (FLT-10)", function()
+		it("a damaged left wing rolls the jet left with the stick centred", function()
+			local DamageModel = require(ctx.Shared.DamageModel)
+			local mods = DamageModel.modifiers({ WingL = 0.2, WingR = 1, Engine = 1, Tail = 1 })
+			local s = levelState(F5E, 3000, 220)
+			for _ = 1, 60 do
+				s = FlightModel.step(s, input(), F5E, 1 / 60, mods)
+			end
+			expect(s.cframe.RightVector.Y).toBeGreaterThan(0.05) -- right wing up = rolled left
+		end)
+		it("a dead engine gives no thrust", function()
+			local DamageModel = require(ctx.Shared.DamageModel)
+			local mods = DamageModel.modifiers({ Engine = 0 })
+			local forces = FlightModel.computeForces(levelState(F5E, 3000, 220), input({ throttle = 1 }), F5E, mods)
+			expect(forces.thrust.Magnitude).toBe(0)
+		end)
+	end)
+
 	describe("pilot G tolerance", function()
 		it("stress builds above the onset and decays below it", function()
 			local s = levelState(F5E, 3000, 220)
