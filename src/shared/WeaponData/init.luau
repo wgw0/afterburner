@@ -41,6 +41,7 @@ export type Missile = {
 	ProximityFuse: number, -- real metres
 	Damage: number,
 	Lifetime: number, -- seconds before self-destruct
+	ActiveRange: number?, -- ARH only: real metres from the target where its own seeker goes active
 }
 
 local MISSILE_CLASSES = { "IR_Rear", "IR_All", "IR_Adv", "SARH", "ARH" }
@@ -122,6 +123,12 @@ function WeaponData.validate(id: string, data: any): { string }
 			table.insert(problems, `{id}: missing {field}`)
 		elseif type(value) ~= "number" or value ~= value or value < range[1] or value > range[2] then
 			table.insert(problems, `{id}: {field} = {tostring(value)} is outside {range[1]}..{range[2]}`)
+		end
+	end
+	if data.Class == "ARH" then
+		local range = data.ActiveRange
+		if type(range) ~= "number" or range < 1000 or range > 40000 then
+			table.insert(problems, `{id}: ARH missiles need ActiveRange (1000..40000 m)`)
 		end
 	end
 	if data.Id ~= nil and data.Id ~= id then

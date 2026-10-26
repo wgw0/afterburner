@@ -249,4 +249,76 @@ function Guidance.launchZone(
 	return rMax, rMax * 0.4, spec.MinRange
 end
 
+---------------------------------------------------------------------------
+-- Active radar homing (MSL-07). Midcourse: the missile flies on the launcher's data link (the true
+-- target while the launcher keeps its lock; otherwise the last known position, extrapolated). Within
+-- ActiveRange of where it thinks the target is, its own seeker goes active and the launcher can turn
+-- away. An active seeker loses the target outside its gimbal, or after the target notches for
+-- ARH_NOTCH_SECONDS; a lost ARH stays lost.
+
+Guidance.ARH_NOTCH_SECONDS = 1.0
+
+export type ARHState = {
+	active: boolean,
+	lost: boolean,
+	notchTime: number,
+	lastKnown: { position: Vector3, velocity: Vector3, time: number }?,
+}
+
+function Guidance.newARH(targetPosition: Vector3?, targetVelocity: Vector3?, now: number): ARHState
+	return {
+		active = false,
+		lost = false,
+		notchTime = 0,
+		lastKnown = if targetPosition
+			then { position = targetPosition, velocity = targetVelocity or Vector3.zero, time = now }
+			else nil,
+	}
+end
+
+-- Where an ARH missile steers this tick (position in studs, velocity real m/s), or nil. Updates arh.
+--   target: the real target now (nil if it's gone); linked: the launcher still has its lock;
+--   notching: the target is notching the missile's radar right now.
+function Guidance.arhTrack(
+	arh: ARHState,
+	missile: MissileState,
+	spec: { Gimbal: number, ActiveRange: number? },
+	target: { position: Vector3, velocity: Vector3 }?,
+	linked: boolean,
+	notching: boolean,
+	dt: number,
+	now: number
+): (Vector3?, Vector3?)
+	if arh.lost or not target then
+		return nil, nil
+	end
+	if arh.active then
+		local los = target.position - missile.position
+		local heading = if missile.velocity.Magnitude > 1 then missile.velocity.Unit else los.Unit
+		if los.Magnitude > 1e-3 and heading:Dot(los.Unit) < math.cos(spec.Gimbal * RAD) then
+			arh.lost = true
+			return nil, nil
+		end
+		arh.notchTime = if notching then arh.notchTime + dt else 0
+		if arh.notchTime > Guidance.ARH_NOTCH_SECONDS then
+			arh.lost = true
+			return nil, nil
+		end
+		return target.position, target.velocity
+	end
+	if linked then
+		arh.lastKnown = { position = target.position, velocity = target.velocity, time = now }
+	end
+	local known = arh.lastKnown
+	if not known then
+		return nil, nil
+	end
+	local predicted = known.position + Units.velocityToStuds(known.velocity) * (now - known.time)
+	if Units.toMetres((predicted - missile.position).Magnitude) <= (spec.ActiveRange or 0) then
+		arh.active = true
+		arh.notchTime = 0
+	end
+	return predicted, known.velocity
+end
+
 return Guidance

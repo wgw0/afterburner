@@ -65,6 +65,7 @@ type Missile = {
 	-- Radar missiles: where the illuminating radar is. Real shooter, or a virtual one (debug launches).
 	virtualRadar: { position: Vector3, velocity: Vector3 }?,
 	lostTrack: boolean,
+	arh: Guidance.ARHState?, -- active radar missiles (MSL-07)
 }
 
 local MissileService = {
@@ -183,7 +184,16 @@ local function spawnMissile(
 		guiding = false,
 		virtualRadar = nil,
 		lostTrack = targetId == nil,
+		arh = nil,
 	}
+	if spec.Class == "ARH" then
+		local target = if targetId then AircraftService:GetJetById(targetId) else nil
+		missile.arh = Guidance.newARH(
+			target and target.root.Position,
+			target and Units.velocityFromStuds(target.root.AssemblyLinearVelocity),
+			os.clock()
+		)
+	end
 	missiles[id] = missile
 	Net.Server.fireAll("MissileSpawned", id, weaponId, if owner then owner.id else 0, position, velocity)
 	return missile
@@ -293,7 +303,13 @@ function MissileService:DeployCountermeasure(jet: Jet, kind: string)
 		Net.Server.fireAll("CountermeasureFx", jet.id, "Chaff", dispenserCF.Position, velocity * 0.5)
 		-- Each radar missile guiding on this jet gets one roll against this bundle.
 		for _, missile in missiles do
-			if missile.targetId == jet.id and WeaponData.isRadar(missile.spec) and not missile.lostTrack then
+			local seeking = missile.arh == nil or missile.arh.active -- an ARH in midcourse ignores chaff
+			if
+				missile.targetId == jet.id
+				and WeaponData.isRadar(missile.spec)
+				and not missile.lostTrack
+				and seeking
+			then
 				local radarPosition = if missile.owner
 					then missile.owner.root.Position
 					elseif missile.virtualRadar then missile.virtualRadar.position
@@ -327,7 +343,8 @@ function MissileService:IncomingFor(jetId: number): { position: Vector3, velocit
 	end
 	local best, bestDistance = nil, math.huge
 	for _, missile in missiles do
-		if missile.targetId == jetId and not missile.lostTrack and missile.guiding then
+		local silent = missile.arh ~= nil and not missile.arh.active -- ARH midcourse
+		if missile.targetId == jetId and not missile.lostTrack and missile.guiding and not silent then
 			local distance = (missile.state.position - jet.root.Position).Magnitude
 			if distance < bestDistance then
 				best = {
@@ -383,8 +400,38 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 end
 
 -- What the missile is steering at this tick (position, velocity) or nil.
-local function trackFor(missile: Missile): (Vector3?, Vector3?)
+local function trackFor(missile: Missile, dt: number): (Vector3?, Vector3?)
 	local target = if missile.targetId then AircraftService:GetJetById(missile.targetId) else nil
+	-- Active radar: data link in midcourse, its own seeker once active
+	local arh = missile.arh
+	if arh then
+		if missile.lostTrack then
+			return nil, nil
+		end
+		local linked = if missile.owner
+			then AircraftService:GetJetById(missile.owner.id) ~= nil
+				and SensorService:GetLock(missile.owner.id) == missile.targetId
+			else missile.virtualRadar ~= nil
+		local position, velocity = Guidance.arhTrack(
+			arh,
+			missile.state,
+			missile.spec :: any,
+			if target
+				then {
+					position = target.root.Position,
+					velocity = Units.velocityFromStuds(target.root.AssemblyLinearVelocity),
+				}
+				else nil,
+			linked,
+			target ~= nil and arh.active and SensorService:IsNotching(missile.state.position, target),
+			dt,
+			os.clock()
+		)
+		if arh.lost then
+			missile.lostTrack = true
+		end
+		return position, velocity
+	end
 	if missile.seeker then
 		local sources: { Guidance.HeatSource } = {}
 		if target then
@@ -451,7 +498,7 @@ local function stepMissiles(dt: number)
 		if missile.virtualRadar then
 			missile.virtualRadar.position += Units.velocityToStuds(missile.virtualRadar.velocity) * dt
 		end
-		local trackPosition, trackVelocity = trackFor(missile)
+		local trackPosition, trackVelocity = trackFor(missile, dt)
 		local from = missile.state.position
 		local nextState, guiding = Guidance.step(missile.state, missile.spec, dt, trackPosition, trackVelocity)
 		missile.guiding = guiding
@@ -511,7 +558,8 @@ local function launchThreats(): { [number]: { SensorService.Threat } }
 	local out: { [number]: { SensorService.Threat } } = {}
 	for _, missile in missiles do
 		local target = if missile.targetId then AircraftService:GetJetById(missile.targetId) else nil
-		if target and not missile.lostTrack then
+		local silent = missile.arh ~= nil and not missile.arh.active -- ARH midcourse
+		if target and not missile.lostTrack and not silent then
 			local airframe = AircraftData.get(target.airframeId) :: any
 			local warns = WeaponData.isRadar(missile.spec) or (airframe and airframe.RWR and airframe.RWR.LaunchWarning)
 			if warns then
