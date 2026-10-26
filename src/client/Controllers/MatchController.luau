@@ -1,6 +1,7 @@
 --!strict
 -- Match UI (DEVELOPMENT.md §17.5, MCH-04): a banner with the mode, state and time, the scoreboard (hold
--- Tab / gamepad Start), and the results screen at the end of a match. Reads MatchState from the server.
+-- Tab / gamepad Start). Reads MatchState from the server. The results screen is part of the menus
+-- (MenuController / UI Results), which also show your rewards.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,10 +28,6 @@ local gui: ScreenGui
 local banner: TextLabel
 local board: Frame
 local boardRows: Frame
-local results: Frame
-local resultsTitle: TextLabel
-local resultsRows: Frame
-local resultsFooter: TextLabel
 local localPlayer = Players.LocalPlayer
 
 local function label(parent: Instance, text: string, size: number, colour: Color3?): TextLabel
@@ -130,6 +127,8 @@ local function formatTime(seconds: number): string
 end
 
 local function render(s: any)
+	local menu = localPlayer.PlayerGui:FindFirstChild("AfterburnerMenu")
+	banner.Visible = not (menu and (menu :: ScreenGui).Enabled)
 	if s.mode == "FreeFlight" then
 		banner.Text = "FREE FLIGHT"
 	elseif s.state == "Waiting" then
@@ -144,13 +143,6 @@ local function render(s: any)
 		banner.Text = `{string.upper(s.modeName)}  ·  MATCH OVER`
 	end
 
-	results.Visible = s.state == "Results"
-	if results.Visible then
-		local reason = if s.reason == "ScoreLimit" then "kill limit reached" else "time's up"
-		resultsTitle.Text = `{s.winner or "Nobody"} WINS`
-		fillRows(resultsRows, s.ranking, 10)
-		resultsFooter.Text = `{reason}  ·  next match in {s.timeLeft}s`
-	end
 	if board.Visible then
 		fillRows(boardRows, s.ranking, 16)
 	end
@@ -174,16 +166,6 @@ function MatchController:Init()
 	boardTitle.Position = UDim2.fromOffset(0, 10)
 	boardTitle.Size = UDim2.new(1, 0, 0, 24)
 	boardRows = rowsFrame(board, 44)
-
-	results = panel("Results", UDim2.fromOffset(560, 420))
-	resultsTitle = label(results, "", 30, ORANGE)
-	resultsTitle.Position = UDim2.fromOffset(0, 12)
-	resultsTitle.Size = UDim2.new(1, 0, 0, 36)
-	resultsRows = rowsFrame(results, 60)
-	resultsFooter = label(results, "", 14, DIM)
-	resultsFooter.AnchorPoint = Vector2.new(0, 1)
-	resultsFooter.Position = UDim2.new(0, 0, 1, -10)
-	resultsFooter.Size = UDim2.new(1, 0, 0, 20)
 
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 

@@ -16,6 +16,7 @@
 -- whoever shot you down. While waiting to respawn you spectate other jets (Left/Right arrows to switch).
 -- With nothing to watch, the camera orbits the map centre.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -203,6 +204,13 @@ local function chaseView(root: BasePart, dt: number): CFrame
 	return CFrame.new(position) * frame.Rotation
 end
 
+-- The menus cover the screen while you're not flying; the spectating view is their backdrop.
+local function menuOpen(): boolean
+	local menu = Players.LocalPlayer:FindFirstChild("PlayerGui")
+		and Players.LocalPlayer.PlayerGui:FindFirstChild("AfterburnerMenu")
+	return menu ~= nil and (menu :: ScreenGui).Enabled
+end
+
 local function update(dt: number)
 	local camera = workspace.CurrentCamera
 	if not camera then
@@ -247,7 +255,7 @@ local function update(dt: number)
 			if follow then
 				camera.CFrame = follow
 				spectateLabel.Text = `Spectating {target:GetAttribute("PilotName") or "?"}  ·  ◀ ▶ to switch`
-				spectateLabel.Visible = true
+				spectateLabel.Visible = not menuOpen()
 				return
 			end
 		end
