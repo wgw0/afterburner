@@ -99,6 +99,18 @@ local function setLock(shooter: Jet, targetId: number?, state: string)
 	SensorService.LockChanged:Fire(shooter, targetId or 0)
 end
 
+-- The server asks for a lock on a pilot's behalf (AI pilots). Same rules as a player's request.
+function SensorService:RequestLock(shooter: Jet, target: Jet): boolean
+	if shooter == target then
+		return false
+	end
+	local ok = self:CanTrack(shooter, target)
+	if ok then
+		setLock(shooter, target.id, "Locked")
+	end
+	return ok
+end
+
 -- Called by MissileService when a jet drops chaff: each radar locked on it may lose the lock.
 function SensorService:OnChaff(target: Jet, seed: number)
 	for shooterId, lock in locks do

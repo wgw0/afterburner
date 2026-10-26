@@ -25,6 +25,8 @@ export type Profile = {
 	EnergySkill: number, -- 0..1: how well it manages speed
 	MaxGUse: number, -- 0..1 of the airframe's G limit it's willing to pull
 	GunRange: number, -- real metres
+	MissileInterval: number, -- seconds between missile launches (AI-04)
+	MissileRange: number, -- fraction of a missile's max range it's willing to fire from
 }
 
 local AIBrain = {}
@@ -39,6 +41,8 @@ AIBrain.PROFILES = table.freeze({
 		EnergySkill = 0.2,
 		MaxGUse = 0.65,
 		GunRange = 700,
+		MissileInterval = 18,
+		MissileRange = 0.5,
 	}),
 	Normal = table.freeze({
 		Name = "Normal",
@@ -49,6 +53,8 @@ AIBrain.PROFILES = table.freeze({
 		EnergySkill = 0.5,
 		MaxGUse = 0.85,
 		GunRange = 900,
+		MissileInterval = 12,
+		MissileRange = 0.6,
 	}),
 	Hard = table.freeze({
 		Name = "Hard",
@@ -59,6 +65,8 @@ AIBrain.PROFILES = table.freeze({
 		EnergySkill = 0.75,
 		MaxGUse = 0.95,
 		GunRange = 1000,
+		MissileInterval = 9,
+		MissileRange = 0.7,
 	}),
 	Ace = table.freeze({
 		Name = "Ace",
@@ -69,8 +77,47 @@ AIBrain.PROFILES = table.freeze({
 		EnergySkill = 0.95,
 		MaxGUse = 1,
 		GunRange = 1100,
+		MissileInterval = 7,
+		MissileRange = 0.75,
 	}),
 })
+
+-- Missile choice (AI-04). A slot the pilot could fire: class "IR" | "Radar", ranges in real metres,
+-- irLockable = a heat-seeker could see the target now (caller checks with Guidance.irLockable).
+export type MissileOption = {
+	index: number,
+	class: "IR" | "Radar",
+	count: number,
+	minRange: number,
+	maxRange: number,
+	irLockable: boolean?,
+}
+
+-- Picks the missile to fire at a target `range` metres away (nil = none). Heat-seekers first when the
+-- seeker can see the target (cheaper, fire-and-forget); radar missiles need the jet to have a radar and
+-- then a lock (needsLock). Never inside a missile's minimum range or beyond the profile's share of
+-- its maximum.
+function AIBrain.chooseMissile(
+	profile: Profile,
+	options: { MissileOption },
+	range: number,
+	hasRadar: boolean
+): (MissileOption?, boolean)
+	local best: MissileOption? = nil
+	for _, option in options do
+		local inRange = option.count > 0
+			and range >= option.minRange * 1.2
+			and range <= option.maxRange * profile.MissileRange
+		if inRange then
+			if option.class == "IR" and option.irLockable then
+				return option, false
+			elseif option.class == "Radar" and hasRadar and not best then
+				best = option
+			end
+		end
+	end
+	return best, best ~= nil
+end
 
 export type Body = {
 	cframe: CFrame,

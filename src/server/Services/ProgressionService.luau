@@ -203,7 +203,11 @@ function ProgressionService:Start()
 			return false, nil
 		end
 		if matchGate then
-			return matchGate(player, airframeId)
+			local allowed, at, why = (matchGate :: any)(player, airframeId)
+			if not allowed and why then
+				Net.Server.fire("SpawnRefused", player, why)
+			end
+			return allowed, at
 		end
 		return true, nil
 	end

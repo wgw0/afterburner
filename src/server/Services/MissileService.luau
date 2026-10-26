@@ -189,16 +189,18 @@ local function spawnMissile(
 	return missile
 end
 
-local function onMissileFire(player: Player, targetId: number)
-	local jet = AircraftService:GetJet(player)
-	local loadout = jet and loadouts[jet.id]
-	if not (jet and loadout) then
-		return
+-- Fires the selected missile from a jet at a target (players through MissileFire, AI pilots
+-- directly). The same checks for everyone: ammo, cooldown, the seeker's hold time (IR) or the server's
+-- radar lock. Returns whether a missile left the rail.
+local function launch(jet: Jet, targetId: number): boolean
+	local loadout = loadouts[jet.id]
+	if not loadout then
+		return false
 	end
 	local slot = loadout.slots[loadout.selected]
 	local now = os.clock()
 	if not slot or slot.count <= 0 or now - loadout.lastLaunch < LAUNCH_COOLDOWN then
-		return
+		return false
 	end
 	local spec = slot.weapon
 	local target: number? = nil
@@ -210,7 +212,7 @@ local function onMissileFire(player: Player, targetId: number)
 	else
 		-- Radar missiles need the radar locked on that target; no lock, no launch.
 		if targetId == 0 or SensorService:GetLock(jet.id) ~= targetId then
-			return
+			return false
 		end
 		target = targetId
 	end
@@ -223,6 +225,43 @@ local function onMissileFire(player: Player, targetId: number)
 	local velocity = Units.velocityFromStuds(jet.root.AssemblyLinearVelocity) - jet.root.CFrame.UpVector * EJECT_SPEED
 	spawnMissile(spec, slot.id, position, velocity, jet, target)
 	setAttributes(loadout)
+	return true
+end
+
+local function onMissileFire(player: Player, targetId: number)
+	local jet = AircraftService:GetJet(player)
+	if jet then
+		launch(jet, targetId)
+	end
+end
+
+-- AI pilots (AI-04): the missiles a jet carries, choosing one, and firing it.
+function MissileService:Slots(jet: Jet): { { index: number, spec: WeaponData.Missile, count: number } }
+	local loadout = loadouts[jet.id]
+	local list = {}
+	for i, slot in (loadout and loadout.slots) or {} do
+		table.insert(list, { index = i, spec = slot.weapon, count = slot.count })
+	end
+	return list
+end
+
+function MissileService:SelectSlot(jet: Jet, index: number)
+	local loadout = loadouts[jet.id]
+	if loadout and loadout.slots[index] and loadout.selected ~= index then
+		loadout.selected = index
+		setAttributes(loadout)
+	end
+end
+
+-- Whether the selected heat-seeker has held this target long enough to fire.
+function MissileService:SeekerReady(jet: Jet, targetId: number): boolean
+	local loadout = loadouts[jet.id]
+	local slot = loadout and loadout.slots[loadout.selected]
+	return slot ~= nil and loadout.irTarget == targetId and os.clock() - loadout.irSince >= slot.weapon.LockTime * 0.8
+end
+
+function MissileService:FireFor(jet: Jet, targetId: number): boolean
+	return launch(jet, targetId)
 end
 
 -- Drops a flare or chaff bundle from a jet (players via CountermeasureDeploy, AI pilots directly).
