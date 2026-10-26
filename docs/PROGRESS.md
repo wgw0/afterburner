@@ -8,7 +8,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 | 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
 | 2 Guns and damage | 21 / 21 | ✅ Signed off |
 | 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
-| 4 Match loop MVP | 21 / 21 | 🟡 Built, awaiting sign-off |
+| 4 Match loop MVP | 21 / 21 | ✅ Signed off |
 | 5–8 | 0 / 97 | ⚪ Not started |
 
 ---
@@ -137,7 +137,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 4: Match loop MVP
 
-**Built and tested; waiting for Will's sign-off.** Exit test (8 players and bots have a full match, then an internal playtest with friends) still to run. Solo matches against 7 AI pilots, and a 24-jet stress match, were run in Studio.
+**Signed off by Will on 2026-10-26.** Solo matches against 7 AI pilots and a 24-jet stress match were run in Studio. The full exit test (8 players and bots have a full match, then an internal playtest with friends) is carried over to the first multiplayer playtest.
 
 | | Task | Evidence |
 |:---:|---|---|
