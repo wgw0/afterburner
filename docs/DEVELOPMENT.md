@@ -1888,7 +1888,7 @@ On every push and PR:
 1. All tasks for the release are done (§0.8).
 2. Playtest in the **test universe** with the release build.
 3. Check data migrations against a copy of real data shapes.
-4. Publish the place(s) to production from Studio (or with Open Cloud in CI later).
+4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). **Before publishing to production, set the `Environment` attribute on ReplicatedStorage to `Prod`** (the committed place says `Test`, for the test experience); it picks the save store and turns off debug and admin data tools.
 5. Tag the commit, update the changelog.
 6. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
 
