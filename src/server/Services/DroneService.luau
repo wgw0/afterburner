@@ -115,11 +115,10 @@ local function step(dt: number)
 end
 
 function DroneService:Init()
-	if not Environment.isTest() then
-		return
-	end
+	-- Target drones: always in the test environment, and in Free Flight anywhere (the tutorial uses them).
 	Net.Server.on("DebugSpawnDrone", function(player: Player, mode: string)
-		if mode ~= "ahead" and mode ~= "circle" then
+		local freeFlight = ReplicatedStorage:GetAttribute("GameMode") == "FreeFlight"
+		if not (Environment.isTest() or freeFlight) or (mode ~= "ahead" and mode ~= "circle") then
 			return
 		end
 		spawnDrone(mode, AircraftService:GetJet(player))
@@ -127,9 +126,6 @@ function DroneService:Init()
 end
 
 function DroneService:Start()
-	if not Environment.isTest() then
-		return
-	end
 	RunService.Heartbeat:Connect(step)
 end
 

@@ -54,7 +54,7 @@ type Missile = {
 	weaponId: string,
 	spec: WeaponData.Missile,
 	owner: Jet?,
-	ownerPlayer: Player?,
+	ownerIdentity: any?, -- who gets credit (Player or AI record)
 	targetId: number?,
 	state: Guidance.MissileState,
 	seeker: Guidance.IRSeeker?,
@@ -170,7 +170,7 @@ local function spawnMissile(
 		weaponId = weaponId,
 		spec = spec,
 		owner = owner,
-		ownerPlayer = owner and owner.pilot,
+		ownerIdentity = owner and owner.identity,
 		targetId = targetId,
 		state = Guidance.launch(position, velocity),
 		seeker = if WeaponData.isIR(spec) then Guidance.newIRSeeker(targetId, id * 7 + 13) else nil,
@@ -219,10 +219,10 @@ local function onMissileFire(player: Player, targetId: number)
 	setAttributes(loadout)
 end
 
-local function onCountermeasure(player: Player, kind: string)
-	local jet = AircraftService:GetJet(player)
-	local loadout = jet and loadouts[jet.id]
-	if not (jet and loadout) or (kind ~= "Flare" and kind ~= "Chaff") then
+-- Drops a flare or chaff bundle from a jet (players via CountermeasureDeploy, AI pilots directly).
+function MissileService:DeployCountermeasure(jet: Jet, kind: string)
+	local loadout = loadouts[jet.id]
+	if not loadout or (kind ~= "Flare" and kind ~= "Chaff") then
 		return
 	end
 	local dispenser =
@@ -267,6 +267,36 @@ local function onCountermeasure(player: Player, kind: string)
 	setAttributes(loadout)
 end
 
+local function onCountermeasure(player: Player, kind: string)
+	local jet = AircraftService:GetJet(player)
+	if jet then
+		MissileService:DeployCountermeasure(jet, kind)
+	end
+end
+
+-- The nearest missile guiding on a jet, for AI threat awareness: { position, velocity, kind }.
+function MissileService:IncomingFor(jetId: number): { position: Vector3, velocity: Vector3, kind: string }?
+	local jet = AircraftService:GetJetById(jetId)
+	if not jet then
+		return nil
+	end
+	local best, bestDistance = nil, math.huge
+	for _, missile in missiles do
+		if missile.targetId == jetId and not missile.lostTrack and missile.guiding then
+			local distance = (missile.state.position - jet.root.Position).Magnitude
+			if distance < bestDistance then
+				best = {
+					position = missile.state.position,
+					velocity = missile.state.velocity,
+					kind = if WeaponData.isIR(missile.spec) then "IR" else "Radar",
+				}
+				bestDistance = distance
+			end
+		end
+	end
+	return best
+end
+
 local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 	missiles[missile.id] = nil
 	Net.Server.fireAll("MissileDetonated", missile.id, position, if hitJet then hitJet.id else 0)
@@ -293,8 +323,8 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 					end
 				end
 			end
-			CombatService:ApplyDamage(jet, nearest, damage, missile.ownerPlayer, missile.spec.DisplayName)
-			CombatService:ApplyDamage(jet, "Fuselage", damage * 0.5, missile.ownerPlayer, missile.spec.DisplayName)
+			CombatService:ApplyDamage(jet, nearest, damage, missile.ownerIdentity, missile.spec.DisplayName)
+			CombatService:ApplyDamage(jet, "Fuselage", damage * 0.5, missile.ownerIdentity, missile.spec.DisplayName)
 		end
 	end
 end

@@ -59,7 +59,7 @@ local CombatService = {
 }
 
 local states: { [number]: CombatState } = {}
-local fires: { [number]: { untilTime: number, attacker: Player? } } = {}
+local fires: { [number]: { untilTime: number, attacker: any? } } = {}
 local worldParams: RaycastParams
 
 local function otherPlayers(except: Player?): { Player }
@@ -100,8 +100,8 @@ local function sendDamageState(state: CombatState)
 	end
 end
 
--- Applies damage to a jet. attacker is a Player (or nil for environmental damage).
-function CombatService:ApplyDamage(target: Jet, component: string, amount: number, attacker: Player?, weapon: string)
+-- Applies damage to a jet. attacker is a pilot identity (Player or AI record), or nil for environmental damage.
+function CombatService:ApplyDamage(target: Jet, component: string, amount: number, attacker: any?, weapon: string)
 	local state = states[target.id]
 	if not state or AircraftService:GetJetById(target.id) == nil then
 		return -- already destroyed (e.g. by an earlier round this tick)
@@ -144,16 +144,13 @@ local function stopFiring(state: CombatState)
 	end
 end
 
-local function onGunFire(player: Player, isStart: boolean, serverTime: number, seed: number)
-	local jet = AircraftService:GetJet(player)
-	local state = jet and states[jet.id]
-	if not (jet and state and state.gun) then
+-- Pulls or releases a jet's trigger (players via GunFire, AI pilots directly).
+function CombatService:SetTrigger(jet: Jet, down: boolean, seed: number)
+	local state = states[jet.id]
+	if not (state and state.gun) then
 		return
 	end
-	if math.abs(workspace:GetServerTimeNow() - serverTime) > FIRE_TIME_TOLERANCE then
-		return
-	end
-	if not isStart then
+	if not down then
 		stopFiring(state)
 		return
 	end
@@ -161,7 +158,15 @@ local function onGunFire(player: Player, isStart: boolean, serverTime: number, s
 		return
 	end
 	state.firing = { seed = seed, index = 0, timer = 0 }
-	Net.Server.fireList("GunFireFx", otherPlayers(player), jet.id, true, seed, serverTime)
+	Net.Server.fireList("GunFireFx", otherPlayers(jet.pilot), jet.id, true, seed, workspace:GetServerTimeNow())
+end
+
+local function onGunFire(player: Player, isStart: boolean, serverTime: number, seed: number)
+	local jet = AircraftService:GetJet(player)
+	if not jet or math.abs(workspace:GetServerTimeNow() - serverTime) > FIRE_TIME_TOLERANCE then
+		return
+	end
+	CombatService:SetTrigger(jet, isStart, seed)
 end
 
 -- Fires due rounds for one jet this tick.
@@ -238,7 +243,7 @@ local function flyRounds(state: CombatState, dt: number)
 				Net.Server.fire("HitConfirm", shooter.pilot, victim.id, bestBox.name)
 			end
 			Net.Server.fireAll("HitFx", victim.id, hitPosition)
-			CombatService:ApplyDamage(victim, bestBox.name, gun.Damage, shooter.pilot, gun.DisplayName)
+			CombatService:ApplyDamage(victim, bestBox.name, gun.Damage, shooter.identity, gun.DisplayName)
 		elseif nextRound.age < gun.Lifetime and not workspace:Raycast(from, to - from, worldParams) then
 			table.insert(survivors, nextRound)
 		end
@@ -323,8 +328,9 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 	local credit = if state
 		then DamageModel.resolveCredit(state.attackers, os.clock(), cause)
 		else { killer = nil, assists = {}, forcedCrash = false }
-	local killer: Player? = credit.killer
-	Net.Server.fireAll("JetDestroyed", jet.id, if killer then killer.UserId else 0, cause, position)
+	local killer: any? = credit.killer
+	local killerUserId = if killer and typeof(killer) == "Instance" then (killer :: Player).UserId else 0
+	Net.Server.fireAll("JetDestroyed", jet.id, killerUserId, cause, position)
 
 	-- Quiet removals (respawning or leaving with nobody's damage on you) don't go in the kill feed.
 	local quiet = killer == nil and (cause == "Respawn" or cause == "PilotLeft" or cause == "Despawn")

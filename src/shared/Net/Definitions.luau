@@ -66,7 +66,12 @@ local definitions: { [string]: Definition } = {
 	-- A jet dropped a flare or chaff: jetId, kind, position, velocity
 	CountermeasureFx = { direction = "ServerToClient", args = { "integer", "string", "Vector3", "Vector3" } },
 
+	-- Matches (§17): mode, state, time left, ranking, winner. ~2 Hz and on every change.
+	MatchState = { direction = "ServerToClient", args = { "table" } },
+
 	-- Diagnostics (test environment only): exercises the Net layer end to end.
+	-- Switch game mode: "FreeFlight" | "Dogfight"
+	DebugSetMode = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Fire a missile at yourself from 1.8 km behind, to practise defending (weapon id)
 	DebugLaunchAtMe = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Spawn a target drone: mode "ahead" (in front of you, same heading) or "circle" (orbits the range)
