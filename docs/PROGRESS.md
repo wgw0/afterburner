@@ -1,16 +1,17 @@
-# Afterburner: Progress Tracker
+# Afterburner: progress tracker
 
-Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only when the task's acceptance test has **actually been run and passed** (Definition of Done, DEVELOPMENT.md §0.8). The evidence column says how it was checked.
+Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked done only when its acceptance test has actually been run and passed (Definition of Done, DEVELOPMENT.md §0.8). The evidence column says how it was checked.
 
 | Phase | Done | Status |
 |---|---|---|
-| 0 Foundation | 9 / 9 | ✅ Complete |
-| 1 Flight model prototype | 21 / 21 | ✅ Signed off |
-| 2 Guns and damage | 21 / 21 | ✅ Signed off |
-| 3 Missiles, sensors and countermeasures | 23 / 23 | ✅ Signed off |
-| 4 Match loop MVP | 21 / 21 | ✅ Signed off |
-| 5 Progression and saving | 23 / 23 | ✅ Signed off |
-| 6–8 | 0 / 74 | ⚪ Not started |
+| 0 Foundation | 9 / 9 | Complete |
+| 1 Flight model prototype | 21 / 21 | Signed off |
+| 2 Guns and damage | 21 / 21 | Signed off |
+| 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
+| 4 Match loop MVP | 21 / 21 | Signed off |
+| 5 Progression and saving | 23 / 23 | Signed off |
+| 6 Content and polish for a soft launch | 0 / 43 | In progress (ACD-07 partly done, see below) |
+| 7–8 | 0 / 31 | Not started |
 
 ---
 
@@ -18,15 +19,15 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **CORE-01** Folder tree and server/client `Main` boot loaders with Init/Start ordering and per-service error reporting | Play test: output shows `Service started: DiagnosticsService` → `Server ready` → `Controller started: DiagnosticsController` → `Client ready`, with no errors. `Boot.spec`: Priority ordering, a yielding `Init` is refused, a failing `Init` names the module. |
-| ✅ | **CORE-02** StyLua, Selene, Wally in `rokit.toml` with config files | `rokit install` gives Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Wally 0.3.2. `stylua --check` and `selene` both clean (0 errors, 0 warnings). |
-| ✅ | **CORE-03** GitHub Actions CI | First run on GitHub passed: [run 40242794421](https://github.com/wgw0/afterburner/actions/runs/40242794421) (StyLua check, Selene, Rojo build). |
-| ✅ | **CORE-04** Util: Signal, Trove, Spring, RingBuffer, Pool, Validate, with unit tests | `Util.spec` and `Validate.spec` pass in Studio. |
-| ✅ | **NET-01** `Definitions` format plus `Net` wrapper with type validation | Play test: the client fired a string, NaN, `1.5`, three arguments, and no arguments at an integer remote. All 5 were dropped with the reason logged. A bad RemoteFunction argument returned `nil` without erroring. A valid echo round trip took 91–123 ms in Studio. |
-| ✅ | **NET-02** Per-remote token-bucket rate limiting plus a dropped-call counter | Play test: 50 pings in one frame against a 5-call burst gave exactly the burst through and the rest dropped. Logging is summarised every 5 s (`x46`), so spam can't flood the output. |
-| ✅ | **MAP-01** Greybox test map: flat area, towers, runway | `Workspace.TestRange` (60 parts): 1,800-stud runway with markings, 6 slalom pylons, height towers at 100/250/500/1000 studs. Saved in `Afterburner.rbxl`. |
-| ✅ | **TST-01** Test runner and first specs | `require(game.ServerStorage.Tests.TestRunner).run()` → **28 passed, 0 failed**. A deliberately failing spec was correctly reported as a failure, with file and line. |
-| ✅ | **REL-01** CI workflow | Same as CORE-03. Runs on every push and PR. |
+| Done | **CORE-01** Folder tree and server/client `Main` boot loaders with Init/Start ordering and per-service error reporting | Play test: output shows `Service started: DiagnosticsService` → `Server ready` → `Controller started: DiagnosticsController` → `Client ready`, with no errors. `Boot.spec`: Priority ordering, a yielding `Init` is refused, a failing `Init` names the module. |
+| Done | **CORE-02** StyLua, Selene, Wally in `rokit.toml` with config files | `rokit install` gives Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Wally 0.3.2. `stylua --check` and `selene` both clean (0 errors, 0 warnings). |
+| Done | **CORE-03** GitHub Actions CI | First run on GitHub passed: [run 40242794421](https://github.com/wgw0/afterburner/actions/runs/40242794421) (StyLua check, Selene, Rojo build). |
+| Done | **CORE-04** Util: Signal, Trove, Spring, RingBuffer, Pool, Validate, with unit tests | `Util.spec` and `Validate.spec` pass in Studio. |
+| Done | **NET-01** `Definitions` format plus `Net` wrapper with type validation | Play test: the client fired a string, NaN, `1.5`, three arguments, and no arguments at an integer remote. All 5 were dropped with the reason logged. A bad RemoteFunction argument returned `nil` without erroring. A valid echo round trip took 91–123 ms in Studio. |
+| Done | **NET-02** Per-remote token-bucket rate limiting plus a dropped-call counter | Play test: 50 pings in one frame against a 5-call burst gave exactly the burst through and the rest dropped. Logging is summarised every 5 s (`x46`), so spam can't flood the output. |
+| Done | **MAP-01** Greybox test map: flat area, towers, runway | `Workspace.TestRange` (60 parts): 1,800-stud runway with markings, 6 slalom pylons, height towers at 100/250/500/1000 studs. Saved in `Afterburner.rbxl`. |
+| Done | **TST-01** Test runner and first specs | `require(game.ServerStorage.Tests.TestRunner).run()` → **28 passed, 0 failed**. A deliberately failing spec was correctly reported as a failure, with file and line. |
+| Done | **REL-01** CI workflow | Same as CORE-03. Runs on every push and PR. |
 
 **Also done in Phase 0:**
 - [x] Rojo CLI and Studio plugin installed. `rojo serve` syncs every file into the open place (checked instance by instance).
@@ -42,27 +43,27 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **ACD-01** Airframe schema, registry and startup validator | `AircraftData.spec`: valid airframes load frozen; missing/out-of-range/NaN/bad-enum fields are named; a broken module stops loading with "Broken: missing WingArea" and doesn't blame the good one. |
-| ✅ | **ACD-02** Greybox models for F-5E and MiG-21 following the model contract | `tools/GreyboxBuilder` builds both into `ReplicatedStorage.Assets.Aircraft` (saved in the place). `Model.spec`: both pass the contract. Flown hands-on. |
-| ✅ | **ACD-03** Model-contract validator script (Studio command plus CI check against the built place) | Studio: `AircraftModelContract.validate`, run at server boot (AircraftService refuses to start on a bad model) and in `Model.spec`, which catches a deliberately broken model. CI (finished before Phase 5): `scripts/validate-models.luau` opens the committed `Afterburner.rbxl` with Lune and runs the same validator on every model, and checks every airframe has one. "Model contract OK: 2 models checked, 2 airframes covered"; a broken copy (missing `CockpitEye`, collidable canopy, MiG model deleted) fails with all three named. |
-| ✅ | **FLT-01** `Atmosphere`, `Units` and `Scale` modules with tests | `Units.spec`: conversions round-trip, distances agree with velocity scaling, ceiling ≈ 48,000 ft; atmosphere values at sea level and the tropopause. |
-| ✅ | **FLT-02** `FlightModel.step`, sub-stepping, determinism | `FlightModel.spec`: level flight holds altitude within 2% over 10 s; deterministic; stable and consistent at 20 vs 60 FPS; input state never mutated. |
-| ✅ | **FLT-03** Stall model and buffet flag | Lift falls past critical AoA; slow pull with protections off stalls; the AoA limiter keeps it out of the stall. |
-| ✅ | **FLT-04** G limit, corner-speed emergence, G stress | F-5E corner ≈ 348 kt at sea level; holds 7.3 G at its limit; MiG bleeds more in hard turns and the F-5E out-sustains it (11.7 vs 10.8 °/s); G stress builds above 6.5 G and decays. |
-| ✅ | **FLT-05** `FlightController` driving `LinearVelocity`/`AngularVelocity` | Play test: client owns the jet (ReceiveAge 0); speed and altitude stable hands-off; flown hands-on in both jets. |
-| ✅ | **FLT-06** Debug tuning panel with export | Will tuned roll/pitch/yaw live with the P panel; those values are now the defaults. |
-| ✅ | **FLT-07** Wave drag and supercruise behaviour | F-5E stays below Mach 1 on dry thrust at 9 km; MiG-21 goes supersonic in afterburner; wave drag peaks near Mach 1. (Acceleration through Mach 1 is slow; logged for tuning.) |
-| ✅ | **INP-01** InputController, keyboard and mouse, Direct scheme | Keys and Direct mode (M) wired and flown; throttle/afterburner hold logic in use. |
-| ✅ | **INP-02** Instructor plus Mouse Aim with HUD reticle | `Instructor.spec`: correct roll/pitch direction, no inverted roll for small low targets, G cap unless overridden, settles on 90° and behind-above targets without wobble, holds altitude 30 s. Aim reticle confirmed at screen centre. |
-| ✅ | **CAM-01** Cockpit camera with free look and G head-shake; chase camera | Flown hands-on; chase camera reworked to keep the jet centred, with dynamic FOV. |
-| ✅ | **CAM-02** Greybox analogue cockpit with 4 live gauges | Airspeed, altimeter, G, RPM live; dials fixed to round and unobstructed after playtest feedback. |
-| ✅ | **CAM-05** G-LOC, grey-out and red-out | G stress model unit-tested; grey-out, blackout (with level-hold autopilot) and red-out effects implemented. *Lightest-tested item: the effects weren't specifically checked hands-on; worth a look in Phase 2.* |
-| ✅ | **HUD-01** Core flight HUD | Speed, altitude, G, throttle, heading, flight path marker, reticle, warnings. Reticle offset bug found and fixed. |
-| ✅ | **HUD-07** HUD visual design pass | Collimated HUD box with tapes, conformal pitch ladder and FPM; ladder clipping bug found in playtest and fixed. |
-| ✅ | **AIR-01** Spawn/despawn, network ownership, attributes, no characters | Spawn menu → jet appears, owned by the pilot; respawn and crash → despawn work; runway is the idle streaming focus. |
-| ✅ | **FX-01** Afterburner, contrails, vapour | Afterburner flame and light, wingtip vapour above 5 G, contrails above 7 km, driven by telemetry for other jets. *Contrails and other players' effects not yet seen in a multiplayer test.* |
-| ✅ | **AUD-01** Engine and wind | Engine pitch follows throttle, muffled in the cockpit; wind rises with speed; volumes cut twice after playtest feedback. Placeholder Creator Store sounds, to review before launch. |
-| ✅ | **TST-03** Playtest template and log folder | `docs/playtests/TEMPLATE.md` and the first log with 10 findings. |
+| Done | **ACD-01** Airframe schema, registry and startup validator | `AircraftData.spec`: valid airframes load frozen; missing/out-of-range/NaN/bad-enum fields are named; a broken module stops loading with "Broken: missing WingArea" and doesn't blame the good one. |
+| Done | **ACD-02** Greybox models for F-5E and MiG-21 following the model contract | `tools/GreyboxBuilder` builds both into `ReplicatedStorage.Assets.Aircraft` (saved in the place). `Model.spec`: both pass the contract. Flown hands-on. |
+| Done | **ACD-03** Model-contract validator script (Studio command plus CI check against the built place) | Studio: `AircraftModelContract.validate`, run at server boot (AircraftService refuses to start on a bad model) and in `Model.spec`, which catches a deliberately broken model. CI (finished before Phase 5): `scripts/validate-models.luau` opens the committed `Afterburner.rbxl` with Lune and runs the same validator on every model, and checks every airframe has one. "Model contract OK: 2 models checked, 2 airframes covered"; a broken copy (missing `CockpitEye`, collidable canopy, MiG model deleted) fails with all three named. |
+| Done | **FLT-01** `Atmosphere`, `Units` and `Scale` modules with tests | `Units.spec`: conversions round-trip, distances agree with velocity scaling, ceiling ≈ 48,000 ft; atmosphere values at sea level and the tropopause. |
+| Done | **FLT-02** `FlightModel.step`, sub-stepping, determinism | `FlightModel.spec`: level flight holds altitude within 2% over 10 s; deterministic; stable and consistent at 20 vs 60 FPS; input state never mutated. |
+| Done | **FLT-03** Stall model and buffet flag | Lift falls past critical AoA; slow pull with protections off stalls; the AoA limiter keeps it out of the stall. |
+| Done | **FLT-04** G limit, corner-speed emergence, G stress | F-5E corner ≈ 348 kt at sea level; holds 7.3 G at its limit; MiG bleeds more in hard turns and the F-5E out-sustains it (11.7 vs 10.8 °/s); G stress builds above 6.5 G and decays. |
+| Done | **FLT-05** `FlightController` driving `LinearVelocity`/`AngularVelocity` | Play test: client owns the jet (ReceiveAge 0); speed and altitude stable hands-off; flown hands-on in both jets. |
+| Done | **FLT-06** Debug tuning panel with export | Will tuned roll/pitch/yaw live with the P panel; those values are now the defaults. |
+| Done | **FLT-07** Wave drag and supercruise behaviour | F-5E stays below Mach 1 on dry thrust at 9 km; MiG-21 goes supersonic in afterburner; wave drag peaks near Mach 1. (Acceleration through Mach 1 is slow; logged for tuning.) |
+| Done | **INP-01** InputController, keyboard and mouse, Direct scheme | Keys and Direct mode (M) wired and flown; throttle/afterburner hold logic in use. |
+| Done | **INP-02** Instructor plus Mouse Aim with HUD reticle | `Instructor.spec`: correct roll/pitch direction, no inverted roll for small low targets, G cap unless overridden, settles on 90° and behind-above targets without wobble, holds altitude 30 s. Aim reticle confirmed at screen centre. |
+| Done | **CAM-01** Cockpit camera with free look and G head-shake; chase camera | Flown hands-on; chase camera reworked to keep the jet centred, with dynamic FOV. |
+| Done | **CAM-02** Greybox analogue cockpit with 4 live gauges | Airspeed, altimeter, G, RPM live; dials fixed to round and unobstructed after playtest feedback. *Phase 6: the panel finds the cockpit sill from the canopy glass, so it sits below the eye in the new F-5E model.* |
+| Done | **CAM-05** G-LOC, grey-out and red-out | G stress model unit-tested; grey-out, blackout (with level-hold autopilot) and red-out effects implemented. *Lightest-tested item: the effects weren't specifically checked hands-on; worth a look in Phase 2.* |
+| Done | **HUD-01** Core flight HUD | Speed, altitude, G, throttle, heading, flight path marker, reticle, warnings. Reticle offset bug found and fixed. |
+| Done | **HUD-07** HUD visual design pass | Collimated HUD box with tapes, conformal pitch ladder and FPM; ladder clipping bug found in playtest and fixed. |
+| Done | **AIR-01** Spawn/despawn, network ownership, attributes, no characters | Spawn menu → jet appears, owned by the pilot; respawn and crash → despawn work; runway is the idle streaming focus. |
+| Done | **FX-01** Afterburner, contrails, vapour | Afterburner flame and light, wingtip vapour above 5 G, contrails above 7 km, driven by telemetry for other jets. *Contrails and other players' effects not yet seen in a multiplayer test.* |
+| Done | **AUD-01** Engine and wind | Engine pitch follows throttle, muffled in the cockpit; wind rises with speed; volumes cut twice after playtest feedback. Placeholder Creator Store sounds, to review before launch. |
+| Done | **TST-03** Playtest template and log folder | `docs/playtests/TEMPLATE.md` and the first log with 10 findings. |
 
 **Also done in Phase 1:** placeholder terrain (`tools/TerrainBuilder`, 70% leaner after `trim()`), streaming tuned (client ready in ~1 s), HUD-07 added to the plan, integrity checks (CI repo checks, module/definition/place specs, startup smoke test). Tests: 49 → 115.
 
@@ -74,27 +75,27 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **ACD-04** Weapon schema and registry; guns for F-5E/MiG-21 | `WeaponData` (2× M39A2 20 mm, GSh-23L 23 mm), validated on load; `Weapons.spec`: every airframe's gun exists, bad weapons are named. AircraftService refuses to boot with an unknown gun. |
-| ✅ | **FLT-10** Damage modifiers hook | `FlightModel` takes yaw authority and roll bias; `FlightModel.spec`: a damaged left wing rolls the jet left hands-off, a dead engine gives no thrust. Drones visibly fly worse when hit. |
-| ✅ | **CAM-03** Snap views, zoom, FOV | Left Alt + arrows snap left/right/back/up (arrows don't fly the jet while Alt is held); Z zoom; dynamic FOV from Phase 1. FOV *setting* UI comes with SET-02. |
-| ✅ | **HUD-02** Gun pipper, hit markers, kill feed | Lead indicator (Ballistics lead solution) in the HUD box, target markers with name/range, ✕ hit marker, ammo/heat/jam readout, kill feed (your lines in amber). |
-| ✅ | **AIR-02** Crash detection (terrain and mid-air) | Server checks each jet's path every tick: a drone pointed at the ground was destroyed in 0.45 s. A fake `ReportCrash` while flying at 1,620 studs was ignored. Mid-air collisions despawn both jets. |
-| ✅ | **AIR-03** Death flow, kill cam trigger, respawn hook | Explosion, 3.5 s death camera orbiting the wreck, then the menu with "Shot down by X" / "You crashed"; `AircraftService.JetDestroyed` / `CombatService.Kill` signals for match modes. |
-| ✅ | **AIR-05** Leaving mid-flight cleans up and credits kills | `DamageModel.spec`: leaving or respawning while damaged still credits the attacker. *Not yet tested with two real players.* |
-| ✅ | **GUN-01** `Ballistics` with tests | Seeded spread inside the cone, drop and drag, lead solution hits a crossing target within 3 m, segment-vs-box entry point. |
-| ✅ | **GUN-02** Client local tracers from seeded spread | Pooled neon tracers (every 2nd round), dust/splash where they hit the ground. Confirmed hands-on. |
-| ✅ | **GUN-03** Server bullet simulation with rewind and ray–OBB hits | Drone shot down in 1.07 s (23 hits); 1.56 s (28 hits) under 150 ms simulated lag. Rewind capped at 250 ms. |
-| ✅ | **GUN-04** HistoryService ring buffers | `PoseHistory` interpolation and clamping tested; 1.5 s of poses per jet. |
-| ✅ | **GUN-05** Remote fire FX on other clients | `GunFireFx` starts/stops seeded tracer streams for other jets. *Two-client visual check still to do.* |
-| ✅ | **GUN-06** Simple pipper (Tier I) | Lead indicator; put the gun cross on it. |
-| ✅ | **GUN-08** Ammo, overheat | Server-side ammo, heat per shot, jam at full heat and clears at 40%; the HUD mirrors it via attributes. (Spool-up isn't needed for these guns; it arrives with rotary cannons.) |
-| ✅ | **DMG-01** Component health, damage, destruction | `DamageModel.spec`; hits on destroyed parts spill into the fuselage (found in testing: tail shots from dead six could never kill). |
-| ✅ | **DMG-02** Partial damage effects | Engine → thrust, tail → pitch/yaw authority, wings → lift and roll bias; applied on the pilot's client from `DamageState`. |
-| ✅ | **DMG-04** Kill and assist credit, kill feed | Last damager within 15 s gets the kill, ≥25% damage assists, forced-crash credit within 30 s; kill feed verified in play. |
-| ✅ | **FX-02** Gun, tracer, impact, explosion effects | Muzzle flash, tracers, sparks on hits, dust/splash, explosion with fire, smoke, sparks and flash (built-in textures). |
-| ✅ | **AUD-02** Guns, hits, explosions | Gun loop (yours non-positional, others 3D), hit tink, damage thud, explosion; Weapons sound group at 0.2. Placeholder Creator Store sounds. |
-| ✅ | **TST-02** Network simulation checklist | [docs/testing/NETWORK.md](testing/NETWORK.md) with results. Studio's simulated lag doesn't show up in `GetNetworkPing`, so the compensation amount needs a real server (REL-02). |
-| ✅ | **PRF-01** Profiling labels in hot paths | `FlightController.step`, `CombatService.tick`, `AircraftService.collisions`, `WeaponController.tracers`. |
+| Done | **ACD-04** Weapon schema and registry; guns for F-5E/MiG-21 | `WeaponData` (2× M39A2 20 mm, GSh-23L 23 mm), validated on load; `Weapons.spec`: every airframe's gun exists, bad weapons are named. AircraftService refuses to boot with an unknown gun. |
+| Done | **FLT-10** Damage modifiers hook | `FlightModel` takes yaw authority and roll bias; `FlightModel.spec`: a damaged left wing rolls the jet left hands-off, a dead engine gives no thrust. Drones visibly fly worse when hit. |
+| Done | **CAM-03** Snap views, zoom, FOV | Left Alt + arrows snap left/right/back/up (arrows don't fly the jet while Alt is held); Z zoom; dynamic FOV from Phase 1. FOV *setting* UI comes with SET-02. |
+| Done | **HUD-02** Gun pipper, hit markers, kill feed | Lead indicator (Ballistics lead solution) in the HUD box, target markers with name/range, ✕ hit marker, ammo/heat/jam readout, kill feed (your lines in amber). |
+| Done | **AIR-02** Crash detection (terrain and mid-air) | Server checks each jet's path every tick: a drone pointed at the ground was destroyed in 0.45 s. A fake `ReportCrash` while flying at 1,620 studs was ignored. Mid-air collisions despawn both jets. *Phase 6: the paths of the nose, wingtips and tail are checked too, and the hull touching the map counts as a crash (a wingtip clipping a hill, or a shallow belly hit, had gone unnoticed).* |
+| Done | **AIR-03** Death flow, kill cam trigger, respawn hook | Explosion, 3.5 s death camera orbiting the wreck, then the menu with "Shot down by X" / "You crashed"; `AircraftService.JetDestroyed` / `CombatService.Kill` signals for match modes. |
+| Done | **AIR-05** Leaving mid-flight cleans up and credits kills | `DamageModel.spec`: leaving or respawning while damaged still credits the attacker. *Not yet tested with two real players.* |
+| Done | **GUN-01** `Ballistics` with tests | Seeded spread inside the cone, drop and drag, lead solution hits a crossing target within 3 m, segment-vs-box entry point. |
+| Done | **GUN-02** Client local tracers from seeded spread | Pooled neon tracers (every 2nd round), dust/splash where they hit the ground. Confirmed hands-on. |
+| Done | **GUN-03** Server bullet simulation with rewind and ray–OBB hits | Drone shot down in 1.07 s (23 hits); 1.56 s (28 hits) under 150 ms simulated lag. Rewind capped at 250 ms. |
+| Done | **GUN-04** HistoryService ring buffers | `PoseHistory` interpolation and clamping tested; 1.5 s of poses per jet. |
+| Done | **GUN-05** Remote fire FX on other clients | `GunFireFx` starts/stops seeded tracer streams for other jets. *Two-client visual check still to do.* |
+| Done | **GUN-06** Simple pipper (Tier I) | Lead indicator; put the gun cross on it. |
+| Done | **GUN-08** Ammo, overheat | Server-side ammo, heat per shot, jam at full heat and clears at 40%; the HUD mirrors it via attributes. (Spool-up isn't needed for these guns; it arrives with rotary cannons.) |
+| Done | **DMG-01** Component health, damage, destruction | `DamageModel.spec`; hits on destroyed parts spill into the fuselage (found in testing: tail shots from dead six could never kill). |
+| Done | **DMG-02** Partial damage effects | Engine → thrust, tail → pitch/yaw authority, wings → lift and roll bias; applied on the pilot's client from `DamageState`. |
+| Done | **DMG-04** Kill and assist credit, kill feed | Last damager within 15 s gets the kill, ≥25% damage assists, forced-crash credit within 30 s; kill feed verified in play. |
+| Done | **FX-02** Gun, tracer, impact, explosion effects | Muzzle flash, tracers, sparks on hits, dust/splash, explosion with fire, smoke, sparks and flash (built-in textures). |
+| Done | **AUD-02** Guns, hits, explosions | Gun loop (yours non-positional, others 3D), hit tink, damage thud, explosion; Weapons sound group at 0.2. Placeholder Creator Store sounds. |
+| Done | **TST-02** Network simulation checklist | [docs/testing/NETWORK.md](testing/NETWORK.md) with results. Studio's simulated lag doesn't show up in `GetNetworkPing`, so the compensation amount needs a real server (REL-02). |
+| Done | **PRF-01** Profiling labels in hot paths | `FlightController.step`, `CombatService.tick`, `AircraftService.collisions`, `WeaponController.tracers`. |
 
 **Also done in Phase 2:** target drones (DroneService, test env only, the base for AI-01), cockpit panel now sits on the fuselage (playtest fix), AI-flown jets supported by AircraftService. Tests: 115 → 157.
 
@@ -106,29 +107,29 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **NET-03** `Pack` helpers with round-trip tests | 21-byte missile snapshots; round-trip within precision; a full 40-missile packet < 1 KB; malformed buffers rejected. Live: ~15 packets/s received. |
-| ✅ | **ACD-05** Missile data for Tier I–III | AIM-9P/L, R-13M, R-60, R-73, R-3R, AIM-7F, R-27R with class-specific validation; every airframe's missiles exist, fit its hardpoints, and radar missiles need a radar. |
-| ✅ | **CAM-04** Padlock | Hold X / middle mouse: head follows your lock, IR target or nearest spotted jet, clamped to head limits; mouse aim holds still meanwhile. *Not yet checked hands-on.* |
-| ✅ | **HUD-03** Target box, seeker circle, launch zone, missile warning | Lock box with range/closure, IR seeker circle (flashing → solid at lock), launch-zone bar with Rmin / no-escape / Rmax and caret, SHOOT cue, MISSILE warning with direction arrow, missile and flare/chaff readouts. *Visuals not yet checked hands-on.* |
-| ✅ | **DMG-03** Fire and smoke | Engine below 60% smokes; engine hits below 50% have a 10% fire chance; fire burns the fuselage 6/s for 8 s, credited to whoever started it. |
-| ✅ | **MSL-01** `Guidance` module | PN hits a straight target from 2 km and a 6 G turning target from 1.5 km; a 5.5 km shot at a fleeing target falls short; gimbal loss stops guidance; G falls with speed. (PN sign bug caught by hand-check before testing.) |
-| ✅ | **MSL-02** MissileService simulation and detonation | Live: AIM-9P hit after 5.5 s; proximity fuse and ground impact; blast falloff. Damage raised after testing so a good hit kills (R-60 cripples). |
-| ✅ | **MSL-03** Fire validation incl. server-side lock timing | Server tracks each shooter's IR seeker target and hold time; radar missiles refused without the server's lock; 0.6 s launch cooldown. |
-| ✅ | **MSL-04** Packed unreliable replication + client interpolation | 100 ms interpolation buffer, 200 ms extrapolation; motor flame only while burning. |
-| ✅ | **MSL-05** IR rear-aspect and all-aspect seekers | Rear-aspect can't see a jet head-on, all-aspect can; heat by aspect, throttle and afterburner. |
-| ✅ | **MSL-06** SARH with lock dependency | Live: radar-locked a drone and killed it with an R-3R; missiles go dumb permanently if the lock is lost. |
-| ✅ | **SNS-01** Visual spotting with LOS | 3 km (5 km above contrail height) with terrain line of sight; HUD markers. |
-| ✅ | **SNS-02** Radar detection and scope | Client uses the same Signature rules as the server; B-scope with blips and boxed lock. *Visuals not yet checked hands-on.* |
-| ✅ | **SNS-03** Server lock state machine | Validated on request, re-checked 5 Hz (range, cone, clutter/notch, terrain LOS); live: "Locked" then "Lost" when the target died. |
-| ✅ | **SNS-04** Notch filtering | Spec: a pulse-Doppler radar loses a perpendicular target below it; pulse radars are blind looking down. Clutter altitude lowered to 300 m real after testing. |
-| ✅ | **SNS-05** RWR | Search / Lock / Launch threats at 2 Hz; live: radar missile showed "Launch"; IR silent without a missile-approach warner. Ring display with coarse bearings. |
-| ✅ | **SNS-06** `Signature` module | IR and radar detection specs. |
-| ✅ | **CMS-01** Deploy flow, counts, FX | Live: 6 flares deployed, drawn, count 30 → 24. |
-| ✅ | **CMS-02** Flare heat sources and decoy decision | Engagement simulator (40 seeds each): no defence 100% hit; AB + flares 42% defeated; idle + break + flares **82% defeated** (target 70–85%). |
-| ✅ | **CMS-03** Chaff decoy and lock breaking | One roll per bundle per missile/lock; much stronger while notching (chaff spam without notching weakened after review). *Not yet exercised hands-on.* |
-| ✅ | **FX-03** Missile, flare, chaff effects | Missile body, smoke trail, motor light; burning flares with smoke; chaff cloud. |
-| ✅ | **FX-04** Damage smoke and fire | Smoke/fire emitters on engine nozzles driven by the Smoking / OnFire attributes. |
-| ✅ | **AUD-03** Seeker tone, RWR, missile warning | Seeker growl → lock tone, RWR search ping / lock repeat / launch alarm, launch whoosh (placeholder sounds). |
+| Done | **NET-03** `Pack` helpers with round-trip tests | 21-byte missile snapshots; round-trip within precision; a full 40-missile packet < 1 KB; malformed buffers rejected. Live: ~15 packets/s received. |
+| Done | **ACD-05** Missile data for Tier I–III | AIM-9P/L, R-13M, R-60, R-73, R-3R, AIM-7F, R-27R with class-specific validation; every airframe's missiles exist, fit its hardpoints, and radar missiles need a radar. |
+| Done | **CAM-04** Padlock | Hold X / middle mouse: head follows your lock, IR target or nearest spotted jet, clamped to head limits; mouse aim holds still meanwhile. *Not yet checked hands-on.* |
+| Done | **HUD-03** Target box, seeker circle, launch zone, missile warning | Lock box with range/closure, IR seeker circle (flashing → solid at lock), launch-zone bar with Rmin / no-escape / Rmax and caret, SHOOT cue, MISSILE warning with direction arrow, missile and flare/chaff readouts. *Visuals not yet checked hands-on.* |
+| Done | **DMG-03** Fire and smoke | Engine below 60% smokes; engine hits below 50% have a 10% fire chance; fire burns the fuselage 6/s for 8 s, credited to whoever started it. |
+| Done | **MSL-01** `Guidance` module | PN hits a straight target from 2 km and a 6 G turning target from 1.5 km; a 5.5 km shot at a fleeing target falls short; gimbal loss stops guidance; G falls with speed. (PN sign bug caught by hand-check before testing.) |
+| Done | **MSL-02** MissileService simulation and detonation | Live: AIM-9P hit after 5.5 s; proximity fuse and ground impact; blast falloff. Damage raised after testing so a good hit kills (R-60 cripples). |
+| Done | **MSL-03** Fire validation incl. server-side lock timing | Server tracks each shooter's IR seeker target and hold time; radar missiles refused without the server's lock; 0.6 s launch cooldown. |
+| Done | **MSL-04** Packed unreliable replication + client interpolation | 100 ms interpolation buffer, 200 ms extrapolation; motor flame only while burning. *Phase 6: a new missile starts on the launcher's rail as the client draws it and eases onto the interpolated track over 1 s (launches had appeared tens of metres behind the jet).* |
+| Done | **MSL-05** IR rear-aspect and all-aspect seekers | Rear-aspect can't see a jet head-on, all-aspect can; heat by aspect, throttle and afterburner. |
+| Done | **MSL-06** SARH with lock dependency | Live: radar-locked a drone and killed it with an R-3R; missiles go dumb permanently if the lock is lost. |
+| Done | **SNS-01** Visual spotting with LOS | 3 km (5 km above contrail height) with terrain line of sight; HUD markers. |
+| Done | **SNS-02** Radar detection and scope | Client uses the same Signature rules as the server; B-scope with blips and boxed lock. *Visuals not yet checked hands-on.* |
+| Done | **SNS-03** Server lock state machine | Validated on request, re-checked 5 Hz (range, cone, clutter/notch, terrain LOS); live: "Locked" then "Lost" when the target died. |
+| Done | **SNS-04** Notch filtering | Spec: a pulse-Doppler radar loses a perpendicular target below it; pulse radars are blind looking down. Clutter altitude lowered to 300 m real after testing. |
+| Done | **SNS-05** RWR | Search / Lock / Launch threats at 2 Hz; live: radar missile showed "Launch"; IR silent without a missile-approach warner. Ring display with coarse bearings. |
+| Done | **SNS-06** `Signature` module | IR and radar detection specs. |
+| Done | **CMS-01** Deploy flow, counts, FX | Live: 6 flares deployed, drawn, count 30 → 24. |
+| Done | **CMS-02** Flare heat sources and decoy decision | Engagement simulator (40 seeds each): no defence 100% hit; AB + flares 42% defeated; idle + break + flares **82% defeated** (target 70–85%). |
+| Done | **CMS-03** Chaff decoy and lock breaking | One roll per bundle per missile/lock; much stronger while notching (chaff spam without notching weakened after review). *Not yet exercised hands-on.* |
+| Done | **FX-03** Missile, flare, chaff effects | Missile body, smoke trail, motor light; burning flares with smoke; chaff cloud. |
+| Done | **FX-04** Damage smoke and fire | Smoke/fire emitters on engine nozzles driven by the Smoking / OnFire attributes. |
+| Done | **AUD-03** Seeker tone, RWR, missile warning | Seeker growl → lock tone, RWR search ping / lock repeat / launch alarm, launch whoosh (placeholder sounds). |
 
 **Also done in Phase 3:** engagement simulator in the test suite; debug "launch at me" buttons; startup smoke test now counts runtime errors after boot (caught a per-frame crash). Tests: 157 → 202.
 
@@ -140,27 +141,27 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **INP-03** Gamepad support | Left stick pitch/roll (deadzone + expo), LB/RB rudder, RT/LT throttle (hold RT at 100% for afterburner), right stick look; A gun, X missile, Y lock, B flare, D-pad chaff/cycle, Select camera, R3 padlock, Start scoreboard; menu selection on the first jet. Simulated buttons in play: flare 30 → 29, chaff 30 → 29, Select switched camera. *Sticks and triggers need a real pad.* |
-| ✅ | **INP-04** Touch controls (virtual stick, buttons, auto-throttle, aim-assist) | Virtual stick, throttle slider with afterburner detent, FIRE/MSL/LOCK/FLR/CHF/WPN/CAM, auto-throttle holding ~420 kt (on by default, AUTO button), gun aim-assist toward the lead when firing near a target. Laid out and checked in play with the debug "Toggle touch UI". *Needs a real phone: multi-touch, feel, aim-assist strength.* |
-| ✅ | **CAM-06** Kill cam and spectate | Live: shot down by an AI → camera follows the killer, "Shot down by Viper [AI]"; menu says "You were shot down by Viper [AI]" (AI names fixed in testing). Spectating other jets with ◀ ▶ while waiting to spawn. |
-| ✅ | **HUD-04** Warnings system with priorities (stall, terrain, fuel, bounds) | Every active warning listed, most urgent first: RETURN TO BATTLE AREA (countdown), PULL UP (terrain on the flight path within 4 s), ENGINE FIRE, STALL, OVER-G, G-LIMIT, ENGINE DAMAGE, BINGO FUEL. Top one flashes red, the rest in amber. *Not yet seen hands-on.* |
-| ✅ | **HUD-06** Mobile scaling pass | On touch: scopes shrink to 70% and move to the top corners (moved below the Roblox top bar after the first look), fuel moves above the stick, key help hidden. |
-| ✅ | **AIR-04** Out-of-bounds and ceiling handling | Outside ±20,000 studs or above the ceiling: 10 s countdown, then despawn. Live: an AI jet moved to x = 20,600 got the warning (9 s left after 1 s) and was despawned after 10 s. |
-| ✅ | **SEC-01** Movement checks with strike system and corrections | `MovementCheck`: speed, teleport and acceleration checks; 3 strikes → reset to the last good position, 3 resets → kick. `MatchRules.spec`: honest max-G flying never flagged, crash stops exempt (found in testing). 24-jet stress match: 0 strikes. |
-| ✅ | **SEC-02** Exploit test suite | `tools/ExploitTest`: CFrame speed hack → 6 strikes, 2 resets; teleport → kicked. Remote spam is covered by the NET-02 rate limits. |
-| ✅ | **SEC-03** Logging pipeline for violations | `AntiCheatStrike` / `AntiCheatKick` telemetry events and `AntiCheatViolations` / `Resets` / `Kicks` counters in ServerStorage; kicks counted once (found in testing). |
-| ✅ | **MCH-01** MatchService state machine and Mode interface | Waiting → Countdown → InProgress → Results, verified live; modes are data in `MatchRules`; the spawn gate follows the state. |
-| ✅ | **MCH-02** Free Flight and Dogfight FFA | Dogfight: 15 kills or 10 minutes, AI fill to 8. Free Flight: no scoring, drones allowed. Switched live with the debug buttons. |
-| ✅ | **MCH-03** Configurable respawn rules (both types) | Timer and Lives rules; `MatchRules.spec`. Dogfight uses a 5 s timer until the respawn decision (DESIGN §11). |
-| ✅ | **MCH-04** Scoreboard and results screen | Banner with mode, time and leader; hold Tab / Start for the scoreboard (Roblox's player list took Tab, now hidden); results screen with winner, ranking and next-match countdown. All checked in play. Rewards on the end screen come with Phase 5. |
-| ✅ | **AI-01** Server-side flight for AI jets (shared FlightModel + Instructor) | AI jets fly the same flight model as players, server-side; 23 at once in the stress test. |
-| ✅ | **AI-02** Patrol/Engage/Attack with gun use | `Dogfight.spec`: a Normal pilot shoots down a target ahead (10/10); an Ace beats an Easy pilot 6–0 (4 draws). Live: AI pilots score kills, including on me. |
-| ✅ | **AI-03** Defend state (missile defence, flares, break turn) | `Dogfight.spec`: break, idle and flares against a heat-seeker after the reaction time; notch and chaff against a radar missile; pull up near the ground. |
-| ✅ | **MAP-02** "Strait" blockout: terrain shape, airbases, spawns | `tools/StraitBuilder`: west landmass with a mountain range (passes cut through), east landmass with lower hills, a north-south channel with the test range on a central island, open sea to the south, islets for masking, airbases west and east (runway, apron, hangars, tower), 12 tagged `SpawnPoint` parts. `Place.spec` checks the spawns are in bounds and clear of terrain. Rebuilt after sign-off as a proper height field (see below). |
-| ✅ | **TUT-01** Lesson framework (steps, prompts, highlights, conditions) | `LessonRunner` (pure, `MatchRules.spec`) plus `TutorialController`: prompt panel with step counter and hint, world props, completion message. Training row on the spawn menu. |
-| ✅ | **TUT-02** Lessons 1–3 | 1 Basic flight (pitch, roll, afterburner, 6 rings), 2 Energy (dive, zoom climb, hard turn, recover), 3 Guns (3 drones). Live: lesson 1 steps 1–3 passed and the rings were laid out; drones spawn in Free Flight. *Runs on Free Flight servers only (reserved training servers are TUT-04). Lessons 2–3 not yet played end to end.* |
-| ✅ | **ANL-01** Telemetry wrapper | `Telemetry.event`: pcall'd, tagged with the environment, recent-event log; `MatchEnded`, `Death` and anti-cheat events seen firing in play. |
-| ✅ | **PRF-02** Full-match stress test (bots fill to 24 jets) | Debug "Stress" mode fills to 24 jets. Once the map had streamed in, the server held **60 Hz**; the services' Heartbeat work cost **1.1 ms average, 4.5 ms peak** per frame (new meter in `Main.server`). Dips to 40–53 Hz only while Studio streamed the new map (server, client and renderer share one process in Studio). |
+| Done | **INP-03** Gamepad support | Left stick pitch/roll (deadzone + expo), LB/RB rudder, RT/LT throttle (hold RT at 100% for afterburner), right stick look; A gun, X missile, Y lock, B flare, D-pad chaff/cycle, Select camera, R3 padlock, Start scoreboard; menu selection on the first jet. Simulated buttons in play: flare 30 → 29, chaff 30 → 29, Select switched camera. *Sticks and triggers need a real pad.* |
+| Done | **INP-04** Touch controls (virtual stick, buttons, auto-throttle, aim-assist) | Virtual stick, throttle slider with afterburner detent, FIRE/MSL/LOCK/FLR/CHF/WPN/CAM, auto-throttle holding ~420 kt (on by default, AUTO button), gun aim-assist toward the lead when firing near a target. Laid out and checked in play with the debug "Toggle touch UI". *Needs a real phone: multi-touch, feel, aim-assist strength.* |
+| Done | **CAM-06** Kill cam and spectate | Live: shot down by an AI → camera follows the killer, "Shot down by Viper [AI]"; menu says "You were shot down by Viper [AI]" (AI names fixed in testing). Spectating other jets with ◀ ▶ while waiting to spawn. |
+| Done | **HUD-04** Warnings system with priorities (stall, terrain, fuel, bounds) | Every active warning listed, most urgent first: RETURN TO BATTLE AREA (countdown), PULL UP (terrain on the flight path within 4 s), ENGINE FIRE, STALL, OVER-G, G-LIMIT, ENGINE DAMAGE, BINGO FUEL. Top one flashes red, the rest in amber. *Not yet seen hands-on.* |
+| Done | **HUD-06** Mobile scaling pass | On touch: scopes shrink to 70% and move to the top corners (moved below the Roblox top bar after the first look), fuel moves above the stick, key help hidden. |
+| Done | **AIR-04** Out-of-bounds and ceiling handling | Outside ±20,000 studs or above the ceiling: 10 s countdown, then despawn. Live: an AI jet moved to x = 20,600 got the warning (9 s left after 1 s) and was despawned after 10 s. |
+| Done | **SEC-01** Movement checks with strike system and corrections | `MovementCheck`: speed, teleport and acceleration checks; 3 strikes → reset to the last good position, 3 resets → kick. `MatchRules.spec`: honest max-G flying never flagged, crash stops exempt (found in testing). 24-jet stress match: 0 strikes. |
+| Done | **SEC-02** Exploit test suite | `tools/ExploitTest`: CFrame speed hack → 6 strikes, 2 resets; teleport → kicked. Remote spam is covered by the NET-02 rate limits. |
+| Done | **SEC-03** Logging pipeline for violations | `AntiCheatStrike` / `AntiCheatKick` telemetry events and `AntiCheatViolations` / `Resets` / `Kicks` counters in ServerStorage; kicks counted once (found in testing). |
+| Done | **MCH-01** MatchService state machine and Mode interface | Waiting → Countdown → InProgress → Results, verified live; modes are data in `MatchRules`; the spawn gate follows the state. |
+| Done | **MCH-02** Free Flight and Dogfight FFA | Dogfight: 15 kills or 10 minutes, AI fill to 8. Free Flight: no scoring, drones allowed. Switched live with the debug buttons. |
+| Done | **MCH-03** Configurable respawn rules (both types) | Timer and Lives rules; `MatchRules.spec`. Dogfight uses a 5 s timer until the respawn decision (DESIGN §11). |
+| Done | **MCH-04** Scoreboard and results screen | Banner with mode, time and leader; hold Tab / Start for the scoreboard (Roblox's player list took Tab, now hidden); results screen with winner, ranking and next-match countdown. All checked in play. Rewards on the end screen come with Phase 5. |
+| Done | **AI-01** Server-side flight for AI jets (shared FlightModel + Instructor) | AI jets fly the same flight model as players, server-side; 23 at once in the stress test. |
+| Done | **AI-02** Patrol/Engage/Attack with gun use | `Dogfight.spec`: a Normal pilot shoots down a target ahead (10/10); an Ace beats an Easy pilot 6–0 (4 draws). Live: AI pilots score kills, including on me. |
+| Done | **AI-03** Defend state (missile defence, flares, break turn) | `Dogfight.spec`: break, idle and flares against a heat-seeker after the reaction time; notch and chaff against a radar missile; pull up near the ground. |
+| Done | **MAP-02** "Strait" blockout: terrain shape, airbases, spawns | `tools/StraitBuilder`: west landmass with a mountain range (passes cut through), east landmass with lower hills, a north-south channel with the test range on a central island, open sea to the south, islets for masking, airbases west and east (runway, apron, hangars, tower), 12 tagged `SpawnPoint` parts. `Place.spec` checks the spawns are in bounds and clear of terrain. Rebuilt after sign-off as a proper height field (see below). |
+| Done | **TUT-01** Lesson framework (steps, prompts, highlights, conditions) | `LessonRunner` (pure, `MatchRules.spec`) plus `TutorialController`: prompt panel with step counter and hint, world props, completion message. Training row on the spawn menu. |
+| Done | **TUT-02** Lessons 1–3 | 1 Basic flight (pitch, roll, afterburner, 6 rings), 2 Energy (dive, zoom climb, hard turn, recover), 3 Guns (3 drones). Live: lesson 1 steps 1–3 passed and the rings were laid out; drones spawn in Free Flight. *Runs on Free Flight servers only (reserved training servers are TUT-04). Lessons 2–3 not yet played end to end.* |
+| Done | **ANL-01** Telemetry wrapper | `Telemetry.event`: pcall'd, tagged with the environment, recent-event log; `MatchEnded`, `Death` and anti-cheat events seen firing in play. |
+| Done | **PRF-02** Full-match stress test (bots fill to 24 jets) | Debug "Stress" mode fills to 24 jets. Once the map had streamed in, the server held **60 Hz**; the services' Heartbeat work cost **1.1 ms average, 4.5 ms peak** per frame (new meter in `Main.server`). Dips to 40–53 Hz only while Studio streamed the new map (server, client and renderer share one process in Studio). |
 
 **After sign-off:**
 - The Phase 0 pylons and height towers, Roblox's default Baseplate and the unused SpawnLocation were removed from the island; the runway stays as the menu backdrop.
@@ -186,55 +187,43 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 | | Task | Evidence |
 |:---:|---|---|
-| ✅ | **MSL-07** ARH with midcourse and active phase | `Guidance.arhTrack`: data link midcourse (or the last known track, extrapolated, if the launcher's lock drops), active inside `ActiveRange`; outside the gimbal or notched for over 1 s it's lost. Warnings, AI defence and chaff only once active. AIM-120A and R-77 (Tier IV). `Missiles.spec`: 5 ARH tests. Live: a debug AIM-120A from 1.8 km behind went active, the RWR showed the launch, and it hit after 4.4 s. |
-| ✅ | **AI-04** Missile use, Extend state | `AIBrain.chooseMissile`: heat-seekers when the seeker sees the target, radar missiles after a server lock (`SensorService:RequestLock`), through the same launch checks as players. `Dogfight.spec`: 4 tests. Live (24-jet stress): 8 launches in ~30 s (R-60, AIM-9P, R-3R). Extend state from Phase 4 (`Dogfight.spec`). |
-| ✅ | **AI-05** Difficulty profiles | Easy / Normal / Hard / Ace: reaction time, aim error, G use, energy and flare skill, and now missile pacing and launch range. `Dogfight.spec`: an Ace beats an Easy pilot; better pilots fire from further and more often. *Matches still fill with Normal pilots.* |
-| ✅ | **DAT-01** DataService with ProfileStore, environment-based names, kick on failure | `DataService`: `lm-loleris/profilestore` 1.0.3 (the author's own Wally package), store `PlayerData_Test_v1` / `PlayerData_Prod_v1`, kick with a friendly message if a session can't start, migrations on load, `BeforeRelease` before every session ends, `Update()` for all writes. On the test experience: "Roblox API services available - data will be saved"; +1,234 Credits and a new lineup survived stopping and rejoining. A second ProfileStore session on the same save got it and its write was kept (1,734 → 1,735) with nothing lost on the first session's exit. *That ran inside one server, so it can't prove the two-servers case: check in the first multiplayer playtest.* |
-| ✅ | **DAT-02** Schema v1, migrations framework and tests | `PlayerData`: schema v1, `MIGRATIONS` run in order on load, reconcile fills new fields, bounded receipt list, settings sanitised. `PlayerData.spec`: 10 tests (fixtures through a pretend v2→v3 migration, a v0 save, missing fields, bad settings). |
-| ✅ | **DAT-03** Client replica with delta updates | Only changed top-level fields are pushed (`PlayerDataUpdate`); the client asks for the full replica on start (`GetPlayerData`). Delta tests in `PlayerData.spec`; live: the menus updated after every research, purchase and admin grant. |
-| ✅ | **DAT-05** Data reset and inspection admin commands (test environment) | `data.inspect`, `data.reset`, `give.credits` / `give.xp` / `give.rp`, `unlock` (test environment only). Live: give RP and Credits, unlock all 8 jets. |
-| ✅ | **PRG-01** Event recording in matches and reward calculation | `ProgressionService` tallies kills (victim and jet flown), assists, missiles defeated (new `MissileService.MissileDefeated`), survival and activity; rewards at match end (and on leaving mid-match). Live: shooting down a drone paid "Kills (AI)" 50 XP / 50 RP / 75 Cr, plus the win and first-win-of-the-day bonus: 312 XP, 403 Cr in all. *Leaving mid-match not yet tested live (needs a second client or REL-02).* |
-| ✅ | **PRG-02** Research, purchase and lineup rules with server validation | `Progression.research` / `buy` / `setLineup`, used through validated remotes. Live: refused with no RP, out of order (F-16A without a Tier II jet), without Credits, too many lineup slots, a module on an unowned jet; accepted when allowed. `Progression.spec`. |
-| ✅ | **PRG-03** Pilot level curve and level rewards | `xpToNext(level) = 500 + 150 × level^1.35`, 250 Credits per level, lineup slot 2 at level 5 and 3 at level 15. `Progression.spec`; shown in the top bar and the hangar's locked slots. |
-| ✅ | **PRG-04** Upgrade modules feeding flight/loadout modifiers | Engine I/II, Airframe I/II, Avionics I, Countermeasures I; costs scale with tier. Fitted modules ride on the jet (`Modules` attribute) and apply to the pilot's flight model, both radars and the countermeasure counts. Fully upgraded is +6% thrust, +0.5 G: stock is within the 85–90% target. Live: Engine I on a Mirage showed up on the respawned jet. |
-| ✅ | **PRG-05** Anti-farming rules | AI kills pay half; after 3 kills on the same victim each further kill pays a quarter; no input for 60 s means no survival or win bonus. `Progression.spec`; live AI kill paid half. |
-| ✅ | **PRG-06** Economy simulation and pacing check | `tools/EconomySim` runs an average free player on the real code; `Economy.spec` checks the targets. After tuning: first new jet **24 min**, Tier II **2.2 h**, Tier III **8.2 h** (targets 20–30 min, 2–3 h, 8–10 h). |
-| ✅ | **UI-01** React setup, theme, router, base components | react-lua 17.2.1 via Wally (`jsdotlua/react`, `react-roblox`); `UI/Theme`, `UI/Components` (panel, label, button with pending state, bar, pill), `UI/App` with top bar and screen router; `MenuController` owns the state and sends intents. |
-| ✅ | **UI-02** Hangar with 3D preview and lineup | Jet on a turntable, lineup slots (locked until level 5 / 15 with the reason), your jets add / remove, Play with the match status, training lessons. Checked in play. |
-| ✅ | **UI-03** Tech tree screen | Branch columns by tier, node states, RP progress, costs; Research and Buy through the UI live (Mirage IIIE researched, then bought). |
-| ✅ | **UI-04** Aircraft detail: modules, loadout, camo | Stock vs upgraded performance bars, modules with costs or the exact reason they can't be fitted, loadout, camo (Default only until the shop), lineup. Checked in play. |
-| ✅ | **UI-06** Results screen with reward animations | Winner, reward lines counting up, pilot level bar, scoreboard; replaces the Phase 4 results panel. Checked in play. |
-| ✅ | **MMK-01** In-server BR matching (single place) | `Matchmaking`: match band = top lineup BR down 1.0; AI fly jets in the band; jets above it are refused with the reason; the hangar shows the band. `Matchmaking.spec`: 6 tests. Live: an F-4E lineup gave a BR 2.0–3.0 match with AI in F-4Es, Mirage F1s and IIIs; an F-16A was refused. |
-| ✅ | **SET-01** Settings data, controller, change signal | `Config/Settings` (known keys, ranges, sanitise), `SettingsController` (`Get`, `Set`, `Changed`): control scheme, sensitivity, invert pitch, FOV, default camera, volumes applied at once. Live: FOV 82 and invert saved; an invalid scheme and an unknown key dropped. *The settings screen is SET-02 (Phase 6).* |
-| ✅ | **ANL-03** Economy events | Every Credits source (match rewards) and sink (jets, modules) goes to `AnalyticsService:LogEconomyEvent` and the telemetry log. |
-| ✅ | **OPS-02** AdminService and commands | Admins: the place's creator or group owner, a list, or anyone in Studio; data commands only in the test environment; every command logged. Live through the `AdminCommand` remote. |
-| ✅ | **REL-02** Test universe setup (separate experience, test products) | "Afterburner (TEST)" published by Will (place 72582604278324), Studio API access on; the place carries `Environment = "Test"` (test save store, debug and admin data tools on). The release checklist says to switch it to `Prod` before a production publish. *Test products come with the shop (Phase 7).* |
+| Done | **MSL-07** ARH with midcourse and active phase | `Guidance.arhTrack`: data link midcourse (or the last known track, extrapolated, if the launcher's lock drops), active inside `ActiveRange`; outside the gimbal or notched for over 1 s it's lost. Warnings, AI defence and chaff only once active. AIM-120A and R-77 (Tier IV). `Missiles.spec`: 5 ARH tests. Live: a debug AIM-120A from 1.8 km behind went active, the RWR showed the launch, and it hit after 4.4 s. |
+| Done | **AI-04** Missile use, Extend state | `AIBrain.chooseMissile`: heat-seekers when the seeker sees the target, radar missiles after a server lock (`SensorService:RequestLock`), through the same launch checks as players. `Dogfight.spec`: 4 tests. Live (24-jet stress): 8 launches in ~30 s (R-60, AIM-9P, R-3R). Extend state from Phase 4 (`Dogfight.spec`). |
+| Done | **AI-05** Difficulty profiles | Easy / Normal / Hard / Ace: reaction time, aim error, G use, energy and flare skill, and now missile pacing and launch range. `Dogfight.spec`: an Ace beats an Easy pilot; better pilots fire from further and more often. *Matches still fill with Normal pilots.* |
+| Done | **DAT-01** DataService with ProfileStore, environment-based names, kick on failure | `DataService`: `lm-loleris/profilestore` 1.0.3 (the author's own Wally package), store `PlayerData_Test_v1` / `PlayerData_Prod_v1`, kick with a friendly message if a session can't start, migrations on load, `BeforeRelease` before every session ends, `Update()` for all writes. On the test experience: "Roblox API services available - data will be saved"; +1,234 Credits and a new lineup survived stopping and rejoining. A second ProfileStore session on the same save got it and its write was kept (1,734 → 1,735) with nothing lost on the first session's exit. *That ran inside one server, so it can't prove the two-servers case: check in the first multiplayer playtest.* |
+| Done | **DAT-02** Schema v1, migrations framework and tests | `PlayerData`: schema v1, `MIGRATIONS` run in order on load, reconcile fills new fields, bounded receipt list, settings sanitised. `PlayerData.spec`: 10 tests (fixtures through a pretend v2→v3 migration, a v0 save, missing fields, bad settings). |
+| Done | **DAT-03** Client replica with delta updates | Only changed top-level fields are pushed (`PlayerDataUpdate`); the client asks for the full replica on start (`GetPlayerData`). Delta tests in `PlayerData.spec`; live: the menus updated after every research, purchase and admin grant. |
+| Done | **DAT-05** Data reset and inspection admin commands (test environment) | `data.inspect`, `data.reset`, `give.credits` / `give.xp` / `give.rp`, `unlock` (test environment only). Live: give RP and Credits, unlock all 8 jets. |
+| Done | **PRG-01** Event recording in matches and reward calculation | `ProgressionService` tallies kills (victim and jet flown), assists, missiles defeated (new `MissileService.MissileDefeated`), survival and activity; rewards at match end (and on leaving mid-match). Live: shooting down a drone paid "Kills (AI)" 50 XP / 50 RP / 75 Cr, plus the win and first-win-of-the-day bonus: 312 XP, 403 Cr in all. *Leaving mid-match not yet tested live (needs a second client or REL-02).* |
+| Done | **PRG-02** Research, purchase and lineup rules with server validation | `Progression.research` / `buy` / `setLineup`, used through validated remotes. Live: refused with no RP, out of order (F-16A without a Tier II jet), without Credits, too many lineup slots, a module on an unowned jet; accepted when allowed. `Progression.spec`. |
+| Done | **PRG-03** Pilot level curve and level rewards | `xpToNext(level) = 500 + 150 × level^1.35`, 250 Credits per level, lineup slot 2 at level 5 and 3 at level 15. `Progression.spec`; shown in the top bar and the hangar's locked slots. |
+| Done | **PRG-04** Upgrade modules feeding flight/loadout modifiers | Engine I/II, Airframe I/II, Avionics I, Countermeasures I; costs scale with tier. Fitted modules ride on the jet (`Modules` attribute) and apply to the pilot's flight model, both radars and the countermeasure counts. Fully upgraded is +6% thrust, +0.5 G: stock is within the 85–90% target. Live: Engine I on a Mirage showed up on the respawned jet. |
+| Done | **PRG-05** Anti-farming rules | AI kills pay half; after 3 kills on the same victim each further kill pays a quarter; no input for 60 s means no survival or win bonus. `Progression.spec`; live AI kill paid half. |
+| Done | **PRG-06** Economy simulation and pacing check | `tools/EconomySim` runs an average free player on the real code; `Economy.spec` checks the targets. After tuning: first new jet **24 min**, Tier II **2.2 h**, Tier III **8.2 h** (targets 20–30 min, 2–3 h, 8–10 h). |
+| Done | **UI-01** React setup, theme, router, base components | react-lua 17.2.1 via Wally (`jsdotlua/react`, `react-roblox`); `UI/Theme`, `UI/Components` (panel, label, button with pending state, bar, pill), `UI/App` with top bar and screen router; `MenuController` owns the state and sends intents. |
+| Done | **UI-02** Hangar with 3D preview and lineup | Jet on a turntable, lineup slots (locked until level 5 / 15 with the reason), your jets add / remove, Play with the match status, training lessons. Checked in play. *Phase 6: with every slot full, Add became Swap (a level 1 pilot with one slot could not change jets); the menu backdrop is a slow orbit of the map instead of a followed AI jet; the logo sits clear of Roblox's top-left buttons.* |
+| Done | **UI-03** Tech tree screen | Branch columns by tier, node states, RP progress, costs; Research and Buy through the UI live (Mirage IIIE researched, then bought). |
+| Done | **UI-04** Aircraft detail: modules, loadout, camo | Stock vs upgraded performance bars, modules with costs or the exact reason they can't be fitted, loadout, camo, lineup. Checked in play. *Phase 6: modules can be unfitted and refitted for free (BUY / FIT / UNFIT), and camo became the skin picker (see ACD-07).* |
+| Done | **UI-06** Results screen with reward animations | Winner, reward lines counting up, pilot level bar, scoreboard; replaces the Phase 4 results panel. Checked in play. |
+| Done | **MMK-01** In-server BR matching (single place) | `Matchmaking`: match band = top lineup BR down 1.0; AI fly jets in the band; jets above it are refused with the reason; the hangar shows the band. `Matchmaking.spec`: 6 tests. Live: an F-4E lineup gave a BR 2.0–3.0 match with AI in F-4Es, Mirage F1s and IIIs; an F-16A was refused. |
+| Done | **SET-01** Settings data, controller, change signal | `Config/Settings` (known keys, ranges, sanitise), `SettingsController` (`Get`, `Set`, `Changed`): control scheme, sensitivity, invert pitch, FOV, default camera, volumes applied at once. Live: FOV 82 and invert saved; an invalid scheme and an unknown key dropped. *The settings screen is SET-02 (Phase 6).* |
+| Done | **ANL-03** Economy events | Every Credits source (match rewards) and sink (jets, modules) goes to `AnalyticsService:LogEconomyEvent` and the telemetry log. |
+| Done | **OPS-02** AdminService and commands | Admins: the place's creator or group owner, a list, or anyone in Studio; data commands only in the test environment; every command logged. Live through the `AdminCommand` remote. *Phase 6: the owner (creator, group owner or the list, not everyone in Studio) gets full access on joining, in test and live: every jet, module, skin and lineup slot, with currency untouched.* |
+| Done | **REL-02** Test universe setup (separate experience, test products) | "Afterburner (TEST)" published by Will (place 72582604278324), Studio API access on; the place carries `Environment = "Test"` (test save store, debug and admin data tools on). The release checklist says to switch it to `Prod` before a production publish. *Test products come with the shop (Phase 7).* |
 
 **Also done in Phase 5:** six new jets with greybox models (Mirage IIIE, F-4E Phantom II, MiG-23MLD, Mirage F1C, F-16A, MiG-29A) and their weapons (DEFA 552, M61A1, GSh-30-1, R.550 Magic, Super 530F, R-24R); a parametric greybox generator; ACD-03's CI half finished before the phase. Tests: 269 → 352.
 
 ## Phase 6: Content and polish for a soft launch
 
+In progress. ACD-07 is the only task started so far; its progress is listed under it. Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, CAM-02, MSL-04, UI-02, UI-04, OPS-02).
+
 - [ ] **ACD-06** Stat blocks for the 15 launch jets (balancing spreadsheet → data modules)
 - [ ] **ACD-07** Final art models for the 15 launch jets (Blender → MeshParts; see §19.4 pipeline)
-  - *Pipeline built ([art pipeline](art/AIRCRAFT_PIPELINE.md)):*
-    - a Blender generator measured from reference drawings
-    - a reference-overlay check
-    - `AircraftAssembler`
-    - a Motor6D model contract
-    - `ControlSurfaceController`
-  - *1 / 15: the F-5E base model is in the game.* 35 parts, 10.7k triangles; it passes the contract in Studio and CI and has moving control surfaces. Flown hands-on, cockpit view and missile launch checked.
-  - *Painted:* four PBR skins from `tools/blender/f5e_paint.py`:
-    - Ghost Grey, the free default
-    - Desert, Pacific and Lizard aggressor schemes, at 5,000 Credits each
-  - *Skins in game:*
-    - a skin picker on the aircraft details screen (BUY / USE / IN USE), with the preview showing the chosen skin
-    - ownership saved per jet
-    - the server paints each jet as it spawns; AI jets get random skins
-  - *Full access:* the game's owner gets every jet, module, skin and lineup slot on joining, in test and live. Currency is untouched.
-  - *Checked in play:*
-    - all 8 jets and 3 slots open
-    - skins switched, previewed and saved across sessions
-    - AI F-5Es spawned in mixed skins
+  - Pipeline built ([art pipeline](art/AIRCRAFT_PIPELINE.md)): a Blender generator measured from reference drawings, a check that overlays the model on the drawing, `AircraftAssembler`, a model contract that allows Motor6D hinges, and `ControlSurfaceController`.
+  - 1 of 15 done. The F-5E model is in the game: 35 parts, 10.7k triangles, moving ailerons, stabilators, rudder and flaps. It passes the contract in Studio and CI. Flown hands-on, with the cockpit view and missile launches checked.
+  - Four PBR skins painted by `tools/blender/f5e_paint.py`: Ghost Grey (the free default) and the Desert, Pacific and Lizard aggressor schemes at 5,000 Credits each.
+  - The skin picker is on the aircraft details screen (BUY / USE / IN USE), and the preview shows the skin in use. Ownership is saved per jet. The server paints each jet as it spawns, and AI jets get random skins. Checked in play: skins switched, previewed and kept across sessions; AI F-5Es spawned in mixed skins.
+  - Next: the MiG-21bis, then the rest of the launch roster.
 - [ ] **FLT-08** Variable geometry (F-14)
 - [ ] **INP-05** Rebinding UI and persisted bindings
 - [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
