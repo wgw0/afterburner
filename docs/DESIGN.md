@@ -578,12 +578,12 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** flying is fun on its own, with no weapons. Turning bleeds speed, diving gains it, and the two jets feel different. If this isn't fun, nothing else matters, so iterate here. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 2: Guns and damage (week 4)
-- [ ] Raycast bullets with travel time, tracers and a lead pipper.
-- [ ] Server hit validation with lag compensation, and a component damage model.
-- [ ] Death, respawn and a kill feed.
-- [ ] Two players in a Studio test server (Test → Clients and Servers) dogfighting with guns.
+- [x] Raycast bullets with travel time, tracers and a lead pipper.
+- [x] Server hit validation with lag compensation, and a component damage model.
+- [x] Death, respawn and a kill feed.
+- [x] Two players in a Studio test server (Test → Clients and Servers) dogfighting with guns.
 
-**Exit test:** a 1v1 guns-only fight is tense and the winner feels skill-based.
+**Exit test:** a 1v1 guns-only fight is tense and the winner feels skill-based. ✅ *Signed off 2026-10-26. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 3: Missiles, sensors and countermeasures (weeks 5–6)
 - [ ] Server-side missile sim (proportional navigation, motor burn, drag).

@@ -6,7 +6,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 |---|---|---|
 | 0 Foundation | 9 / 9 | ✅ Complete |
 | 1 Flight model prototype | 20 / 21 | ✅ Signed off (ACD-03 CI half carried over) |
-| 2–8 | 0 / 162 | ⚪ Not started |
+| 2 Guns and damage | 21 / 21 | ✅ Signed off |
+| 3–8 | 0 / 141 | ⚪ Not started |
 
 ---
 
@@ -68,27 +69,35 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A box is ticked only
 
 ## Phase 2: Guns and damage
 
-- [ ] **ACD-04** Weapon schema and registry. Guns for F-5E/MiG-21
-- [ ] **FLT-10** Damage modifiers hook (engine, control surfaces)
-- [ ] **CAM-03** Snap views, zoom, FOV setting
-- [ ] **HUD-02** Gun pipper (simple) and hit markers, kill feed
-- [ ] **AIR-02** Crash detection (terrain and mid-air collisions)
-- [ ] **AIR-03** Death flow, kill cam trigger, respawn hook for modes
-- [ ] **AIR-05** Player leaving mid-flight cleans up correctly, credits kills properly
-- [ ] **GUN-01** `Ballistics` module with tests (lead solution accuracy)
-- [ ] **GUN-02** Client local tracers (pooled `Beam`s or parts) from seeded spread
-- [ ] **GUN-03** Server bullet simulation with rewind and ray–OBB hits
-- [ ] **GUN-04** HistoryService ring buffers
-- [ ] **GUN-05** Remote fire FX on other clients
-- [ ] **GUN-06** Simple pipper (Tier I)
-- [ ] **GUN-08** Ammo, spool-up, overheat
-- [ ] **DMG-01** Component health, damage application and destruction
-- [ ] **DMG-02** Partial damage effects through flight model modifiers
-- [ ] **DMG-04** Kill and assist credit, kill feed events
-- [ ] **FX-02** Gun, tracer, impact, explosion effects
-- [ ] **AUD-02** Guns, hits, explosions
-- [ ] **TST-02** Network simulation test checklist
-- [ ] **PRF-01** Profiling labels in hot paths
+**Signed off by Will on 2026-10-26:** "guns feel good". Exit test: a 1v1 guns fight is tense and the winner feels skill-based (tested solo against target drones; real 1v1 between two players still to come).
+
+| | Task | Evidence |
+|:---:|---|---|
+| ✅ | **ACD-04** Weapon schema and registry; guns for F-5E/MiG-21 | `WeaponData` (2× M39A2 20 mm, GSh-23L 23 mm), validated on load; `Weapons.spec`: every airframe's gun exists, bad weapons are named. AircraftService refuses to boot with an unknown gun. |
+| ✅ | **FLT-10** Damage modifiers hook | `FlightModel` takes yaw authority and roll bias; `FlightModel.spec`: a damaged left wing rolls the jet left hands-off, a dead engine gives no thrust. Drones visibly fly worse when hit. |
+| ✅ | **CAM-03** Snap views, zoom, FOV | Left Alt + arrows snap left/right/back/up (arrows don't fly the jet while Alt is held); Z zoom; dynamic FOV from Phase 1. FOV *setting* UI comes with SET-02. |
+| ✅ | **HUD-02** Gun pipper, hit markers, kill feed | Lead indicator (Ballistics lead solution) in the HUD box, target markers with name/range, ✕ hit marker, ammo/heat/jam readout, kill feed (your lines in amber). |
+| ✅ | **AIR-02** Crash detection (terrain and mid-air) | Server checks each jet's path every tick: a drone pointed at the ground was destroyed in 0.45 s. A fake `ReportCrash` while flying at 1,620 studs was ignored. Mid-air collisions despawn both jets. |
+| ✅ | **AIR-03** Death flow, kill cam trigger, respawn hook | Explosion, 3.5 s death camera orbiting the wreck, then the menu with "Shot down by X" / "You crashed"; `AircraftService.JetDestroyed` / `CombatService.Kill` signals for match modes. |
+| ✅ | **AIR-05** Leaving mid-flight cleans up and credits kills | `DamageModel.spec`: leaving or respawning while damaged still credits the attacker. *Not yet tested with two real players.* |
+| ✅ | **GUN-01** `Ballistics` with tests | Seeded spread inside the cone, drop and drag, lead solution hits a crossing target within 3 m, segment-vs-box entry point. |
+| ✅ | **GUN-02** Client local tracers from seeded spread | Pooled neon tracers (every 2nd round), dust/splash where they hit the ground. Confirmed hands-on. |
+| ✅ | **GUN-03** Server bullet simulation with rewind and ray–OBB hits | Drone shot down in 1.07 s (23 hits); 1.56 s (28 hits) under 150 ms simulated lag. Rewind capped at 250 ms. |
+| ✅ | **GUN-04** HistoryService ring buffers | `PoseHistory` interpolation and clamping tested; 1.5 s of poses per jet. |
+| ✅ | **GUN-05** Remote fire FX on other clients | `GunFireFx` starts/stops seeded tracer streams for other jets. *Two-client visual check still to do.* |
+| ✅ | **GUN-06** Simple pipper (Tier I) | Lead indicator; put the gun cross on it. |
+| ✅ | **GUN-08** Ammo, overheat | Server-side ammo, heat per shot, jam at full heat and clears at 40%; the HUD mirrors it via attributes. (Spool-up isn't needed for these guns; it arrives with rotary cannons.) |
+| ✅ | **DMG-01** Component health, damage, destruction | `DamageModel.spec`; hits on destroyed parts spill into the fuselage (found in testing: tail shots from dead six could never kill). |
+| ✅ | **DMG-02** Partial damage effects | Engine → thrust, tail → pitch/yaw authority, wings → lift and roll bias; applied on the pilot's client from `DamageState`. |
+| ✅ | **DMG-04** Kill and assist credit, kill feed | Last damager within 15 s gets the kill, ≥25% damage assists, forced-crash credit within 30 s; kill feed verified in play. |
+| ✅ | **FX-02** Gun, tracer, impact, explosion effects | Muzzle flash, tracers, sparks on hits, dust/splash, explosion with fire, smoke, sparks and flash (built-in textures). |
+| ✅ | **AUD-02** Guns, hits, explosions | Gun loop (yours non-positional, others 3D), hit tink, damage thud, explosion; Weapons sound group at 0.2. Placeholder Creator Store sounds. |
+| ✅ | **TST-02** Network simulation checklist | [docs/testing/NETWORK.md](testing/NETWORK.md) with results. Studio's simulated lag doesn't show up in `GetNetworkPing`, so the compensation amount needs a real server (REL-02). |
+| ✅ | **PRF-01** Profiling labels in hot paths | `FlightController.step`, `CombatService.tick`, `AircraftService.collisions`, `WeaponController.tracers`. |
+
+**Also done in Phase 2:** target drones (DroneService, test env only, the base for AI-01), cockpit panel now sits on the fuselage (playtest fix), AI-flown jets supported by AircraftService. Tests: 115 → 157.
+
+**Carried over / to check with two players:** a real 1v1, other players' tracers and effects, leaving mid-fight.
 
 ## Phase 3: Missiles, sensors and countermeasures
 
