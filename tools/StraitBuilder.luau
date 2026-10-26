@@ -105,12 +105,12 @@ local function airbaseAt(x: number, z: number): (number, Enum.Material?)
 		if outside < 800 then
 			local material: Enum.Material? = nil
 			local side = if name == "West" then 1 else -1
-			if math.abs(dx) < 90 and math.abs(dz) < 3000 then
+			local runway = math.abs(dx) < 90 and math.abs(dz) < 3000
+			local taxiway = dx * side >= 0 and dx * side <= 250 and math.abs(dz) < 40
+			if runway or taxiway then
 				material = Enum.Material.Asphalt
 			elseif dx * side > 250 and dx * side < 1050 and math.abs(dz) < 700 then
 				material = Enum.Material.Concrete
-			elseif dx * side >= 0 and dx * side <= 250 and math.abs(dz) < 40 then
-				material = Enum.Material.Asphalt
 			end
 			return 1 - smoothstep(0, 800, outside), material
 		end
