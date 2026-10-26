@@ -631,7 +631,7 @@ Each phase ends with a **playable build** and a clear exit test. Don't start the
 **Exit test:** every purchase path is tested in Studio with test purchases, and a rejoin shows the item granted exactly once.
 
 ### Phase 8: Launch and live ops (week 17+)
-- [ ] Public launch. Thumbnails and an icon (a jet mid-turn with vapour trails sells the game).
+- [ ] Public launch. Thumbnails and an icon (a jet mid-turn with vapour trails sells the game). First thumbnail: [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg), uploaded at launch (release checklist step 5).
 - [ ] Weekly balance patches from BR data.
 - [ ] Season cadence: new jets (Tiers V–VII), maps and modes every about 8 weeks.
 - [ ] Squadrons, Ranked Duels, BVR mode and PvE missions as post-launch content.
