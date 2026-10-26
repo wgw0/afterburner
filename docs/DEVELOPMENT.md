@@ -1889,8 +1889,9 @@ On every push and PR:
 2. Playtest in the **test universe** with the release build.
 3. Check data migrations against a copy of real data shapes.
 4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). **Before publishing to production, set the `Environment` attribute on ReplicatedStorage to `Prod`** (the committed place says `Test`, for the test experience); it picks the save store and turns off debug and admin data tools.
-5. Tag the commit, update the changelog.
-6. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
+5. Store art: the experience thumbnail is [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg). Upload it in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. Roblox recommends 1920×1080; the current file is 1024×572, so export a full-size version before the public launch. The test experience keeps its default thumbnail.
+6. Tag the commit, update the changelog.
+7. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
 
 | ID | Task | Phase |
 |---|---|---|
