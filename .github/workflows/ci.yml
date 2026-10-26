@@ -31,6 +31,9 @@ jobs:
           rokit authenticate github --token "$GITHUB_TOKEN"
           rokit install --no-trust-check
 
+      - name: Install Wally packages
+        run: wally install
+
       - name: Integrity checks (place file, strict mode, conflicts, Rojo paths, remotes)
         run: bash scripts/ci-checks.sh
 

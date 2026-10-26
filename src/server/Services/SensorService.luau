@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
+local Progression = require(Shared.Progression)
 local Countermeasures = require(Shared.Countermeasures)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
@@ -40,7 +40,7 @@ local launchThreats: () -> { [number]: { Threat } } = function()
 end
 
 local function radarOf(jet: Jet): any
-	local airframe = AircraftData.get(jet.airframeId) :: any
+	local airframe = Progression.airframeForModel(jet.model) :: any
 	return airframe and airframe.Radar
 end
 

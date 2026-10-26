@@ -38,6 +38,8 @@ export type Device = "KeyboardMouse" | "Gamepad" | "Touch"
 local InputController = {
 	Priority = 20,
 	scheme = "MouseAim" :: "MouseAim" | "Direct",
+	sensitivity = 1, -- mouse sensitivity multiplier (settings)
+	invertPitch = false, -- settings: mouse up = nose up
 	aimDirection = Vector3.new(0, 0, -1),
 	throttle = 0.8,
 	afterburner = false,
@@ -82,8 +84,10 @@ local function rotateAim(delta: Vector2)
 		return
 	end
 	local camCF = camera.CFrame
-	local yaw = CFrame.fromAxisAngle(camCF.UpVector, -delta.X * MOUSE_AIM_SENSITIVITY)
-	local pitch = CFrame.fromAxisAngle(camCF.RightVector, -delta.Y * MOUSE_AIM_SENSITIVITY)
+	local scale = MOUSE_AIM_SENSITIVITY * InputController.sensitivity
+	local dy = if InputController.invertPitch then -delta.Y else delta.Y
+	local yaw = CFrame.fromAxisAngle(camCF.UpVector, -delta.X * scale)
+	local pitch = CFrame.fromAxisAngle(camCF.RightVector, -dy * scale)
 	InputController.aimDirection = (yaw * pitch * InputController.aimDirection).Unit
 end
 
@@ -231,10 +235,9 @@ local function update(dt: number)
 		if self.scheme == "MouseAim" and not self.padlocked then
 			rotateAim(delta)
 		else
-			stick = Vector2.new(
-				math.clamp(stick.X + delta.X * DIRECT_SENSITIVITY, -1, 1),
-				math.clamp(stick.Y + delta.Y * DIRECT_SENSITIVITY, -1, 1)
-			)
+			local scale = DIRECT_SENSITIVITY * self.sensitivity
+			local dy = if self.invertPitch then -delta.Y else delta.Y
+			stick = Vector2.new(math.clamp(stick.X + delta.X * scale, -1, 1), math.clamp(stick.Y + dy * scale, -1, 1))
 		end
 		-- Free look springs back once released (the camera smooths it).
 		self.freeLookYaw, self.freeLookPitch = 0, 0

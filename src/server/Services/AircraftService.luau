@@ -38,6 +38,7 @@ export type SpawnOptions = {
 	name: string?, -- AI display name
 	speed: number?, -- real m/s, default Flight.SPAWN_SPEED
 	identity: any?, -- AI pilot record (players are their own identity)
+	modules: string?, -- fitted modules as a comma list (players get theirs from modulesFor)
 }
 
 local CRASH_GRACE = 1.0 -- seconds after spawn before crash checks apply
@@ -51,6 +52,8 @@ local AircraftService = {
 	JetDestroyed = Signal.new(), -- (jet, cause, position)
 	-- Set by MatchService: decides whether a player may spawn and where. nil = always, default spawn.
 	spawnGate = nil :: ((Player, string) -> (boolean, CFrame?))?,
+	-- Set by ProgressionService: the modules a player has fitted to a jet, as a comma list.
+	modulesFor = nil :: ((Player, string) -> string)?,
 }
 
 local jets: { [number]: Jet } = {}
@@ -145,6 +148,11 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	model:SetAttribute("Afterburner", false)
 	model:SetAttribute("GLoad", 1)
 	model:SetAttribute("Gun", airframe.Gun)
+	-- Fitted upgrade modules (Progression.airframeForModel applies them wherever the airframe is used)
+	local modules = (options and options.modules)
+		or (pilot and self.modulesFor and self.modulesFor(pilot, airframeId))
+		or ""
+	model:SetAttribute("Modules", modules)
 	local gun = WeaponData.get(airframe.Gun)
 	model:SetAttribute("Ammo", if gun then gun.Ammo else 0)
 	model:SetAttribute("GunHeat", 0)

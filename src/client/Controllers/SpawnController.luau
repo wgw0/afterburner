@@ -16,6 +16,7 @@ local CameraController = require(script.Parent.CameraController)
 local InputController = require(script.Parent.InputController)
 local FlightController = require(script.Parent.FlightController)
 local MatchController = require(script.Parent.MatchController)
+local PlayerDataController = require(script.Parent.PlayerDataController)
 local TutorialController = require(script.Parent.TutorialController)
 
 local ORANGE = Color3.fromRGB(255, 138, 61)
@@ -30,6 +31,8 @@ local gui: ScreenGui
 local statusLabel: TextLabel
 local matchLabel: TextLabel
 local lastMessage = ""
+local LINEUP_SLOTS = 3
+local slotButtons: { TextButton } = {}
 local firstButton: GuiObject? = nil
 
 local function request(airframeId: string)
@@ -53,7 +56,7 @@ local function build(): { string }
 	local panel = Instance.new("Frame")
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromOffset(460, 400)
+	panel.Size = UDim2.fromOffset(460, 470)
 	panel.BackgroundColor3 = NAVY
 	panel.BackgroundTransparency = 0.1
 	panel.Parent = gui
@@ -85,14 +88,9 @@ local function build(): { string }
 	subtitle.TextSize = 16
 	subtitle.Parent = panel
 
+	-- Your lineup (up to three slots): the only jets the server lets you spawn
 	local order = {}
-	for id in AircraftData.getAll() do
-		table.insert(order, id)
-	end
-	table.sort(order)
-
-	for i, id in order do
-		local airframe = AircraftData.get(id) :: any
+	for i = 1, LINEUP_SLOTS do
 		local button = Instance.new("TextButton")
 		button.Position = UDim2.fromOffset(30, 100 + (i - 1) * 70)
 		button.Size = UDim2.new(1, -60, 0, 58)
@@ -101,13 +99,18 @@ local function build(): { string }
 		button.Font = Enum.Font.GothamBold
 		button.TextColor3 = Color3.new(1, 1, 1)
 		button.TextSize = 22
-		button.Text = `[{i}]  {airframe.DisplayName}   ·   BR {airframe.BattleRating}`
+		button.Text = ""
+		button.Visible = false
 		button.Parent = panel
+		slotButtons[i] = button
 		local bc = Instance.new("UICorner")
 		bc.CornerRadius = UDim.new(0, 8)
 		bc.Parent = button
 		button.Activated:Connect(function()
-			request(id)
+			local id = order[i]
+			if id then
+				request(id)
+			end
 		end)
 		if i == 1 then
 			firstButton = button
@@ -115,7 +118,7 @@ local function build(): { string }
 	end
 
 	-- Training (TUT-02): Free Flight only for now; reserved training servers come with TUT-04.
-	local trainingTop = 100 + #order * 70 + 4
+	local trainingTop = 100 + LINEUP_SLOTS * 70 + 4
 	local trainingTitle = Instance.new("TextLabel")
 	trainingTitle.BackgroundTransparency = 1
 	trainingTitle.Position = UDim2.fromOffset(30, trainingTop)
@@ -172,8 +175,37 @@ local function build(): { string }
 	return order
 end
 
+-- Shows your current lineup on the slot buttons (order is updated in place for the key bindings).
+local function showLineup(order: { string })
+	local data = PlayerDataController.data
+	table.clear(order)
+	for _, id in (data and data.Lineup) or {} do
+		table.insert(order, id)
+	end
+	for i, button in slotButtons do
+		local id = order[i]
+		local airframe = id and AircraftData.get(id) :: any
+		button.Visible = airframe ~= nil
+		if airframe then
+			button.Text = `[{i}]  {airframe.DisplayName}   ·   BR {airframe.BattleRating}`
+		end
+	end
+	if #order == 0 then
+		statusLabel.Text = "Loading your save…"
+	end
+end
+
 function SpawnController:Start()
 	local order = build()
+	showLineup(order)
+	PlayerDataController.Changed:Connect(function(keys)
+		if keys.Lineup or keys.Aircraft then
+			showLineup(order)
+		end
+	end)
+	Net.Client.on("SpawnRefused", function(reason: string)
+		statusLabel.Text = reason
+	end)
 	local keys = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four }
 
 	UserInputService.InputBegan:Connect(function(input, processed)

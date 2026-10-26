@@ -50,6 +50,8 @@ local DEFAULT_CHASE_OFFSET = Vector3.new(0, 12, 80) -- studs (up, behind) if the
 local CameraController = {
 	Priority = 40,
 	mode = "Cockpit" :: "Cockpit" | "Chase",
+	baseFov = BASE_FOV, -- settings: field of view at rest
+	defaultMode = "Cockpit" :: "Cockpit" | "Chase", -- settings: the view each new jet starts in
 	ModeChanged = Signal.new(),
 }
 
@@ -132,11 +134,11 @@ local function targetFov(): number
 	end
 	local state = FlightController.state
 	if not state then
-		return BASE_FOV
+		return CameraController.baseFov
 	end
 	local speedPart = math.clamp((Units.knots(state.speed) - 250) / 450, 0, 1) * SPEED_FOV
 	local gPart = math.clamp((state.gLoad - 2) / 5, 0, 1) * G_FOV
-	return BASE_FOV + speedPart + gPart
+	return CameraController.baseFov + speedPart + gPart
 end
 
 local function cockpitView(root: BasePart, dt: number): CFrame
@@ -319,6 +321,7 @@ function CameraController:Init()
 	FlightController.JetChanged:Connect(function(jet)
 		if jet then
 			myJetId = jet:GetAttribute("JetId") :: number?
+			self:SetMode(self.defaultMode)
 		end
 		local root = jet and jet.PrimaryPart
 		if root then

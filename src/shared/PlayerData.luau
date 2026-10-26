@@ -1,0 +1,173 @@
+--!strict
+-- Player save data (DESIGN §9.3, DEVELOPMENT.md §22.2): schema v1, migrations, the replica sent to the
+-- owning client, and deltas. Pure, so DataService and the tests share it.
+--   Version / Migrations: MIGRATIONS[n](data) upgrades version n-1 to n; run on every load.
+--   Aircraft[id]: { Owned, Researched, RP, Modules = { [moduleId] = true }, Mastery, Camo }
+--   PilotXP is XP into the current level (TotalXP keeps the lifetime sum).
+--   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
+
+local Economy = require(script.Parent.Config.Economy)
+local Settings = require(script.Parent.Config.Settings)
+
+local PlayerData = {}
+
+PlayerData.VERSION = 1
+PlayerData.RECEIPT_HISTORY = 100
+
+-- Fields the client may see (its own data only). Everything else stays on the server.
+PlayerData.REPLICATED = table.freeze({
+	"PilotXP",
+	"PilotLevel",
+	"TotalXP",
+	"Credits",
+	"Wings",
+	"FreeRP",
+	"Aircraft",
+	"Lineup",
+	"Settings",
+	"Stats",
+	"Flags",
+})
+
+local function deepCopy<T>(value: T): T
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for k, v in value :: any do
+		copy[k] = deepCopy(v)
+	end
+	return copy :: any
+end
+PlayerData.deepCopy = deepCopy
+
+function PlayerData.newAircraft(owned: boolean): { [string]: any }
+	return { Owned = owned, Researched = owned, RP = 0, Modules = {}, Mastery = 0, Camo = "Default" }
+end
+
+-- A fresh account.
+function PlayerData.template(): { [string]: any }
+	local aircraft = {}
+	for _, id in Economy.STARTERS do
+		aircraft[id] = PlayerData.newAircraft(true)
+	end
+	return {
+		Version = PlayerData.VERSION,
+		PilotXP = 0,
+		PilotLevel = 1,
+		TotalXP = 0,
+		Credits = Economy.STARTING_CREDITS,
+		Wings = 0,
+		FreeRP = 0,
+		Aircraft = aircraft,
+		Lineup = { Economy.STARTERS[1] },
+		Cosmetics = { Camos = {}, Trails = {}, KillMarkers = {} },
+		Passes = {}, -- cache only; always re-verify with UserOwnsGamePassAsync
+		ProcessedReceipts = {},
+		Settings = Settings.defaults(),
+		Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },
+		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
+		Flags = {},
+		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)
+	}
+end
+
+-- MIGRATIONS[n](data) turns a version n-1 save into version n. None yet: v1 is the first schema.
+PlayerData.MIGRATIONS = table.freeze({}) :: { [number]: (data: { [string]: any }) -> () }
+
+-- Brings a loaded save up to date: runs migrations in order, then fills any missing fields from the
+-- template (new fields added later get their defaults). Returns the data and the versions applied.
+function PlayerData.migrate(
+	data: { [string]: any },
+	migrations: { [number]: (data: { [string]: any }) -> () }?,
+	targetVersion: number?
+): ({ [string]: any }, { number })
+	local steps = migrations or PlayerData.MIGRATIONS
+	local target = targetVersion or PlayerData.VERSION
+	local applied = {}
+	local version = if type(data.Version) == "number" then data.Version else 0
+	while version < target do
+		version += 1
+		local step = steps[version]
+		if step then
+			step(data)
+		end
+		data.Version = version
+		table.insert(applied, version)
+	end
+	PlayerData.reconcile(data)
+	return data, applied
+end
+
+-- Adds missing fields (recursively for plain tables) from the template. Never removes anything.
+function PlayerData.reconcile(data: { [string]: any })
+	local function fill(target: { [any]: any }, defaults: { [any]: any })
+		for k, v in defaults do
+			if target[k] == nil then
+				target[k] = deepCopy(v)
+			elseif type(v) == "table" and type(target[k]) == "table" and k ~= "Lineup" and k ~= "Aircraft" then
+				fill(target[k], v)
+			end
+		end
+	end
+	fill(data, PlayerData.template())
+	for _, id in Economy.STARTERS do
+		if not data.Aircraft[id] then
+			data.Aircraft[id] = PlayerData.newAircraft(true)
+		end
+	end
+	data.Settings = Settings.sanitize(data.Settings)
+end
+
+-- Remembers a processed purchase id; keeps only the most recent RECEIPT_HISTORY.
+function PlayerData.rememberReceipt(data: { [string]: any }, purchaseId: string)
+	table.insert(data.ProcessedReceipts, purchaseId)
+	while #data.ProcessedReceipts > PlayerData.RECEIPT_HISTORY do
+		table.remove(data.ProcessedReceipts, 1)
+	end
+end
+
+local function deepEqual(a: any, b: any): boolean
+	if type(a) ~= type(b) then
+		return false
+	end
+	if type(a) ~= "table" then
+		return a == b
+	end
+	for k, v in a do
+		if not deepEqual(v, b[k]) then
+			return false
+		end
+	end
+	for k in b do
+		if a[k] == nil then
+			return false
+		end
+	end
+	return true
+end
+PlayerData.deepEqual = deepEqual
+
+-- The client's view of a save: copies of the replicated fields.
+function PlayerData.replica(data: { [string]: any }): { [string]: any }
+	local view = {}
+	for _, key in PlayerData.REPLICATED do
+		view[key] = deepCopy(data[key])
+	end
+	return view
+end
+
+-- Top-level replicated fields that differ between two replicas (only those are sent).
+function PlayerData.delta(before: { [string]: any }, after: { [string]: any }): { [string]: any }?
+	local changes = {}
+	local any = false
+	for _, key in PlayerData.REPLICATED do
+		if not deepEqual(before[key], after[key]) then
+			changes[key] = deepCopy(after[key])
+			any = true
+		end
+	end
+	return if any then changes else nil
+end
+
+return PlayerData

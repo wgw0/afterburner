@@ -13,6 +13,8 @@ return function(ctx)
 
 	local managedRoots: { Instance? } = {
 		ReplicatedStorage:FindFirstChild("Shared"),
+		ReplicatedStorage:FindFirstChild("Packages"), -- Wally packages (React)
+		ServerStorage:FindFirstChild("ServerPackages"), -- Wally server packages (ProfileStore)
 		ServerScriptService:FindFirstChild("Server"),
 		ServerStorage:FindFirstChild("Tests"),
 		ServerStorage:FindFirstChild("Tools"),

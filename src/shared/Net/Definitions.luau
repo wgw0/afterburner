@@ -70,6 +70,25 @@ local definitions: { [string]: Definition } = {
 	MatchState = { direction = "ServerToClient", args = { "table" } },
 
 	-- Diagnostics (test environment only): exercises the Net layer end to end.
+	-- Player data and progression (§22–23). Values never come from the client: only intents.
+	-- Your save's replicated fields changed: changes (or the whole replica), isFull
+	PlayerDataUpdate = { direction = "ServerToClient", args = { "table", "boolean" } },
+	-- Your full replica (asked for when your client starts)
+	GetPlayerData = { direction = "Function", args = {}, rate = { burst = 3, perSecond = 0.5 } },
+	-- Research / buy a jet, buy a module, set the lineup: each returns (ok, error message)
+	ResearchAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
+	BuyAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
+	BuyModule = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
+	SetLineup = { direction = "Function", args = { "table" }, rate = { burst = 4, perSecond = 2 } },
+	-- Your spawn request was refused: reason
+	SpawnRefused = { direction = "ServerToClient", args = { "string" } },
+	-- Settings changed (the server keeps only known keys with valid values)
+	SettingsUpdate = { direction = "ClientToServer", args = { "table" }, rate = { burst = 5, perSecond = 1 } },
+	-- Your rewards at the end of a match: { XP, Credits, RP = {...}, FreeRP, Lines, Levels, ... }
+	MatchRewards = { direction = "ServerToClient", args = { "table" } },
+	-- Admin commands (AdminService checks who may use them): command, args -> (ok, message)
+	AdminCommand = { direction = "Function", args = { "string", "table?" }, rate = { burst = 5, perSecond = 2 } },
+
 	-- Switch game mode: "FreeFlight" | "Dogfight" | "Stress", or "EndMatch" to end the running match now
 	DebugSetMode = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Fire a missile at yourself from 1.8 km behind, to practise defending (weapon id)

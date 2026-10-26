@@ -8,7 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
+local Progression = require(Shared.Progression)
 local DamageModel = require(Shared.DamageModel)
 local Flight = require(Shared.Config.Flight)
 local FlightModel = require(Shared.FlightModel)
@@ -54,7 +54,7 @@ local function clearJet()
 end
 
 local function adoptJet(model: Model)
-	local airframe = AircraftData.get(model:GetAttribute("AirframeId") :: string)
+	local airframe = Progression.airframeForModel(model)
 	local root = model.PrimaryPart or model:WaitForChild("Root", 5) :: BasePart?
 	if not (airframe and root) then
 		return

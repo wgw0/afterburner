@@ -17,7 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
+local Progression = require(Shared.Progression)
 local Flight = require(Shared.Config.Flight)
 local Guidance = require(Shared.Guidance)
 local Net = require(Shared.Net)
@@ -114,7 +114,7 @@ local function update()
 		self.irTargetId, self.irHeldFor, self.irLocked = 0, 0, false
 		return
 	end
-	local airframe = AircraftData.get(jet:GetAttribute("AirframeId") :: string) :: any
+	local airframe = Progression.airframeForModel(jet) :: any
 	local radar = airframe and airframe.Radar
 	local myCF = root.CFrame
 	local seen: { [number]: boolean } = {}
