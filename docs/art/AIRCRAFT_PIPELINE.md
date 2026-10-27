@@ -1,6 +1,6 @@
 # Aircraft model pipeline
 
-How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces and swappable PBR skins. Jets are rebuilt in the order players meet them. The F-5E Tiger II and the MiG-21bis are done; the Mirage IIIE is next. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). Jets are rebuilt in the order players meet them. The F-5E Tiger II, the MiG-21bis and the Mirage IIIE are done (the Mirage on the `art/mirage3` branch); docs/art/ROSTER_STATUS.md tracks the rest. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
 
 | Stage | Tool | F-5E |
 |---|---|---|
@@ -197,3 +197,101 @@ The MiG-21bis follows the same pipeline with its own two scripts. `tools/blender
 
 The three skins are Natural Metal (Silver, the default), Interceptor Grey (Grey) and Tactical Camouflage (Tactical, tan and greens over light blue undersides). All three have red stars on the fin and wings, a heat-stained bare-metal tail end and a striped air-data boom. Their textures are in `Assets.Skins.MiG21bis`.
 
+## 7. Cockpit interiors
+
+Every jet gets its own cockpit: a low-poly model built in Blender for that jet's canopy and fuselage, which the game shows only to the pilot. It replaces the greybox kit, whose generic panel, coaming and canopy bow collided with the real airframes (the bow cut across the gauges and boxes poked through each other).
+
+| Part | Contents |
+|---|---|
+| Tub | Lining of the cockpit well: walls, floor and a flange over the sill, with front and rear walls |
+| ConsoleL / ConsoleR | Side consoles; the throttle on the left one, a side stick's base on the right one where the jet has one |
+| Panel | Instrument panel, tilted back, with bezels and scope hoods as geometry |
+| Coaming | Glareshield: a lip over the panel and a hood that narrows and drops forward under the windscreen |
+| Gunsight, HUDGlass | Sight body and its combiner glass (`Glass` set) |
+| Stick | Centre stick with its boot, or a side stick |
+| CanopyFrameInner | Inside of the windscreen bow and the canopy's rear frame, sill rails, and mirrors where the bow is high enough |
+
+The F-5E and MiG-21bis cockpits are about 2,500 triangles each, with one 1024² texture set (`Cockpit`).
+
+### How it fits the jet
+
+The cockpit is modelled in the jet's own axes with the same origin, so its manifest positions are in the jet's Root space. `tools/blender/cockpit_kit.py` builds it from a `COCKPIT` spec in the jet's generator script and from the shapes already measured for the exterior. The panel is narrowed to fit under the canopy glass at its top and inside the well. The glareshield narrows and drops forward to stay inside the windscreen. The canopy frames' insides follow `canopy_ring` just inside the exterior frames. The script warns if a live instrument's top edge is hidden behind the glareshield lip from the eye.
+
+The spec gives these in metres from the `CockpitEye`: the panel's distance, top, bottom, tilt and half width; the glareshield's overhang, length and drop; the consoles' height, width and length; the stick type; the sight; and the palette. The well is given in jet axes: where it starts behind the seat, where it ends just ahead of the panel, its half width and its floor. Each instrument has a panel position (`u` metres right of the centre, `v` metres down from the top edge), a size and a kind (`Dial`, `Scope`, `MFD` or `Lights`). Instruments marked `live` (`Speed`, `Altitude`, `G`, `RPM` or `Radar`) become faces in the manifest, and the rest are painted.
+
+The exterior fuselage used to be closed across the top under the canopy, which would have hidden the tub. The generator now opens a **cockpit well**: after unwrapping, `cockpit_kit.open_well()` pushes the top of the fuselage rings in the well's range down to the cockpit floor. Only vertex positions change. Smart UV Project is deterministic, so a re-run gives exactly the same UVs as before, and the jet's existing skins still fit. This was checked for the F-5E and MiG-21bis by hashing every object's UVs against the `.blend` that was imported into Studio: the UVs were identical, and only the Fuselage's vertices had moved. The tub lines the well, so the pilot never sees its stretched paint. Other players can look into the well through the canopy, so the skin painters paint it cockpit-dark (`cockpit_kit.well_mask`); this takes effect when a skin is next repainted.
+
+### Commands
+
+```
+blender -b --python tools/blender/f5e_generate.py -- --out <abs>/tools/blender/out --manifest-luau tools/Manifests/F5E.luau
+blender -b --python tools/blender/cockpit_generate.py -- --airframe F5E --out <abs>/tools/blender/out --manifest-luau tools/Manifests/Cockpits/F5E.luau
+blender -b <abs>/tools/blender/out/F5E_cockpit.blend --python tools/blender/cockpit_paint.py -- --airframe F5E --out <abs>/tools/blender/out
+blender -b <abs>/tools/blender/out/F5E_base.blend --python tools/blender/cockpit_preview.py -- --out <abs>/tools/blender/out --skin Ghost --textures <dir with the skin PNGs>
+```
+
+These write `F5E_cockpit.fbx`, `F5E_cockpit.blend`, `F5E_cockpit_manifest.json`, `tools/Manifests/Cockpits/F5E.luau` and the four `F5E_Cockpit_<Map>.png` maps. They also write previews from the eye (`F5E_cockpit_ahead.png`, `_panel` and `_left`) and from outside (`_outside`). A new jet's cockpit needs its generator listed in `cockpit_generate.GENERATORS`.
+
+### Painting
+
+`tools/blender/cockpit_paint.py` paints the same way as the skin painter: it bakes where every texel is, computes the maps in numpy and bakes the normal map from a height map. There are four palettes: `US` (dark gull grey tub, black panels), `Soviet` (turquoise, from the MiG-21bis onwards), `French` (dark grey and black) and `Modern` (charcoal). It paints dial faces with scales and needles, the attitude ball and compass card, caution-light panels, placards, screws and panel seams. The consoles get panels with switches and knobs, the tub gets ribs and a non-slip floor, the glareshield is flat black and the mirrors are glossy. The live instruments are left as plain dark faces, because the game draws its gauges over them.
+
+### Studio
+
+1. Re-import the jet's exterior (`<Id>_base.fbx`) and run `install` as before, so its fuselage has the well. The skins don't change.
+2. Upload the four `<Id>_Cockpit_<Map>.png` maps.
+3. Import `<Id>_cockpit.fbx` as one Model (Merge Meshes off, Anchored on), then run:
+   ```lua
+   print(require(game.ServerStorage.Tools.AircraftAssembler).installCockpit("F5E", workspace.F5E_cockpit,
+       { Color = <id>, Normal = <id>, Roughness = <id>, Metalness = <id> }))
+   ```
+   Without the maps table, the cockpit installs untextured.
+4. Move the imported Model to `ServerStorage`.
+
+`installCockpit` matches the imported parts to `tools/Manifests/Cockpits/<Id>.luau` by name. It undoes the importer's scale and axes the same way `install` does, but lines the parts up on the coaming, tub and consoles (the manifest's `fit`). It builds `ReplicatedStorage.Assets.Cockpits.<Id>`, which contains:
+- a `CockpitRoot` part at the jet's Root frame, with every part welded to it (massless, with collision, touch and query off)
+- a `SurfaceAppearance` on each `Cockpit` part
+- the HUD glass as tinted SmoothPlastic
+- a `Faces` folder of invisible parts, one per live instrument, each with its Back face toward the pilot and `Gauge` and `Style` attributes
+
+A cockpit it replaces moves to `ServerStorage.ReplacedModels`.
+
+When the pilot's jet spawns, `CockpitController` looks for `Assets.Cockpits.<AirframeId>`. If it's there, a copy is pivoted to the jet's Root and welded to it, and a gauge is drawn on each face. A face gets a needle dial, a green-on-black dial if its `Style` is `"Digital"`, or a scope with a sweeping bearing line if its `Gauge` is `Radar`. The cockpit model stays visible in the chase view too, because it sits inside the jet. If there's no cockpit model, the greybox kit is built as before.
+
+## 8. Mirage IIIE
+
+The Mirage IIIE uses the same pipeline. `tools/blender/mirage3_generate.py` builds it, `tools/blender/mirage3_paint.py` paints it, and both use the F-5E scripts' helpers the way the MiG-21bis does. Its generator also holds its cockpit spec.
+
+- The reference is the Commons line drawing of the Mirage III by Lirdon, rendered 3840 px wide. Its side view is drawn nose-right, so stations are pixels aft of the pitot tip. Its top view is drawn at 45° and was turned upright to measure the half widths. All three views share one scale, set from the published 8.22 m span (177.1 px/m). At that scale the length without the probe comes out within 1% of the published 15.03 m. How it was measured is in `docs/art/reference/MirageIII/SOURCES.md`.
+- The half-round side intakes use the kit's D-section intake builder, with an almost unswept lip. Their half-cone centre bodies are a separate part, `InletCones`.
+- It is a tailless delta, so there are no stabilators. Each wing has two elevons, `ElevonIn` and `ElevonOut`, hinged on a line square across the jet. They are driven by the new `ElevonL` and `ElevonR` controls in `Shared.ControlSurfaces`, which mix pitch and roll (±15° each, within ±20°).
+- There is a brake-chute fairing over the nozzle (`ChuteFairing`) and a dorsal fillet into the fin.
+- The kit's dorsal spine used to bulge below the fuselage as well as above it. The Mirage sets `SPINE_UPPER_ONLY`, so its fuselage keeps the drawn underside. The F-5E and MiG-21bis still have that keel (about 0.4 m below their drawn undersides), because changing it would change their UVs and their uploaded skins. Fix it the next time their skins are repainted.
+- 28 parts, 10,752 triangles. The cockpit is 2,304 triangles, with a French-palette panel: the radar scope under the sight, flight instruments to its left and engine instruments to its right.
+
+There are four skins: Armée de l'Air camouflage (`Tactical`, dark green and grey over aluminium-lacquered undersides, the default), `Silver` (natural metal), `Desert` (sand and brown over light blue) and `Grey` (two-tone air-superiority grey). The `Tactical` and `Silver` skins carry French roundels and a tricolour fin flash. `Desert` and `Grey` have grey low-visibility roundels and no flash.
+
+## 9. Shared skin painter
+
+Jets from the Mirage IIIE on are painted by `tools/blender/jet_paint.py`. Each jet's paint script is just a layout and its schemes. The layout says where the panel frames and lines are, which parts are the body, wings, moving surfaces, tail and fin, and where the radome, anti-glare panel, intake lips, ducts, hot tail end and gun ports are. It also places the insignia and fin flash and gives the nozzles' positions. The painter does the rest the same way for every jet. The insignia can be a roundel in any three colours, the Soviet star or the US star and bar, each with a low-visibility grey version. A scheme is either camouflage over an underside colour, two tones, or natural metal (`metal`). It can also have an aluminium-lacquered underside (`underside_metal`), low-visibility markings (`markings = "lowvis"`) or no markings (`"none"`). Repainting the Mirage IIIE through the shared painter changed its textures only in the panel lines on the moving surfaces (a mean difference of about 0.1/255).
+
+## 10. Mirage F1C
+
+`tools/blender/miragef1_generate.py` builds the F1C and `tools/blender/miragef1_paint.py` paints it.
+
+- The only usable three-view on Commons is a 574 px public-domain drawing. It's approximate, so it gives the outline and the published figures set the scale: the side view's length is the published 15.30 m (18.95 px/m). The top view is drawn about 2% shorter, so its stations are stretched to match the side view, and its widths are scaled so the wing without its tip rails spans 8.20 m. In the overlays the model sits on the drawing's lines. The trailing edge is the drawing's aft-most line; the line ahead of it is the flap hinge.
+- The shoulder wing comes from the F-5E's wing builder: a 47.5° leading edge, full-span leading-edge flaps, flaps, ailerons and wingtip launch rails. There are all-moving stabilators, a fin with a rudder, two canted ventral fins, half-round intakes behind the cockpit with half-cone centre bodies, and the main gear folding into the fuselage.
+- 34 parts, 10,708 triangles. The cockpit is 2,280 triangles (French palette, with the Cyrano IV scope under the sight).
+
+There are four skins: `Interceptor` (two blue-greys over light grey, the default), `Tactical` (green and grey), `Desert` (sand and brown over light blue) and `Grey` (overall light grey). The first two carry French roundels and a fin flash; the other two have low-visibility markings.
+
+## 11. F-4E Phantom II
+
+`tools/blender/f4e_generate.py` builds the F-4E and `tools/blender/f4e_paint.py` paints it.
+
+- The reference is Kaboldy's Commons three-view of the F-4E, rendered 3840 px wide, with the side and top views both nose left. The scale comes from the published 11.71 m span (153.4 px/m), which also gives the published 5.02 m height. The drawing's length then comes out 18.6 m against the published 19.2 m, and the drawing's shape was kept. In the overlays the model sits on the drawing's lines.
+- The wing has inner panels with leading-edge flaps, flaps and ailerons, and outer panels (`WingOuterL` and `WingOuterR`) folded up 12° with their own leading-edge flaps. The all-moving stabilators have the Phantom's anhedral (about 25°). There are big D-section intakes with splitter plates, the M61 gun fairing under the nose (`GunFairing`, with the splitter plates in the same part), twin nozzles, and a tail boom over the nozzles, painted bare metal.
+- The canopy has three frames: the windscreen bow and the two cockpits' rear frames. The cockpit kit now takes the windscreen bow and the first frame behind the pilot, so tandem canopies work.
+- The jet has 37 parts and 11,572 triangles. The cockpit is 2,280 triangles: US palette, with the radar scope at the top of the panel and twin engine gauges.
+
+There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, the default), `HillGray` (two greys), `EuroOne` (dark greens and grey all round) and `Desert` (no national markings). The shared painter now draws the full-colour US star and bar, with an outline-only low-visibility version.

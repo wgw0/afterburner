@@ -81,25 +81,63 @@ local function frame(forward: Vector3, right: Vector3): CFrame
 end
 
 type Fit = { rotation: CFrame, scale: number, offset: Vector3, residual: number }
+type Centres = { [string]: Vector3 }
+-- Where the model's front, back, left and right are, from its parts' centres
+type Axes = {
+	front: (Centres) -> Vector3,
+	back: (Centres) -> Vector3,
+	left: (Centres) -> Vector3,
+	right: (Centres) -> Vector3,
+}
+
+local JET_AXES: Axes = {
+	front = function(t)
+		return t.Pitot
+	end,
+	-- The tail end: a single Nozzle, or the middle of a twin-engine pair
+	back = function(t)
+		return t.Nozzle or (t.NozzleL + t.NozzleR) / 2
+	end,
+	left = function(t)
+		return t.WingL
+	end,
+	right = function(t)
+		return t.WingR
+	end,
+}
+
+-- Axes from four part names (a cockpit manifest's `fit`)
+local function namedAxes(names: { front: string, back: string, left: string, right: string }): Axes
+	return {
+		front = function(t)
+			return t[names.front]
+		end,
+		back = function(t)
+			return t[names.back]
+		end,
+		left = function(t)
+			return t[names.left]
+		end,
+		right = function(t)
+			return t[names.right]
+		end,
+	}
+end
 
 -- The rotation, scale and offset that take the imported layout onto the manifest's (in studs)
-local function fitLayout(parts: { [string]: MeshPart }, manifest: any): Fit
-	local expected: { [string]: Vector3 } = {}
+local function fitLayout(parts: { [string]: MeshPart }, manifest: any, axes: Axes): Fit
+	local expected: Centres = {}
 	for _, entry in manifest.parts do
 		expected[entry.name] = v3(entry.bounds.centre) * STUDS
 	end
-	-- The tail end: a single Nozzle, or the middle of a twin-engine pair
-	local function tail(t: { [string]: Vector3 }): Vector3
-		return t.Nozzle or (t.NozzleL + t.NozzleR) / 2
-	end
-	local imported: { [string]: Vector3 } = {}
+	local imported: Centres = {}
 	for name, part in parts do
 		imported[name] = part.Position
 	end
-	local fe = expected.Pitot - tail(expected)
-	local re = expected.WingR - expected.WingL
-	local fi = imported.Pitot - tail(imported)
-	local ri = imported.WingR - imported.WingL
+	local fe = axes.front(expected) - axes.back(expected)
+	local re = axes.right(expected) - axes.left(expected)
+	local fi = axes.front(imported) - axes.back(imported)
+	local ri = axes.right(imported) - axes.left(imported)
 	local rotation = frame(fe, re) * frame(fi, ri):Inverse()
 	local scale = (fe.Magnitude / fi.Magnitude + re.Magnitude / ri.Magnitude) / 2
 
@@ -134,6 +172,23 @@ local function invisibleBox(name: string, size: Vector3, at: Vector3, parent: In
 	return p
 end
 
+-- Puts a model in a folder; one it replaces moves to ServerStorage.ReplacedModels (nothing is deleted).
+local function replace(folder: Instance, model: Model, report: { string })
+	local existing = folder:FindFirstChild(model.Name)
+	if existing then
+		local backups = ServerStorage:FindFirstChild("ReplacedModels")
+		if not backups then
+			backups = Instance.new("Folder")
+			backups.Name = "ReplacedModels"
+			backups.Parent = ServerStorage
+		end
+		existing.Name = `{model.Name}_{folder.Name}_{os.date("!%Y%m%d_%H%M%S")}`
+		existing.Parent = backups
+		table.insert(report, `the previous model moved to ServerStorage.ReplacedModels.{existing.Name}`)
+	end
+	model.Parent = folder
+end
+
 -- Builds the game model (not parented). Returns it with a report, or nil and the problems.
 function AircraftAssembler.build(id: string, source: Instance): (Model?, { string })
 	local manifest = loadManifest(id)
@@ -158,7 +213,7 @@ function AircraftAssembler.build(id: string, source: Instance): (Model?, { strin
 		return nil, { `the import is missing {#missing} parts: {table.concat(missing, ", ")}` }
 	end
 
-	local fit = fitLayout(parts, manifest)
+	local fit = fitLayout(parts, manifest, JET_AXES)
 	local turned = fit.rotation.LookVector:Dot(Vector3.new(0, 0, -1)) < 0.999
 		or fit.rotation.UpVector:Dot(Vector3.yAxis) < 0.999
 	table.insert(report, `scale x{string.format("%.3f", fit.scale)}{if turned then ", axes corrected" else ""}`)
@@ -282,20 +337,148 @@ function AircraftAssembler.install(id: string, source: Instance): string
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
 	local folder = assets and assets:FindFirstChild("Aircraft")
 	assert(folder, "ReplicatedStorage.Assets.Aircraft is missing")
-	local existing = folder:FindFirstChild(id)
-	if existing then
-		local backups = ServerStorage:FindFirstChild("ReplacedModels")
-		if not backups then
-			backups = Instance.new("Folder")
-			backups.Name = "ReplacedModels"
-			backups.Parent = ServerStorage
-		end
-		existing.Name = `{id}_{os.date("!%Y%m%d_%H%M%S")}`
-		existing.Parent = backups
-		table.insert(report, `the previous model moved to ServerStorage.ReplacedModels.{existing.Name}`)
-	end
-	model.Parent = folder
+	replace(folder, model, report)
 	return `{id}: installed\n  - {table.concat(report, "\n  - ")}`
+end
+
+-- Cockpit interiors (art pipeline §7) ---------------------------------------------------------------
+-- In Studio, Edit mode, after the jet itself is installed:
+--   1. File → Import 3D → tools/blender/out/<Id>_cockpit.fbx, imported as one Model into the workspace
+--   2. print(require(game.ServerStorage.Tools.AircraftAssembler).installCockpit("F5E", workspace.F5E_cockpit,
+--        { Color = <id>, Normal = <id>, Roughness = <id>, Metalness = <id> }))  -- the uploaded <Id>_Cockpit_*.png
+-- The result goes to ReplicatedStorage.Assets.Cockpits.<Id>: CockpitRoot (the jet's Root frame) with the
+-- cockpit parts welded to it, and a Faces folder of invisible parts where the live instruments go (Back
+-- face toward the pilot; Gauge and Style attributes). CockpitController clones it into the pilot's jet.
+
+local COCKPIT_LOOK: { [string]: { color: Color3, transparency: number } } = {
+	Cockpit = { color = Color3.fromRGB(70, 74, 78), transparency = 0 },
+	Glass = { color = Color3.fromRGB(150, 230, 190), transparency = 0.85 },
+}
+
+local function loadCockpitManifest(id: string): any
+	local manifests = script.Parent:FindFirstChild("Manifests")
+	local folder = manifests and manifests:FindFirstChild("Cockpits")
+	local module = folder and folder:FindFirstChild(id)
+	assert(module and module:IsA("ModuleScript"), `No cockpit manifest tools/Manifests/Cockpits/{id}.luau`)
+	return require(module:Clone() :: any)
+end
+
+-- Builds the cockpit model (not parented). Returns it with a report, or nil and the problems.
+function AircraftAssembler.buildCockpit(id: string, source: Instance, maps: { [string]: number }?): (Model?, { string })
+	local manifest = loadCockpitManifest(id)
+	local parts, report = findParts(source, manifest)
+	local missing = {}
+	for _, entry in manifest.parts do
+		if not parts[entry.name] then
+			table.insert(missing, entry.name)
+		end
+	end
+	if #missing > 0 then
+		return nil, { `the import is missing {#missing} parts: {table.concat(missing, ", ")}` }
+	end
+	local fit = fitLayout(parts, manifest, namedAxes(manifest.fit))
+	table.insert(
+		report,
+		`scale x{string.format("%.3f", fit.scale)}, layout fit within {string.format("%.2f", fit.residual)} studs`
+	)
+	if fit.residual > 0.2 then
+		table.insert(report, "WARNING: parts don't match the manifest layout well; check the import")
+	end
+
+	local model = Instance.new("Model")
+	model.Name = id
+	model:SetAttribute("Triangles", manifest.triangles)
+	local root = Instance.new("Part")
+	root.Name = "CockpitRoot"
+	root.Size = Vector3.new(0.2, 0.2, 0.2)
+	root.CFrame = CFrame.new()
+	root.Transparency = 1
+	root.Massless = true
+	root.CanCollide = false
+	root.CanTouch = false
+	root.CanQuery = false
+	root.Parent = model
+	model.PrimaryPart = root
+
+	for _, entry in manifest.parts do
+		local src = parts[entry.name]
+		local part = src:Clone()
+		part:ClearAllChildren()
+		part.Size = src.Size * fit.scale
+		part.CFrame = CFrame.new(v3(entry.bounds.centre) * STUDS) * fit.rotation * src.CFrame.Rotation
+		part.Anchored = false
+		part.Massless = true
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		part.TextureID = ""
+		local look = COCKPIT_LOOK[entry.set] or COCKPIT_LOOK.Cockpit
+		part.Color = look.color
+		part.Material = Enum.Material.SmoothPlastic -- not Glass: it draws opaque over water
+		part.Transparency = look.transparency
+		part:SetAttribute("TextureSet", entry.set)
+		if maps and entry.set == "Cockpit" then
+			local appearance = Instance.new("SurfaceAppearance")
+			appearance.ColorMap = `rbxassetid://{maps.Color}`
+			appearance.NormalMap = `rbxassetid://{maps.Normal}`
+			appearance.RoughnessMap = `rbxassetid://{maps.Roughness}`
+			appearance.MetalnessMap = `rbxassetid://{maps.Metalness}`
+			appearance.Parent = part
+		end
+		part.Parent = model
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = part
+		weld.Parent = part
+	end
+
+	local faces = Instance.new("Folder")
+	faces.Name = "Faces"
+	faces.Parent = model
+	for _, face in manifest.faces do
+		local at = v3(face.centre) * STUDS
+		local p = Instance.new("Part")
+		p.Name = face.name
+		p.Size = Vector3.new(face.size[1] * STUDS, face.size[2] * STUDS, 0.01)
+		-- Back face (+Z) toward the pilot: the part looks away from them
+		p.CFrame = CFrame.lookAt(at, at - v3(face.normal), v3(face.up))
+		p.Transparency = 1
+		p.Massless = true
+		p.CanCollide = false
+		p.CanTouch = false
+		p.CanQuery = false
+		p:SetAttribute("Gauge", face.gauge)
+		p:SetAttribute("Style", face.style)
+		p.Parent = faces
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = p
+		weld.Parent = p
+	end
+	local textured = if maps then "textured" else "untextured"
+	table.insert(
+		report,
+		`{#manifest.parts} parts, {manifest.triangles} triangles, {#manifest.faces} instrument faces, {textured}`
+	)
+	return model, report
+end
+
+-- Builds the cockpit and puts it in ReplicatedStorage.Assets.Cockpits.<id>. Returns a report.
+function AircraftAssembler.installCockpit(id: string, source: Instance, maps: { [string]: number }?): string
+	local model, report = AircraftAssembler.buildCockpit(id, source, maps)
+	if not model then
+		return `{id} cockpit: FAILED\n  - {table.concat(report, "\n  - ")}`
+	end
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	assert(assets, "ReplicatedStorage.Assets is missing")
+	local folder = assets:FindFirstChild("Cockpits")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Cockpits"
+		folder.Parent = assets
+	end
+	replace(folder, model, report)
+	return `{id} cockpit: installed\n  - {table.concat(report, "\n  - ")}`
 end
 
 return AircraftAssembler

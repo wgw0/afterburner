@@ -1,7 +1,13 @@
 --!strict
--- Greybox analogue cockpit kit (DEVELOPMENT.md §8.2–8.3, CAM-02). Built on the client only, welded
--- to the pilot's own jet, so nobody else sees it. Four live gauges: airspeed, altimeter, G-meter, RPM.
--- Final art for the four era kits replaces this in Phase 6 (CAM-07).
+-- The pilot's cockpit (DEVELOPMENT.md §8.2–8.3, CAM-02 / CAM-07). Built on the client only, welded to the
+-- pilot's own jet, so nobody else sees it. Four live gauges (airspeed, altimeter, G-meter, RPM) and, in
+-- jets with a radar, a radar scope.
+--   * A jet with a cockpit model (ReplicatedStorage.Assets.Cockpits.<AirframeId>, made in Blender and
+--     installed by tools/AircraftAssembler.luau, art pipeline §7) gets a copy of it: tub, consoles,
+--     panel, glareshield, sight and the canopy frames' insides, fitted to that jet's canopy. Its Faces
+--     folder says where each live instrument sits on the panel; the gauges are drawn there.
+--   * Any other jet gets the greybox kit: a panel on top of the forward fuselage, sills, a coaming and
+--     a gunsight glass, built from parts.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,10 +25,13 @@ local FRAME_COLOUR = Color3.fromRGB(55, 58, 62)
 local DIAL_COLOUR = Color3.fromRGB(16, 16, 18)
 local NEEDLE_COLOUR = Color3.fromRGB(240, 240, 230)
 local MARK_COLOUR = Color3.fromRGB(200, 200, 190)
-local DIAL_SIZE = 84 -- pixels on the panel (200 per stud)
+local DIGITAL_COLOUR = Color3.fromRGB(120, 255, 160)
+local SCOPE_COLOUR = Color3.fromRGB(8, 26, 14)
+local DIAL_SIZE = 84 -- pixels on the greybox panel (200 per stud), and across each model face
 local DIAL_TOP = 14 -- pixels from the panel top to the dials
 
 type Gauge = {
+	key: string,
 	needle: Frame,
 	readout: TextLabel,
 	spring: Spring.Spring<number>,
@@ -32,12 +41,23 @@ type Gauge = {
 	startAngle: number,
 }
 
+-- What each live gauge shows: title, scale and the tick marks
+local GAUGES: { [string]: { title: string, minValue: number, maxValue: number, ticks: { number } } } = {
+	Speed = { title = "KT", minValue = 0, maxValue = 800, ticks = { 0, 100, 200, 300, 400, 500, 600, 700, 800 } },
+	Altitude = { title = "ALT ×1000", minValue = 0, maxValue = 10, ticks = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 } },
+	G = { title = "G", minValue = -3, maxValue = 9, ticks = { -3, 0, 3, 6, 9 } },
+	RPM = { title = "RPM %", minValue = 0, maxValue = 110, ticks = { 0, 50, 70, 90, 100, 110 } },
+}
+
 local CockpitController = {
 	Priority = 50,
 }
 
 local cockpit: Model?
-local gauges: { [string]: Gauge } = {}
+local fromModel = false -- the cockpit is a copy of an installed cockpit model
+local gauges: { Gauge } = {}
+local sweeps: { Frame } = {} -- radar scope sweep lines
+local surfaces: { SurfaceGui } = {}
 
 local function part(name: string, size: Vector3, offset: CFrame, eye: CFrame, root: BasePart, colour: Color3): Part
 	local p = Instance.new("Part")
@@ -58,49 +78,45 @@ local function part(name: string, size: Vector3, offset: CFrame, eye: CFrame, ro
 	return p
 end
 
-local function makeGauge(
-	parent: Instance,
-	name: string,
-	title: string,
-	x: number,
-	minValue: number,
-	maxValue: number,
-	ticks: { number }
-): Gauge
+-- A needle gauge filling `holder`. Digital style: square, green on black, for glass cockpits.
+local function makeGauge(holder: Instance, key: string, digital: boolean): Gauge
+	local config = GAUGES[key]
+	local minValue, maxValue = config.minValue, config.maxValue
+	local markColour = if digital then DIGITAL_COLOUR else MARK_COLOUR
 	local dial = Instance.new("Frame")
-	dial.Name = name
+	dial.Name = key
 	dial.AnchorPoint = Vector2.new(0.5, 0.5)
-	-- A fixed size near the top of the panel: the panel's height depends on how far the fuselage sits
-	-- below the eye, and the dials shouldn't grow with it.
-	dial.Position = UDim2.new(x, 0, 0, DIAL_TOP + DIAL_SIZE / 2)
-	dial.Size = UDim2.fromOffset(DIAL_SIZE, DIAL_SIZE)
+	dial.Position = UDim2.fromScale(0.5, 0.5)
+	dial.Size = UDim2.fromScale(1, 1)
 	dial.BackgroundColor3 = DIAL_COLOUR
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = dial
+	if not digital then
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = dial
+	end
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = FRAME_COLOUR
 	stroke.Thickness = 6
 	stroke.Parent = dial
-	dial.Parent = parent
+	dial.Parent = holder
 
 	local sweep, startAngle = 270, -135
-	for _, t in ticks do
+	for _, t in config.ticks do
 		local angle = startAngle + (t - minValue) / (maxValue - minValue) * sweep
-		local holder = Instance.new("Frame")
-		holder.AnchorPoint = Vector2.new(0.5, 0.5)
-		holder.Position = UDim2.fromScale(0.5, 0.5)
-		holder.Size = UDim2.fromScale(1, 1)
-		holder.BackgroundTransparency = 1
-		holder.Rotation = angle
-		holder.Parent = dial
+		local tickHolder = Instance.new("Frame")
+		tickHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+		tickHolder.Position = UDim2.fromScale(0.5, 0.5)
+		tickHolder.Size = UDim2.fromScale(1, 1)
+		tickHolder.BackgroundTransparency = 1
+		tickHolder.Rotation = angle
+		tickHolder.Parent = dial
 		local mark = Instance.new("Frame")
 		mark.AnchorPoint = Vector2.new(0.5, 0)
 		mark.Position = UDim2.fromScale(0.5, 0.04)
 		mark.Size = UDim2.fromScale(0.025, 0.1)
-		mark.BackgroundColor3 = MARK_COLOUR
+		mark.BackgroundColor3 = markColour
 		mark.BorderSizePixel = 0
-		mark.Parent = holder
+		mark.Parent = tickHolder
 	end
 
 	local needleHolder = Instance.new("Frame")
@@ -114,7 +130,7 @@ local function makeGauge(
 	needle.AnchorPoint = Vector2.new(0.5, 1)
 	needle.Position = UDim2.fromScale(0.5, 0.5)
 	needle.Size = UDim2.fromScale(0.035, 0.42)
-	needle.BackgroundColor3 = NEEDLE_COLOUR
+	needle.BackgroundColor3 = if digital then DIGITAL_COLOUR else NEEDLE_COLOUR
 	needle.BorderSizePixel = 0
 	needle.Parent = needleHolder
 
@@ -125,8 +141,8 @@ local function makeGauge(
 	titleLabel.Size = UDim2.fromScale(0.8, 0.12)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.TextScaled = true
-	titleLabel.TextColor3 = MARK_COLOUR
-	titleLabel.Text = title
+	titleLabel.TextColor3 = markColour
+	titleLabel.Text = config.title
 	titleLabel.Parent = dial
 
 	local readout = Instance.new("TextLabel")
@@ -136,10 +152,11 @@ local function makeGauge(
 	readout.Size = UDim2.fromScale(0.7, 0.14)
 	readout.Font = Enum.Font.Code
 	readout.TextScaled = true
-	readout.TextColor3 = Color3.fromRGB(255, 190, 90)
+	readout.TextColor3 = if digital then DIGITAL_COLOUR else Color3.fromRGB(255, 190, 90)
 	readout.Parent = dial
 
-	return {
+	local gauge = {
+		key = key,
 		needle = needleHolder,
 		readout = readout,
 		spring = Spring.new(minValue, 12, 0.9),
@@ -148,7 +165,56 @@ local function makeGauge(
 		sweep = sweep,
 		startAngle = startAngle,
 	}
+	table.insert(gauges, gauge)
+	return gauge
 end
+
+-- A radar scope filling `holder`: a dark green screen with a range grid and a sweeping bearing line.
+-- The radar's picture itself is the screen-space scope (ScopesController); this is the cockpit's display.
+local function makeScope(holder: Instance)
+	local screen = Instance.new("Frame")
+	screen.Name = "Radar"
+	screen.Size = UDim2.fromScale(1, 1)
+	screen.BackgroundColor3 = SCOPE_COLOUR
+	screen.BorderSizePixel = 0
+	screen.ClipsDescendants = true
+	screen.Parent = holder
+	for i = 1, 3 do
+		for _, vertical in { true, false } do
+			local line = Instance.new("Frame")
+			line.BackgroundColor3 = DIGITAL_COLOUR
+			line.BackgroundTransparency = 0.75
+			line.BorderSizePixel = 0
+			line.Position = if vertical then UDim2.fromScale(i / 4, 0) else UDim2.fromScale(0, i / 4)
+			line.Size = if vertical then UDim2.new(0, 1, 1, 0) else UDim2.new(1, 0, 0, 1)
+			line.Parent = screen
+		end
+	end
+	local sweepLine = Instance.new("Frame")
+	sweepLine.Name = "Sweep"
+	sweepLine.AnchorPoint = Vector2.new(0.5, 0)
+	sweepLine.Size = UDim2.new(0, 2, 1, 0)
+	sweepLine.BackgroundColor3 = DIGITAL_COLOUR
+	sweepLine.BackgroundTransparency = 0.2
+	sweepLine.BorderSizePixel = 0
+	sweepLine.Parent = screen
+	table.insert(sweeps, sweepLine)
+end
+
+local function surfaceFor(adornee: BasePart, pixelsPerStud: number): SurfaceGui
+	local surface = Instance.new("SurfaceGui")
+	surface.Name = `Cockpit{adornee.Name}`
+	surface.Face = Enum.NormalId.Back -- the face toward the pilot
+	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	surface.PixelsPerStud = pixelsPerStud
+	surface.LightInfluence = 0.2
+	surface.Adornee = adornee
+	surface.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	table.insert(surfaces, surface)
+	return surface
+end
+
+-- Greybox kit ----------------------------------------------------------------------------------------
 
 local PANEL_DISTANCE = -2.3 -- studs ahead of the eye
 local PANEL_TOP_BELOW_EYE = -0.6 -- studs (eye space): about 15° below the line of sight, for a view over the nose
@@ -179,15 +245,15 @@ local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment):
 	end
 	local zNear, zFar = eyePos.Z + PANEL_DISTANCE + 1, eyePos.Z + PANEL_DISTANCE - 1
 	local highest = -math.huge
-	for _, part in jet:GetChildren() do
-		if not part:IsA("BasePart") or part == root or part.Transparency >= 0.3 then
+	for _, child in jet:GetChildren() do
+		if not child:IsA("BasePart") or child == root or child.Transparency >= 0.3 then
 			continue -- skips the invisible root, hull and the glass canopy
 		end
-		local localCF = root.CFrame:ToObjectSpace(part.CFrame)
+		local localCF = root.CFrame:ToObjectSpace(child.CFrame)
 		if math.abs(localCF.Position.X) > 4 then
 			continue
 		end
-		local half = part.Size / 2
+		local half = child.Size / 2
 		local minZ, maxZ, maxY = math.huge, -math.huge, -math.huge
 		for _, sx in { -1, 1 } do
 			for _, sy in { -1, 1 } do
@@ -207,23 +273,8 @@ local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment):
 	return highest - eyePos.Y
 end
 
-local function destroyCockpit()
-	if cockpit then
-		cockpit:Destroy()
-		cockpit = nil
-	end
-	table.clear(gauges)
-end
-
-local function buildCockpit(jet: Model)
-	destroyCockpit()
-	local root = jet.PrimaryPart
-	local eye = root and root:FindFirstChild("CockpitEye") :: Attachment?
-	if not (root and eye) then
-		return
-	end
+local function buildGreybox(jet: Model, root: BasePart, eye: Attachment): Model
 	local eyeCF = eye.WorldCFrame
-
 	local model = Instance.new("Model")
 	model.Name = "LocalCockpit"
 
@@ -289,31 +340,90 @@ local function buildCockpit(jet: Model)
 	sight.CastShadow = false
 	sight.Parent = model
 
-	local surface = Instance.new("SurfaceGui")
-	surface.Name = "Gauges"
-	surface.Face = Enum.NormalId.Back -- the face toward the pilot (+Z in panel space)
-	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	surface.PixelsPerStud = 200
-	surface.LightInfluence = 0.2
-	surface.Adornee = panel
-	surface.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-	model.Destroying:Connect(function()
+	local surface = surfaceFor(panel, 200)
+	for i, key in { "Speed", "Altitude", "G", "RPM" } do
+		local holder = Instance.new("Frame")
+		holder.Name = key
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		-- A fixed size near the top of the panel: the panel's height depends on how far the fuselage
+		-- sits below the eye, and the dials shouldn't grow with it.
+		holder.Position = UDim2.new(0.14 + 0.24 * (i - 1), 0, 0, DIAL_TOP + DIAL_SIZE / 2)
+		holder.Size = UDim2.fromOffset(DIAL_SIZE, DIAL_SIZE)
+		holder.BackgroundTransparency = 1
+		holder.Parent = surface
+		makeGauge(holder, key, false)
+	end
+	return model
+end
+
+-- Cockpit models ---------------------------------------------------------------------------------------
+
+local function cockpitTemplate(jet: Model): Model?
+	local id = jet:GetAttribute("AirframeId")
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local folder = assets and assets:FindFirstChild("Cockpits")
+	local template = folder and type(id) == "string" and folder:FindFirstChild(id)
+	if template and template:IsA("Model") and template.PrimaryPart then
+		return template
+	end
+	return nil
+end
+
+local function buildFromTemplate(template: Model, root: BasePart): Model
+	local model = template:Clone()
+	model.Name = "LocalCockpit"
+	local base = model.PrimaryPart :: BasePart
+	-- The template is laid out in the jet's Root space, with its CockpitRoot at the origin
+	model:PivotTo(root.CFrame)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = base
+	weld.Parent = base
+
+	local faces = model:FindFirstChild("Faces")
+	for _, face in if faces then faces:GetChildren() else {} do
+		if not face:IsA("BasePart") then
+			continue
+		end
+		local key = face:GetAttribute("Gauge")
+		local surface = surfaceFor(face, DIAL_SIZE / math.max(face.Size.X, 0.05))
+		if key == "Radar" then
+			makeScope(surface)
+		elseif type(key) == "string" and GAUGES[key] then
+			makeGauge(surface, key, face:GetAttribute("Style") == "Digital")
+		end
+	end
+	return model
+end
+
+local function destroyCockpit()
+	if cockpit then
+		cockpit:Destroy()
+		cockpit = nil
+	end
+	for _, surface in surfaces do
 		surface:Destroy()
-	end)
+	end
+	table.clear(surfaces)
+	table.clear(gauges)
+	table.clear(sweeps)
+end
 
-	gauges.Speed = makeGauge(surface, "Airspeed", "KT", 0.14, 0, 800, { 0, 100, 200, 300, 400, 500, 600, 700, 800 })
-	gauges.Altitude = makeGauge(surface, "Altimeter", "ALT ×1000", 0.38, 0, 10, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
-	gauges.G = makeGauge(surface, "GMeter", "G", 0.62, -3, 9, { -3, 0, 3, 6, 9 })
-	gauges.RPM = makeGauge(surface, "RPM", "RPM %", 0.86, 0, 110, { 0, 50, 70, 90, 100, 110 })
-
+local function buildCockpit(jet: Model)
+	destroyCockpit()
+	local root = jet.PrimaryPart
+	local eye = root and root:FindFirstChild("CockpitEye") :: Attachment?
+	if not (root and eye) then
+		return
+	end
+	local template = cockpitTemplate(jet)
+	fromModel = template ~= nil
+	local model = if template then buildFromTemplate(template, root) else buildGreybox(jet, root, eye)
 	model.Parent = jet
 	cockpit = model
 end
 
-local function setGauge(gauge: Gauge?, value: number, dt: number, text: string)
-	if not gauge then
-		return
-	end
+local function setGauge(gauge: Gauge, value: number, dt: number, text: string)
 	local v = gauge.spring:Update(dt, math.clamp(value, gauge.minValue, gauge.maxValue))
 	gauge.needle.Rotation = gauge.startAngle + (v - gauge.minValue) / (gauge.maxValue - gauge.minValue) * gauge.sweep
 	gauge.readout.Text = text
@@ -325,9 +435,13 @@ local function update(dt: number)
 		return
 	end
 	local visible = CameraController.mode == "Cockpit"
-	for _, d in cockpit:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.LocalTransparencyModifier = if visible then 0 else 1
+	-- The greybox kit floats in front of the eye, so it hides in the chase view. A cockpit model sits
+	-- inside the jet like the real thing and stays.
+	if not fromModel then
+		for _, d in cockpit:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.LocalTransparencyModifier = if visible then 0 else 1
+			end
 		end
 	end
 	-- From inside, the jet's own canopy just tints the view (and its Glass goes opaque over water).
@@ -343,11 +457,22 @@ local function update(dt: number)
 	local input = FlightController.input
 	local throttle = if input then input.throttle else 0
 	local rpm = 65 + 35 * throttle + (if input and input.afterburner then 5 else 0)
-	setGauge(gauges.Speed, knots, dt, tostring(math.round(knots)))
-	-- Altimeter needle: one turn per 10,000 ft
-	setGauge(gauges.Altitude, (feet % 10000) / 1000, dt, tostring(math.round(feet)))
-	setGauge(gauges.G, state.gLoad, dt, string.format("%.1f", state.gLoad))
-	setGauge(gauges.RPM, rpm, dt, tostring(math.round(rpm)))
+	for _, gauge in gauges do
+		if gauge.key == "Speed" then
+			setGauge(gauge, knots, dt, tostring(math.round(knots)))
+		elseif gauge.key == "Altitude" then
+			-- Altimeter needle: one turn per 10,000 ft
+			setGauge(gauge, (feet % 10000) / 1000, dt, tostring(math.round(feet)))
+		elseif gauge.key == "G" then
+			setGauge(gauge, state.gLoad, dt, string.format("%.1f", state.gLoad))
+		elseif gauge.key == "RPM" then
+			setGauge(gauge, rpm, dt, tostring(math.round(rpm)))
+		end
+	end
+	local sweep = 0.5 + 0.45 * math.sin(os.clock() * 1.6)
+	for _, line in sweeps do
+		line.Position = UDim2.fromScale(sweep, 0)
+	end
 end
 
 function CockpitController:Start()
