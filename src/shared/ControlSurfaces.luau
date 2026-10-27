@@ -4,7 +4,8 @@
 --
 -- Deflections are in degrees in the surface's own sense: trailing edge down is positive for ailerons,
 -- flaps and stabilators, leading edge down (droop) for leading-edge flaps, trailing edge right for the
--- rudder. A surface's hinge axis comes from the model (HingeAxis attribute, model space), so mirrored
+-- rudder. Elevons (tailless deltas) mix pitch and roll: nose up raises both, roll right raises the right
+-- one and lowers the left. A surface's hinge axis comes from the model (HingeAxis attribute, model space), so mirrored
 -- surfaces with opposite axes still move the right way.
 
 local ControlSurfaces = {}
@@ -17,6 +18,8 @@ ControlSurfaces.ANIMATED = {
 	Rudder = true,
 	Flap = true,
 	LEFlap = true,
+	ElevonL = true,
+	ElevonR = true,
 }
 
 -- Manoeuvring flaps: out with angle of attack, in at high speed (degrees, metres per second)
@@ -90,6 +93,10 @@ function ControlSurfaces.deflection(control: string, commands: Commands, min: nu
 		target = commands.roll * 20
 	elseif control == "Stabilator" then
 		target = -commands.pitch * 20 -- nose up: trailing edge up
+	elseif control == "ElevonR" then
+		target = (-commands.pitch - commands.roll) * 15
+	elseif control == "ElevonL" then
+		target = (-commands.pitch + commands.roll) * 15
 	elseif control == "Rudder" then
 		target = commands.yaw * 30
 	elseif control == "Flap" or control == "LEFlap" then
