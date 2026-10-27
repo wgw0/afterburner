@@ -28,6 +28,7 @@ GENERATORS = {
     "F14A": "f14a_generate",
     "Mirage2000C": "mirage2000_generate",
     "F15C": "f15c_generate",
+    "FA18C": "fa18c_generate",
 }
 
 

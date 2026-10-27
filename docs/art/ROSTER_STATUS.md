@@ -17,7 +17,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | III | F-14A Tomcat | `F14A` | No | `art/f14a` (on `art/mig29`) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | III | Mirage 2000C | `Mirage2000C` | No | `art/mirage2000` (on `art/f14a`) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F-15C Eagle | `F15C` | No | `art/f15c` (on `art/mirage2000`) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | F/A-18C | `FA18C` | No | | | | | |
+| IV | F/A-18C | `FA18C` | No | `art/fa18c` (on `art/f15c`) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Su-27S | `Su27S` | No | | | | | |
 | IV | Tornado F3 | `TornadoF3` | No | | | | | |
 | V | F-16C Block 50 | `F16C` | No | | | | | |
@@ -148,3 +148,7 @@ Built on `art/f14a`. Files in `tools/blender/out/`: `Mirage2000C_base.fbx` (mani
 ## F-15C Eagle (`art/f15c`, art only)
 
 Built on `art/mirage2000`. Files in `tools/blender/out/`: `F15C_base.fbx` (manifest `tools/Manifests/F15C.luau`), `textures/F15C_<Skin>_<Set>_<Map>.png` for the ModEagle, Blue, Aggressor and Desert skins, `F15C_cockpit.fbx` and `F15C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15C_<Skin>_paint_*.png` and `F15C_cockpit_*.png`). Install it like the other jets once `AircraftData/F15C.luau` exists, with `ModelName = "F15C"`.
+
+## F/A-18C Hornet (`art/fa18c`, art only)
+
+Built on `art/f15c`. Files in `tools/blender/out/`: `FA18C_base.fbx` (manifest `tools/Manifests/FA18C.luau`), `textures/FA18C_<Skin>_<Set>_<Map>.png` for the Navy, Gull, Adversary and Ghost skins, `FA18C_cockpit.fbx` and `FA18C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18C_<Skin>_paint_*.png` and `FA18C_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18C.luau` exists, with `ModelName = "FA18C"`.
