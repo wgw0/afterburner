@@ -307,3 +307,15 @@ There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, 
 - The jet has 30 parts and 10,164 triangles. The cockpit is 2,280 triangles, in Soviet turquoise, with the Sapfir-23 scope under the sight and a wing-sweep gauge.
 
 There are four skins: `Tactical` (tan and two greens over light blue, the default), `TwoTone` (grey-green and dark grey), `Grey` (air-defence grey) and `Desert` (low-visibility markings). The red stars are on the fin and on both wings, top and bottom. The shared painter takes the wing's leading and trailing edges at the combat sweep.
+
+## 13. F-16A Fighting Falcon
+
+`tools/blender/f16a_generate.py` builds the F-16A and `tools/blender/f16a_paint.py` paints it.
+
+- The reference is Marek Cel's Commons three-view of the F-16A (CC0), rendered 3840 px wide, with the side and top views both nose left. The scale comes from the published 15.03 m length (175.4 px/m), which gives a span over the tip rails of 9.37 m against the published 9.45 m. In the overlays the model sits on the drawing's lines.
+- The canopy is a frameless bubble with a single frame behind the seat. The cockpit kit now handles a single-frame canopy: the frame inside is drawn behind the pilot, and the sill rails run from the canopy's front.
+- The chin intake is a closed rounded section (`Intake`), with a dark recessed mouth (`IntakeDuct`). The leading-edge extensions and the shelves the tailerons sit on are one part, `Strakes`.
+- The wing comes from the F-5E's wing builder, with full-span leading-edge flaps, flaps, ailerons and tip rails. On the real jet the flaps and ailerons are one surface (flaperons), but they're split here so the existing flap and aileron controls drive them. The all-moving tailerons have anhedral and use the `ElevonL`/`ElevonR` controls, which mix pitch and roll. There are also the fin on its base fairing, the rudder, and two ventral fins.
+- The jet has 35 parts and 10,728 triangles. The cockpit is 2,008 triangles: a wide HUD, the up-front control panel, the radar display (an MFD-style face) upper right, the threat display upper left, and a side stick.
+
+There are four skins: `Falcon` (the three greys, the default), `Blue`, `Desert` (no national markings) and `Euro`. All of them except `Desert` carry low-visibility insignia.

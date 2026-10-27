@@ -371,10 +371,18 @@ def build_canopy_frame_inner(col):
     """The inside of the canopy frames (windscreen bow, rear frame) just inside the exterior ones, sill
     rails along the canopy's base, and mirrors on the bow."""
     parts = []
-    # The windscreen bow and the first frame behind the pilot (tandem canopies have more frames aft)
-    xd0 = kit.CANOPY_FRAMES[0]
-    xd1 = next((xd for xd in kit.CANOPY_FRAMES[1:] if kit.Y(xd) < eye().y), kit.CANOPY_FRAMES[-1])
-    for xd in (xd0, xd1):
+    # The windscreen bow and the first frame behind the pilot (tandem canopies have more frames aft). A
+    # frameless bubble canopy has only the frame behind the pilot: its sill rails start at the canopy's
+    # front instead.
+    frames = list(kit.CANOPY_FRAMES)
+    if len(frames) == 1:
+        xd0, xd1 = kit.CANOPY[1][0], frames[0]
+        drawn = [xd1]
+    else:
+        xd0 = frames[0]
+        xd1 = next((xd for xd in frames[1:] if kit.Y(xd) < eye().y), frames[-1])
+        drawn = [xd0, xd1]
+    for xd in drawn:
         outer = kit.canopy_ring(xd, -0.012)
         inner = kit.canopy_ring(xd, -0.045)
         d = 0.035

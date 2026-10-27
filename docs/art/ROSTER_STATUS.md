@@ -12,7 +12,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | II | Mirage F1C | `MirageF1` | Yes | `art/miragef1` (on `art/mirage3`) | Done | Interceptor (default), Tactical, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | F-4E Phantom II | `F4E` | Yes | `art/f4e` (on `art/miragef1`) | Done | SEA (default), HillGray, EuroOne, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | MiG-23MLD | `MiG23MLD` | Yes | `art/mig23` (on `art/f4e`) | Done (wings at 45°) | Tactical (default), TwoTone, Grey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| III | F-16A | `F16A` | Yes | | | | | |
+| III | F-16A | `F16A` | Yes | `art/f16a` (on `art/mig23`) | Done | Falcon (default), Blue, Desert, Euro | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | MiG-29A | `MiG29A` | Yes | | | | | |
 | III | F-14A Tomcat | `F14A` | No | | | | | |
 | III | Mirage 2000C | `Mirage2000C` | No | | | | | |
@@ -104,3 +104,15 @@ Files in `tools/blender/out/`:
 - Previews: `MiG23MLD_{side,top,front,threequarter}.png`, `MiG23MLD_overlay_{side,top}.png` (with the wings spread, to compare with the drawing), `textures/MiG23MLD_<Skin>_paint_*.png` and `MiG23MLD_cockpit_*.png`
 
 To do in Studio: import the model, run `install("MiG23MLD", workspace.MiG23MLD_base)`, make the skin SurfaceAppearances, install the cockpit, then play test. The tailerons use the elevon controls, so check that they move together for pitch and in opposite directions for roll.
+
+## F-16A (`art/f16a`)
+
+Built on `art/mig23`, so merge the earlier art branches first.
+
+Files in `tools/blender/out/`:
+- Model: `F16A_base.fbx`, plus `tools/Manifests/F16A.luau`
+- Skins: `textures/F16A_<Skin>_<Set>_<Map>.png` for the Falcon, Blue, Desert and Euro skins
+- Cockpit: `F16A_cockpit.fbx` and `F16A_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `F16A_{side,top,front,threequarter}.png`, `F16A_overlay_{side,top}.png`, `textures/F16A_<Skin>_paint_*.png` and `F16A_cockpit_*.png`
+
+To do in Studio: import the model, run `install("F16A", workspace.F16A_base)`, make the skin SurfaceAppearances, install the cockpit, then play test. The tailerons use the elevon controls.
