@@ -373,3 +373,13 @@ There are four skins: `ModEagle` (two ghost greys, low-visibility markings; the 
 - The jet has 38 parts and 10,812 triangles, with 9 hardpoints: the wingtip rails, four wing pylons, the two fuselage stations on the intakes and the centreline. The cockpit is 1,624 triangles: the HUD, the up-front control panel, the two digital displays (the left one is the radar face) and the map display below.
 
 There are four skins: `Navy` (two greys, low-visibility markings; the default), `Gull` (gull grey over white, full-colour markings), `Adversary` (tan, brown and green, no national markings) and `Ghost` (three-tone grey, low-visibility).
+
+## 19. Su-27S Flanker (art only)
+
+`tools/blender/su27s_generate.py` builds the Su-27S and `tools/blender/su27s_paint.py` paints it. Its Id is `Su27S`; it has no flight data yet. The script reuses the F-15C's builders (separated nacelles, booms, twin fins), with the Su-27's own shapes and its nose probe.
+
+- The reference is Malyszkz's public-domain Commons three-view, rendered from its SVG and rebuilt as a composite with both views nose left. Both views come out at the same scale (86.0 px/m), giving the length 22.0 m against the published 21.94 m. In the overlays the model sits on the drawing's lines.
+- The jet is built from the fuselage (the drooped nose, the bubble canopy, the dorsal hump and the wide, flat centre body over the engines, ending in the tail sting). `Nacelles` are the engine nacelles under the body, with raked box intakes and dark `IntakeDucts`. `Strakes` holds the long leading-edge extensions and the tail booms. The tail has tailerons on the elevon controls and twin upright fins with rudders.
+- The jet has 38 parts and 11,272 triangles, with 10 hardpoints: the wingtip rails, four wing pylons, one under each intake and the tandem pair in the tunnel. The cockpit is 2,232 triangles, in the Soviet turquoise: the HUD with the radar display under it.
+
+There are four skins: `Flanker` (the three blue-greys over light blue, with red stars on the fins; the default), `Grey` (low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).

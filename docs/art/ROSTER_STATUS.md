@@ -18,7 +18,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | III | Mirage 2000C | `Mirage2000C` | No | `art/mirage2000` (on `art/f14a`) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F-15C Eagle | `F15C` | No | `art/f15c` (on `art/mirage2000`) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F/A-18C | `FA18C` | No | `art/fa18c` (on `art/f15c`) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | Su-27S | `Su27S` | No | | | | | |
+| IV | Su-27S | `Su27S` | No | `art/su27s` (on `art/fa18c`) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Tornado F3 | `TornadoF3` | No | | | | | |
 | V | F-16C Block 50 | `F16C` | No | | | | | |
 | V | F-15E | `F15E` | No | | | | | |
@@ -152,3 +152,7 @@ Built on `art/mirage2000`. Files in `tools/blender/out/`: `F15C_base.fbx` (manif
 ## F/A-18C Hornet (`art/fa18c`, art only)
 
 Built on `art/f15c`. Files in `tools/blender/out/`: `FA18C_base.fbx` (manifest `tools/Manifests/FA18C.luau`), `textures/FA18C_<Skin>_<Set>_<Map>.png` for the Navy, Gull, Adversary and Ghost skins, `FA18C_cockpit.fbx` and `FA18C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18C_<Skin>_paint_*.png` and `FA18C_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18C.luau` exists, with `ModelName = "FA18C"`.
+
+## Su-27S Flanker (`art/su27s`, art only)
+
+Built on `art/fa18c`. Files in `tools/blender/out/`: `Su27S_base.fbx` (manifest `tools/Manifests/Su27S.luau`), `textures/Su27S_<Skin>_<Set>_<Map>.png` for the Flanker, Grey, Naval and Desert skins, `Su27S_cockpit.fbx` and `Su27S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su27S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su27S_<Skin>_paint_*.png` and `Su27S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su27S.luau` exists, with `ModelName = "Su27S"`.
