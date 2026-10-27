@@ -352,3 +352,14 @@ There are four skins: `Navy` (two greys, low-visibility markings, the default), 
 - The jet has 27 parts and 10,208 triangles, with 7 hardpoints. The cockpit is 2,120 triangles: the HUD, with the radar display under it (an MFD face).
 
 There are four skins: `AirDefence` (blue-greys over light grey, with French roundels and fin flash; the default), `Grey` (low-visibility), `Tactical` and `Desert` (no national markings).
+
+## 17. F-15C Eagle (art only)
+
+`tools/blender/f15c_generate.py` builds the F-15C and `tools/blender/f15c_paint.py` paints it. Its Id is `F15C`; it has no flight data yet.
+
+- The reference is Kaboldy's Commons drawing of the F-15A (CC BY-SA 4.0), mirrored nose left. The F-15C's airframe is the F-15A's. The scale comes from the published 19.43 m length (144.5 px/m), which gives a 13.07 m span against the published 13.05 m. In the overlays the model sits on the drawing's lines; the wing's trailing edge is a straight line, where the drawing has an unswept flap and a swept aileron.
+- The jet is built from the forward fuselage with the bubble canopy, running back as a central spine between the engines. Alongside it are the `Nacelles`, which run from the raked box intakes (with dark `IntakeDucts`) back to the engines, which meet at the centreline. `Strakes` holds the curved leading-edge gloves and the tail booms. The tail has tailerons on the elevon controls and twin upright fins with rudders and tip pods. The F-15 has no nose probe, so `Pitot` is the two probes on the sides of the nose.
+- The F-15 has fixed leading edges, but the kit always builds `LEFlap` parts, so they are a thin strip (6% of the chord).
+- The jet has 38 parts and 11,400 triangles, with 9 hardpoints: two rails on each wing pylon, four fuselage stations and the centreline. The cockpit is 2,128 triangles: the HUD, the radar display upper left (an MFD face) and the threat display upper right.
+
+There are four skins: `ModEagle` (two ghost greys, low-visibility markings; the default), `Blue` (Air Superiority Blue, full-colour markings), `Aggressor` (blue camouflage) and `Desert` (no national markings).
