@@ -206,6 +206,10 @@ function MatchController:SpawnStatus(): (boolean, string)
 	if not s then
 		return false, "Connecting…"
 	end
+	-- Not until the area you'll spawn in has loaded (StreamingService), so nobody starts in the void
+	if not localPlayer:GetAttribute("MapReady") then
+		return false, "Loading the map…"
+	end
 	if s.mode == "FreeFlight" then
 		return true, ""
 	end

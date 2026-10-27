@@ -78,20 +78,33 @@ local function settle(player: Player)
 	until os.clock() - started >= MAX_WAIT
 end
 
+local MAP_READY_AFTER = 60 -- seconds: PLAY unlocks by then even if some area is slow
+
 local function warm(player: Player)
+	-- PLAY stays greyed out until the spawn areas are in (MatchController:SpawnStatus)
+	task.delay(MAP_READY_AFTER, function()
+		if player.Parent == Players then
+			player:SetAttribute("MapReady", true)
+		end
+	end)
+	local spawnCount = #spawnAreas()
 	local areas = spawnAreas()
 	if WARM_WHOLE_MAP then
 		for _, position in grid() do
 			table.insert(areas, position)
 		end
 	end
-	for _, position in areas do
+	for i, position in areas do
 		settle(player)
 		if player.Parent ~= Players then
 			return
 		end
 		pcall(player.RequestStreamAroundAsync, player, position, TIMEOUT)
+		if i == spawnCount then
+			player:SetAttribute("MapReady", true)
+		end
 	end
+	player:SetAttribute("MapReady", true)
 end
 
 function StreamingService:Start()
@@ -109,6 +122,13 @@ function StreamingService:Start()
 		pace[player] = nil
 	end)
 	if not workspace.StreamingEnabled then
+		-- The whole map arrives before the player does
+		Players.PlayerAdded:Connect(function(player)
+			player:SetAttribute("MapReady", true)
+		end)
+		for _, player in Players:GetPlayers() do
+			player:SetAttribute("MapReady", true)
+		end
 		return
 	end
 	Players.PlayerAdded:Connect(function(player)
