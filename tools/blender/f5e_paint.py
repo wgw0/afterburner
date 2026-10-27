@@ -558,6 +558,10 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     grime = fbm(P, 2.2, 4, seed=21, stretch=(3.0, 0.3, 3.0))
     grime = np.clip((grime - 0.52) * 2.0, 0, 1) * (0.05 + 0.05 * down) * (0.4 + 0.9 * seam_wake)
     colour *= (1 - grime - 0.3 * line)[..., None]
+    import cockpit_kit  # the cockpit well, seen through the canopy: cockpit-dark
+
+    well = fus & cockpit_kit.well_mask(P)
+    colour = np.where(well[..., None], srgb(46, 48, 50), colour)
     colour *= (0.55 + 0.45 * np.power(np.clip(ao, 0, 1), 0.8))[..., None]
 
     # Worn leading edges: chips of bare metal

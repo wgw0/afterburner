@@ -713,21 +713,15 @@ The cockpit view is the primary camera (DESIGN §2.4).
 - FOV: default 70°, slider 60–90° in settings. Zoom key narrows it to 35° for spotting.
 - Look-back snap views: snap views for left, right, back and up with a short lerp.
 
-### 8.2 Cockpit kits
+### 8.2 Cockpits
 
-Each era kit (DESIGN §2.4) is a Model in `ReplicatedStorage.Assets.Cockpits`:
+Each jet has its own cockpit model in `ReplicatedStorage.Assets.Cockpits.<AirframeId>`, built in Blender for that jet's canopy and fuselage: tub, consoles, instrument panel, glareshield, sight and HUD glass, stick, and the inside of the canopy frames. [Aircraft art pipeline §7](art/AIRCRAFT_PIPELINE.md#7-cockpit-interiors) describes how it's made and installed.
 
-| Kit | Contents |
-|---|---|
-| `Analogue` | Gauge faces (airspeed, altimeter, ADI, VSI, G-meter, fuel, RPM), gunsight glass |
-| `EarlyGlass` | HUD glass, 1–2 monochrome MFD `SurfaceGui`s, radar scope, a few gauges |
-| `FullGlass` | HUD, 3 colour MFDs, upfront control panel |
-| `WAD` | One wide-area display with sensor-fusion page, HUD or helmet symbology |
-
-- The kit is **cloned locally on the client** into the pilot's jet (it's only ever seen by the pilot, so it isn't replicated). It's positioned relative to `CockpitEye`.
-- Per-airframe extras go in an optional `CockpitOverrides` model (frame shape, canopy rails).
-- The external model hides its own cockpit parts (`LocalTransparencyModifier = 1`) while in cockpit view, so they don't block the camera.
-- Until the era kits exist, `CockpitController` builds a greybox analogue kit on the client. It finds the cockpit sill from the lowest point of the jet's `Canopy` part (a one-piece mesh fuselage's bounding box reaches up to the spine, so it can't be used for this) and leaves out its own canopy bow when the jet has a `CanopyFrame`.
+- The cockpit is **cloned locally on the client** into the pilot's jet. Only the pilot sees it, so it isn't replicated. It's laid out in the jet's Root space, so the copy is pivoted to the Root and welded to it.
+- Its `Faces` folder marks where the live instruments sit on the panel. Each face has a `Gauge` attribute (`Speed`, `Altitude`, `G`, `RPM` or `Radar`) and a `Style` attribute (`Dial` or `Digital`). The gauges are `SurfaceGui`s on those faces. The other instruments are painted into the cockpit texture.
+- While in cockpit view, the external model's canopy glass is hidden (`LocalTransparencyModifier = 1`), so it doesn't tint the view or go opaque over water.
+- A jet without a cockpit model gets the greybox analogue kit: a panel on top of the forward fuselage, sills, a coaming and a gunsight glass. The kit finds the cockpit sill from the lowest point of the jet's `Canopy` part, because a one-piece mesh fuselage's bounding box reaches up to the spine. It leaves out its own canopy bow when the jet has a `CanopyFrame`.
+- The jet's `Era` still sets what its cockpit contains: `Analogue` has dials and a gunsight; `EarlyGlass` has a HUD, a radar scope and a few dials; `FullGlass` has a HUD and colour MFDs; `WAD` has one wide-area display.
 
 ### 8.3 Instruments
 

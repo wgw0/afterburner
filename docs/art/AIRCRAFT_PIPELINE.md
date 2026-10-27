@@ -1,6 +1,6 @@
 # Aircraft model pipeline
 
-How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces and swappable PBR skins. Jets are rebuilt in the order players meet them. The F-5E Tiger II and the MiG-21bis are done; the Mirage IIIE is next. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). Jets are rebuilt in the order players meet them. The F-5E Tiger II and the MiG-21bis are done; the Mirage IIIE is next. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
 
 | Stage | Tool | F-5E |
 |---|---|---|
@@ -197,3 +197,63 @@ The MiG-21bis follows the same pipeline with its own two scripts. `tools/blender
 
 The three skins are Natural Metal (Silver, the default), Interceptor Grey (Grey) and Tactical Camouflage (Tactical, tan and greens over light blue undersides). All three have red stars on the fin and wings, a heat-stained bare-metal tail end and a striped air-data boom. Their textures are in `Assets.Skins.MiG21bis`.
 
+## 7. Cockpit interiors
+
+Every jet gets its own cockpit: a low-poly model built in Blender for that jet's canopy and fuselage, which the game shows only to the pilot. It replaces the greybox kit, whose generic panel, coaming and canopy bow collided with the real airframes (the bow cut across the gauges and boxes poked through each other).
+
+| Part | Contents |
+|---|---|
+| Tub | Lining of the cockpit well: walls, floor and a flange over the sill, with front and rear walls |
+| ConsoleL / ConsoleR | Side consoles; the throttle on the left one, a side stick's base on the right one where the jet has one |
+| Panel | Instrument panel, tilted back, with bezels and scope hoods as geometry |
+| Coaming | Glareshield: a lip over the panel and a hood that narrows and drops forward under the windscreen |
+| Gunsight, HUDGlass | Sight body and its combiner glass (`Glass` set) |
+| Stick | Centre stick with its boot, or a side stick |
+| CanopyFrameInner | Inside of the windscreen bow and the canopy's rear frame, sill rails, and mirrors where the bow is high enough |
+
+The F-5E and MiG-21bis cockpits are about 2,500 triangles each, with one 1024² texture set (`Cockpit`).
+
+### How it fits the jet
+
+The cockpit is modelled in the jet's own axes with the same origin, so its manifest positions are in the jet's Root space. `tools/blender/cockpit_kit.py` builds it from a `COCKPIT` spec in the jet's generator script and from the shapes already measured for the exterior. The panel is narrowed to fit under the canopy glass at its top and inside the well. The glareshield narrows and drops forward to stay inside the windscreen. The canopy frames' insides follow `canopy_ring` just inside the exterior frames. The script warns if a live instrument's top edge is hidden behind the glareshield lip from the eye.
+
+The spec gives these in metres from the `CockpitEye`: the panel's distance, top, bottom, tilt and half width; the glareshield's overhang, length and drop; the consoles' height, width and length; the stick type; the sight; and the palette. The well is given in jet axes: where it starts behind the seat, where it ends just ahead of the panel, its half width and its floor. Each instrument has a panel position (`u` metres right of the centre, `v` metres down from the top edge), a size and a kind (`Dial`, `Scope`, `MFD` or `Lights`). Instruments marked `live` (`Speed`, `Altitude`, `G`, `RPM` or `Radar`) become faces in the manifest, and the rest are painted.
+
+The exterior fuselage used to be closed across the top under the canopy, which would have hidden the tub. The generator now opens a **cockpit well**: after unwrapping, `cockpit_kit.open_well()` pushes the top of the fuselage rings in the well's range down to the cockpit floor. Only vertex positions change. Smart UV Project is deterministic, so a re-run gives exactly the same UVs as before, and the jet's existing skins still fit. This was checked for the F-5E and MiG-21bis by hashing every object's UVs against the `.blend` that was imported into Studio: the UVs were identical, and only the Fuselage's vertices had moved. The tub lines the well, so the pilot never sees its stretched paint. Other players can look into the well through the canopy, so the skin painters paint it cockpit-dark (`cockpit_kit.well_mask`); this takes effect when a skin is next repainted.
+
+### Commands
+
+```
+blender -b --python tools/blender/f5e_generate.py -- --out <abs>/tools/blender/out --manifest-luau tools/Manifests/F5E.luau
+blender -b --python tools/blender/cockpit_generate.py -- --airframe F5E --out <abs>/tools/blender/out --manifest-luau tools/Manifests/Cockpits/F5E.luau
+blender -b <abs>/tools/blender/out/F5E_cockpit.blend --python tools/blender/cockpit_paint.py -- --airframe F5E --out <abs>/tools/blender/out
+blender -b <abs>/tools/blender/out/F5E_base.blend --python tools/blender/cockpit_preview.py -- --out <abs>/tools/blender/out --skin Ghost --textures <dir with the skin PNGs>
+```
+
+These write `F5E_cockpit.fbx`, `F5E_cockpit.blend`, `F5E_cockpit_manifest.json`, `tools/Manifests/Cockpits/F5E.luau` and the four `F5E_Cockpit_<Map>.png` maps. They also write previews from the eye (`F5E_cockpit_ahead.png`, `_panel` and `_left`) and from outside (`_outside`). A new jet's cockpit needs its generator listed in `cockpit_generate.GENERATORS`.
+
+### Painting
+
+`tools/blender/cockpit_paint.py` paints the same way as the skin painter: it bakes where every texel is, computes the maps in numpy and bakes the normal map from a height map. There are four palettes: `US` (dark gull grey tub, black panels), `Soviet` (turquoise, from the MiG-21bis onwards), `French` (dark grey and black) and `Modern` (charcoal). It paints dial faces with scales and needles, the attitude ball and compass card, caution-light panels, placards, screws and panel seams. The consoles get panels with switches and knobs, the tub gets ribs and a non-slip floor, the glareshield is flat black and the mirrors are glossy. The live instruments are left as plain dark faces, because the game draws its gauges over them.
+
+### Studio
+
+1. Re-import the jet's exterior (`<Id>_base.fbx`) and run `install` as before, so its fuselage has the well. The skins don't change.
+2. Upload the four `<Id>_Cockpit_<Map>.png` maps.
+3. Import `<Id>_cockpit.fbx` as one Model (Merge Meshes off, Anchored on), then run:
+   ```lua
+   print(require(game.ServerStorage.Tools.AircraftAssembler).installCockpit("F5E", workspace.F5E_cockpit,
+       { Color = <id>, Normal = <id>, Roughness = <id>, Metalness = <id> }))
+   ```
+   Without the maps table, the cockpit installs untextured.
+4. Move the imported Model to `ServerStorage`.
+
+`installCockpit` matches the imported parts to `tools/Manifests/Cockpits/<Id>.luau` by name. It undoes the importer's scale and axes the same way `install` does, but lines the parts up on the coaming, tub and consoles (the manifest's `fit`). It builds `ReplicatedStorage.Assets.Cockpits.<Id>`, which contains:
+- a `CockpitRoot` part at the jet's Root frame, with every part welded to it (massless, with collision, touch and query off)
+- a `SurfaceAppearance` on each `Cockpit` part
+- the HUD glass as tinted SmoothPlastic
+- a `Faces` folder of invisible parts, one per live instrument, each with its Back face toward the pilot and `Gauge` and `Style` attributes
+
+A cockpit it replaces moves to `ServerStorage.ReplacedModels`.
+
+When the pilot's jet spawns, `CockpitController` looks for `Assets.Cockpits.<AirframeId>`. If it's there, a copy is pivoted to the jet's Root and welded to it, and a gauge is drawn on each face. A face gets a needle dial, a green-on-black dial if its `Style` is `"Digital"`, or a scope with a sweeping bearing line if its `Gauge` is `Radar`. The cockpit model stays visible in the chase view too, because it sits inside the jet. If there's no cockpit model, the greybox kit is built as before.
