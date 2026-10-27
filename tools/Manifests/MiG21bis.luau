@@ -433,7 +433,7 @@ return {
 		},
 	},
 	attachments = {
-		CockpitEye = { 0, 0.88, -2.2853 },
+		CockpitEye = { 0, 0.98, -2.2853 },
 		GunMuzzle = { 0, -0.7, -1.363 },
 		Nozzle1 = { 0, -0.0194, 6.0642 },
 		WingtipL = { -3.597, -0.1388, 2.7632 },
