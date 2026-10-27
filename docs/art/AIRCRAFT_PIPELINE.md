@@ -342,3 +342,13 @@ There are four skins: `Grey` (Soviet grey and grey-green with a light radome, th
 - The shared painter gained a `ducts` key, which paints recessed intake mouths as dark ducts. Before this, the F-16A and MiG-29A painted them in the radome colour, which on the MiG-29's Grey skin was white. That skin has been repainted.
 
 There are four skins: `Navy` (two greys, low-visibility markings, the default), `Gull` (light gull grey over white, full-colour markings), `Ghost` (three-tone grey, low-visibility) and `Desert` (no national markings).
+
+## 16. Mirage 2000C (art only)
+
+`tools/blender/mirage2000_generate.py` builds the Mirage 2000C and `tools/blender/mirage2000_paint.py` paints it. Its Id is `Mirage2000C`; it has no flight data yet.
+
+- The Mirage 2000 is laid out like the Mirage III: half-round intakes with half-cone centre bodies, a tailless delta with two elevons a side, and a single fin. So the script uses the Mirage IIIE's builders (`mirage3_generate.py`), switching that module's settings the way the jets switch the F-5E kit's. The fin with its curved dorsal fillet and the pitot are built in the script itself.
+- The reference is a small (1000 px) CC BY-SA three-view of the Mirage 2000C. Its top view is drawn nose-right, and its side view has the canopy open, so the closed outline was used. The scale comes from the published 14.36 m length (42.0 px/m), which gives a 9.29 m span against the published 9.13 m. In the overlays the model sits on the drawing's lines.
+- The jet has 27 parts and 10,208 triangles, with 7 hardpoints. The cockpit is 2,120 triangles: the HUD, with the radar display under it (an MFD face).
+
+There are four skins: `AirDefence` (blue-greys over light grey, with French roundels and fin flash; the default), `Grey` (low-visibility), `Tactical` and `Desert` (no national markings).
