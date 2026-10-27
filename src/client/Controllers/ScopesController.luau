@@ -1,14 +1,14 @@
 --!strict
 -- Radar scope and RWR display (DEVELOPMENT.md §14, SNS-02 / SNS-05). Screen-space panels at the bottom.
 --   Radar (the cone): top-down and heading-up, your jet at the bottom and the radar's beam fanning out
---     ahead of it to its full range, with a ring at half range. Contacts your radar sees are drawn where
---     they are; your lock is a boxed red blip. (It was a B-scope, bearing across and range up, which
---     playtesters read as a map.)
---   Situation display (the round scope): top-down and heading-up, with your jet in the middle.
---     * The rim is the selected weapon's lock range (written at the bottom), so the wedge ahead, where
---       it can lock, always reaches the rim (heat-seeker: seeker cone; radar missile: radar cone). With
---       no missile selected the rim is the radar's range.
---     * Jets beyond the rim sit on it, faint, in their direction.
+--     ahead of it, with a ring at half range. It zooms (SCALES) so the nearest contact in the beam, or
+--     your lock, sits in its outer part, never past the radar's range; the scale is in the title.
+--     Contacts are drawn where they are, your lock as a boxed red blip; ones past the scale sit faint on
+--     the edge. (It was a B-scope, then a cone at the radar's full range: both read as useless dots.)
+--   Situation display (the round scope): everyone around you, top-down and heading-up, your jet in the
+--     middle. It zooms to the nearest contact in any direction, but never in past the selected weapon's
+--     lock range, so with enemies close the lock wedge reaches the rim; further out it's to scale.
+--     The rim's range is written at the bottom; jets beyond it sit on it, faint.
 --     * Dots are jets you know about: red = locked, green = lockable, amber = the rest.
 --     * RWR around the rim: threats at their bearing, S = search radar, L = locked on you (flashing),
 --       M = missile guiding on you (red, fast flashing). Coarse RWRs only give 8 directions.
@@ -55,6 +55,10 @@ local coneRight: Frame
 local coneEnd: Frame
 local tsdLabel: TextLabel
 local DEFAULT_TSD_RANGE = 10000 -- real metres shown from the centre to the rim without a radar
+local SCALES = { 2500, 5000, 10000, 20000, 40000, 80000 } -- metres: the zoom steps
+local FILL = 0.75 -- the nearest contact sits at about this fraction of the scale
+local radarScale = 10000
+local tsdScale = 10000
 
 local function panel(name: string, size: Vector2, position: UDim2, anchor: Vector2): Frame
 	local f = Instance.new("Frame")
@@ -262,6 +266,29 @@ local function drawBeam(halfAngle: number)
 	end
 end
 
+-- Picks a zoom step: the smallest that puts `wanted` (metres) inside FILL, between `lo` and `hi`.
+-- Zooms out at once, but only zooms in once the contact is well inside the smaller step, so the scale
+-- doesn't flick back and forth at a boundary.
+local function zoom(current: number, wanted: number?, lo: number, hi: number): number
+	local target = SCALES[#SCALES]
+	for _, step in SCALES do
+		if wanted == nil or wanted <= step * FILL then
+			target = step
+			break
+		end
+	end
+	target = math.clamp(target, lo, math.max(lo, hi))
+	if target < current and wanted and wanted > target * FILL * 0.8 then
+		return current
+	end
+	return target
+end
+
+local function formatKm(metres: number): string
+	local km = metres / 1000
+	return if km < 10 and km % 1 ~= 0 then string.format("%.1f km", km) else string.format("%d km", math.round(km))
+end
+
 local function rwrMark(i: number): TextLabel
 	local m = rwrMarks[i]
 	if not m then
@@ -288,8 +315,23 @@ local function update()
 	radarPanel.Visible = radar ~= nil
 	local used = 0
 	if radar then
+		-- Zoom to your lock, or else the nearest contact in the beam
+		local nearest: number? = nil
+		for id, contact in SensorController.contacts do
+			if contact.onRadar or id == SensorController.lockId then
+				local rel = myCF:PointToObjectSpace(contact.position)
+				if math.abs(math.atan2(rel.X, -rel.Z)) <= math.rad(radar.Cone) + 0.02 then
+					if id == SensorController.lockId then
+						nearest = contact.range
+						break
+					end
+					nearest = math.min(nearest or math.huge, contact.range)
+				end
+			end
+		end
+		radarScale = zoom(radarScale, nearest, SCALES[1], radar.Range)
 		local lockText = if SensorController.lockId ~= 0 then "  LOCK" else ""
-		radarLabel.Text = string.format("RADAR %d km%s", math.round(radar.Range / 1000), lockText)
+		radarLabel.Text = `RADAR {formatKm(radarScale)}{lockText}`
 		drawBeam(radar.Cone)
 		for id, contact in SensorController.contacts do
 			if contact.onRadar or id == SensorController.lockId then
@@ -299,11 +341,15 @@ local function update()
 					used += 1
 					local b = blip(used)
 					local locked = id == SensorController.lockId
-					local p = conePoint(bearing, math.clamp(contact.range / radar.Range, 0, 1))
+					local beyond = contact.range > radarScale
+					local p = conePoint(bearing, math.clamp(contact.range / radarScale, 0, 1))
 					b.Position = UDim2.fromOffset(p.X, p.Y)
-					b.Size = UDim2.fromOffset(if locked then 12 else 7, if locked then 12 else 7)
+					b.Size = UDim2.fromOffset(
+						if locked then 12 elseif beyond then 5 else 7,
+						if locked then 12 elseif beyond then 5 else 7
+					)
 					b.BackgroundColor3 = if locked then RED else AMBER
-					b.BackgroundTransparency = if locked then 0.6 else 0
+					b.BackgroundTransparency = if locked then 0.6 elseif beyond then 0.5 else 0
 					(b:FindFirstChildOfClass("UIStroke") :: UIStroke).Enabled = locked
 					b.Visible = true
 				end
@@ -314,21 +360,29 @@ local function update()
 		blips[i].Visible = false
 	end
 
-	-- Situation display: lock cone and contacts
-	-- The rim is the selected weapon's lock range, so its wedge always reaches the rim
+	-- Situation display: everyone around you, zoomed to the nearest, never in past the weapon's reach
 	local missile = SensorController:SelectedMissile()
-	local tsdRange = if radar then radar.Range else DEFAULT_TSD_RANGE
+	local reach: number? = nil
+	local coneAngle: number? = nil
 	if missile and WeaponData.isRadar(missile) and radar then
-		tsdRange = math.min(missile.MaxRange, radar.Range)
-		drawCone(radar.Cone, 1)
+		reach, coneAngle = math.min(missile.MaxRange, radar.Range), radar.Cone
 	elseif missile then
-		tsdRange = missile.MaxRange
-		drawCone(missile.SeekerCone, 1)
+		reach, coneAngle = missile.MaxRange, missile.SeekerCone
+	end
+	local nearestAround: number? = nil
+	for _, contact in SensorController.contacts do
+		nearestAround = math.min(nearestAround or math.huge, contact.range)
+	end
+	tsdScale = zoom(tsdScale, nearestAround, reach or SCALES[1], SCALES[#SCALES])
+	local tsdRange = if nearestAround == nil and reach == nil
+		then (if radar then radar.Range else DEFAULT_TSD_RANGE)
+		else tsdScale
+	if reach and coneAngle then
+		drawCone(coneAngle, reach / tsdRange)
 	else
 		drawCone(nil, 0)
 	end
-	local km = tsdRange / 1000
-	tsdLabel.Text = if km < 10 then string.format("%.1f km", km) else string.format("%d km", math.round(km))
+	tsdLabel.Text = formatKm(tsdRange)
 	local dots = 0
 	for id, contact in SensorController.contacts do
 		local rel = myCF:PointToObjectSpace(contact.position)

@@ -24,6 +24,7 @@ from mathutils import Matrix, Vector
 
 STUDS = 1 / 0.28  # studs per metre
 MAX_TRIS = 10000
+MAX_SPAN = 1800  # studs: a MeshPart can't be bigger than 2,048, so a group's trees must fit inside this
 TRUNK = (88, 64, 44)  # SceneryBuilder's trunk colour
 KINDS = {"C": "TreeConifer", "B": "TreeBroadleaf", "P": "TreePoplar"}
 SWATCH = 16  # pixels per palette swatch
@@ -84,12 +85,18 @@ def build_palette(colours, out_dir):
 
 
 def groups(trees, tris_of):
-    """Splits trees into spatially compact groups of at most MAX_TRIS triangles (a quadtree)."""
+    """Splits trees into spatially compact groups (a quadtree): at most MAX_TRIS triangles, and spread over
+    no more than MAX_SPAN studs."""
     out = []
 
     def split(items, x0, z0, size):
         total = sum(tris_of[t["kind"]] for t in items)
-        if total <= MAX_TRIS or size < 64:
+        span = 0
+        if items:
+            xs = [t["pos"][0] for t in items]
+            zs = [t["pos"][2] for t in items]
+            span = max(max(xs) - min(xs), max(zs) - min(zs))
+        if (total <= MAX_TRIS and span <= MAX_SPAN) or size < 64:
             if items:
                 out.append(items)
             return
