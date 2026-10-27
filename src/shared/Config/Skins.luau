@@ -41,6 +41,12 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "EuroOne", DisplayName = "European One", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	F16A = {
+		{ Id = "Falcon", DisplayName = "Three-Tone Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Blue Aggressor", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Aggressor", Credits = 5000 },
+		{ Id = "Euro", DisplayName = "European Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },
