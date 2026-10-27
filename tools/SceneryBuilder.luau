@@ -6,6 +6,10 @@
 --   local S = require(game.ServerStorage.Tools.SceneryBuilder)
 --   S.templates(workspace.Scenery_kit)  -- once per kit import: builds ServerStorage.SceneryTemplates
 --   S.clear() S.roads() S.towns() S.woods() S.airbases()
+-- The woods are then merged into a few dozen meshes (15,000 trees as 30,000 parts loaded and drew slowly):
+--   S.exportTrees(i) for i = 1, n until it returns "" -> tools/blender/out/trees.txt (concatenated)
+--   tools/blender/woods_merge.py bakes Woods_merged.fbx; import it, upload Woods_Palette.png, then
+--   S.installMergedWoods(workspace.Woods_merged, paletteAssetId) replaces the tree parts.
 -- Everything goes in workspace.Map.Scenery, except the airbase buildings, which replace the contents of
 -- Map.AirbaseWest / Map.AirbaseEast. Towns, woods and airbases are Models with
 -- LevelOfDetail = StreamingMesh, so they still show from the air before they have streamed in.
@@ -20,6 +24,11 @@ local ROAD_TEXTURE = "rbxassetid://88361153151301" -- tools/blender/out/textures
 local ROAD_WIDTH = 26 -- studs (7.3 m, two lanes)
 local ROAD_STEP = 32 -- studs between road segment joints
 local GRID = 200 -- road routing grid (studs)
+local MERGE_SIDE = 1.5 -- studs a merged road part may stray sideways from the road's true line
+local MERGE_UP = 0.6 -- ...and up or down
+local MERGE_MAX = 2000 -- studs: the longest road part (parts top out at 2,048)
+
+local mergeRun: (Instance, { Vector3 }) -> ()
 
 local SceneryBuilder = {}
 
@@ -305,6 +314,40 @@ local function roadPart(parent: Instance, a: Vector3, b: Vector3)
 	p.Parent = parent
 end
 
+-- Lays a stretch of road as few parts as it can: each part runs as far as the road stays within
+-- MERGE_SIDE of a straight line sideways and MERGE_UP up or down, so the ground never pokes through and
+-- the road never floats. (One part per ROAD_STEP was 3,178 parts and as many textures.)
+mergeRun = function(parent: Instance, run: { Vector3 })
+	local i = 1
+	while i < #run do
+		local j = i + 1
+		while j < #run do
+			local a, b = run[i], run[j + 1]
+			if (b - a).Magnitude > MERGE_MAX then
+				break
+			end
+			local flat = Vector2.new(b.X - a.X, b.Z - a.Z)
+			local fits = true
+			for k = i + 1, j do
+				local p = run[k]
+				local t = math.clamp((Vector2.new(p.X - a.X, p.Z - a.Z)):Dot(flat) / flat:Dot(flat), 0, 1)
+				local onLine = a:Lerp(b, t)
+				local side = (Vector2.new(p.X, p.Z) - Vector2.new(onLine.X, onLine.Z)).Magnitude
+				if side > MERGE_SIDE or math.abs(p.Y - onLine.Y) > MERGE_UP then
+					fits = false
+					break
+				end
+			end
+			if not fits then
+				break
+			end
+			j += 1
+		end
+		roadPart(parent, run[i], run[j])
+		i = j
+	end
+end
+
 -- Lays a road along a list of (x, z) points: resampled every ROAD_STEP studs and set on the terrain.
 local function layRoad(parent: Instance, points: { Vector2 })
 	local samples: { Vector2 } = {}
@@ -316,9 +359,12 @@ local function layRoad(parent: Instance, points: { Vector2 })
 		end
 	end
 	table.insert(samples, points[#points])
+	local run: { Vector3 } = {} -- an unbroken stretch of road, one point per ROAD_STEP
 	local prev: Vector3? = nil
 	for _, s in samples do
 		if height(s.X, s.Y) < WATER + 1 then
+			mergeRun(parent, run)
+			run = {}
 			prev = nil
 			continue
 		end
@@ -328,8 +374,8 @@ local function layRoad(parent: Instance, points: { Vector2 })
 			h = math.max(h, surface(s.X + o.X, s.Y + o.Y))
 		end
 		local here = Vector3.new(s.X, h + 1.6, s.Y) -- 2 studs thick: the drawn terrain sits above its collision surface
+		table.insert(run, here)
 		if prev then
-			roadPart(parent, prev, here)
 			table.insert(roadSegments, { a = prev, b = here })
 			local k = hashKey(here.X, here.Z)
 			roadHash[k] = roadHash[k] or {}
@@ -337,6 +383,7 @@ local function layRoad(parent: Instance, points: { Vector2 })
 		end
 		prev = here
 	end
+	mergeRun(parent, run)
 end
 
 -- Chaikin smoothing (corner cutting) keeps the grid's staircase out of the road.
@@ -816,6 +863,114 @@ function SceneryBuilder.airbases(): string
 		end
 	end
 	return "airbases rebuilt"
+end
+
+-- Tree placements for the woods merge, a page at a time (page 1, 2, ... until it returns ""). One tree
+-- per line: kind (C conifer, B broadleaf, P poplar), ground x y z (studs), yaw (degrees), scale (x100),
+-- foliage colour as hex.
+local KIND_CODE = { TreeConifer = "C", TreeBroadleaf = "B", TreePoplar = "P" }
+local TREES_PER_PAGE = 1500
+
+function SceneryBuilder.exportTrees(page: number): string
+	local templates = ServerStorage:FindFirstChild("SceneryTemplates")
+	assert(templates, "No SceneryTemplates: run templates() first")
+	local byMesh: { [string]: string } = {}
+	local trunkHeight: { [string]: number } = {}
+	for kind in KIND_CODE do
+		local t = templates:FindFirstChild(kind)
+		local trunk = t and t:FindFirstChild("Trunk") :: MeshPart?
+		if trunk then
+			byMesh[trunk.MeshId] = kind
+			trunkHeight[kind] = trunk.Size.Y
+		end
+	end
+	local lines = {}
+	local index = 0
+	local first, last = (page - 1) * TREES_PER_PAGE + 1, page * TREES_PER_PAGE
+	for _, model in sceneryFolder():GetChildren() do
+		if not string.match(model.Name, "^Woods%d+$") then
+			continue
+		end
+		local parts = model:GetChildren()
+		-- place() adds each tree's parts together, so a tree is its Trunk plus the Foliage beside it
+		for i, trunk in parts do
+			if not (trunk:IsA("MeshPart") and trunk.Name == "Trunk") then
+				continue
+			end
+			local foliage = parts[i + 1]
+			if not (foliage and foliage.Name == "Foliage") then
+				foliage = parts[i - 1]
+			end
+			local kind = byMesh[trunk.MeshId]
+			if not (kind and foliage and foliage:IsA("BasePart")) then
+				continue
+			end
+			index += 1
+			if index < first or index > last then
+				continue
+			end
+			local scale = trunk.Size.Y / trunkHeight[kind]
+			local ground = trunk.CFrame * Vector3.new(0, -trunk.Size.Y / 2, 0)
+			local _, yaw = trunk.CFrame:ToEulerAnglesYXZ()
+			table.insert(
+				lines,
+				string.format(
+					"%s %.1f %.1f %.1f %d %d %s",
+					KIND_CODE[kind],
+					ground.X,
+					ground.Y,
+					ground.Z,
+					math.round(math.deg(yaw)),
+					math.round(scale * 100),
+					foliage.Color:ToHex()
+				)
+			)
+		end
+	end
+	return table.concat(lines, "\n")
+end
+
+-- Swaps the woods' tree parts for the merged meshes from woods_merge.py. Each imported MeshPart is named
+-- "Woods_<n>" and carries the palette texture; its bounding box is already in place, because the meshes
+-- were baked in map coordinates around their own centres (written into each part's name by Blender as
+-- "Woods_<n>@x,y,z").
+function SceneryBuilder.installMergedWoods(source: Instance, paletteAssetId: number): string
+	local root = sceneryFolder()
+	local removed = 0
+	for _, model in root:GetChildren() do
+		if string.match(model.Name, "^Woods%d+$") or model.Name == "WoodsMerged" then
+			removed += #model:GetChildren()
+			model:Destroy()
+		end
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "WoodsMerged"
+	local placed = 0
+	for _, d in source:GetDescendants() do
+		if not d:IsA("MeshPart") then
+			continue
+		end
+		local x, y, z = string.match(d.Name, "@(%-?[%d%.]+),(%-?[%d%.]+),(%-?[%d%.]+)$")
+		if not x then
+			continue
+		end
+		local part = d:Clone()
+		part.Name = "Trees"
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false -- one box around a whole wood would catch rays far from any tree
+		part.CastShadow = true
+		part.Material = Enum.Material.SmoothPlastic
+		part.Color = Color3.new(1, 1, 1)
+		part.TextureID = `rbxassetid://{paletteAssetId}`
+		part.Position = Vector3.new(tonumber(x) :: number, tonumber(y) :: number, tonumber(z) :: number)
+		local model = lodModel(`Woods_{placed + 1}`, folder)
+		part.Parent = model
+		placed += 1
+	end
+	folder.Parent = root
+	return `removed {removed} tree parts; placed {placed} merged wood meshes`
 end
 
 return SceneryBuilder

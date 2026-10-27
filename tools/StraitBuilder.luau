@@ -33,6 +33,7 @@ local ISLAND_RADIUS = 3000
 local ISLAND_FLAT = 1500 -- the runway area stays flat at y = 0
 local BASE_HEIGHT = 20 -- airbase ground level
 local SPAWN_CLEARANCE = 700 -- spawn at least this far above the ground
+local SHELL = 4 -- studs of solid terrain under the surface, at least
 
 local StraitBuilder = {}
 
@@ -269,7 +270,10 @@ local function writeChunk(x0: number, z0: number)
 			local n1, n2 = heights[i][k + 1], heights[i + 2][k + 1]
 			local n3, n4 = heights[i + 1][k], heights[i + 1][k + 2]
 			local drop = math.max(h - n1, h - n2, h - n3, h - n4, 0)
-			local bottom = h - math.max(8, drop + 6)
+			-- One full voxel under the surface voxel is enough to close it, plus enough to close a slope
+			-- down to the lowest neighbour. (It was 8 and drop + 6: a third of the terrain's voxels were
+			-- buried shell, and loading them dominated the map's load time.)
+			local bottom = h - math.max(SHELL, drop + 4)
 			bRow[k] = bottom
 			sRow[k] = math.sqrt((n2 - n1) ^ 2 + (n4 - n3) ^ 2) / 8
 			low = math.min(low, bottom)
@@ -326,7 +330,15 @@ function StraitBuilder.terrain(part: number?, parts: number?): string
 	local budget = os.clock()
 	for sx = first, last do
 		for sz = 0, strips - 1 do
-			writeChunk(-HALF + sx * CHUNK, -HALF + sz * CHUNK)
+			local x0, z0 = -HALF + sx * CHUNK, -HALF + sz * CHUNK
+			-- Clear first: writeChunk only writes from the new shell's bottom up, so a deeper old shell
+			-- would otherwise stay underneath.
+			Terrain:FillRegion(
+				Region3.new(Vector3.new(x0, -128, z0), Vector3.new(x0 + CHUNK, 2048, z0 + CHUNK)),
+				4,
+				Enum.Material.Air
+			)
+			writeChunk(x0, z0)
 			if os.clock() - budget > 0.05 then
 				task.wait()
 				budget = os.clock()
