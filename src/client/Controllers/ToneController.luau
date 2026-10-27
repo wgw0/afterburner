@@ -1,15 +1,17 @@
 --!strict
--- Cockpit tones (DEVELOPMENT.md §21, AUD-03). All built from one pure sine (Assets.Audio.Tone, 741 Hz),
--- pitched with PlaybackSpeed and switched on and off with short volume ramps, on two voices:
---   Your weapons:
+-- Cockpit tones and voice (DEVELOPMENT.md §21, AUD-03/04).
+--   Your weapons, from one pure sine (Assets.Audio.Tone, 741 Hz) pitched with PlaybackSpeed and gated
+--   with short volume ramps:
 --     Heat-seeker sees a target: a low warbling growl. Locked: a high steady tone.
 --     Radar lock-on (1 s): fast beeps. Lock confirmed: one long high beep.
---   Threats (RWR):
---     A new radar searching you: one short beep.
---     Locked on you: a repeating double beep.
---     A missile guiding on you: a fast high-low alarm.
+--   Threats (RWR), from Will's recordings in Assets.Audio (falling back to the sine if one is missing):
+--     A new radar searching you: RwrContact, once.
+--     Locked on you (radar or heat-seeker): RwrLock, over and over.
+--     A missile guiding on you: RwrLaunch, over and over.
+--   Voice ("Betty"): the HUD's most urgent warning that has a recording is called out, one line at a
+--     time; PULL UP cuts in at once and repeats back to back. Warnings without a recording get the
+--     master warning chime once when they come up.
 --   Missile launch: a whoosh (yours non-positional, others 3D). Detonations: CombatFxController.
---   Voice: "Pull up" (Assets.Audio.PullUp) every PULL_UP_PERIOD while the HUD shows PULL UP.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -22,7 +24,18 @@ local SensorController = require(script.Parent.SensorController)
 
 local FALLBACK = "rbxasset://sounds/electronicpingshort.wav"
 local RAMP = 60 -- volume units per second: ~15 ms fades, so gating the tone doesn't click
-local PULL_UP_PERIOD = 2 -- seconds from one "Pull up" to the next (the clip is ~1.2 s)
+local VOICE_GAP = 0.35 -- seconds of quiet between voice lines
+
+-- HUD warnings Betty calls out, most urgent first: the recording, and seconds between repeats while the
+-- warning stays up (0 = back to back)
+local CALLOUTS = {
+	{ warning = "PULL UP", clip = "PullUp", every = 0 },
+	{ warning = "ENGINE FIRE", clip = "EngineFire", every = 6 },
+	{ warning = "BINGO FUEL", clip = "Bingo", every = 15 },
+	{ warning = "ENGINE DAMAGE", clip = "Caution", every = 12 },
+}
+-- HUD warnings with no recording: the master warning chime when they come up
+local CHIMED = { "STALL", "OVER-G", "G-LIMIT", "RETURN TO BATTLE AREA" }
 
 local ToneController = {
 	Priority = 82,
@@ -32,19 +45,29 @@ type Voice = { sound: Sound, volume: number }
 
 local group: SoundGroup
 local seeker: Voice -- your own weapon tones
-local warn: Voice -- RWR tones
+local warn: Voice -- RWR fallback tones
 local knownSearch: { [number]: boolean } = {}
 local searchBeepUntil = 0
 local lockedBeepUntil = 0
 local lastLockId = 0
 local clock = 0
-local nextPullUp = 0
+local speaking: Sound? = nil -- the voice line playing now
+local speakingClip = ""
+local voiceFreeAt = 0
+local lastSaid: { [string]: number } = {}
+local wasUp: { [string]: boolean } = {}
+local rwrNextAt = 0 -- when the looping RWR warning plays again
+
+local function clipOf(name: string): Sound?
+	local audio = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Audio")
+	local source = audio and audio:FindFirstChild(name)
+	return if source and source:IsA("Sound") then source else nil
+end
 
 local function voice(): Voice
-	local audio = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Audio")
-	local source = audio and audio:FindFirstChild("Tone")
+	local source = clipOf("Tone")
 	local s: Sound
-	if source and source:IsA("Sound") then
+	if source then
 		s = source:Clone()
 	else
 		s = Instance.new("Sound")
@@ -72,11 +95,10 @@ local function pulse(period: number, on: number): boolean
 	return clock % period < on
 end
 
-local function playAsset(name: string, position: Vector3?, volume: number)
-	local audio = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Audio")
-	local source = audio and audio:FindFirstChild(name)
-	if not (source and source:IsA("Sound")) then
-		return
+local function playAsset(name: string, position: Vector3?, volume: number): Sound?
+	local source = clipOf(name)
+	if not source then
+		return nil
 	end
 	local s = source:Clone()
 	s.Volume = volume
@@ -98,6 +120,55 @@ local function playAsset(name: string, position: Vector3?, volume: number)
 			s:Destroy()
 		end)
 	end
+	return s
+end
+
+local function clipLength(name: string): number
+	local source = clipOf(name)
+	return if source and source.TimeLength > 0 then source.TimeLength else 1.5
+end
+
+local function say(clip: string, now: number)
+	if speaking and speaking.Parent then
+		speaking:Destroy()
+	end
+	speaking = playAsset(clip, nil, 1)
+	speakingClip = clip
+	voiceFreeAt = now + clipLength(clip) + VOICE_GAP
+	lastSaid[clip] = now
+end
+
+local function updateVoice(flying: boolean, now: number)
+	local up: { [string]: boolean } = {}
+	if flying then
+		for _, text in HUDController.warnings do
+			-- RETURN TO BATTLE AREA carries a countdown after it
+			up[if string.sub(text, 1, 21) == "RETURN TO BATTLE AREA" then "RETURN TO BATTLE AREA" else text] = true
+		end
+	end
+	for _, name in CHIMED do
+		if up[name] and not wasUp[name] then
+			playAsset("MasterWarning", nil, 0.7)
+		end
+	end
+	for _, callout in CALLOUTS do
+		if not up[callout.warning] then
+			lastSaid[callout.clip] = nil -- comes straight back next time it's up
+		end
+	end
+	-- PULL UP cuts in over anything else
+	if up["PULL UP"] and not wasUp["PULL UP"] and speakingClip ~= "PullUp" then
+		say("PullUp", now)
+	elseif now >= voiceFreeAt then
+		for _, callout in CALLOUTS do
+			local said = lastSaid[callout.clip]
+			if up[callout.warning] and (said == nil or now - said >= clipLength(callout.clip) + callout.every) then
+				say(callout.clip, now)
+				break
+			end
+		end
+	end
+	wasUp = up
 end
 
 local function update(dt: number)
@@ -126,7 +197,7 @@ local function update(dt: number)
 	end
 
 	-- RWR
-	local hasLock, hasLaunch = false, false
+	local hasLock, hasLaunch, newSearch = false, false, false
 	local search: { [number]: boolean } = {}
 	if flying then
 		for _, threat in SensorController.threats do
@@ -137,29 +208,40 @@ local function update(dt: number)
 			else
 				search[threat.id] = true
 				if not knownSearch[threat.id] then
-					searchBeepUntil = now + 0.14 -- a new radar searching you
+					newSearch = true
 				end
 			end
 		end
 	end
 	knownSearch = search
-	if hasLaunch then
-		drive(warn, 0.6, if pulse(0.24, 0.12) then 1.6 else 1.2, dt)
-	elseif hasLock then
-		local beeping = clock % 0.8 < 0.1 or (clock % 0.8 > 0.18 and clock % 0.8 < 0.28)
-		drive(warn, if beeping then 0.5 else 0, 1.15, dt)
-	elseif now < searchBeepUntil then
-		drive(warn, 0.4, 0.9, dt)
-	else
+	local loop = if hasLaunch then "RwrLaunch" elseif hasLock then "RwrLock" else nil
+	if loop and clipOf(loop) then
+		-- Will's recordings: the launch or lock warning, over and over while it lasts
 		drive(warn, 0, 1, dt)
+		if now >= rwrNextAt then
+			playAsset(loop, nil, 0.8)
+			rwrNextAt = now + clipLength(loop)
+		end
+	else
+		if not loop then
+			rwrNextAt = 0
+		end
+		if newSearch and not playAsset("RwrContact", nil, 0.6) then
+			searchBeepUntil = now + 0.14 -- no recording: a short beep instead
+		end
+		if hasLaunch then
+			drive(warn, 0.6, if pulse(0.24, 0.12) then 1.6 else 1.2, dt)
+		elseif hasLock then
+			local beeping = clock % 0.8 < 0.1 or (clock % 0.8 > 0.18 and clock % 0.8 < 0.28)
+			drive(warn, if beeping then 0.5 else 0, 1.15, dt)
+		elseif now < searchBeepUntil then
+			drive(warn, 0.4, 0.9, dt)
+		else
+			drive(warn, 0, 1, dt)
+		end
 	end
 
-	-- Voice: "Pull up" as soon as the warning comes up, then every PULL_UP_PERIOD until it clears. Never
-	-- sooner than that, so a warning that flickers on and off doesn't stammer.
-	if flying and HUDController.pullUp and now >= nextPullUp then
-		nextPullUp = now + PULL_UP_PERIOD
-		playAsset("PullUp", nil, 0.9)
-	end
+	updateVoice(flying, now)
 end
 
 function ToneController:Init()

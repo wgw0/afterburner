@@ -12,7 +12,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
 local Progression = require(Shared.Progression)
 local Countermeasures = require(Shared.Countermeasures)
 local Environment = require(Shared.Config.Environment)
@@ -552,20 +551,29 @@ local function sendState()
 	end
 end
 
--- RWR launch warnings: radar missiles always (the RWR hears the guidance signal); IR missiles only if
--- the target jet has a missile-approach warner.
+-- Warnings for the RWR: every missile guiding on a jet ("Launch"), and every heat-seeker that has
+-- locked it ("Lock"). Real Tier I-II jets can't hear an IR missile at all, but the AI fly them with
+-- heat-seekers, so players were shot at in silence (Will: "not getting the proper indication when an
+-- enemy has locked onto me"). ARH missiles stay silent in midcourse, as they're meant to.
 local function launchThreats(): { [number]: { SensorService.Threat } }
 	local out: { [number]: { SensorService.Threat } } = {}
+	local function add(targetId: number, threat: SensorService.Threat)
+		out[targetId] = out[targetId] or {}
+		table.insert(out[targetId], threat)
+	end
 	for _, missile in missiles do
 		local target = if missile.targetId then AircraftService:GetJetById(missile.targetId) else nil
 		local silent = missile.arh ~= nil and not missile.arh.active -- ARH midcourse
 		if target and not missile.lostTrack and not silent then
-			local airframe = AircraftData.get(target.airframeId) :: any
-			local warns = WeaponData.isRadar(missile.spec) or (airframe and airframe.RWR and airframe.RWR.LaunchWarning)
-			if warns then
-				out[target.id] = out[target.id] or {}
-				table.insert(out[target.id], { id = -missile.id, kind = "Launch", position = missile.state.position })
-			end
+			add(target.id, { id = -missile.id, kind = "Launch", position = missile.state.position })
+		end
+	end
+	local now = os.clock()
+	for _, loadout in loadouts do
+		local slot = loadout.slots[loadout.selected]
+		local target = loadout.irTarget and AircraftService:GetJetById(loadout.irTarget)
+		if target and slot and now - loadout.irSince >= slot.weapon.LockTime * 0.8 then
+			add(target.id, { id = loadout.jet.id, kind = "Lock", position = loadout.jet.root.Position })
 		end
 	end
 	return out

@@ -39,7 +39,8 @@ local LADDER_STEP = 5 -- degrees between pitch rungs
 local HUDController = {
 	Priority = 60,
 	gui = nil :: ScreenGui?,
-	pullUp = false, -- the PULL UP warning is up (ToneController speaks it)
+	pullUp = false, -- the PULL UP warning is up
+	warnings = {} :: { string }, -- every active warning, most urgent first (ToneController calls them out)
 }
 
 type Tape = { frame: Frame, labels: { TextLabel }, ticks: { Frame }, valueBox: TextLabel }
@@ -485,6 +486,7 @@ local function update()
 			gui.Enabled = false
 		end
 		HUDController.pullUp = false
+		HUDController.warnings = {}
 		return
 	end
 	gui.Enabled = not FlightController:IsUnconscious()
@@ -663,6 +665,13 @@ local function update()
 	if HUDController.pullUp then
 		table.insert(warnings, "PULL UP")
 	end
+	-- Someone's radar or heat-seeker has locked you (a launch gets its own MISSILE warning and arrow)
+	for _, threat in SensorController.threats do
+		if threat.kind == "Lock" then
+			table.insert(warnings, "LOCKED")
+			break
+		end
+	end
 	if jetModel and jetModel:GetAttribute("OnFire") then
 		table.insert(warnings, "ENGINE FIRE")
 	end
@@ -682,6 +691,7 @@ local function update()
 	if airframe and state.fuel < airframe.Fuel * 0.15 then
 		table.insert(warnings, "BINGO FUEL")
 	end
+	HUDController.warnings = warnings
 	warningLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72)
 	warningLabel.Text = warnings[1] or ""
 	warningLabel.Visible = #warnings > 0 and (now % 0.6) < 0.4
