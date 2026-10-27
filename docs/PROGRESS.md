@@ -246,10 +246,10 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - Grass from the air: `tools/blender/terrain_paint.py` paints a patchwork of fields with mowing stripes and hedgerows, used as MaterialVariants on Grass and LeafyGrass at 2,048 studs per tile. Terrain only draws variants with the Regular pattern. The grass decoration is off.
   - Signed off by Will ("happy with the sky").
 - [ ] **MAP-04** Streaming and fog tuning for mobile
-  - Spawn-area warm-up on the menu (`StreamingService`, paced by the client's frame rate) and a land-and-sea underlay under the terrain. Warming the whole map is off: building terrain meshes for all of it held a client at ~12 fps for minutes however it was paced; the rest streams in around the jet (50-60 fps flying across the map). Needs `StreamOutBehavior = LowMemory` on Workspace, which only Studio's Properties panel can set. Mobile tuning still to do.
+  - Streaming is now off: it unloaded the map on death and under memory pressure. The whole map loads at join and stays (60 fps in Studio). Mobile memory and join time still to check.
 - [ ] **FX-05** Quality settings and pooling audit
 - [ ] **AUD-04** Warnings and radio barks with subtitles
-  - A female "Pull up" call (`Assets.Audio.PullUp`, from the Creator Store's F-16 warning) repeats every 2 s while the HUD shows PULL UP. Tested in play: it starts within a second of the warning and stops when it clears.
+  - Betty voice warnings from Will's recordings (`Assets.Audio`): PULL UP (cuts in, back to back), ENGINE FIRE, BINGO FUEL, ENGINE DAMAGE ("Caution"); the master warning chime for STALL, OVER-G, G-LIMIT and RETURN TO BATTLE AREA. RWR contact, lock and launch use his RWR recordings. Every missile guiding on you now warns, heat-seekers included, and a heat-seeker lock shows LOCKED like a radar lock.
 - [ ] **AUD-05** Music and UI sounds, sound groups and mixer settings
 - [ ] **PRG-07** Aircraft mastery stars and rewards
 - [ ] **UI-05** Mode select and queue UI
