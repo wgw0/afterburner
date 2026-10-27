@@ -171,7 +171,8 @@ kit.ATTACHMENTS = {
     "Hardpoint2": (1.55, Y(1500), WING_Z - 0.15),
     "Hardpoint3": (-0.62, Y(1350), -0.50),  # under the intakes
     "Hardpoint4": (0.62, Y(1350), -0.50),
-    "Hardpoint5": (0, Y(1650), -0.65),
+    "Hardpoint5": (-0.30, Y(1650), -0.65),  # the belly pylons, a pair
+    "Hardpoint6": (0.30, Y(1650), -0.65),
 }
 
 # Cockpit interior (cockpit_kit.py, art pipeline §7), after MiG-23 cockpit photos: the ASP-23 sight on the
