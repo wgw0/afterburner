@@ -11,7 +11,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | I | Mirage IIIE | `MirageIII` | Yes | `art/mirage3` (on `art/cockpits`) | Done | Tactical (default), Silver, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | Mirage F1C | `MirageF1` | Yes | `art/miragef1` (on `art/mirage3`) | Done | Interceptor (default), Tactical, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | F-4E Phantom II | `F4E` | Yes | `art/f4e` (on `art/miragef1`) | Done | SEA (default), HillGray, EuroOne, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| II | MiG-23MLD | `MiG23MLD` | Yes | | | | | |
+| II | MiG-23MLD | `MiG23MLD` | Yes | `art/mig23` (on `art/f4e`) | Done (wings at 45°) | Tactical (default), TwoTone, Grey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-16A | `F16A` | Yes | | | | | |
 | III | MiG-29A | `MiG29A` | Yes | | | | | |
 | III | F-14A Tomcat | `F14A` | No | | | | | |
@@ -92,3 +92,15 @@ Files in `tools/blender/out/`:
 - Previews: `F4E_{side,top,front,threequarter}.png`, `F4E_overlay_{side,top}.png`, `textures/F4E_<Skin>_paint_*.png` and `F4E_cockpit_*.png`
 
 To do in Studio: import the model, run `install("F4E", workspace.F4E_base)` (the assembler lines up twin nozzles on `NozzleL` and `NozzleR`), make the skin SurfaceAppearances, install the cockpit, then play test. The outer wing panels and outer leading-edge flaps are separate parts: `WingOuterL`, `WingOuterR`, `LEFlapOuterL` and `LEFlapOuterR`.
+
+## MiG-23MLD (`art/mig23`)
+
+Built on `art/f4e`, so merge the earlier art branches first.
+
+Files in `tools/blender/out/`:
+- Model: `MiG23MLD_base.fbx`, plus `tools/Manifests/MiG23MLD.luau`
+- Skins: `textures/MiG23MLD_<Skin>_<Set>_<Map>.png` for the Tactical, TwoTone, Grey and Desert skins
+- Cockpit: `MiG23MLD_cockpit.fbx` and `MiG23MLD_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `MiG23MLD_{side,top,front,threequarter}.png`, `MiG23MLD_overlay_{side,top}.png` (with the wings spread, to compare with the drawing), `textures/MiG23MLD_<Skin>_paint_*.png` and `MiG23MLD_cockpit_*.png`
+
+To do in Studio: import the model, run `install("MiG23MLD", workspace.MiG23MLD_base)`, make the skin SurfaceAppearances, install the cockpit, then play test. The tailerons use the elevon controls, so check that they move together for pitch and in opposite directions for roll.
