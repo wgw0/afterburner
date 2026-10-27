@@ -14,7 +14,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | II | MiG-23MLD | `MiG23MLD` | Yes | `art/mig23` (on `art/f4e`) | Done (wings at 45°) | Tactical (default), TwoTone, Grey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-16A | `F16A` | Yes | `art/f16a` (on `art/mig23`) | Done | Falcon (default), Blue, Desert, Euro | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | MiG-29A | `MiG29A` | Yes | `art/mig29` (on `art/f16a`) | Done | Grey (default), Euro, BlueGrey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| III | F-14A Tomcat | `F14A` | No | | | | | |
+| III | F-14A Tomcat | `F14A` | No | `art/f14a` (on `art/mig29`) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | III | Mirage 2000C | `Mirage2000C` | No | | | | | |
 | IV | F-15C Eagle | `F15C` | No | | | | | |
 | IV | F/A-18C | `FA18C` | No | | | | | |
@@ -128,3 +128,15 @@ Files in `tools/blender/out/`:
 - Previews: `MiG29A_{side,top,front,threequarter}.png`, `MiG29A_overlay_{side,top}.png`, `textures/MiG29A_<Skin>_paint_*.png` and `MiG29A_cockpit_*.png`
 
 To do in Studio: import the model, run `install("MiG29A", workspace.MiG29A_base)` (twin nozzles, `NozzleL` and `NozzleR`), make the skin SurfaceAppearances, install the cockpit, then play test. Both rudders are on the `Rudder` control, and the stabilators are on the elevon controls.
+
+## F-14A Tomcat (`art/f14a`, art only)
+
+Built on `art/mig29`. This branch also repaints the MiG-29A's Grey skin: its intake mouths were white, and are now dark ducts. Re-upload the 4 `MiG29A_Grey_Body_*.png` maps (only the Color map changed).
+
+Files in `tools/blender/out/`:
+- Model: `F14A_base.fbx`, plus `tools/Manifests/F14A.luau`
+- Skins: `textures/F14A_<Skin>_<Set>_<Map>.png` for the Navy, Gull, Ghost and Desert skins
+- Cockpit: `F14A_cockpit.fbx` and `F14A_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `F14A_{side,top,front,threequarter}.png`, `F14A_overlay_{side,top}.png`, `textures/F14A_<Skin>_paint_*.png` and `F14A_cockpit_*.png`
+
+To do in Studio, when the F-14A gets flight data (an `AircraftData/F14A.luau` with `ModelName = "F14A"`): import the model, run `install("F14A", workspace.F14A_base)`, make the skin SurfaceAppearances, install the cockpit, then play test.

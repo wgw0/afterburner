@@ -53,6 +53,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "BlueGrey", DisplayName = "Blue-Grey", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the F-14A has no flight data yet
+	F14A = {
+		{ Id = "Navy", DisplayName = "Navy Grey", Default = true },
+		{ Id = "Gull", DisplayName = "Gull Grey and White", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Three-Tone Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

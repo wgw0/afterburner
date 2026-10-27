@@ -330,3 +330,15 @@ There are four skins: `Falcon` (the three greys, the default), `Blue`, `Desert` 
 - The jet has 38 parts and 11,916 triangles. The cockpit is 2,248 triangles: turquoise, with the head-up display on the glareshield and a small radar repeater upper right. The jet has 7 hardpoints for its 6 missiles.
 
 There are four skins: `Grey` (Soviet grey and grey-green with a light radome, the default), `Euro`, `BlueGrey` (both low-visibility) and `Desert` (no national markings). The red stars are on both fins and on the wings.
+
+## 15. F-14A Tomcat (art only)
+
+`tools/blender/f14a_generate.py` builds the F-14A and `tools/blender/f14a_paint.py` paints it. The F-14A has no flight data yet, so this is the art for when it does: the model, skins, cockpit and manifests, with the Id `F14A`.
+
+- The reference is Niyansfarn's Commons drawing of the F-14D (CC BY 3.0). Its top and side views are at the same scale, set from the published 19.10 m length (121.2 px/m), which gives the swept span 11.54 m against the published 11.65 m. The F-14D's airframe is the F-14A's apart from the chin pod, which is left smaller. In the overlays the model sits on the drawing's lines, apart from the wings.
+- The drawing's wings are fully swept (68°). The model measures that wing and turns it 30° forward about the published pivot (half width 2.72 m), to 35°. As on the MiG-23, the wing parts have their origin on the pivot. There are slats (`LEFlap`) and flaps (`Flap`).
+- The jet is built from the forward fuselage with the tandem canopy (three frames) and the flat centre body (the "pancake") ending in the beavertail. Alongside it are the separated `Nacelles` with box intakes and dark `IntakeDucts`, and the fixed `Gloves`. The tail has tailerons on the elevon controls, twin fins canted 5° (`FinL` and `FinR`) with rudders, and ventral fins.
+- The jet has 35 parts and 11,308 triangles, with 8 hardpoints. The cockpit is 2,000 triangles: the HUD, the vertical display indicator (the radar face) and the horizontal situation display below it.
+- The shared painter gained a `ducts` key, which paints recessed intake mouths as dark ducts. Before this, the F-16A and MiG-29A painted them in the radome colour, which on the MiG-29's Grey skin was white. That skin has been repainted.
+
+There are four skins: `Navy` (two greys, low-visibility markings, the default), `Gull` (light gull grey over white, full-colour markings), `Ghost` (three-tone grey, low-visibility) and `Desert` (no national markings).
