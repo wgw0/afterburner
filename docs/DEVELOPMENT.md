@@ -245,8 +245,10 @@ tests/                               → ServerStorage.Tests (TestRunner, *.spec
 tools/                               → ServerStorage.Tools (Studio tools, run from the command bar)
 ├── GreyboxBuilder.luau, TerrainBuilder.luau, StraitBuilder.luau, EconomySim.luau, ExploitTest.luau
 ├── AircraftAssembler.luau           -- imported FBX + manifest -> game-ready jet
+├── SceneryBuilder.luau              -- roads, towns, farms, woods and airbase buildings on the Strait
 ├── Manifests/                       -- per-airframe model manifests written by the Blender generator
 └── blender/                         -- Blender scripts (not synced): f5e_generate.py, f5e_paint.py,
+                                        mig21_generate.py, mig21_paint.py, scenery_generate.py,
                                         overlay_reference.py, render_views.py
 scripts/                             -- CI: ci-checks.sh, validate-models.luau (Lune)
 docs/art/                            -- art pipeline; reference images are kept out of git
