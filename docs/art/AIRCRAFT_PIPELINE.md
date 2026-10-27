@@ -270,3 +270,17 @@ The Mirage IIIE uses the same pipeline. `tools/blender/mirage3_generate.py` buil
 - 28 parts, 10,752 triangles. The cockpit is 2,304 triangles, with a French-palette panel: the radar scope under the sight, flight instruments to its left and engine instruments to its right.
 
 There are four skins: Armée de l'Air camouflage (`Tactical`, dark green and grey over aluminium-lacquered undersides, the default), `Silver` (natural metal), `Desert` (sand and brown over light blue) and `Grey` (two-tone air-superiority grey). The `Tactical` and `Silver` skins carry French roundels and a tricolour fin flash. `Desert` and `Grey` have grey low-visibility roundels and no flash.
+
+## 9. Shared skin painter
+
+Jets from the Mirage IIIE on are painted by `tools/blender/jet_paint.py`. Each jet's paint script is just a layout and its schemes. The layout says where the panel frames and lines are, which parts are the body, wings, moving surfaces, tail and fin, and where the radome, anti-glare panel, intake lips, ducts, hot tail end and gun ports are. It also places the insignia and fin flash and gives the nozzles' positions. The painter does the rest the same way for every jet. The insignia can be a roundel in any three colours, the Soviet star or the US star and bar, each with a low-visibility grey version. A scheme is either camouflage over an underside colour, two tones, or natural metal (`metal`). It can also have an aluminium-lacquered underside (`underside_metal`), low-visibility markings (`markings = "lowvis"`) or no markings (`"none"`). Repainting the Mirage IIIE through the shared painter changed its textures only in the panel lines on the moving surfaces (a mean difference of about 0.1/255).
+
+## 10. Mirage F1C
+
+`tools/blender/miragef1_generate.py` builds the F1C and `tools/blender/miragef1_paint.py` paints it.
+
+- The only usable three-view on Commons is a 574 px public-domain drawing. It's approximate, so it gives the outline and the published figures set the scale: the side view's length is the published 15.30 m (18.95 px/m). The top view is drawn about 2% shorter, so its stations are stretched to match the side view, and its widths are scaled so the wing without its tip rails spans 8.20 m. In the overlays the model sits on the drawing's lines. The trailing edge is the drawing's aft-most line; the line ahead of it is the flap hinge.
+- The shoulder wing comes from the F-5E's wing builder: a 47.5° leading edge, full-span leading-edge flaps, flaps, ailerons and wingtip launch rails. There are all-moving stabilators, a fin with a rudder, two canted ventral fins, half-round intakes behind the cockpit with half-cone centre bodies, and the main gear folding into the fuselage.
+- 34 parts, 10,708 triangles. The cockpit is 2,280 triangles (French palette, with the Cyrano IV scope under the sight).
+
+There are four skins: `Interceptor` (two blue-greys over light grey, the default), `Tactical` (green and grey), `Desert` (sand and brown over light blue) and `Grey` (overall light grey). The first two carry French roundels and a fin flash; the other two have low-visibility markings.

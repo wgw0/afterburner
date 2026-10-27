@@ -9,7 +9,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | I | F-5E Tiger II | `F5E` | Yes | master; `art/cockpits` | Done; cockpit well added | Ghost, Desert, Pacific, Lizard (unchanged) | Done | Re-import the exterior; import and install the cockpit |
 | I | MiG-21bis | `MiG21bis` | Yes | master; `art/cockpits` | Done; cockpit well added | Silver, Grey, Tactical (unchanged) | Done | Re-import the exterior; import and install the cockpit |
 | I | Mirage IIIE | `MirageIII` | Yes | `art/mirage3` (on `art/cockpits`) | Done | Tactical (default), Silver, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| II | Mirage F1 | `MirageF1` | Yes | | | | | |
+| II | Mirage F1C | `MirageF1` | Yes | `art/miragef1` (on `art/mirage3`) | Done | Interceptor (default), Tactical, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | F-4E Phantom II | `F4E` | Yes | | | | | |
 | II | MiG-23MLD | `MiG23MLD` | Yes | | | | | |
 | III | F-16A | `F16A` | Yes | | | | | |
@@ -68,3 +68,15 @@ To do in Studio:
 2. Upload the skins and make `Assets.Skins.MirageIII.<Skin>` with a SurfaceAppearance per set (Body, Wings, Details).
 3. Import and install the cockpit, as for the F-5E.
 4. Play test. Check that the elevons move with the stick (both up for pitch, opposite for roll), that the rudder works, and the view from the cockpit.
+
+## Mirage F1C (`art/miragef1`)
+
+Built on `art/mirage3` (which is built on `art/cockpits`), so merge those first. This branch also adds the shared skin painter `jet_paint.py`. The Mirage IIIE's paint script now uses it, and its four skins were repainted with it in `tools/blender/out/textures`; the change is only in fine panel lines, but upload these PNGs rather than the earlier ones.
+
+Files in `tools/blender/out/`:
+- Model: `MirageF1_base.fbx`, plus `tools/Manifests/MirageF1.luau`
+- Skins: `textures/MirageF1_<Skin>_<Set>_<Map>.png` for the Interceptor, Tactical, Desert and Grey skins
+- Cockpit: `MirageF1_cockpit.fbx` and `MirageF1_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `MirageF1_{side,top,front,threequarter}.png`, `MirageF1_overlay_{side,top}.png`, `textures/MirageF1_<Skin>_paint_*.png` and `MirageF1_cockpit_*.png`
+
+To do in Studio: import, `install("MirageF1", workspace.MirageF1_base)`, make the skin SurfaceAppearances, install the cockpit, then play test. The F1C uses the existing aileron, flap, leading-edge flap, stabilator and rudder controls.
