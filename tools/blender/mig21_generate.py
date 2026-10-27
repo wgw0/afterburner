@@ -135,7 +135,7 @@ kit.HITBOXES = {
     "Tail": {"size": [3.8, 2.6, 4.0], "at": [0, 1.1, 5.3]},
 }
 kit.ATTACHMENTS = {
-    "CockpitEye": (0, Y(545), 0.88),
+    "CockpitEye": (0, Y(545), 0.98),  # raised 10 cm at Will's request (canopy top is 1.08 m)
     "GunMuzzle": (0, Y(640), -0.70),  # GSh-23L in its belly fairing
     "Nozzle1": (0, NOZZLE_Y1, NOZZLE_Z),
     "WingtipL": (-(WING_TIP_X + 0.02), Y(1065), WING_Z),
