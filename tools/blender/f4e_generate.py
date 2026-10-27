@@ -167,13 +167,15 @@ kit.ATTACHMENTS = {
     "FlareDispenser": (0, Y(2350), -0.25),
     "ChaffDispenser": (0, Y(2300), -0.30),
     "ChaseCam": (0, -22.0, 4.0),
-    "Hardpoint1": (-3.0, Y(1650), WING_Z - 0.30),
+    "Hardpoint1": (-3.0, Y(1650), WING_Z - 0.30),  # inboard pylons: a Sidewinder rail each side of each
     "Hardpoint2": (3.0, Y(1650), WING_Z - 0.30),
     "Hardpoint3": (-0.9, Y(1300), -0.50),  # semi-recessed Sparrows
     "Hardpoint4": (0.9, Y(1300), -0.50),
     "Hardpoint5": (-0.9, Y(1850), -0.55),
     "Hardpoint6": (0.9, Y(1850), -0.55),
     "Hardpoint7": (0, Y(1600), -0.62),
+    "Hardpoint8": (-2.6, Y(1650), WING_Z - 0.30),
+    "Hardpoint9": (2.6, Y(1650), WING_Z - 0.30),
 }
 
 # Cockpit interior (cockpit_kit.py, art pipeline §7), after F-4E front-cockpit photos: the LCOSS sight on
