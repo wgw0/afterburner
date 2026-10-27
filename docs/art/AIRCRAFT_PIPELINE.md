@@ -295,3 +295,15 @@ There are four skins: `Interceptor` (two blue-greys over light grey, the default
 - The jet has 37 parts and 11,572 triangles. The cockpit is 2,280 triangles: US palette, with the radar scope at the top of the panel and twin engine gauges.
 
 There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, the default), `HillGray` (two greys), `EuroOne` (dark greens and grey all round) and `Desert` (no national markings). The shared painter now draws the full-colour US star and bar, with an outline-only low-visibility version.
+
+## 12. MiG-23MLD
+
+`tools/blender/mig23_generate.py` builds the MiG-23MLD and `tools/blender/mig23_paint.py` paints it.
+
+- The reference is Kaboldy's Commons three-view of the MiG-23MF, rendered 3840 px wide; the MF and MLD airframes are the same shape at this level of detail. The scale comes from the published 16.70 m length (180 px/m). The spread span then comes out 13.3 m against the published 13.97 m.
+- The wings are swing wings. The top view shows one spread (16°), and that wing was measured and turned 29° about its pivot to the 45° combat sweep. The wing parts have their origin on the pivot, so sweep could be animated later; for now they're fixed. The overlay was checked with the wings left spread, where the model sits on the drawing's spread wing.
+- The fixed gloves with their dogtooth, the splitter plates and the GSh-23L gun pack are one part, `Gloves`. There are leading-edge slats (`LEFlap`) and trailing-edge flaps (`Flap`), a ventral fin, and a long dorsal fillet into the fin.
+- The MiG-23 rolls with its all-moving tailplanes (tailerons), which mix pitch and roll the way elevons do, so `StabilatorL` and `StabilatorR` use the `ElevonL` and `ElevonR` controls.
+- The jet has 30 parts and 10,164 triangles. The cockpit is 2,280 triangles, in Soviet turquoise, with the Sapfir-23 scope under the sight and a wing-sweep gauge.
+
+There are four skins: `Tactical` (tan and two greens over light blue, the default), `TwoTone` (grey-green and dark grey), `Grey` (air-defence grey) and `Desert` (low-visibility markings). The red stars are on the fin and on both wings, top and bottom. The shared painter takes the wing's leading and trailing edges at the combat sweep.
