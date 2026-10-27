@@ -151,6 +151,40 @@ kit.ATTACHMENTS = {
 }
 
 
+# Cockpit interior (cockpit_kit.py, art pipeline §7), from MiG-21bis cockpit photos (the Finnish MG-136 in
+# docs/art/reference/MiG21bis/04_details): the big ASP-PFD sight on top, the RP-22 radar scope with its
+# hood under it, flight instruments to the left, engine instruments to the right, the attitude
+# indicator and the NPP compass below. Turquoise paint.
+kit.COCKPIT = {
+    "well": {"back": 1.90, "front": 3.10, "half_width": 0.34, "floor": -0.20, "flange": 0.07},
+    "panel": {"distance": 0.68, "top": -0.15, "bottom": -0.60, "tilt": 10, "half_width": 0.33},
+    "coaming": {"overhang": 0.04, "length": 0.40, "drop": 0.06},
+    "consoles": {"top": -0.56, "width": 0.10, "aft": -0.35, "fore": 0.45, "throttle": 0.02},
+    "stick": "centre",
+    "stick_fore": 0.40,
+    "sight": "Gunsight",
+    "sight_body": (0.14, 0.16, 0.10),
+    "sight_glass": (0.15, 0.13),
+    "palette": "Soviet",
+    "instruments": [
+        {"name": "RadarScope", "kind": "Scope", "u": 0.0, "v": 0.085, "size": 0.115, "hood": 0.06, "live": "Radar"},
+        {"name": "GMeter", "kind": "Dial", "u": -0.27, "v": 0.085, "size": 0.065, "live": "G"},
+        {"name": "Airspeed", "kind": "Dial", "u": -0.165, "v": 0.08, "size": 0.09, "live": "Speed"},
+        {"name": "RPM", "kind": "Dial", "u": 0.165, "v": 0.08, "size": 0.09, "live": "RPM"},
+        {"name": "EGT", "kind": "Dial", "u": 0.27, "v": 0.085, "size": 0.065},
+        {"name": "AOA", "kind": "Dial", "u": -0.27, "v": 0.185, "size": 0.06},
+        {"name": "Altimeter", "kind": "Dial", "u": -0.165, "v": 0.19, "size": 0.09, "live": "Altitude"},
+        {"name": "ADI", "kind": "Dial", "u": 0.0, "v": 0.215, "size": 0.11, "face": "attitude"},
+        {"name": "VVI", "kind": "Dial", "u": 0.165, "v": 0.19, "size": 0.08},
+        {"name": "RWR", "kind": "Dial", "u": 0.27, "v": 0.185, "size": 0.05},
+        {"name": "Clock", "kind": "Dial", "u": -0.17, "v": 0.30, "size": 0.06},
+        {"name": "HSI", "kind": "Dial", "u": 0.0, "v": 0.335, "size": 0.10, "face": "compass"},
+        {"name": "Fuel", "kind": "Dial", "u": 0.17, "v": 0.30, "size": 0.075},
+        {"name": "Caution", "kind": "Lights", "u": 0.265, "v": 0.29, "size": 0.10},
+    ],
+}
+
+
 # ---------------------------------------------------------------------------------------------------
 # Builders
 # ---------------------------------------------------------------------------------------------------
@@ -398,6 +432,9 @@ def main():
 
     kit.smooth_all()
     kit.unwrap_sets()
+    import cockpit_kit  # after the UVs: the well moves vertices, not UVs, so the skins still fit
+
+    cockpit_kit.open_well()
     counts = kit.triangle_counts()
     manifest = kit.write_manifest(os.path.join(args.out, f"{a}_manifest.json"), args.manifest_luau, counts)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(args.out, f"{a}_base.blend"))

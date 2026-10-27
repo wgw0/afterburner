@@ -847,6 +847,40 @@ ATTACHMENTS = {
 }
 
 
+# Cockpit interior (cockpit_kit.py, art pipeline §7), laid out after F-5E front-cockpit photos: the
+# lead-computing sight on the glareshield, flight instruments in a T round the attitude indicator, the
+# small radar scope top right, engine instruments below it. Distances are metres from the CockpitEye; the
+# well is in jet axes. Instruments: u metres right of the panel's centre, v metres down from its top
+# edge; `live` ones get a gauge drawn by the game, the rest are painted.
+COCKPIT = {
+    "well": {"back": 2.68, "front": 3.97, "half_width": 0.36, "floor": -0.25, "flange": 0.07},
+    "panel": {"distance": 0.70, "top": -0.17, "bottom": -0.62, "tilt": 12, "half_width": 0.34},
+    "coaming": {"overhang": 0.04, "length": 0.42, "drop": 0.08},
+    "consoles": {"top": -0.53, "width": 0.11, "aft": -0.35, "fore": 0.45, "throttle": 0.02},
+    "stick": "centre",
+    "stick_fore": 0.40,
+    "sight": "Gunsight",
+    "palette": "US",
+    "instruments": [
+        {"name": "GMeter", "kind": "Dial", "u": -0.265, "v": 0.075, "size": 0.07, "live": "G"},
+        {"name": "Airspeed", "kind": "Dial", "u": -0.15, "v": 0.08, "size": 0.095, "live": "Speed"},
+        {"name": "ADI", "kind": "Dial", "u": 0.0, "v": 0.09, "size": 0.115, "face": "attitude"},
+        {"name": "Altimeter", "kind": "Dial", "u": 0.14, "v": 0.08, "size": 0.095, "live": "Altitude"},
+        {"name": "RadarScope", "kind": "Scope", "u": 0.265, "v": 0.085, "size": 0.09, "live": "Radar"},
+        {"name": "AOA", "kind": "Dial", "u": -0.265, "v": 0.185, "size": 0.065},
+        {"name": "Mach", "kind": "Dial", "u": -0.15, "v": 0.20, "size": 0.08},
+        {"name": "HSI", "kind": "Dial", "u": 0.0, "v": 0.225, "size": 0.11, "face": "compass"},
+        {"name": "VVI", "kind": "Dial", "u": 0.14, "v": 0.20, "size": 0.08},
+        {"name": "RPM", "kind": "Dial", "u": 0.265, "v": 0.195, "size": 0.075, "live": "RPM"},
+        {"name": "RPM2", "kind": "Dial", "u": 0.265, "v": 0.285, "size": 0.065},
+        {"name": "EGT", "kind": "Dial", "u": 0.18, "v": 0.31, "size": 0.06},
+        {"name": "Fuel", "kind": "Dial", "u": -0.22, "v": 0.30, "size": 0.075},
+        {"name": "Clock", "kind": "Dial", "u": -0.12, "v": 0.31, "size": 0.055},
+        {"name": "Caution", "kind": "Lights", "u": 0.03, "v": 0.34, "size": 0.15},
+    ],
+}
+
+
 def add_attachment_empties(col):
     for name, pos in ATTACHMENTS.items():
         empty = bpy.data.objects.new(f"ATT_{name}", None)
@@ -918,13 +952,13 @@ def num(v):
     return str(v)
 
 
-def export(out_dir):
+def export(out_dir, name=None):
     bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.data.objects:
         if obj.type == "MESH":
             obj.select_set(True)
     bpy.ops.export_scene.fbx(
-        filepath=os.path.join(out_dir, f"{AIRFRAME}_base.fbx"),
+        filepath=os.path.join(out_dir, name or f"{AIRFRAME}_base.fbx"),
         use_selection=True,
         object_types={"MESH"},
         apply_unit_scale=True,
@@ -969,6 +1003,10 @@ def main():
 
     smooth_all()
     unwrap_sets()
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import cockpit_kit  # after the UVs: the well moves vertices, not UVs, so the skins still fit
+
+    cockpit_kit.open_well()
     counts = triangle_counts()
     manifest = write_manifest(os.path.join(args.out, f"{AIRFRAME}_manifest.json"), args.manifest_luau, counts)
 
