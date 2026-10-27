@@ -307,3 +307,26 @@ There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, 
 - The jet has 30 parts and 10,164 triangles. The cockpit is 2,280 triangles, in Soviet turquoise, with the Sapfir-23 scope under the sight and a wing-sweep gauge.
 
 There are four skins: `Tactical` (tan and two greens over light blue, the default), `TwoTone` (grey-green and dark grey), `Grey` (air-defence grey) and `Desert` (low-visibility markings). The red stars are on the fin and on both wings, top and bottom. The shared painter takes the wing's leading and trailing edges at the combat sweep.
+
+## 13. F-16A Fighting Falcon
+
+`tools/blender/f16a_generate.py` builds the F-16A and `tools/blender/f16a_paint.py` paints it.
+
+- The reference is Marek Cel's Commons three-view of the F-16A (CC0), rendered 3840 px wide, with the side and top views both nose left. The scale comes from the published 15.03 m length (175.4 px/m), which gives a span over the tip rails of 9.37 m against the published 9.45 m. In the overlays the model sits on the drawing's lines.
+- The canopy is a frameless bubble with a single frame behind the seat. The cockpit kit now handles a single-frame canopy: the frame inside is drawn behind the pilot, and the sill rails run from the canopy's front.
+- The chin intake is a closed rounded section (`Intake`), with a dark recessed mouth (`IntakeDuct`). The leading-edge extensions and the shelves the tailerons sit on are one part, `Strakes`.
+- The wing comes from the F-5E's wing builder, with full-span leading-edge flaps, flaps, ailerons and tip rails. On the real jet the flaps and ailerons are one surface (flaperons), but they're split here so the existing flap and aileron controls drive them. The all-moving tailerons have anhedral and use the `ElevonL`/`ElevonR` controls, which mix pitch and roll. There are also the fin on its base fairing, the rudder, and two ventral fins.
+- The jet has 35 parts and 10,728 triangles. The cockpit is 2,008 triangles: a wide HUD, the up-front control panel, the radar display (an MFD-style face) upper right, the threat display upper left, and a side stick.
+
+There are four skins: `Falcon` (the three greys, the default), `Blue`, `Desert` (no national markings) and `Euro`. All of them except `Desert` carry low-visibility insignia.
+
+## 14. MiG-29A
+
+`tools/blender/mig29_generate.py` builds the MiG-29A and `tools/blender/mig29_paint.py` paints it.
+
+- The reference is Kaboldy's Commons three-view of the MiG-29, rendered 3840 px wide, with the side and top views both nose left. The scale comes from the published 17.37 m length (171.8 px/m), which gives an 11.27 m span against the published 11.36 m. In the overlays the model sits on the drawing's lines.
+- The MiG-29 is a lifting body, so its parts differ from the earlier jets. `Fuselage` is the narrow forward fuselage running back as a central spine between the engines. `Nacelles` are the two engine nacelles under the wing roots, with raked intake lips, and their recessed mouths are a separate dark part, `IntakeDucts`. `Strakes` holds the big leading-edge extensions, the flat centre section over the nacelles and the tail booms.
+- The wing comes from the F-5E's wing builder, with leading-edge flaps, flaps, ailerons and tip rails. The stabilators sit on the booms and use the elevon controls (pitch and roll mixed). The twin fins (`FinL` and `FinR`) are canted out 6°, each with a rudder (`RudderL` and `RudderR`) on the `Rudder` control.
+- The jet has 38 parts and 11,916 triangles. The cockpit is 2,248 triangles: turquoise, with the head-up display on the glareshield and a small radar repeater upper right. The jet has 7 hardpoints for its 6 missiles.
+
+There are four skins: `Grey` (Soviet grey and grey-green with a light radome, the default), `Euro`, `BlueGrey` (both low-visibility) and `Desert` (no national markings). The red stars are on both fins and on the wings.
