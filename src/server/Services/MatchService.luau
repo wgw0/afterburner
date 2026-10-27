@@ -135,16 +135,14 @@ local function canSpawn(identity: any): (boolean, number, number?)
 	return MatchRules.canSpawn(mode, pilot, os.clock())
 end
 
-local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?, string?)
+local function spawnGate(player: Player, _airframeId: string): (boolean, CFrame?, string?)
 	ensureScore(player, player.Name, false, player.UserId)
 	local allowed = canSpawn(player)
 	if not allowed then
 		return false, nil
 	end
-	if mode.Scored and not Matchmaking.allowed(airframeId, band) then
-		local low, high = string.format("%.1f", band.min), string.format("%.1f", band.max)
-		return false, nil, `This match is BR {low}–{high}: pick a jet up to BR {high}`
-	end
+	-- No BR cap on spawning (Will: let any lineup jet fly). The band still picks the AI's jets; proper
+	-- BR matching comes with separate match servers (MMK-02–04).
 	pilotStates[player].livesUsed += 1
 	return true, MatchService:PickSpawn()
 end

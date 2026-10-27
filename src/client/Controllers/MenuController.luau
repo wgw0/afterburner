@@ -13,7 +13,6 @@ local Packages = ReplicatedStorage:WaitForChild("Packages")
 local React = require(Packages:WaitForChild("React")) :: any
 local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local AircraftData = require(Shared.AircraftData)
 local Net = require(Shared.Net)
 
 local CameraController = require(script.Parent.CameraController)
@@ -101,17 +100,9 @@ render = function()
 	local match = MatchController.state
 	local resultsUp = match ~= nil and match.state == "Results"
 	local allowed, reason = MatchController:SpawnStatus()
-	-- BR matching (MMK-01): this match takes jets up to the top of its band
-	local br = match and match.br
-	local low = br and string.format("%.1f", br.min)
-	local high = br and string.format("%.1f", br.max)
-	local selectedInfo = state.selected and AircraftData.get(state.selected) :: any
-	if allowed and br and selectedInfo and selectedInfo.BattleRating > br.max + 1e-6 then
-		allowed, reason = false, `This match is BR {low}–{high}: pick a jet up to BR {high}`
-	end
 	local status = state.status
 	if status == "" then
-		status = if allowed then (if br then `Ready  ·  BR {low}–{high} match` else "Ready") else reason
+		status = if allowed then "Ready" else reason
 	elseif not allowed and status == "Spawning…" then
 		status = reason
 	end
