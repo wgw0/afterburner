@@ -18,6 +18,11 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Pacific", DisplayName = "Pacific Aggressor", Credits = 5000 },
 		{ Id = "Lizard", DisplayName = "Lizard Aggressor", Credits = 5000 },
 	},
+	MiG21bis = {
+		{ Id = "Silver", DisplayName = "Natural Metal", Default = true },
+		{ Id = "Grey", DisplayName = "Interceptor Grey", Credits = 5000 },
+		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Credits = 5000 },
+	},
 }
 
 for _, list in SKINS do

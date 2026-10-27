@@ -40,6 +40,7 @@ import bpy
 from mathutils import Vector
 
 AIRFRAME = "F5E"
+LENGTH = 14.45  # metres, pitot to nozzle (written to the manifest)
 STUDS_PER_METRE = 1 / 0.28
 
 # ---------------------------------------------------------------------------------------------------
@@ -870,7 +871,7 @@ def write_manifest(path_json, path_luau, counts):
         "airframe": AIRFRAME,
         "units": "metres (Roblox axes: x right, y up, z aft)",
         "studsPerMetre": round(STUDS_PER_METRE, 4),
-        "length": 14.45,
+        "length": LENGTH,
         "triangles": sum(counts.values()),
         "parts": PARTS,
         "attachments": {name: to_roblox(pos) for name, pos in ATTACHMENTS.items()},
