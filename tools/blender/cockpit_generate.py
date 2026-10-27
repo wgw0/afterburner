@@ -29,6 +29,7 @@ GENERATORS = {
     "Mirage2000C": "mirage2000_generate",
     "F15C": "f15c_generate",
     "FA18C": "fa18c_generate",
+    "Su27S": "su27s_generate",
 }
 
 

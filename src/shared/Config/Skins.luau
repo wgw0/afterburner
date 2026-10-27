@@ -81,6 +81,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Adversary", DisplayName = "Adversary Camouflage", Credits = 5000 },
 		{ Id = "Ghost", DisplayName = "Three-Tone Grey", Credits = 5000 },
 	},
+	-- Art only so far: the Su-27S has no flight data yet
+	Su27S = {
+		{ Id = "Flanker", DisplayName = "Flanker Blue", Default = true },
+		{ Id = "Grey", DisplayName = "Low-Visibility Grey", Credits = 5000 },
+		{ Id = "Naval", DisplayName = "Naval Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },
