@@ -4,6 +4,8 @@
 --     elsewhere (WorldEdge), so looking outward you see the world carry on into the haze instead of the
 --     terrain ending in the void. A part can't be bigger than 2,048 studs, but a SpecialMesh can scale its
 --     look far past that, so eight static parts stand in for an endless world.
+--   Underlay: the same land and sea colours drawn under the terrain, below the sea floor, in bands that
+--     follow the coasts. Terrain that hasn't streamed in yet shows as flat country instead of the void.
 --   Border: red diagonal stripes drifting across the edge of the play area and the ceiling, like
 --     Minecraft's world border. Only a patch around the point nearest you is drawn, fading out toward its
 --     rim, and the whole patch fades in from SHOW_RANGE away. It doesn't stop you: the HUD's RETURN TO
@@ -21,6 +23,8 @@ local FAR = 150000 -- how far the plain runs out (studs from the centre)
 local LAND = Color3.fromRGB(98, 122, 56)
 local SEA = Color3.fromRGB(34, 92, 104)
 local LAND_DEPTH = 40 -- land reaches below sea level, so a coast shows a bank, not a gap
+local UNDERLAY = -40 -- top of the underlay: below the sea floor and the terrain shell, so it never shows through
+local UNDERLAY_BAND = 1024 -- z-depth of each underlay band (the coasts are straight within one)
 
 local LIMIT = Scale.MAP_HALF_EXTENT
 local CEILING = Scale.CEILING
@@ -58,12 +62,12 @@ end
 -- Outside plain ---------------------------------------------------------------------------------------
 
 -- One flat slab, drawn at any size: the part stays small and its mesh is scaled up.
-local function slab(x0: number, x1: number, z0: number, z1: number, land: boolean)
+local function slab(x0: number, x1: number, z0: number, z1: number, land: boolean, underlay: boolean?)
 	if x1 - x0 < 1 or z1 - z0 < 1 then
 		return
 	end
-	local top = if land then WorldEdge.PLAIN_HEIGHT else WorldEdge.WATER - 0.3
-	local depth = if land then LAND_DEPTH else 2
+	local top = if underlay then UNDERLAY elseif land then WorldEdge.PLAIN_HEIGHT else WorldEdge.WATER - 0.3
+	local depth = if land and not underlay then LAND_DEPTH else 2
 	local p = part("Plain")
 	p.Size = Vector3.new(TILE, depth, TILE)
 	p.Position = Vector3.new((x0 + x1) / 2, top - depth / 2, (z0 + z1) / 2)
@@ -82,6 +86,18 @@ local function band(x0: number, x1: number, z0: number, z1: number, coastZ: numb
 	slab(x0, math.min(x1, west), z0, z1, true)
 	slab(math.max(x0, west), math.min(x1, east), z0, z1, false)
 	slab(math.max(x0, east), x1, z0, z1, true)
+end
+
+local function buildUnderlay()
+	local half = WorldEdge.TERRAIN_HALF
+	for z0 = -half, half - 1, UNDERLAY_BAND do
+		local z1 = z0 + UNDERLAY_BAND
+		local west, east = WorldEdge.coastX((z0 + z1) / 2)
+		west, east = math.clamp(west, -half, half), math.clamp(east, -half, half)
+		slab(-half, west, z0, z1, true, true)
+		slab(west, east, z0, z1, false, true)
+		slab(east, half, z0, z1, true, true)
+	end
 end
 
 local function buildPlain()
@@ -212,6 +228,7 @@ function WorldEdgeController:Start()
 	folder.Parent = workspace
 
 	buildPlain()
+	buildUnderlay()
 
 	local x, y, z = Vector3.xAxis, Vector3.yAxis, Vector3.zAxis
 	local height = { FLOOR, CEILING }

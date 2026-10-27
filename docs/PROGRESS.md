@@ -244,6 +244,7 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - The play-area edge and the ceiling show a Minecraft-style border: drifting red diagonal stripes in a patch around the point nearest you, fading in from 3,000 studs. It doesn't block anyone; the RETURN TO BATTLE AREA countdown does.
   - Materials and lighting are still to do.
 - [ ] **MAP-04** Streaming and fog tuning for mobile
+  - Map warm-up on the menu (`StreamingService`) and a land-and-sea underlay under the terrain. Needs `StreamOutBehavior = LowMemory` on Workspace, which only Studio's Properties panel can set. Mobile tuning still to do.
 - [ ] **FX-05** Quality settings and pooling audit
 - [ ] **AUD-04** Warnings and radio barks with subtitles
   - A female "Pull up" call (`Assets.Audio.PullUp`, from the Creator Store's F-16 warning) repeats every 2 s while the HUD shows PULL UP. Tested in play: it starts within a second of the warning and stops when it clears.
