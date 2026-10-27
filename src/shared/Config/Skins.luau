@@ -95,6 +95,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Pink", Credits = 5000 },
 	},
+	-- Art only so far: the F-16C has no flight data yet
+	F16C = {
+		{ Id = "Viper", DisplayName = "Viper Grey", Default = true },
+		{ Id = "Ghost", DisplayName = "Blue Ghost", Credits = 5000 },
+		{ Id = "Arctic", DisplayName = "Arctic Splinter", Credits = 5000 },
+		{ Id = "Night", DisplayName = "Dark Grey", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

@@ -394,3 +394,12 @@ There are four skins: `Flanker` (the three blue-greys over light blue, with red 
 - The painter's `roundel_colours` run from the outer ring to the centre, so RAF roundels are blue, white, red.
 
 There are four skins: `AirDefence` (two light greys, low-visibility roundels; the default), `DarkGrey` (low-visibility), `Splinter` (grey splinter camouflage, full-colour roundels) and `Desert` (desert pink, no national markings).
+
+## 21. F-16C Block 50 (art only)
+
+`tools/blender/f16c_generate.py` builds the F-16C Block 50 and `tools/blender/f16c_paint.py` paints it. Its Id is `F16C`; it has no flight data yet.
+
+- The F-16C's airframe is the F-16A's, so the script imports `f16a_generate.py` (its measurements, overlays and builders) and changes what the Block 50 changes: the larger "big mouth" intake for the F110 engine, and four IFF blade antennas on the nose (`Antennas`). The painter reuses the F-16A's panel layout.
+- The jet has 36 parts and 10,776 triangles, with the F-16A's 7 hardpoints. The cockpit is 1,528 triangles, with the side stick: the HUD over the up-front controls, two multifunction displays (the left one is the radar face) and the standby instruments.
+
+There are four skins: `Viper` (two greys, low-visibility markings; the default), `Ghost` (two blues, low-visibility), `Arctic` (white and grey aggressor splinter, no national markings) and `Night` (overall dark grey, low-visibility).

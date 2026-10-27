@@ -20,7 +20,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | IV | F/A-18C | `FA18C` | No | `art/fa18c` (on `art/f15c`) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Su-27S | `Su27S` | No | `art/su27s` (on `art/fa18c`) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Tornado F3 | `TornadoF3` | No | `art/tornadof3` (on `art/su27s`) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | F-16C Block 50 | `F16C` | No | | | | | |
+| V | F-16C Block 50 | `F16C` | No | `art/f16c` (on `art/tornadof3`) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | F-15E | `F15E` | No | | | | | |
 | V | Su-30SM | `Su30SM` | No | | | | | |
 | V | MiG-29SMT | `MiG29SMT` | No | | | | | |
@@ -160,3 +160,7 @@ Built on `art/fa18c`. Files in `tools/blender/out/`: `Su27S_base.fbx` (manifest 
 ## Tornado F3 (`art/tornadof3`, art only)
 
 Built on `art/su27s`. Files in `tools/blender/out/`: `TornadoF3_base.fbx` (manifest `tools/Manifests/TornadoF3.luau`), `textures/TornadoF3_<Skin>_<Set>_<Map>.png` for the AirDefence, DarkGrey, Splinter and Desert skins, `TornadoF3_cockpit.fbx` and `TornadoF3_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`TornadoF3_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/TornadoF3_<Skin>_paint_*.png` and `TornadoF3_cockpit_*.png`). Install it like the other jets once `AircraftData/TornadoF3.luau` exists, with `ModelName = "TornadoF3"`.
+
+## F-16C Block 50 (`art/f16c`, art only)
+
+Built on `art/tornadof3`. Files in `tools/blender/out/`: `F16C_base.fbx` (manifest `tools/Manifests/F16C.luau`), `textures/F16C_<Skin>_<Set>_<Map>.png` for the Viper, Ghost, Arctic and Night skins, `F16C_cockpit.fbx` and `F16C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F16C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F16C_<Skin>_paint_*.png` and `F16C_cockpit_*.png`). Install it like the other jets once `AircraftData/F16C.luau` exists, with `ModelName = "F16C"`.
