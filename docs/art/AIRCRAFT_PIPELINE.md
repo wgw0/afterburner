@@ -1,6 +1,6 @@
 # Aircraft model pipeline
 
-How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces and swappable PBR skins. Jets are rebuilt in the order players meet them. The F-5E Tiger II is done; the MiG-21bis is next.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces and swappable PBR skins. Jets are rebuilt in the order players meet them. The F-5E Tiger II and the MiG-21bis are done; the Mirage IIIE is next. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
 
 | Stage | Tool | F-5E |
 |---|---|---|
@@ -184,3 +184,16 @@ Checks:
 `ControlSurfaceController` moves the surfaces with the rules in `Shared.ControlSurfaces`. It sets each Motor6D's `Transform` on the client only, so it costs no network traffic. Your own jet follows your stick. Other players' jets and AI jets follow how they are actually moving: pitch and roll from their body rates, the rudder from sideslip (in a banked turn the yaw rate is large while the rudder stays near centre). The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps. Surfaces move at 120°/s, and jets more than 1,500 studs from the camera are skipped.
 
 `Shared.Skins`, `Shared.Config.Skins` and the skin picker on the aircraft detail screen handle skins (section 2).
+
+## 6. MiG-21bis
+
+The MiG-21bis follows the same pipeline with its own two scripts. `tools/blender/mig21_generate.py` builds the model and `tools/blender/mig21_paint.py` paints it. Both reuse the F-5E scripts' general-purpose helpers: the lofted fuselage with its spine blend, the canopy, the airfoil panels, the baking and the output.
+
+- The reference is the Commons three-view of the MiG-21PF, scaled to the bis's published 7.154 m span (the fin tip then lands within 3% of the published height). The PF has the older, smaller dorsal spine, so the bis's spine is shaped from photos of MiG-21bis jets, including a public-domain walkaround of a Finnish one (`docs/art/reference/MiG21bis/`).
+- The fuselage starts at the intake lip, with the duct wall folded back inside it, and the shock cone (`InletCone`) is a separate part.
+- The flaps and ailerons are constant-chord strips about 0.48 m deep on the delta wing, so their hinge lines are at a fixed distance from the trailing edge rather than a fixed fraction of the chord.
+- There is a single `Nozzle`; the assembler lines a single-nozzle import up with it.
+- 29 parts, 10,444 triangles.
+
+The three skins are Natural Metal (Silver, the default), Interceptor Grey (Grey) and Tactical Camouflage (Tactical, tan and greens over light blue undersides). All three have red stars on the fin and wings, a heat-stained bare-metal tail end and a striped air-data boom. Their textures are in `Assets.Skins.MiG21bis`.
+

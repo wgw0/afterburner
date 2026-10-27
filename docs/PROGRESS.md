@@ -223,7 +223,8 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - 1 of 15 done. The F-5E model is in the game: 35 parts, 10.7k triangles, moving ailerons, stabilators, rudder and flaps. It passes the contract in Studio and CI. Flown hands-on, with the cockpit view and missile launches checked.
   - Four PBR skins painted by `tools/blender/f5e_paint.py`: Ghost Grey (the free default) and the Desert, Pacific and Lizard aggressor schemes at 5,000 Credits each.
   - The skin picker is on the aircraft details screen (BUY / USE / IN USE), and the preview shows the skin in use. Ownership is saved per jet. The server paints each jet as it spawns, and AI jets get random skins. Checked in play: skins switched, previewed and kept across sessions; AI F-5Es spawned in mixed skins.
-  - Next: the MiG-21bis, then the rest of the launch roster.
+  - 2 of 15: the MiG-21bis, from `tools/blender/mig21_generate.py`. It is measured from the MiG-21PF three-view, scaled to the bis's 7.154 m span, with the bis's larger dorsal spine taken from photos. 29 parts, 10.4k triangles. Three skins from `tools/blender/mig21_paint.py`: Natural Metal (the free default), Interceptor Grey and Tactical Camouflage at 5,000 Credits. Checked in play: AI MiGs spawned in the skins, and their ailerons, flaps, stabilators and rudder moved.
+  - Next: the Mirage IIIE, then the rest of the launch roster.
 - [ ] **FLT-08** Variable geometry (F-14)
 - [ ] **INP-05** Rebinding UI and persisted bindings
 - [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
