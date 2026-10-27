@@ -88,6 +88,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Naval", DisplayName = "Naval Blue", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the Tornado F3 has no flight data yet
+	TornadoF3 = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Grey", Default = true },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Pink", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

@@ -19,7 +19,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | IV | F-15C Eagle | `F15C` | No | `art/f15c` (on `art/mirage2000`) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F/A-18C | `FA18C` | No | `art/fa18c` (on `art/f15c`) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Su-27S | `Su27S` | No | `art/su27s` (on `art/fa18c`) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | Tornado F3 | `TornadoF3` | No | | | | | |
+| IV | Tornado F3 | `TornadoF3` | No | `art/tornadof3` (on `art/su27s`) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | F-16C Block 50 | `F16C` | No | | | | | |
 | V | F-15E | `F15E` | No | | | | | |
 | V | Su-30SM | `Su30SM` | No | | | | | |
@@ -156,3 +156,7 @@ Built on `art/f15c`. Files in `tools/blender/out/`: `FA18C_base.fbx` (manifest `
 ## Su-27S Flanker (`art/su27s`, art only)
 
 Built on `art/fa18c`. Files in `tools/blender/out/`: `Su27S_base.fbx` (manifest `tools/Manifests/Su27S.luau`), `textures/Su27S_<Skin>_<Set>_<Map>.png` for the Flanker, Grey, Naval and Desert skins, `Su27S_cockpit.fbx` and `Su27S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su27S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su27S_<Skin>_paint_*.png` and `Su27S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su27S.luau` exists, with `ModelName = "Su27S"`.
+
+## Tornado F3 (`art/tornadof3`, art only)
+
+Built on `art/su27s`. Files in `tools/blender/out/`: `TornadoF3_base.fbx` (manifest `tools/Manifests/TornadoF3.luau`), `textures/TornadoF3_<Skin>_<Set>_<Map>.png` for the AirDefence, DarkGrey, Splinter and Desert skins, `TornadoF3_cockpit.fbx` and `TornadoF3_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`TornadoF3_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/TornadoF3_<Skin>_paint_*.png` and `TornadoF3_cockpit_*.png`). Install it like the other jets once `AircraftData/TornadoF3.luau` exists, with `ModelName = "TornadoF3"`.

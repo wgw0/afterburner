@@ -383,3 +383,14 @@ There are four skins: `Navy` (two greys, low-visibility markings; the default), 
 - The jet has 38 parts and 11,272 triangles, with 10 hardpoints: the wingtip rails, four wing pylons, one under each intake and the tandem pair in the tunnel. The cockpit is 2,232 triangles, in the Soviet turquoise: the HUD with the radar display under it.
 
 There are four skins: `Flanker` (the three blue-greys over light blue, with red stars on the fins; the default), `Grey` (low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).
+
+## 20. Tornado F3 (art only)
+
+`tools/blender/tornadof3_generate.py` builds the Tornado F3 and `tools/blender/tornadof3_paint.py` paints it. Its Id is `TornadoF3`; it has no flight data yet.
+
+- The only F3 (ADV) drawing on Commons is 533 px wide, so the reference is the large public-domain three-view of the IDS, rebuilt as a composite with both views nose left. The scale comes from the span with the wings at 25 degrees (13.91 m, 110.8 px/m). The F3 differs from the IDS by a longer radome and a fuselage plug behind the rear cockpit. The generator measures the IDS and maps every station through `stretch()`, which adds 0.60 m to the radome and spreads 1.36 m over the plug, giving 18.84 m against the published 18.68 m. With `TORNADO_IDS=1` it builds the drawing's IDS proportions instead. The overlays (`TornadoF3_overlay_*.png`) are of that build, and the model sits on the drawing's lines.
+- The wings are modelled at 25 degrees of sweep, fixed, with slats (`LEFlap`), flaps and the outer surfaces on the aileron controls. The fixed `Gloves` run from the intakes out to the wing roots. `Nacelles` are the raked box intakes running back into the rear fuselage, with dark `IntakeDucts`. The tail has tailerons on the elevon controls and a single fin with its rudder and tip pod. `EjectionSeat` holds both seats.
+- The jet has 36 parts and 10,648 triangles, with 8 hardpoints: two missile rails on each wing pylon and the four semi-recessed stations under the fuselage. The cockpit (the front one) is 2,256 triangles: the HUD with the radar repeater under it.
+- The painter's `roundel_colours` run from the outer ring to the centre, so RAF roundels are blue, white, red.
+
+There are four skins: `AirDefence` (two light greys, low-visibility roundels; the default), `DarkGrey` (low-visibility), `Splinter` (grey splinter camouflage, full-colour roundels) and `Desert` (desert pink, no national markings).
