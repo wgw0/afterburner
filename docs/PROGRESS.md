@@ -246,7 +246,7 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - Grass from the air: `tools/blender/terrain_paint.py` paints a patchwork of fields with mowing stripes and hedgerows, used as MaterialVariants on Grass and LeafyGrass at 2,048 studs per tile. Terrain only draws variants with the Regular pattern. The grass decoration is off.
   - MAP-03 is complete apart from playtest feedback on the look.
 - [ ] **MAP-04** Streaming and fog tuning for mobile
-  - Map warm-up on the menu (`StreamingService`) and a land-and-sea underlay under the terrain. Needs `StreamOutBehavior = LowMemory` on Workspace, which only Studio's Properties panel can set. Mobile tuning still to do.
+  - Spawn-area warm-up on the menu (`StreamingService`, paced by the client's frame rate) and a land-and-sea underlay under the terrain. Warming the whole map is off: building terrain meshes for all of it held a client at ~12 fps for minutes however it was paced; the rest streams in around the jet (50-60 fps flying across the map). Needs `StreamOutBehavior = LowMemory` on Workspace, which only Studio's Properties panel can set. Mobile tuning still to do.
 - [ ] **FX-05** Quality settings and pooling audit
 - [ ] **AUD-04** Warnings and radio barks with subtitles
   - A female "Pull up" call (`Assets.Audio.PullUp`, from the Creator Store's F-16 warning) repeats every 2 s while the HUD shows PULL UP. Tested in play: it starts within a second of the warning and stops when it clears.

@@ -24,6 +24,14 @@ local definitions: { [string]: Definition } = {
 		rate = { burst = 10, perSecond = 8 },
 	},
 
+	-- The client's frame rate, once a second, so the map warm-up goes as fast as this machine can take it
+	StreamPace = {
+		direction = "ClientToServer",
+		reliable = false,
+		args = { "number" },
+		rate = { burst = 3, perSecond = 2 },
+	},
+
 	-- Guns and damage (§11–12)
 	-- Trigger pulled/released: isStart, client serverTime, spread seed
 	GunFire = {
