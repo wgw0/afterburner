@@ -25,6 +25,7 @@ GENERATORS = {
     "MiG23MLD": "mig23_generate",
     "F16A": "f16a_generate",
     "MiG29A": "mig29_generate",
+    "F14A": "f14a_generate",
 }
 
 
