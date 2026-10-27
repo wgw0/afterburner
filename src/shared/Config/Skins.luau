@@ -60,6 +60,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Ghost", DisplayName = "Three-Tone Grey", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the Mirage 2000C has no flight data yet
+	Mirage2000C = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Blue-Grey", Default = true },
+		{ Id = "Grey", DisplayName = "Low-Visibility Grey", Credits = 5000 },
+		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

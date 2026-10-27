@@ -15,7 +15,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | III | F-16A | `F16A` | Yes | `art/f16a` (on `art/mig23`) | Done | Falcon (default), Blue, Desert, Euro | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | MiG-29A | `MiG29A` | Yes | `art/mig29` (on `art/f16a`) | Done | Grey (default), Euro, BlueGrey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-14A Tomcat | `F14A` | No | `art/f14a` (on `art/mig29`) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| III | Mirage 2000C | `Mirage2000C` | No | | | | | |
+| III | Mirage 2000C | `Mirage2000C` | No | `art/mirage2000` (on `art/f14a`) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F-15C Eagle | `F15C` | No | | | | | |
 | IV | F/A-18C | `FA18C` | No | | | | | |
 | IV | Su-27S | `Su27S` | No | | | | | |
@@ -140,3 +140,7 @@ Files in `tools/blender/out/`:
 - Previews: `F14A_{side,top,front,threequarter}.png`, `F14A_overlay_{side,top}.png`, `textures/F14A_<Skin>_paint_*.png` and `F14A_cockpit_*.png`
 
 To do in Studio, when the F-14A gets flight data (an `AircraftData/F14A.luau` with `ModelName = "F14A"`): import the model, run `install("F14A", workspace.F14A_base)`, make the skin SurfaceAppearances, install the cockpit, then play test.
+
+## Mirage 2000C (`art/mirage2000`, art only)
+
+Built on `art/f14a`. Files in `tools/blender/out/`: `Mirage2000C_base.fbx` (manifest `tools/Manifests/Mirage2000C.luau`), `textures/Mirage2000C_<Skin>_<Set>_<Map>.png` for the AirDefence, Grey, Tactical and Desert skins, `Mirage2000C_cockpit.fbx` and `Mirage2000C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Mirage2000C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Mirage2000C_<Skin>_paint_*.png` and `Mirage2000C_cockpit_*.png`). Install it like the other jets once `AircraftData/Mirage2000C.luau` exists, with `ModelName = "Mirage2000C"`.
