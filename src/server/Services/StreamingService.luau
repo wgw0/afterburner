@@ -12,7 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Scale = require(Shared.Config.Scale)
 
-local GRID = 8192 -- one streaming target radius apart, so the grid covers the map
+local GRID = 3500 -- each request only guarantees StreamingMinRadius (2048) around its point, so the grid is tight
 local TIMEOUT = 15 -- seconds to wait on each area
 
 local StreamingService = {
