@@ -930,10 +930,11 @@ function SceneryBuilder.exportTrees(page: number): string
 	return table.concat(lines, "\n")
 end
 
--- Swaps the woods' tree parts for the merged meshes from woods_merge.py. Each imported MeshPart is named
--- "Woods_<n>" and carries the palette texture; its bounding box is already in place, because the meshes
--- were baked in map coordinates around their own centres (written into each part's name by Blender as
--- "Woods_<n>@x,y,z").
+-- Swaps the woods' tree parts for the merged meshes from woods_merge.py. Blender names each mesh
+-- "Woods_<n>@x,y,z" with the centre of its bounding box in map studs. Import 3D does two things to them,
+-- both measured in Studio: it shrinks the whole import to fit (it spans the map; 0.354 last time, so the
+-- factor is measured here from how far apart the meshes landed), and it turns each mesh half round about
+-- its own centre. Both are undone, the palette texture applied, and each mesh put at its centre.
 function SceneryBuilder.installMergedWoods(source: Instance, paletteAssetId: number): string
 	local root = sceneryFolder()
 	local removed = 0
@@ -943,18 +944,29 @@ function SceneryBuilder.installMergedWoods(source: Instance, paletteAssetId: num
 			model:Destroy()
 		end
 	end
+	local meshes = {}
+	for _, d in source:GetDescendants() do
+		local x, y, z = string.match(d.Name, "@(%-?[%d%.]+),(%-?[%d%.]+),(%-?[%d%.]+)$")
+		if d:IsA("MeshPart") and x then
+			table.insert(meshes, { part = d, centre = Vector3.new(tonumber(x), tonumber(y), tonumber(z)) })
+		end
+	end
+	-- The importer's shrink: imported distances between meshes over their true distances (the median)
+	local ratios = {}
+	for i, a in meshes do
+		local b = meshes[(i + #meshes // 2 - 1) % #meshes + 1]
+		local want = (a.centre - b.centre).Magnitude
+		if want > 2000 then
+			table.insert(ratios, (a.part.Position - b.part.Position).Magnitude / want)
+		end
+	end
+	table.sort(ratios)
+	local grow = if #ratios > 0 then 1 / ratios[math.ceil(#ratios / 2)] else 1
 	local folder = Instance.new("Folder")
 	folder.Name = "WoodsMerged"
 	local placed = 0
-	for _, d in source:GetDescendants() do
-		if not d:IsA("MeshPart") then
-			continue
-		end
-		local x, y, z = string.match(d.Name, "@(%-?[%d%.]+),(%-?[%d%.]+),(%-?[%d%.]+)$")
-		if not x then
-			continue
-		end
-		local part = d:Clone()
+	for _, mesh in meshes do
+		local part = mesh.part:Clone()
 		part.Name = "Trees"
 		part.Anchored = true
 		part.CanCollide = false
@@ -964,13 +976,19 @@ function SceneryBuilder.installMergedWoods(source: Instance, paletteAssetId: num
 		part.Material = Enum.Material.SmoothPlastic
 		part.Color = Color3.new(1, 1, 1)
 		part.TextureID = `rbxassetid://{paletteAssetId}`
-		part.Position = Vector3.new(tonumber(x) :: number, tonumber(y) :: number, tonumber(z) :: number)
+		part.Size = mesh.part.Size * grow
+		part.CFrame = CFrame.new(mesh.centre) * CFrame.Angles(0, math.pi, 0)
 		local model = lodModel(`Woods_{placed + 1}`, folder)
 		part.Parent = model
 		placed += 1
 	end
 	folder.Parent = root
-	return `removed {removed} tree parts; placed {placed} merged wood meshes`
+	return string.format(
+		"removed %d tree parts; placed %d merged wood meshes (scaled up x%.3f, turned half round)",
+		removed,
+		placed,
+		grow
+	)
 end
 
 return SceneryBuilder
