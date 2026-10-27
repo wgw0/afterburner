@@ -88,16 +88,17 @@ local function fitLayout(parts: { [string]: MeshPart }, manifest: any): Fit
 	for _, entry in manifest.parts do
 		expected[entry.name] = v3(entry.bounds.centre) * STUDS
 	end
-	local function mid(a: string, b: string, t: { [string]: Vector3 }): Vector3
-		return (t[a] + t[b]) / 2
+	-- The tail end: a single Nozzle, or the middle of a twin-engine pair
+	local function tail(t: { [string]: Vector3 }): Vector3
+		return t.Nozzle or (t.NozzleL + t.NozzleR) / 2
 	end
 	local imported: { [string]: Vector3 } = {}
 	for name, part in parts do
 		imported[name] = part.Position
 	end
-	local fe = expected.Pitot - mid("NozzleL", "NozzleR", expected)
+	local fe = expected.Pitot - tail(expected)
 	local re = expected.WingR - expected.WingL
-	local fi = imported.Pitot - mid("NozzleL", "NozzleR", imported)
+	local fi = imported.Pitot - tail(imported)
 	local ri = imported.WingR - imported.WingL
 	local rotation = frame(fe, re) * frame(fi, ri):Inverse()
 	local scale = (fe.Magnitude / fi.Magnitude + re.Magnitude / ri.Magnitude) / 2
@@ -143,9 +144,14 @@ function AircraftAssembler.build(id: string, source: Instance): (Model?, { strin
 			table.insert(missing, entry.name)
 		end
 	end
-	for _, needed in { "Pitot", "NozzleL", "NozzleR", "WingL", "WingR" } do
-		if not parts[needed] then
-			return nil, { `the import has no {needed} part, which is needed to line the model up` }
+	local needed = { "Pitot", "WingL", "WingR" }
+	if not parts.Nozzle then
+		table.insert(needed, "NozzleL")
+		table.insert(needed, "NozzleR")
+	end
+	for _, name in needed do
+		if not parts[name] then
+			return nil, { `the import has no {name} part, which is needed to line the model up` }
 		end
 	end
 	if #missing > 0 then
