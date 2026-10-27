@@ -9,11 +9,11 @@
 local Lighting = game:GetService("Lighting")
 
 local SKY = { -- tools/blender/out/textures/sky/Sky_<face>.png
-	Ft = "rbxassetid://106870055276712",
-	Bk = "rbxassetid://116231577008669",
-	Lf = "rbxassetid://114950158584565",
-	Rt = "rbxassetid://128478793837613",
-	Up = "rbxassetid://137874283379914",
+	Ft = "rbxassetid://118679307222703",
+	Bk = "rbxassetid://122828760196459",
+	Lf = "rbxassetid://122089654119265",
+	Rt = "rbxassetid://87213036243594",
+	Up = "rbxassetid://110985701659360",
 	Dn = "rbxassetid://121807682653138",
 }
 

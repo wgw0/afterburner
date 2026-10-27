@@ -119,14 +119,20 @@ def make_clouds(rng):
         e_base = 0.012 + 0.75 * rng.random() ** 2.0
         a0 = rng.uniform(-np.pi, np.pi)
         size = 0.035 + 0.5 * min(e_base, 0.45) + rng.uniform(-0.01, 0.03)  # nearer clouds (higher up) look bigger
-        width = size * rng.uniform(1.2, 2.6)
-        height = size * rng.uniform(0.45, 0.9)
+        width = size * rng.uniform(1.8, 3.6)
+        height = size * rng.uniform(0.35, 0.8)
         puffs = []
-        for _ in range(int(rng.integers(10, 26))):
+        for _ in range(int(rng.integers(18, 34))):
             x = rng.uniform(-0.5, 0.5)
-            r = size * rng.uniform(0.18, 0.42)
-            dome = height * (1 - (2 * x) ** 2) * rng.uniform(0.25, 1.0)
-            puffs.append((a0 + x * width / np.cos(e_base), e_base + r * 0.55 + dome, r))
+            r = size * rng.uniform(0.12, 0.32)
+            dome = height * (1 - (2 * x) ** 2) * rng.uniform(0.2, 1.0)
+            puffs.append((a0 + x * width / np.cos(e_base), e_base + r * 0.5 + dome, r))
+        # Small lumps crowding the upper edge break the big round outlines
+        for _ in range(int(rng.integers(10, 22))):
+            x = rng.uniform(-0.45, 0.45)
+            r = size * rng.uniform(0.05, 0.12)
+            dome = height * (1 - (2 * x) ** 2) * rng.uniform(0.35, 0.8)
+            puffs.append((a0 + x * width / np.cos(e_base), e_base + dome + size * 0.04, r))
         mood = rng.random() ** 2  # most clouds bright; some heavy and grey
         clouds.append((e_base, size, mood, puffs))
     return clouds
@@ -155,17 +161,20 @@ def paint_clouds(A, E, d, sky, sun, clouds):
         tau = 0.06 * size
         acc = np.zeros(a.shape)
         cover = np.zeros(a.shape)
-        jitter = fbm(a * 50, e * 50, size * 10, 3, SEED + 21) - 0.5  # ragged edges
+        k = 3.0 / size
+        warp_x = (fbm(a * k, e * k, 1.5, 2, SEED + 23) - 0.5) * 0.7  # bends outlines, in puff radii
+        warp_y = (fbm(a * k, e * k, 6.5, 2, SEED + 24) - 0.5) * 0.7
+        fray = fbm(a * k * 4, e * k * 4, 2.5, 3, SEED + 25) - 0.5  # wispy fringes
         for (ac, ec, r) in puffs:
-            dx = ((a - ac + np.pi) % (2 * np.pi) - np.pi) * np.cos(e) / r
-            dy = (e - ec) / r
+            dx = ((a - ac + np.pi) % (2 * np.pi) - np.pi) * np.cos(e) / r + warp_x
+            dy = (e - ec) / r * 1.12 + warp_y
             q = dx * dx + dy * dy
             h = r * np.clip(1 - q, 0, 1) ** 1.5  # a soft dome that meets its neighbours without a crease
             inside = q < 1
             acc[inside] += np.exp(h[inside] / tau) - 1  # zero at the puff's edge, so no crease
-            cover = np.maximum(cover, smoothstep(1.0, 0.8, q * (1 + 0.45 * jitter)))  # ragged outline
+            cover = np.maximum(cover, smoothstep(1.15, 0.55, q))
         cut = smoothstep(e_base - 0.002, e_base + 0.005, e)  # the flat base
-        alpha = cover * cut
+        alpha = smoothstep(0.05, 0.8, cover + 0.5 * fray) * cut
         if alpha.max() < 0.01:
             continue
         hm = tau * np.log1p(acc)
