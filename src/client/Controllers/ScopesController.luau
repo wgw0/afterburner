@@ -1,10 +1,14 @@
 --!strict
 -- Radar scope and RWR display (DEVELOPMENT.md §14, SNS-02 / SNS-05). Screen-space panels at the bottom.
---   Radar (B-scope): left-right is bearing across the radar cone, bottom-to-top is range. Contacts your
---     radar sees are blips; your lock is a boxed, brighter blip.
+--   Radar (the cone): top-down and heading-up, your jet at the bottom and the radar's beam fanning out
+--     ahead of it to its full range, with a ring at half range. Contacts your radar sees are drawn where
+--     they are; your lock is a boxed red blip. (It was a B-scope, bearing across and range up, which
+--     playtesters read as a map.)
 --   Situation display (the round scope): top-down and heading-up, with your jet in the middle.
---     * The wedge ahead is where the selected missile can lock (heat-seeker: seeker cone out to its
---       range; radar missile: the radar cone out to the missile's range).
+--     * The rim is the selected weapon's lock range (written at the bottom), so the wedge ahead, where
+--       it can lock, always reaches the rim (heat-seeker: seeker cone; radar missile: radar cone). With
+--       no missile selected the rim is the radar's range.
+--     * Jets beyond the rim sit on it, faint, in their direction.
 --     * Dots are jets you know about: red = locked, green = lockable, amber = the rest.
 --     * RWR around the rim: threats at their bearing, S = search radar, L = locked on you (flashing),
 --       M = missile guiding on you (red, fast flashing). Coarse RWRs only give 8 directions.
@@ -29,6 +33,9 @@ local FONT = Enum.Font.RobotoMono
 
 local SCOPE_W, SCOPE_H = 220, 170
 local RWR_SIZE = 170
+local CONE_ORIGIN_Y = SCOPE_H - 10 -- your jet, in the radar panel (pixels from the top)
+local CONE_LENGTH = SCOPE_H - 32 -- pixels from your jet to the edge of the beam (full range)
+local ARC_SEGMENTS = 10
 
 local ScopesController = {
 	Priority = 62,
@@ -38,6 +45,8 @@ local gui: ScreenGui
 local radarPanel: Frame
 local radarLabel: TextLabel
 local blips: { Frame } = {}
+local beam: { Frame } = {} -- the cone's edges and range arcs
+local beamHalfAngle = -1
 local rwrPanel: Frame
 local rwrMarks: { TextLabel } = {}
 local tsdDots: { Frame } = {}
@@ -91,22 +100,15 @@ local function build()
 	radarLabel.Position = UDim2.fromOffset(6, 4)
 	radarLabel.Size = UDim2.fromOffset(200, 14)
 	radarLabel.TextXAlignment = Enum.TextXAlignment.Left
-	for _, fraction in { 0.25, 0.5, 0.75 } do
-		local line = Instance.new("Frame")
-		line.BackgroundColor3 = GREEN
-		line.BackgroundTransparency = 0.8
-		line.BorderSizePixel = 0
-		line.Position = UDim2.fromScale(0, 1 - fraction)
-		line.Size = UDim2.new(1, 0, 0, 1)
-		line.Parent = radarPanel
-	end
-	local centre = Instance.new("Frame")
-	centre.BackgroundColor3 = GREEN
-	centre.BackgroundTransparency = 0.8
-	centre.BorderSizePixel = 0
-	centre.Position = UDim2.fromScale(0.5, 0)
-	centre.Size = UDim2.new(0, 1, 1, 0)
-	centre.Parent = radarPanel
+	-- Own jet at the bottom of the cone
+	local own = Instance.new("Frame")
+	own.AnchorPoint = Vector2.new(0.5, 0.5)
+	own.Position = UDim2.fromOffset(SCOPE_W / 2, CONE_ORIGIN_Y)
+	own.Size = UDim2.fromOffset(9, 9)
+	own.Rotation = 45
+	own.BackgroundColor3 = GREEN
+	own.BorderSizePixel = 0
+	own.Parent = radarPanel
 
 	rwrPanel = panel("RWR", Vector2.new(RWR_SIZE, RWR_SIZE), UDim2.new(0.5, 130, 1, -16), Vector2.new(0.5, 1))
 	local corner = Instance.new("UICorner")
@@ -214,6 +216,52 @@ local function drawCone(halfAngle: number?, reach: number)
 	coneEnd.Position = UDim2.new(0.5, 0, 0.5, -length * math.cos(a))
 end
 
+-- A line in the radar panel from a to b (pixels).
+local function line(i: number, a: Vector2, b: Vector2, transparency: number)
+	local f = beam[i]
+	if not f then
+		f = Instance.new("Frame")
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.BackgroundColor3 = GREEN
+		f.BorderSizePixel = 0
+		f.Parent = radarPanel
+		beam[i] = f
+	end
+	local d = b - a
+	f.Position = UDim2.fromOffset((a.X + b.X) / 2, (a.Y + b.Y) / 2)
+	f.Size = UDim2.fromOffset(d.Magnitude + 1, 1)
+	f.Rotation = math.deg(math.atan2(d.Y, d.X))
+	f.BackgroundTransparency = transparency
+end
+
+-- Point in the radar panel at a bearing (radians, 0 = ahead) and range fraction (1 = edge of the beam).
+local function conePoint(bearing: number, fraction: number): Vector2
+	local r = fraction * CONE_LENGTH
+	return Vector2.new(SCOPE_W / 2 + math.sin(bearing) * r, CONE_ORIGIN_Y - math.cos(bearing) * r)
+end
+
+-- The beam's two edges and its range arcs (full and half), redrawn only when the cone changes.
+local function drawBeam(halfAngle: number)
+	if halfAngle == beamHalfAngle then
+		return
+	end
+	beamHalfAngle = halfAngle
+	local a = math.rad(halfAngle)
+	local n = 0
+	for _, side in { -1, 1 } do
+		n += 1
+		line(n, conePoint(0, 0), conePoint(side * a, 1), 0.5)
+	end
+	for _, fraction in { 1, 0.5 } do
+		for k = 0, ARC_SEGMENTS - 1 do
+			n += 1
+			local b0 = -a + 2 * a * k / ARC_SEGMENTS
+			local b1 = -a + 2 * a * (k + 1) / ARC_SEGMENTS
+			line(n, conePoint(b0, fraction), conePoint(b1, fraction), if fraction == 1 then 0.5 else 0.8)
+		end
+	end
+end
+
 local function rwrMark(i: number): TextLabel
 	local m = rwrMarks[i]
 	if not m then
@@ -242,17 +290,17 @@ local function update()
 	if radar then
 		local lockText = if SensorController.lockId ~= 0 then "  LOCK" else ""
 		radarLabel.Text = string.format("RADAR %d km%s", math.round(radar.Range / 1000), lockText)
+		drawBeam(radar.Cone)
 		for id, contact in SensorController.contacts do
 			if contact.onRadar or id == SensorController.lockId then
 				local rel = myCF:PointToObjectSpace(contact.position)
 				local bearing = math.atan2(rel.X, -rel.Z)
-				local x = 0.5 + bearing / (2 * math.rad(radar.Cone))
-				local y = 1 - math.clamp(contact.range / radar.Range, 0, 1)
-				if x >= 0 and x <= 1 then
+				if math.abs(bearing) <= math.rad(radar.Cone) + 0.02 then
 					used += 1
 					local b = blip(used)
 					local locked = id == SensorController.lockId
-					b.Position = UDim2.fromScale(x, y)
+					local p = conePoint(bearing, math.clamp(contact.range / radar.Range, 0, 1))
+					b.Position = UDim2.fromOffset(p.X, p.Y)
 					b.Size = UDim2.fromOffset(if locked then 12 else 7, if locked then 12 else 7)
 					b.BackgroundColor3 = if locked then RED else AMBER
 					b.BackgroundTransparency = if locked then 0.6 else 0
@@ -267,30 +315,39 @@ local function update()
 	end
 
 	-- Situation display: lock cone and contacts
-	local tsdRange = if radar then radar.Range else DEFAULT_TSD_RANGE
-	tsdLabel.Text = string.format("%d km", math.round(tsdRange / 1000))
+	-- The rim is the selected weapon's lock range, so its wedge always reaches the rim
 	local missile = SensorController:SelectedMissile()
+	local tsdRange = if radar then radar.Range else DEFAULT_TSD_RANGE
 	if missile and WeaponData.isRadar(missile) and radar then
-		drawCone(radar.Cone, math.min(missile.MaxRange, radar.Range) / tsdRange)
+		tsdRange = math.min(missile.MaxRange, radar.Range)
+		drawCone(radar.Cone, 1)
 	elseif missile then
-		drawCone(missile.SeekerCone, missile.MaxRange / tsdRange)
+		tsdRange = missile.MaxRange
+		drawCone(missile.SeekerCone, 1)
 	else
 		drawCone(nil, 0)
 	end
+	local km = tsdRange / 1000
+	tsdLabel.Text = if km < 10 then string.format("%.1f km", km) else string.format("%d km", math.round(km))
 	local dots = 0
 	for id, contact in SensorController.contacts do
 		local rel = myCF:PointToObjectSpace(contact.position)
 		local flat = Vector2.new(rel.X, -rel.Z)
 		local distance = contact.range / tsdRange
-		if distance <= 0.95 and flat.Magnitude > 1e-3 then
+		if flat.Magnitude > 1e-3 then
 			dots += 1
 			local d = tsdDot(dots)
-			local p = flat.Unit * distance * 0.5
+			local beyond = distance > 1 -- outside the weapon's reach: on the rim, faint
+			local p = flat.Unit * math.min(distance, 0.96) * 0.5
 			d.Position = UDim2.fromScale(0.5 + p.X, 0.5 - p.Y)
 			local locked = id == SensorController.lockId
 				or (id == SensorController.irTargetId and SensorController.irLocked)
 			d.BackgroundColor3 = if locked then RED elseif SensorController.lockable[id] then GREEN else AMBER
-			d.Size = if locked then UDim2.fromOffset(8, 8) else UDim2.fromOffset(6, 6)
+			d.Size = if locked
+				then UDim2.fromOffset(8, 8)
+				elseif beyond then UDim2.fromOffset(4, 4)
+				else UDim2.fromOffset(6, 6)
+			d.BackgroundTransparency = if beyond and not locked then 0.5 else 0
 			d.Visible = true
 		end
 	end
