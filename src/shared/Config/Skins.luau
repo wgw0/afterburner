@@ -35,6 +35,12 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 		{ Id = "Grey", DisplayName = "Low-Visibility Grey", Credits = 5000 },
 	},
+	F4E = {
+		{ Id = "SEA", DisplayName = "Southeast Asia", Default = true },
+		{ Id = "HillGray", DisplayName = "Hill Gray", Credits = 5000 },
+		{ Id = "EuroOne", DisplayName = "European One", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 }
 
 for _, list in SKINS do

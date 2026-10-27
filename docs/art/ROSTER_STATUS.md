@@ -10,7 +10,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | I | MiG-21bis | `MiG21bis` | Yes | master; `art/cockpits` | Done; cockpit well added | Silver, Grey, Tactical (unchanged) | Done | Re-import the exterior; import and install the cockpit |
 | I | Mirage IIIE | `MirageIII` | Yes | `art/mirage3` (on `art/cockpits`) | Done | Tactical (default), Silver, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | Mirage F1C | `MirageF1` | Yes | `art/miragef1` (on `art/mirage3`) | Done | Interceptor (default), Tactical, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| II | F-4E Phantom II | `F4E` | Yes | | | | | |
+| II | F-4E Phantom II | `F4E` | Yes | `art/f4e` (on `art/miragef1`) | Done | SEA (default), HillGray, EuroOne, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | MiG-23MLD | `MiG23MLD` | Yes | | | | | |
 | III | F-16A | `F16A` | Yes | | | | | |
 | III | MiG-29A | `MiG29A` | Yes | | | | | |
@@ -80,3 +80,15 @@ Files in `tools/blender/out/`:
 - Previews: `MirageF1_{side,top,front,threequarter}.png`, `MirageF1_overlay_{side,top}.png`, `textures/MirageF1_<Skin>_paint_*.png` and `MirageF1_cockpit_*.png`
 
 To do in Studio: import, `install("MirageF1", workspace.MirageF1_base)`, make the skin SurfaceAppearances, install the cockpit, then play test. The F1C uses the existing aileron, flap, leading-edge flap, stabilator and rudder controls.
+
+## F-4E Phantom II (`art/f4e`)
+
+Built on `art/miragef1`, so merge the earlier art branches first.
+
+Files in `tools/blender/out/`:
+- Model: `F4E_base.fbx`, plus `tools/Manifests/F4E.luau`
+- Skins: `textures/F4E_<Skin>_<Set>_<Map>.png` for the SEA, HillGray, EuroOne and Desert skins
+- Cockpit: `F4E_cockpit.fbx` and `F4E_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `F4E_{side,top,front,threequarter}.png`, `F4E_overlay_{side,top}.png`, `textures/F4E_<Skin>_paint_*.png` and `F4E_cockpit_*.png`
+
+To do in Studio: import the model, run `install("F4E", workspace.F4E_base)` (the assembler lines up twin nozzles on `NozzleL` and `NozzleR`), make the skin SurfaceAppearances, install the cockpit, then play test. The outer wing panels and outer leading-edge flaps are separate parts: `WingOuterL`, `WingOuterR`, `LEFlapOuterL` and `LEFlapOuterR`.

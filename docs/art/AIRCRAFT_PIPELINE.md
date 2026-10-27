@@ -284,3 +284,14 @@ Jets from the Mirage IIIE on are painted by `tools/blender/jet_paint.py`. Each j
 - 34 parts, 10,708 triangles. The cockpit is 2,280 triangles (French palette, with the Cyrano IV scope under the sight).
 
 There are four skins: `Interceptor` (two blue-greys over light grey, the default), `Tactical` (green and grey), `Desert` (sand and brown over light blue) and `Grey` (overall light grey). The first two carry French roundels and a fin flash; the other two have low-visibility markings.
+
+## 11. F-4E Phantom II
+
+`tools/blender/f4e_generate.py` builds the F-4E and `tools/blender/f4e_paint.py` paints it.
+
+- The reference is Kaboldy's Commons three-view of the F-4E, rendered 3840 px wide, with the side and top views both nose left. The scale comes from the published 11.71 m span (153.4 px/m), which also gives the published 5.02 m height. The drawing's length then comes out 18.6 m against the published 19.2 m, and the drawing's shape was kept. In the overlays the model sits on the drawing's lines.
+- The wing has inner panels with leading-edge flaps, flaps and ailerons, and outer panels (`WingOuterL` and `WingOuterR`) folded up 12° with their own leading-edge flaps. The all-moving stabilators have the Phantom's anhedral (about 25°). There are big D-section intakes with splitter plates, the M61 gun fairing under the nose (`GunFairing`, with the splitter plates in the same part), twin nozzles, and a tail boom over the nozzles, painted bare metal.
+- The canopy has three frames: the windscreen bow and the two cockpits' rear frames. The cockpit kit now takes the windscreen bow and the first frame behind the pilot, so tandem canopies work.
+- The jet has 37 parts and 11,572 triangles. The cockpit is 2,280 triangles: US palette, with the radar scope at the top of the panel and twin engine gauges.
+
+There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, the default), `HillGray` (two greys), `EuroOne` (dark greens and grey all round) and `Desert` (no national markings). The shared painter now draws the full-colour US star and bar, with an outline-only low-visibility version.
