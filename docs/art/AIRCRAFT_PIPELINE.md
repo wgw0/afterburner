@@ -363,3 +363,13 @@ There are four skins: `AirDefence` (blue-greys over light grey, with French roun
 - The jet has 38 parts and 11,400 triangles, with 9 hardpoints: two rails on each wing pylon, four fuselage stations and the centreline. The cockpit is 2,128 triangles: the HUD, the radar display upper left (an MFD face) and the threat display upper right.
 
 There are four skins: `ModEagle` (two ghost greys, low-visibility markings; the default), `Blue` (Air Superiority Blue, full-colour markings), `Aggressor` (blue camouflage) and `Desert` (no national markings).
+
+## 18. F/A-18C Hornet (art only)
+
+`tools/blender/fa18c_generate.py` builds the F/A-18C and `tools/blender/fa18c_paint.py` paints it. Its Id is `FA18C`; it has no flight data yet.
+
+- The reference is NASA's public-domain three-view of the F/A-18, rebuilt as a composite with both views nose left. The scale comes from the published 17.07 m length (107.8 px/m), which gives an 11.54 m span over the wingtips against the published 11.43 m. In the overlays the model sits on the drawing's lines.
+- The jet is built from the fuselage (the radome, the bubble canopy, the dorsal spine and the wide engine bay) and `Strakes`, the long leading-edge extensions, which slope down from the windscreen into the wing roots. Under them are the D-shaped intakes (`Nacelles`, with dark `IntakeDucts`). The wing has the big leading-edge flaps (22% of the chord), flaps, ailerons and wingtip rails. The tail has tailerons on the elevon controls and twin fins canted out 18 degrees with rudders. `Pitot` is the two probes on the sides of the nose.
+- The jet has 38 parts and 10,812 triangles, with 9 hardpoints: the wingtip rails, four wing pylons, the two fuselage stations on the intakes and the centreline. The cockpit is 1,624 triangles: the HUD, the up-front control panel, the two digital displays (the left one is the radar face) and the map display below.
+
+There are four skins: `Navy` (two greys, low-visibility markings; the default), `Gull` (gull grey over white, full-colour markings), `Adversary` (tan, brown and green, no national markings) and `Ghost` (three-tone grey, low-visibility).
