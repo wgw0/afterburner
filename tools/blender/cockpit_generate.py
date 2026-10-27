@@ -22,6 +22,7 @@ GENERATORS = {
     "MirageIII": "mirage3_generate",
     "MirageF1": "miragef1_generate",
     "F4E": "f4e_generate",
+    "MiG23MLD": "mig23_generate",
 }
 
 
