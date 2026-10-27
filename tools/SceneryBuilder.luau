@@ -80,9 +80,20 @@ end
 
 -- Colours ----------------------------------------------------------------------------------------------
 
-local WALLS = { Color3.fromRGB(226, 218, 198), Color3.fromRGB(238, 234, 226), Color3.fromRGB(214, 196, 160), Color3.fromRGB(198, 196, 190) }
-local ROOFS = { Color3.fromRGB(150, 70, 52), Color3.fromRGB(122, 62, 48), Color3.fromRGB(84, 86, 92), Color3.fromRGB(104, 78, 62) }
-local FOLIAGE = { Color3.fromRGB(58, 92, 40), Color3.fromRGB(70, 104, 46), Color3.fromRGB(48, 80, 42), Color3.fromRGB(84, 110, 52) }
+local WALLS = {
+	Color3.fromRGB(226, 218, 198),
+	Color3.fromRGB(238, 234, 226),
+	Color3.fromRGB(214, 196, 160),
+	Color3.fromRGB(198, 196, 190),
+}
+local ROOFS = {
+	Color3.fromRGB(150, 70, 52),
+	Color3.fromRGB(122, 62, 48),
+	Color3.fromRGB(84, 86, 92),
+	Color3.fromRGB(104, 78, 62),
+}
+local FOLIAGE =
+	{ Color3.fromRGB(58, 92, 40), Color3.fromRGB(70, 104, 46), Color3.fromRGB(48, 80, 42), Color3.fromRGB(84, 110, 52) }
 local CONIFER = { Color3.fromRGB(40, 68, 42), Color3.fromRGB(46, 76, 46), Color3.fromRGB(36, 60, 40) }
 local AWNINGS = { Color3.fromRGB(160, 40, 36), Color3.fromRGB(40, 90, 60), Color3.fromRGB(40, 70, 130) }
 
@@ -90,17 +101,29 @@ local AWNINGS = { Color3.fromRGB(160, 40, 36), Color3.fromRGB(40, 90, 60), Color
 type Look = { colour: Color3?, palette: { Color3 }?, material: Enum.Material, collide: boolean }
 
 local function look(prop: string, piece: string): Look
-	local airbase = prop == "Hangar" or prop == "Shelter" or prop == "Tower" or prop == "OpsBuilding" or prop == "FuelTank"
+	local airbase = prop == "Hangar"
+		or prop == "Shelter"
+		or prop == "Tower"
+		or prop == "OpsBuilding"
+		or prop == "FuelTank"
 	if piece == "Trunk" then
 		return { colour = Color3.fromRGB(88, 64, 44), material = Enum.Material.Wood, collide = false }
 	elseif piece == "Foliage" then
-		return { palette = if prop == "TreeConifer" then CONIFER else FOLIAGE, material = Enum.Material.SmoothPlastic, collide = false }
+		return {
+			palette = if prop == "TreeConifer" then CONIFER else FOLIAGE,
+			material = Enum.Material.SmoothPlastic,
+			collide = false,
+		}
 	elseif piece == "Windows" then
 		return { colour = Color3.fromRGB(38, 46, 56), material = Enum.Material.SmoothPlastic, collide = true }
 	elseif piece == "Glass" then
 		return { colour = Color3.fromRGB(46, 84, 96), material = Enum.Material.SmoothPlastic, collide = true }
 	elseif piece == "Doors" then
-		return { colour = if airbase then Color3.fromRGB(96, 104, 98) else Color3.fromRGB(90, 76, 62), material = Enum.Material.Metal, collide = true }
+		return {
+			colour = if airbase then Color3.fromRGB(96, 104, 98) else Color3.fromRGB(90, 76, 62),
+			material = Enum.Material.Metal,
+			collide = true,
+		}
 	elseif piece == "Awning" then
 		return { palette = AWNINGS, material = Enum.Material.Fabric, collide = true }
 	elseif piece == "Shell" then
@@ -189,7 +212,16 @@ end
 
 -- Places a prop with its base on the ground at (x, z). yaw is where its front should face (radians,
 -- 0 = -Z). scale > 1 makes it bigger. Returns nothing: the parts go straight into parent.
-local function place(name: string, parent: Instance, x: number, z: number, yaw: number, rng: Random, scale: number?, sink: number?)
+local function place(
+	name: string,
+	parent: Instance,
+	x: number,
+	z: number,
+	yaw: number,
+	rng: Random,
+	scale: number?,
+	sink: number?
+)
 	local t = template(name)
 	local s = scale or 1
 	local ground = math.min(height(x, z), height(x + 8, z + 8), height(x - 8, z - 8)) - (sink or 1.5)
@@ -399,7 +431,12 @@ local function route(from: Vector2, to: Vector2, cache: { [number]: number }): {
 				if di ~= 0 or dj ~= 0 then
 					local ni, nj = i + di, j + dj
 					local nh = h(ni, nj)
-					if nh > WATER + 4 and nh < 520 and not onIsland(ni * GRID, nj * GRID) and not nearAirbase(ni * GRID, nj * GRID, 100) then
+					if
+						nh > WATER + 4
+						and nh < 520
+						and not onIsland(ni * GRID, nj * GRID)
+						and not nearAirbase(ni * GRID, nj * GRID, 100)
+					then
 						local dist = GRID * math.sqrt(di * di + dj * dj)
 						local grade = math.abs(nh - here) / dist
 						if grade < 0.18 then
@@ -618,7 +655,11 @@ function SceneryBuilder.towns(): string
 			local kind = "House"
 			local roll = rng:NextNumber()
 			if plot.fromCentre < 0.35 then
-				kind = if not churchDone then "Church" elseif roll < 0.45 then "Apartment" elseif roll < 0.8 then "Shop" else "House"
+				kind = if not churchDone
+					then "Church"
+					elseif roll < 0.45 then "Apartment"
+					elseif roll < 0.8 then "Shop"
+					else "House"
 			elseif plot.fromCentre > 0.8 then
 				kind = if roll < 0.3 then "Warehouse" else "House"
 			elseif roll < 0.08 then
@@ -642,7 +683,15 @@ function SceneryBuilder.towns(): string
 			local a, r = rng:NextNumber(0, 2 * math.pi), rng:NextNumber(0.2, 1.05) * t.radius
 			local x, z = c.X + math.cos(a) * r, c.Y + math.sin(a) * r
 			if free(x, z, 12) and not nearRoad(x, z, 20) and height(x, z) > WATER + 3 then
-				place(if rng:NextNumber() < 0.6 then "TreeBroadleaf" else "TreePoplar", model, x, z, rng:NextNumber(0, 6.28), rng, rng:NextNumber(0.9, 1.3))
+				place(
+					if rng:NextNumber() < 0.6 then "TreeBroadleaf" else "TreePoplar",
+					model,
+					x,
+					z,
+					rng:NextNumber(0, 6.28),
+					rng,
+					rng:NextNumber(0.9, 1.3)
+				)
 			end
 		end
 	end
@@ -662,7 +711,14 @@ function SceneryBuilder.towns(): string
 						farFromTowns = false
 					end
 				end
-				if farFromTowns and not nearAirbase(p.X, p.Y, 400) and not onIsland(p.X, p.Y) and free(p.X, p.Y, 90) and slope(p.X, p.Y) < 0.2 and height(p.X, p.Y) > WATER + 3 then
+				if
+					farFromTowns
+					and not nearAirbase(p.X, p.Y, 400)
+					and not onIsland(p.X, p.Y)
+					and free(p.X, p.Y, 90)
+					and slope(p.X, p.Y) < 0.2
+					and height(p.X, p.Y) > WATER + 3
+				then
 					local yaw = math.atan2(normal.X, normal.Y)
 					place("House", farms, p.X, p.Y, yaw, rng)
 					local b = p + dir * 70 + normal * 30
