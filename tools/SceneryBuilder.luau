@@ -58,6 +58,11 @@ local function onIsland(x: number, z: number): boolean
 	return x * x + z * z < 3600 * 3600
 end
 
+-- Distance in from the terrain's edge: the outer band eases into the flat world outside (WorldEdge)
+local function fromEdge(x: number, z: number): number
+	return 20480 - math.max(math.abs(x), math.abs(z))
+end
+
 local function folder(parent: Instance, name: string, className: string?): Instance
 	local existing = parent:FindFirstChild(name)
 	if existing then
@@ -436,6 +441,7 @@ local function route(from: Vector2, to: Vector2, cache: { [number]: number }): {
 						and nh < 520
 						and not onIsland(ni * GRID, nj * GRID)
 						and not nearAirbase(ni * GRID, nj * GRID, 100)
+						and fromEdge(ni * GRID, nj * GRID) > 1500
 					then
 						local dist = GRID * math.sqrt(di * di + dj * dj)
 						local grade = math.abs(nh - here) / dist
@@ -472,7 +478,7 @@ local function findTowns(): { Town }
 	for x = -19000, 19000, 900 do
 		for z = -19000, 19000, 900 do
 			local px, pz = x + rng:NextNumber(-300, 300), z + rng:NextNumber(-300, 300)
-			if math.abs(px) > 4500 and not nearAirbase(px, pz, 2500) then
+			if math.abs(px) > 4500 and fromEdge(px, pz) > 3000 and not nearAirbase(px, pz, 2500) then
 				local h0 = height(px, pz)
 				if h0 > 15 and h0 < 260 then
 					local lo, hi = h0, h0
@@ -744,7 +750,7 @@ function SceneryBuilder.woods(): string
 		end
 		local x, z = rng:NextNumber(-20000, 20000), rng:NextNumber(-20000, 20000)
 		local h = height(x, z)
-		local ok = h > 10 and h < 820 and not nearAirbase(x, z, 300) and not onIsland(x, z)
+		local ok = h > 10 and h < 820 and fromEdge(x, z) > 300 and not nearAirbase(x, z, 300) and not onIsland(x, z)
 		if ok then
 			for _, t in findTowns() do
 				if (t.centre - Vector2.new(x, z)).Magnitude < t.radius + 150 then

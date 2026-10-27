@@ -9,17 +9,20 @@
 --     Locked on you: a repeating double beep.
 --     A missile guiding on you: a fast high-low alarm.
 --   Missile launch: a whoosh (yours non-positional, others 3D). Detonations: CombatFxController.
+--   Voice: "Pull up" (Assets.Audio.PullUp) every PULL_UP_PERIOD while the HUD shows PULL UP.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 
 local FlightController = require(script.Parent.FlightController)
+local HUDController = require(script.Parent.HUDController)
 local MissileViewController = require(script.Parent.MissileViewController)
 local SensorController = require(script.Parent.SensorController)
 
 local FALLBACK = "rbxasset://sounds/electronicpingshort.wav"
 local RAMP = 60 -- volume units per second: ~15 ms fades, so gating the tone doesn't click
+local PULL_UP_PERIOD = 2 -- seconds from one "Pull up" to the next (the clip is ~1.2 s)
 
 local ToneController = {
 	Priority = 82,
@@ -35,6 +38,7 @@ local searchBeepUntil = 0
 local lockedBeepUntil = 0
 local lastLockId = 0
 local clock = 0
+local nextPullUp = 0
 
 local function voice(): Voice
 	local audio = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Audio")
@@ -148,6 +152,13 @@ local function update(dt: number)
 		drive(warn, 0.4, 0.9, dt)
 	else
 		drive(warn, 0, 1, dt)
+	end
+
+	-- Voice: "Pull up" as soon as the warning comes up, then every PULL_UP_PERIOD until it clears. Never
+	-- sooner than that, so a warning that flickers on and off doesn't stammer.
+	if flying and HUDController.pullUp and now >= nextPullUp then
+		nextPullUp = now + PULL_UP_PERIOD
+		playAsset("PullUp", nil, 0.9)
 	end
 end
 

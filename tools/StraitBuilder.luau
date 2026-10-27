@@ -14,16 +14,20 @@
 -- Deterministic. Run each step in Edit mode; terrain() yields as it goes and can be split into parts:
 --   local S = require(game.ServerStorage.Tools.StraitBuilder)
 --   S.clear() S.terrain(1, 8) ... S.terrain(8, 8) S.airbases() S.spawns()
+-- After changing only the edge fade, S.edges(1, 4) ... S.edges(4, 4) rewrites just the outer band.
 -- S.height(x, z) gives the surface height in studs at any point (spawns and checks use it).
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local WorldEdge = require(ReplicatedStorage.Shared.WorldEdge)
 
 local Terrain = workspace.Terrain
 
-local HALF = 20480 -- terrain edge (the play area ends at 20,000)
+local HALF = WorldEdge.TERRAIN_HALF -- terrain edge (the play area ends at 20,000)
 local CHUNK = 128 -- studs per WriteVoxels call (small chunks keep the vertical span low on slopes)
 local GRID = 16 -- the height field is sampled every 16 studs and interpolated per 4-stud column
-local WATER = -6 -- sea surface
+local WATER = WorldEdge.WATER -- sea surface
 local SEED = 2026
 local ISLAND_RADIUS = 3000
 local ISLAND_FLAT = 1500 -- the runway area stays flat at y = 0
@@ -74,12 +78,7 @@ local function ridged(x: number, z: number, scale: number, octaves: number, seed
 end
 
 -- x of the west and east coastlines at z. South of z = 9000 both coasts curve away into open sea.
-function StraitBuilder.coastX(z: number): (number, number)
-	local recede = math.max(z - 9000, 0) ^ 2 / 10000
-	local west = -8200 + 900 * math.sin(z / 2600) + 450 * math.sin(z / 900 + 1.3) - recede
-	local east = 8200 + 900 * math.sin(z / 2900 + 2) + 450 * math.sin(z / 1000 + 0.4) + recede
-	return west, east
-end
+StraitBuilder.coastX = WorldEdge.coastX
 
 -- Islets in the channel: { x, z, radius, peak }
 local ISLETS = {}
@@ -118,8 +117,8 @@ local function airbaseAt(x: number, z: number): (number, Enum.Material?)
 	return 0, nil
 end
 
--- Surface height (studs) at a point.
-function StraitBuilder.height(x: number, z: number): number
+-- Surface height (studs) at a point, before the edge fade.
+local function rawHeight(x: number, z: number): number
 	-- Central island: flat runway area, a low rim of hills, a rocky headland, beaches.
 	local r = math.sqrt(x * x + z * z)
 	local islandEdge = ISLAND_RADIUS + 260 * fbm(x, z, 1400, 2, SEED + 11)
@@ -179,6 +178,17 @@ function StraitBuilder.height(x: number, z: number): number
 	local base = airbaseAt(x, z)
 	if base > 0 then
 		h = lerp(h, BASE_HEIGHT, base)
+	end
+	return h
+end
+
+-- Surface height (studs) at a point. Near the terrain's edge it eases into the flat world outside
+-- (WorldEdge), so the client's plain tiles carry on from it without a step.
+function StraitBuilder.height(x: number, z: number): number
+	local h = rawHeight(x, z)
+	local fade = WorldEdge.fade(x, z)
+	if fade > 0 then
+		h += (WorldEdge.outsideHeight(x, z) - h) * fade
 	end
 	return h
 end
@@ -324,6 +334,39 @@ function StraitBuilder.terrain(part: number?, parts: number?): string
 		end
 	end
 	return string.format("terrain %d/%d done in %.0f s", index, count, os.clock() - started)
+end
+
+-- Rewrites only the chunks within the edge fade, after clearing them (a faded mountain is lower than
+-- the old one, and writeChunk only fills up to the new surface). Split like terrain(): edges(1, 4) ...
+function StraitBuilder.edges(part: number?, parts: number?): string
+	local count = parts or 1
+	local index = part or 1
+	local strips = (2 * HALF) // CHUNK
+	local band = math.ceil((WorldEdge.EDGE_FADE + 2 * GRID) / CHUNK)
+	local first = (index - 1) * strips // count
+	local last = index * strips // count - 1
+	local started = os.clock()
+	local budget = os.clock()
+	local written = 0
+	for sx = first, last do
+		for sz = 0, strips - 1 do
+			if sx < band or sx >= strips - band or sz < band or sz >= strips - band then
+				local x0, z0 = -HALF + sx * CHUNK, -HALF + sz * CHUNK
+				Terrain:FillRegion(
+					Region3.new(Vector3.new(x0, -128, z0), Vector3.new(x0 + CHUNK, 2048, z0 + CHUNK)),
+					4,
+					Enum.Material.Air
+				)
+				writeChunk(x0, z0)
+				written += 1
+				if os.clock() - budget > 0.05 then
+					task.wait()
+					budget = os.clock()
+				end
+			end
+		end
+	end
+	return string.format("edges %d/%d: %d chunks in %.0f s", index, count, written, os.clock() - started)
 end
 
 local function prop(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, material: Enum.Material)

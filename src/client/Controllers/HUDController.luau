@@ -39,6 +39,7 @@ local LADDER_STEP = 5 -- degrees between pitch rungs
 local HUDController = {
 	Priority = 60,
 	gui = nil :: ScreenGui?,
+	pullUp = false, -- the PULL UP warning is up (ToneController speaks it)
 }
 
 type Tape = { frame: Frame, labels: { TextLabel }, ticks: { Frame }, valueBox: TextLabel }
@@ -483,6 +484,7 @@ local function update()
 		if gui then
 			gui.Enabled = false
 		end
+		HUDController.pullUp = false
 		return
 	end
 	gui.Enabled = not FlightController:IsUnconscious()
@@ -656,7 +658,9 @@ local function update()
 	if outAt then
 		table.insert(warnings, `RETURN TO BATTLE AREA {math.max(math.ceil(outAt - workspace:GetServerTimeNow()), 0)}`)
 	end
-	if terrainAhead and state.velocity.Y < 0 then
+	-- Ground on the flight path within 4 s while descending (ToneController also calls it out)
+	HUDController.pullUp = terrainAhead and state.velocity.Y < 0
+	if HUDController.pullUp then
 		table.insert(warnings, "PULL UP")
 	end
 	if jetModel and jetModel:GetAttribute("OnFire") then
