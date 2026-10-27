@@ -31,6 +31,7 @@ GENERATORS = {
     "FA18C": "fa18c_generate",
     "Su27S": "su27s_generate",
     "TornadoF3": "tornadof3_generate",
+    "F16C": "f16c_generate",
 }
 
 
