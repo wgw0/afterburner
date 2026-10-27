@@ -16,7 +16,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | III | MiG-29A | `MiG29A` | Yes | `art/mig29` (on `art/f16a`) | Done | Grey (default), Euro, BlueGrey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-14A Tomcat | `F14A` | No | `art/f14a` (on `art/mig29`) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | III | Mirage 2000C | `Mirage2000C` | No | `art/mirage2000` (on `art/f14a`) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | F-15C Eagle | `F15C` | No | | | | | |
+| IV | F-15C Eagle | `F15C` | No | `art/f15c` (on `art/mirage2000`) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | F/A-18C | `FA18C` | No | | | | | |
 | IV | Su-27S | `Su27S` | No | | | | | |
 | IV | Tornado F3 | `TornadoF3` | No | | | | | |
@@ -144,3 +144,7 @@ To do in Studio, when the F-14A gets flight data (an `AircraftData/F14A.luau` wi
 ## Mirage 2000C (`art/mirage2000`, art only)
 
 Built on `art/f14a`. Files in `tools/blender/out/`: `Mirage2000C_base.fbx` (manifest `tools/Manifests/Mirage2000C.luau`), `textures/Mirage2000C_<Skin>_<Set>_<Map>.png` for the AirDefence, Grey, Tactical and Desert skins, `Mirage2000C_cockpit.fbx` and `Mirage2000C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Mirage2000C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Mirage2000C_<Skin>_paint_*.png` and `Mirage2000C_cockpit_*.png`). Install it like the other jets once `AircraftData/Mirage2000C.luau` exists, with `ModelName = "Mirage2000C"`.
+
+## F-15C Eagle (`art/f15c`, art only)
+
+Built on `art/mirage2000`. Files in `tools/blender/out/`: `F15C_base.fbx` (manifest `tools/Manifests/F15C.luau`), `textures/F15C_<Skin>_<Set>_<Map>.png` for the ModEagle, Blue, Aggressor and Desert skins, `F15C_cockpit.fbx` and `F15C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15C_<Skin>_paint_*.png` and `F15C_cockpit_*.png`). Install it like the other jets once `AircraftData/F15C.luau` exists, with `ModelName = "F15C"`.

@@ -67,6 +67,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the F-15C has no flight data yet
+	F15C = {
+		{ Id = "ModEagle", DisplayName = "Mod Eagle Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Air Superiority Blue", Credits = 5000 },
+		{ Id = "Aggressor", DisplayName = "Aggressor Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },
