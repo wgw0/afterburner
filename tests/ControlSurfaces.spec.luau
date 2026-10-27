@@ -77,6 +77,18 @@ return function(ctx)
 			)
 		end)
 
+		it("elevons mix pitch and roll", function()
+			local up = { pitch = 1, roll = 0, yaw = 0, flap = 0 }
+			expect(ControlSurfaces.deflection("ElevonL", up, -20, 20)).toBe(-15)
+			expect(ControlSurfaces.deflection("ElevonR", up, -20, 20)).toBe(-15)
+			expect(ControlSurfaces.deflection("ElevonR", right, -20, 20)).toBe(-15)
+			expect(ControlSurfaces.deflection("ElevonL", right, -20, 20)).toBe(15)
+			-- Full nose up and full right roll: the right elevon is at its limit, the left one is level
+			local both = { pitch = 1, roll = 1, yaw = 0, flap = 0 }
+			expect(ControlSurfaces.deflection("ElevonR", both, -20, 20)).toBe(-20)
+			expect(ControlSurfaces.deflection("ElevonL", both, -20, 20)).toBe(0)
+		end)
+
 		it("flaps follow the flap command up to their maximum", function()
 			expect(ControlSurfaces.deflection("Flap", { pitch = 0, roll = 0, yaw = 0, flap = 0.5 }, 0, 30)).toBe(15)
 		end)

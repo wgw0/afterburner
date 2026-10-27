@@ -8,7 +8,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 |---|---|---|---|---|---|---|---|---|
 | I | F-5E Tiger II | `F5E` | Yes | master; `art/cockpits` | Done; cockpit well added | Ghost, Desert, Pacific, Lizard (unchanged) | Done | Re-import the exterior; import and install the cockpit |
 | I | MiG-21bis | `MiG21bis` | Yes | master; `art/cockpits` | Done; cockpit well added | Silver, Grey, Tactical (unchanged) | Done | Re-import the exterior; import and install the cockpit |
-| I | Mirage IIIE | `MirageIII` | Yes | | | | | |
+| I | Mirage IIIE | `MirageIII` | Yes | `art/mirage3` (on `art/cockpits`) | Done | Tactical (default), Silver, Desert, Grey | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | II | Mirage F1 | `MirageF1` | Yes | | | | | |
 | II | F-4E Phantom II | `F4E` | Yes | | | | | |
 | II | MiG-23MLD | `MiG23MLD` | Yes | | | | | |
@@ -52,3 +52,19 @@ To do in Studio, for each jet:
 4. Play test in the cockpit view. Check that the gauges sit in their bezels, the radar scope sweeps, nothing pokes through the canopy, and the view over the nose is clear.
 
 Optional: repaint and re-upload the skins to paint the inside of the well dark for other players. Without a repaint, other players see the old paint stretched down into the well through the canopy.
+
+## Mirage IIIE (`art/mirage3`)
+
+Built on `art/cockpits`, so merge that branch first. This branch also adds the `ElevonL` and `ElevonR` controls to `Shared.ControlSurfaces`, with tests, and the four skin entries to `Shared.Config.Skins`.
+
+Files in `tools/blender/out/`:
+- Model: `MirageIII_base.fbx`, plus `MirageIII_manifest.json` and `tools/Manifests/MirageIII.luau`
+- Skins: in `textures/`, `MirageIII_<Skin>_<Set>_<Map>.png` for the Tactical, Silver, Desert and Grey skins, 12 PNGs each
+- Cockpit: `MirageIII_cockpit.fbx` and `MirageIII_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `MirageIII_{side,top,front,threequarter}.png`, `MirageIII_overlay_{side,top}.png`, `textures/MirageIII_<Skin>_paint_*.png` and `MirageIII_cockpit_*.png`
+
+To do in Studio:
+1. Import `MirageIII_base.fbx`, then run `AircraftAssembler.install("MirageIII", workspace.MirageIII_base)`. The assembler lines up a single-nozzle import on `Nozzle`.
+2. Upload the skins and make `Assets.Skins.MirageIII.<Skin>` with a SurfaceAppearance per set (Body, Wings, Details).
+3. Import and install the cockpit, as for the F-5E.
+4. Play test. Check that the elevons move with the stick (both up for pitch, opposite for roll), that the rudder works, and the view from the cockpit.

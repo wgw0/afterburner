@@ -190,21 +190,7 @@ kit.COCKPIT = {
 # ---------------------------------------------------------------------------------------------------
 
 
-def panel_var(root_le, root_te, tip_le, tip_te, normal, ratio, f0_fn, f1_fn, s0, s1, span_steps, chord_steps):
-    """Like kit.panel, but the chord fractions vary along the span (f0_fn(s), f1_fn(s)), for surfaces
-    with a constant chord in metres on a tapered wing."""
-    rl, rt, tl, tt = (Vector(p) for p in (root_le, root_te, tip_le, tip_te))
-    n = Vector(normal).normalized()
-    rings = []
-    for k in range(span_steps + 1):
-        s = kit.lerp(s0, s1, k / span_steps)
-        le, te = rl.lerp(tl, s), rt.lerp(tt, s)
-        chord = (te - le).length
-        us = kit.cosine_spacing(f0_fn(s), f1_fn(s), chord_steps)
-        upper = [le.lerp(te, u) + n * max(kit.naca_half_thickness(u, ratio) * chord, 0.002) for u in us]
-        lower = [le.lerp(te, u) - n * max(kit.naca_half_thickness(u, ratio) * chord, 0.002) for u in reversed(us)]
-        rings.append([tuple(p) for p in upper + lower])
-    return kit.lofted(rings, True, True)
+panel_var = kit.panel_var
 
 
 def build_fuselage(col):

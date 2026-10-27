@@ -464,7 +464,10 @@ def check_panel_clear():
     top, _, _, _ = panel_frame()
     lip_y = top.y - spec()["coaming"].get("overhang", 0.05)
     lip_z = top.z + 0.025 - LIP
+    hw = panel_half_width()
     for inst in spec()["instruments"]:
+        if abs(inst["u"]) + inst["size"] / 2 + 0.008 > hw:
+            print(f"WARNING: {inst['name']} runs off the panel's edge (half width {hw:.3f})")
         c = panel_point(inst["u"], inst["v"] - inst["size"] / 2)  # the instrument's top edge
         t = (lip_y - e.y) / max(c.y - e.y, 1e-6)
         z_at_lip = e.z + (c.z - e.z) * t

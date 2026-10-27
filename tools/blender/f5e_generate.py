@@ -100,6 +100,10 @@ FUSELAGE = [
 ]
 FUSELAGE_RINGS = 60
 FUSELAGE_SEGMENTS = 44
+# The spine's superellipse is centred on the body, so it also bulges below it as a keel. The F-5E and
+# MiG-21bis were built (and their skins painted) with that keel; jets from the Mirage III on keep the
+# spine to the upper half. Changing it for the first two would change their UVs and their skins.
+SPINE_UPPER_ONLY = False
 
 # Intakes: (xd, outer half width, top z, bottom z). The lip is swept back 0.34 m from inner to outer.
 INTAKES = [
@@ -433,6 +437,23 @@ def hinge_line(root_le, root_te, tip_le, tip_te, fraction, s0, s1):
     return a, b
 
 
+def panel_var(root_le, root_te, tip_le, tip_te, normal, ratio, f0_fn, f1_fn, s0, s1, span_steps, chord_steps):
+    """Like panel, but the chord fractions vary along the span (f0_fn(s), f1_fn(s)), for surfaces with a
+    hinge line that isn't at a fixed fraction of the chord (constant-chord flaps, delta-wing elevons)."""
+    rl, rt, tl, tt = (Vector(p) for p in (root_le, root_te, tip_le, tip_te))
+    n = Vector(normal).normalized()
+    rings = []
+    for k in range(span_steps + 1):
+        s = lerp(s0, s1, k / span_steps)
+        le, te = rl.lerp(tl, s), rt.lerp(tt, s)
+        chord = (te - le).length
+        us = cosine_spacing(f0_fn(s), f1_fn(s), chord_steps)
+        upper = [le.lerp(te, u) + n * max(naca_half_thickness(u, ratio) * chord, 0.002) for u in us]
+        lower = [le.lerp(te, u) - n * max(naca_half_thickness(u, ratio) * chord, 0.002) for u in reversed(us)]
+        rings.append([tuple(p) for p in upper + lower])
+    return lofted(rings, True, True)
+
+
 # ---------------------------------------------------------------------------------------------------
 # Fuselage sections
 # ---------------------------------------------------------------------------------------------------
@@ -466,7 +487,7 @@ def fuselage_ring(xd, segments=FUSELAGE_SEGMENTS):
         ang = math.pi / 2 - 2 * math.pi * i / segments
         dx, dz = math.cos(ang), math.sin(ang)
         r = _superellipse_hit(cz, dx, dz, hw, cz, hb, e)
-        if spine:
+        if spine and (dz > 0 or not SPINE_UPPER_ONLY):
             rs = _superellipse_hit(cz, dx, dz, wsp, cz, zt - cz, 2.6)
             k = 10.0
             r = (r**k + rs**k) ** (1 / k)

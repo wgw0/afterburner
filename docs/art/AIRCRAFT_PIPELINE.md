@@ -1,6 +1,6 @@
 # Aircraft model pipeline
 
-How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). Jets are rebuilt in the order players meet them. The F-5E Tiger II and the MiG-21bis are done; the Mirage IIIE is next. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). Jets are rebuilt in the order players meet them. The F-5E Tiger II, the MiG-21bis and the Mirage IIIE are done (the Mirage on the `art/mirage3` branch); docs/art/ROSTER_STATUS.md tracks the rest. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
 
 | Stage | Tool | F-5E |
 |---|---|---|
@@ -257,3 +257,16 @@ These write `F5E_cockpit.fbx`, `F5E_cockpit.blend`, `F5E_cockpit_manifest.json`,
 A cockpit it replaces moves to `ServerStorage.ReplacedModels`.
 
 When the pilot's jet spawns, `CockpitController` looks for `Assets.Cockpits.<AirframeId>`. If it's there, a copy is pivoted to the jet's Root and welded to it, and a gauge is drawn on each face. A face gets a needle dial, a green-on-black dial if its `Style` is `"Digital"`, or a scope with a sweeping bearing line if its `Gauge` is `Radar`. The cockpit model stays visible in the chase view too, because it sits inside the jet. If there's no cockpit model, the greybox kit is built as before.
+
+## 8. Mirage IIIE
+
+The Mirage IIIE uses the same pipeline. `tools/blender/mirage3_generate.py` builds it, `tools/blender/mirage3_paint.py` paints it, and both use the F-5E scripts' helpers the way the MiG-21bis does. Its generator also holds its cockpit spec.
+
+- The reference is the Commons line drawing of the Mirage III by Lirdon, rendered 3840 px wide. Its side view is drawn nose-right, so stations are pixels aft of the pitot tip. Its top view is drawn at 45° and was turned upright to measure the half widths. All three views share one scale, set from the published 8.22 m span (177.1 px/m). At that scale the length without the probe comes out within 1% of the published 15.03 m. How it was measured is in `docs/art/reference/MirageIII/SOURCES.md`.
+- The half-round side intakes use the kit's D-section intake builder, with an almost unswept lip. Their half-cone centre bodies are a separate part, `InletCones`.
+- It is a tailless delta, so there are no stabilators. Each wing has two elevons, `ElevonIn` and `ElevonOut`, hinged on a line square across the jet. They are driven by the new `ElevonL` and `ElevonR` controls in `Shared.ControlSurfaces`, which mix pitch and roll (±15° each, within ±20°).
+- There is a brake-chute fairing over the nozzle (`ChuteFairing`) and a dorsal fillet into the fin.
+- The kit's dorsal spine used to bulge below the fuselage as well as above it. The Mirage sets `SPINE_UPPER_ONLY`, so its fuselage keeps the drawn underside. The F-5E and MiG-21bis still have that keel (about 0.4 m below their drawn undersides), because changing it would change their UVs and their uploaded skins. Fix it the next time their skins are repainted.
+- 28 parts, 10,752 triangles. The cockpit is 2,304 triangles, with a French-palette panel: the radar scope under the sight, flight instruments to its left and engine instruments to its right.
+
+There are four skins: Armée de l'Air camouflage (`Tactical`, dark green and grey over aluminium-lacquered undersides, the default), `Silver` (natural metal), `Desert` (sand and brown over light blue) and `Grey` (two-tone air-superiority grey). The `Tactical` and `Silver` skins carry French roundels and a tricolour fin flash. `Desert` and `Grey` have grey low-visibility roundels and no flash.

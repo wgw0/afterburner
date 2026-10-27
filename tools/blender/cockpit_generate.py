@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 GENERATORS = {
     "F5E": "f5e_generate",
     "MiG21bis": "mig21_generate",
+    "MirageIII": "mirage3_generate",
 }
 
 
