@@ -69,6 +69,33 @@ def star(u, v, r, ring):
     return s, border
 
 
+def star_and_bar(u, v, r, low):
+    """US national insignia: white star on a blue disc, white bars with a red stripe, blue outline. Low
+    visibility: the outline only, in dark grey."""
+    if low:
+        m = paint.star_and_bar(u, v, r)
+        return np.broadcast_to(LOWVIS[0], u.shape + (3,)) * 1.0, m
+    blue, white, red = srgb(30, 40, 90), srgb(226, 226, 222), srgb(170, 34, 40)
+    pts = []
+    for k in range(10):
+        ang = math.pi / 2 + k * math.pi / 5
+        rad = r if k % 2 == 0 else r * 0.382
+        pts.append((rad * math.cos(ang), rad * math.sin(ang)))
+    star_m = 1 - smooth(-0.004, 0.004, paint.sd_polygon(u, v, pts))
+    disc = 1 - smooth(r - 0.004, r + 0.004, np.hypot(u, v))
+    top, bottom = r * 0.309, r * 0.309 - r * 0.5
+    d_bars = paint.sd_polygon(u, v, [(-2.0 * r, bottom), (2.0 * r, bottom), (2.0 * r, top), (-2.0 * r, top)])
+    w = r * 0.07
+    outer = np.maximum(disc, 1 - smooth(-0.004, 0.004, d_bars - w))
+    bars = (1 - smooth(-0.004, 0.004, d_bars)) * (1 - disc)
+    stripe = bars * (np.abs(v - (top + bottom) / 2) < r * 0.08)
+    colour = blue * outer[..., None]
+    colour = colour * (1 - bars[..., None]) + white * bars[..., None]
+    colour = colour * (1 - stripe[..., None]) + red * stripe[..., None]
+    colour = colour * (1 - star_m[..., None]) + white * star_m[..., None]
+    return colour, outer
+
+
 def insignia(L, u, v, r, scheme, low):
     """An insignia centred at (u, v) (metres on the surface): colour and mask."""
     kind = L.get("insignia", "roundel")
@@ -81,11 +108,7 @@ def insignia(L, u, v, r, scheme, low):
         colour = red * s[..., None] + white * b[..., None]
         return colour, np.clip(s + b, 0, 1)
     if kind == "star_us":
-        u2, v2 = u, v
-        c, m = paint.star_and_bar(u2, v2, r)
-        if low:
-            c = np.broadcast_to(LOWVIS[0], c.shape) * 1.0
-        return c, m
+        return star_and_bar(u, v, r, low)
     return np.zeros(u.shape + (3,), np.float32), np.zeros(u.shape, np.float32)
 
 

@@ -371,7 +371,10 @@ def build_canopy_frame_inner(col):
     """The inside of the canopy frames (windscreen bow, rear frame) just inside the exterior ones, sill
     rails along the canopy's base, and mirrors on the bow."""
     parts = []
-    for xd in kit.CANOPY_FRAMES:
+    # The windscreen bow and the first frame behind the pilot (tandem canopies have more frames aft)
+    xd0 = kit.CANOPY_FRAMES[0]
+    xd1 = next((xd for xd in kit.CANOPY_FRAMES[1:] if kit.Y(xd) < eye().y), kit.CANOPY_FRAMES[-1])
+    for xd in (xd0, xd1):
         outer = kit.canopy_ring(xd, -0.012)
         inner = kit.canopy_ring(xd, -0.045)
         d = 0.035
@@ -379,7 +382,6 @@ def build_canopy_frame_inner(col):
         ring_out = [[(p[0], p[1] + d, p[2]) for p in outer], [(p[0], p[1] - d, p[2]) for p in outer]]
         parts.append(strip_solid(ring_in, ring_out))
     # Sill rails between the frames, on the canopy's base each side
-    xd0, xd1 = kit.CANOPY_FRAMES
     for side in (-1, 1):
         rings = []
         for k in range(7):
