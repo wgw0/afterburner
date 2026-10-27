@@ -239,6 +239,7 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
 - [ ] **MCH-05** Team Deathmatch, team balancing
 - [ ] **MCH-06** Air Superiority with zones
 - [ ] **MAP-03** "Strait" final: materials, props, lighting, horizon skirt
+  - Props done. A low-poly kit from Blender (`scenery_generate.py`: three trees, house, barn, flats, shop, warehouse, church, hangar, shelter, tower, ops block, fuel tank; 32–264 triangles each) is placed by `tools/SceneryBuilder`. It lays 12 towns on street grids, farms along the roads, about 15,000 trees in 760 woods, and roads between the towns and airbases on each coast. The roads are routed round the sea and the steep ground and textured with one repeating 128×256 image. The airbases get arched hangars facing the runway, a tower with a glass cab, an ops block, shelters and fuel tanks in place of the old boxes. Towns and woods are StreamingMesh models; flying over them holds 60 fps in Studio once streamed in. Materials, lighting and the horizon skirt are still to do.
 - [ ] **MAP-04** Streaming and fog tuning for mobile
 - [ ] **FX-05** Quality settings and pooling audit
 - [ ] **AUD-04** Warnings and radio barks with subtitles
