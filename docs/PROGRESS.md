@@ -176,6 +176,9 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
   - Tones from one sine (`Assets.Audio.Tone`): IR growl and lock tone, radar lock-on beeps and lock beep, RWR search beep, lock double-beep, missile alarm. Checked through the sound state (pitch and volume switching), not by ear.
   - Cockpit eye 0.2 m higher, panel top lower (about 15° view over the nose), fixed-size dials, canopy hidden from inside, gunsight no longer Glass (Roblox draws Glass opaque over water).
   - Terrain heights rounded to whole studs: the place file went from 80 MB to 25 MB with no visible change.
+- Later playtest feedback (Will): the Super 530F and other radar missiles wouldn't lock and nothing said why.
+  - The HUD says why a lock failed or broke, for 3 s above the missile: NO LOCK / LOCK BROKEN / LOCK LOST with OUT OF RADAR RANGE, NOT IN RADAR CONE, GROUND CLUTTER, TARGET NOTCHING or TERRAIN IN THE WAY; NO RADAR LOCK when firing a radar missile unlocked.
+  - Pulse radars looking down into clutter now see targets within 35% of their range (`Signature.CLUTTER_RANGE`) instead of nothing. Checked in play by Will: locks work much better.
 
 **Also done in Phase 4:** AI difficulty profiles (Easy/Normal/Hard/Ace) and the Extend state, early parts of AI-04/05; debug panel buttons for mode switching, the stress mode, ending a match and forcing the touch UI; server step-cost meter (`ServerStepMs`, `ServerStepPeakMs`, `ServerHz` attributes). Tests: 202 → 269.
 
