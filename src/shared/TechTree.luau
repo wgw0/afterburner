@@ -1,5 +1,5 @@
 --!strict
--- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). Tiers I–IV so far.
+-- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). Tiers I–V so far.
 --   Requires: research needs RP earned in one of these jets (any branch, same or lower tier), topped
 --     up from the free RP pool. Owning a prerequisite is what makes a node researchable.
 --   RP / Credits: research cost (RP) and purchase cost once researched (Credits).
@@ -17,6 +17,7 @@ export type Node = {
 local TIER_I = { "F5E", "MiG21bis", "MirageIII" }
 local TIER_II = { "F4E", "MiG23MLD", "MirageF1" }
 local TIER_III = { "F16A", "F14A", "MiG29A", "Mirage2000C" }
+local TIER_IV = { "F15C", "FA18C", "Su27S", "TornadoF3" }
 
 local NODES: { Node } = {
 	{ Id = "F5E", Tier = 1, Branch = "NATO", Requires = {}, RP = 0, Credits = 0 },
@@ -35,6 +36,11 @@ local NODES: { Node } = {
 	{ Id = "FA18C", Tier = 4, Branch = "NATO", Requires = TIER_III, RP = 19000, Credits = 33000 },
 	{ Id = "Su27S", Tier = 4, Branch = "East", Requires = TIER_III, RP = 22000, Credits = 38000 },
 	{ Id = "TornadoF3", Tier = 4, Branch = "Europe", Requires = TIER_III, RP = 19000, Credits = 33000 },
+	{ Id = "F16C", Tier = 5, Branch = "NATO", Requires = TIER_IV, RP = 45000, Credits = 75000 },
+	{ Id = "F15E", Tier = 5, Branch = "NATO", Requires = TIER_IV, RP = 42000, Credits = 70000 },
+	{ Id = "Su30SM", Tier = 5, Branch = "East", Requires = TIER_IV, RP = 48000, Credits = 80000 },
+	{ Id = "MiG29SMT", Tier = 5, Branch = "East", Requires = TIER_IV, RP = 42000, Credits = 70000 },
+	{ Id = "GripenC", Tier = 5, Branch = "Europe", Requires = TIER_IV, RP = 42000, Credits = 70000 },
 }
 
 local byId: { [string]: Node } = {}
@@ -50,7 +56,7 @@ local TechTree = {}
 
 TechTree.NODES = table.freeze(NODES)
 TechTree.BRANCHES = table.freeze({ "NATO", "East", "Europe" })
-TechTree.MAX_TIER = 4
+TechTree.MAX_TIER = 5
 
 function TechTree.get(id: string): Node?
 	return byId[id]
