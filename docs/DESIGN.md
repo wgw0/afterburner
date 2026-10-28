@@ -104,9 +104,9 @@ The heart of the game. The goal is a **"simulation-flavoured arcade" model**: bu
 
 Roblox physics loses precision far from the origin, and real jets cover kilometres in seconds. So the game uses a **game scale**:
 
-- 1 stud ≈ 0.28 m visually (the Roblox convention), but **speeds are compressed**. The HUD shows real-world numbers (knots, Mach, feet), while the world moves at about **35–40%** of true speed.
-- Map size: about 40,000 × 40,000 studs, centred on the origin. That gives roughly 3 to 4 minutes to cross at full afterburner. Keep all action within about ±25,000 studs of the origin.
-- Altitude: the ceiling is about 12,000 studs, displayed as up to 50,000 ft.
+- 1 stud = 1 m visually, but **speeds are compressed**. The HUD shows real-world numbers (knots, Mach, feet), while the world moves at about **35–40%** of true speed.
+- Map size: about 11,200 × 11,200 studs, centred on the origin. That gives roughly 3 to 4 minutes to cross at full afterburner. Keep all action within about ±5,600 studs of the origin. (The world was 1 stud ≈ 0.28 m, the Roblox convention, until the terrain's load time forced the change: 1/12 of the area in studs.)
+- Altitude: the ceiling is 5,600 studs, displayed as about 48,000 ft.
 - Weapon ranges are scaled with speed. HUD numbers stay authentic-looking (an AIM-120 "50 km" shot), while the world distance is shorter.
 
 These ratios live in one `Config.Scale` module so they can be tuned after playtests.

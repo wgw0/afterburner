@@ -26,7 +26,7 @@ type Jet = AircraftService.Jet
 
 local FIRE_TIME_TOLERANCE = 1 -- seconds: trigger messages stamped further from now are ignored
 local JAM_CLEAR_HEAT = 0.4 -- an overheated gun works again once it cools to this
-local BROADPHASE_MARGIN = 60 -- studs around a round's path to consider a target
+local BROADPHASE_MARGIN = 17 -- studs around a round's path to consider a target
 local FIRE_CHANCE = 0.1 -- per engine hit once the engine is below half health (DMG-03)
 local FIRE_DURATION = 8 -- seconds
 local FIRE_DPS = 6 -- fuselage damage per second while burning

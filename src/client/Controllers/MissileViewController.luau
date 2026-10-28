@@ -54,15 +54,15 @@ local function newMissileView(position: Vector3, velocity: Vector3): MissileView
 	part.CanCollide = false
 	part.CanTouch = false
 	part.CanQuery = false
-	part.Size = Vector3.new(0.6, 0.6, 9)
+	part.Size = Vector3.new(0.17, 0.17, 2.5)
 	part.Color = Color3.fromRGB(225, 225, 220)
 	part.Material = Enum.Material.SmoothPlastic
 	part.CFrame = CFrame.lookAt(position, position + velocity)
 	local a0 = Instance.new("Attachment")
-	a0.Position = Vector3.new(0, 0.4, 4.5)
+	a0.Position = Vector3.new(0, 0.11, 1.25)
 	a0.Parent = part
 	local a1 = Instance.new("Attachment")
-	a1.Position = Vector3.new(0, -0.4, 4.5)
+	a1.Position = Vector3.new(0, -0.11, 1.25)
 	a1.Parent = part
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = a0
@@ -75,7 +75,7 @@ local function newMissileView(position: Vector3, velocity: Vector3): MissileView
 	trail.Parent = part
 	local flame = Instance.new("PointLight")
 	flame.Color = Color3.fromRGB(255, 190, 110)
-	flame.Range = 25
+	flame.Range = 7
 	flame.Brightness = 4
 	flame.Parent = a0
 	part.Parent = folder
@@ -155,7 +155,7 @@ end
 local function spawnFlare(position: Vector3, velocity: Vector3)
 	local part = Instance.new("Part")
 	part.Shape = Enum.PartType.Ball
-	part.Size = Vector3.new(1.6, 1.6, 1.6)
+	part.Size = Vector3.new(0.45, 0.45, 0.45)
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanTouch = false
@@ -164,7 +164,7 @@ local function spawnFlare(position: Vector3, velocity: Vector3)
 	part.Color = Color3.fromRGB(255, 235, 190)
 	local light = Instance.new("PointLight")
 	light.Color = Color3.fromRGB(255, 210, 150)
-	light.Range = 40
+	light.Range = 11
 	light.Brightness = 6
 	light.Parent = part
 	local smoke = smokeTemplate:Clone()
@@ -186,18 +186,18 @@ local function spawnChaff(position: Vector3)
 	part.CanTouch = false
 	part.CanQuery = false
 	part.Transparency = 1
-	part.Size = Vector3.one
+	part.Size = Vector3.one * 0.28
 	part.Position = position
 	local cloud = Instance.new("ParticleEmitter")
 	cloud.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	cloud.Color = ColorSequence.new(Color3.fromRGB(200, 200, 210))
 	cloud.LightEmission = 0.3
-	cloud.Size = NumberSequence.new(0.6, 0.2)
+	cloud.Size = NumberSequence.new(0.17, 0.056)
 	cloud.Lifetime = NumberRange.new(2, CHAFF_LIFETIME)
-	cloud.Speed = NumberRange.new(5, 20)
+	cloud.Speed = NumberRange.new(1.4, 5.6)
 	cloud.SpreadAngle = Vector2.new(180, 180)
 	cloud.Drag = 2
-	cloud.Acceleration = Vector3.new(0, -3, 0)
+	cloud.Acceleration = Vector3.new(0, -0.84, 0)
 	cloud.Enabled = false
 	cloud.Parent = part
 	part.Parent = folder
@@ -218,7 +218,7 @@ local function update(dt: number)
 			if not view.railChecked then
 				view.railChecked = true
 				local rail = launchRail(view.ownerJetId, position)
-				if rail and (rail.WorldPosition - position).Magnitude < 400 then
+				if rail and (rail.WorldPosition - position).Magnitude < 112 then
 					view.railOffset = rail.WorldPosition - position
 				end
 			end
@@ -257,11 +257,11 @@ function MissileViewController:Init()
 	smokeTemplate = Instance.new("ParticleEmitter")
 	smokeTemplate.Texture = "rbxasset://textures/particles/smoke_main.dds"
 	smokeTemplate.Color = ColorSequence.new(Color3.fromRGB(230, 230, 230))
-	smokeTemplate.Size = NumberSequence.new(1.5, 5)
+	smokeTemplate.Size = NumberSequence.new(0.42, 1.4)
 	smokeTemplate.Transparency = NumberSequence.new(0.5, 1)
 	smokeTemplate.Lifetime = NumberRange.new(1.5, 2.5)
 	smokeTemplate.Rate = 25
-	smokeTemplate.Speed = NumberRange.new(0, 1)
+	smokeTemplate.Speed = NumberRange.new(0, 0.28)
 	smokeTemplate.Enabled = false
 
 	Net.Client.on(
@@ -271,7 +271,7 @@ function MissileViewController:Init()
 			view.ownerJetId = ownerJetId
 			-- Show it on the rail from the first frame, before update() sets up the blend
 			local rail = launchRail(ownerJetId, position)
-			if rail and (rail.WorldPosition - position).Magnitude < 400 then
+			if rail and (rail.WorldPosition - position).Magnitude < 112 then
 				view.part.CFrame = CFrame.lookAt(rail.WorldPosition, rail.WorldPosition + velocity)
 			end
 			table.insert(

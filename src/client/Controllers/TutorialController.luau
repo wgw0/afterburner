@@ -22,7 +22,7 @@ local InputController = require(script.Parent.InputController)
 local ORANGE = Color3.fromRGB(255, 138, 61)
 local NAVY = Color3.fromRGB(13, 26, 51)
 local RING_COUNT = 6
-local RING_RADIUS = 260 -- studs (about 73 m)
+local RING_RADIUS = 73 -- studs (about 73 m)
 local RING_SPACING = 7 -- seconds of flight between rings at the speed you start with
 
 export type Context = {
@@ -84,7 +84,7 @@ local function makeRing(cf: CFrame, index: number): Model
 		part.CanTouch = false
 		part.Material = Enum.Material.Neon
 		part.Color = if index == 1 then ORANGE else Color3.fromRGB(110, 200, 255)
-		part.Size = Vector3.new(14, 14, 2 * math.pi * RING_RADIUS / segments)
+		part.Size = Vector3.new(3.9, 3.9, 2 * math.pi * RING_RADIUS / segments)
 		part.CFrame = cf
 			* CFrame.new(math.cos(angle) * RING_RADIUS, math.sin(angle) * RING_RADIUS, 0)
 			* CFrame.Angles(0, 0, angle)
@@ -109,7 +109,7 @@ local function layRings(root: BasePart, state: any): { CFrame }
 	local rings = {}
 	for i = 1, RING_COUNT do
 		local turn = math.rad(if i % 2 == 0 then 18 else -14)
-		local climb = if i % 3 == 0 then -60 else 70
+		local climb = if i % 3 == 0 then -17 else 20
 		cf = cf * CFrame.Angles(0, turn, 0) * CFrame.new(0, 0, -spacing)
 		cf = cf + Vector3.new(0, climb, 0)
 		rings[i] = cf
@@ -170,7 +170,7 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 				check = function(ctx: Context, memory)
 					local ring: CFrame = memory.rings[memory.next]
 					local offset = ring:PointToObjectSpace(ctx.root.Position)
-					if math.abs(offset.Z) < 60 and Vector2.new(offset.X, offset.Y).Magnitude < RING_RADIUS then
+					if math.abs(offset.Z) < 17 and Vector2.new(offset.X, offset.Y).Magnitude < RING_RADIUS then
 						memory.next += 1
 						recolourRings(memory.next)
 					end

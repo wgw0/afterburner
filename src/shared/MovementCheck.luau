@@ -18,7 +18,7 @@ export type Limits = { maxSpeed: number, maxAccel: number } -- real m/s, real m/
 MovementCheck.SPEED_MARGIN = 1.15
 MovementCheck.ACCEL_MARGIN = 1.5
 MovementCheck.TELEPORT_MARGIN = 1.5
-MovementCheck.TELEPORT_SLACK = 60 -- studs of allowance for replication jitter
+MovementCheck.TELEPORT_SLACK = 17 -- studs of allowance for replication jitter
 
 MovementCheck.STRIKE_WINDOW = 10 -- seconds
 MovementCheck.STRIKES_TO_RESET = 3

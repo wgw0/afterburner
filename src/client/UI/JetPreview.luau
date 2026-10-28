@@ -35,7 +35,7 @@ local function JetPreview(props: any)
 		model.Parent = world
 		world.Parent = viewport
 		local _, size = model:GetBoundingBox()
-		local distance = math.max(size.X, size.Z) * 1.45 + 10
+		local distance = math.max(size.X, size.Z) * 1.45 + 2.8
 		local camera = Instance.new("Camera")
 		camera.FieldOfView = 40
 		camera.Parent = viewport

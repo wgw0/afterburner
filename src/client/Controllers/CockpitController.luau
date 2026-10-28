@@ -27,7 +27,7 @@ local NEEDLE_COLOUR = Color3.fromRGB(240, 240, 230)
 local MARK_COLOUR = Color3.fromRGB(200, 200, 190)
 local DIGITAL_COLOUR = Color3.fromRGB(120, 255, 160)
 local SCOPE_COLOUR = Color3.fromRGB(8, 26, 14)
-local DIAL_SIZE = 84 -- pixels on the greybox panel (200 per stud), and across each model face
+local DIAL_SIZE = 84 -- pixels on the greybox panel (714 per stud), and across each model face
 local DIAL_TOP = 14 -- pixels from the panel top to the dials
 
 type Gauge = {
@@ -216,10 +216,10 @@ end
 
 -- Greybox kit ----------------------------------------------------------------------------------------
 
-local PANEL_DISTANCE = -2.3 -- studs ahead of the eye
-local PANEL_TOP_BELOW_EYE = -0.6 -- studs (eye space): about 15° below the line of sight, for a view over the nose
-local PANEL_CLEARANCE = 0.06 -- studs above the fuselage top
-local PANEL_MIN_HEIGHT = 0.55
+local PANEL_DISTANCE = -0.64 -- studs ahead of the eye
+local PANEL_TOP_BELOW_EYE = -0.17 -- studs (eye space): about 15° below the line of sight, for a view over the nose
+local PANEL_CLEARANCE = 0.017 -- studs above the fuselage top
+local PANEL_MIN_HEIGHT = 0.15
 
 -- Height of the jet's forward fuselage top under the panel, in eye space (negative = below the eye).
 -- Looks at the jet's own solid parts on the centreline that span the panel's distance ahead.
@@ -243,14 +243,14 @@ local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment):
 			return lowest - eyePos.Y
 		end
 	end
-	local zNear, zFar = eyePos.Z + PANEL_DISTANCE + 1, eyePos.Z + PANEL_DISTANCE - 1
+	local zNear, zFar = eyePos.Z + PANEL_DISTANCE + 0.28, eyePos.Z + PANEL_DISTANCE - 0.28
 	local highest = -math.huge
 	for _, child in jet:GetChildren() do
 		if not child:IsA("BasePart") or child == root or child.Transparency >= 0.3 then
 			continue -- skips the invisible root, hull and the glass canopy
 		end
 		local localCF = root.CFrame:ToObjectSpace(child.CFrame)
-		if math.abs(localCF.Position.X) > 4 then
+		if math.abs(localCF.Position.X) > 1.12 then
 			continue
 		end
 		local half = child.Size / 2
@@ -268,7 +268,7 @@ local function fuselageTopBelowEye(jet: Model, root: BasePart, eye: Attachment):
 		end
 	end
 	if highest == -math.huge then
-		return -1.2
+		return -0.34
 	end
 	return highest - eyePos.Y
 end
@@ -284,7 +284,7 @@ local function buildGreybox(jet: Model, root: BasePart, eye: Attachment): Model
 	local height = math.max(top - bottom, PANEL_MIN_HEIGHT)
 	local panel = part(
 		"Panel",
-		Vector3.new(3.4, height, 0.12),
+		Vector3.new(0.95, height, 0.034),
 		CFrame.new(0, bottom + height / 2, PANEL_DISTANCE) * CFrame.Angles(math.rad(-12), 0, 0),
 		eyeCF,
 		root,
@@ -293,21 +293,23 @@ local function buildGreybox(jet: Model, root: BasePart, eye: Attachment): Model
 	panel.Parent = model
 	part(
 		"Coaming",
-		Vector3.new(3.6, 0.12, 0.35),
-		CFrame.new(0, top + 0.07, PANEL_DISTANCE - 0.2),
+		Vector3.new(1.0, 0.034, 0.098),
+		CFrame.new(0, top + 0.02, PANEL_DISTANCE - 0.056),
 		eyeCF,
 		root,
 		FRAME_COLOUR
 	).Parent =
 		model
-	part("SillL", Vector3.new(0.18, 0.5, 4), CFrame.new(-1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
-	part("SillR", Vector3.new(0.18, 0.5, 4), CFrame.new(1.65, -0.8, -0.6), eyeCF, root, FRAME_COLOUR).Parent = model
+	part("SillL", Vector3.new(0.05, 0.14, 1.12), CFrame.new(-0.46, -0.22, -0.17), eyeCF, root, FRAME_COLOUR).Parent =
+		model
+	part("SillR", Vector3.new(0.05, 0.14, 1.12), CFrame.new(0.46, -0.22, -0.17), eyeCF, root, FRAME_COLOUR).Parent =
+		model
 	-- Canopy bow and rails, unless the jet's model has its own canopy frame
 	if not jet:FindFirstChild("CanopyFrame") then
 		part(
 			"BowL",
-			Vector3.new(0.05, 1.7, 0.05),
-			CFrame.new(-0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(-18)),
+			Vector3.new(0.014, 0.48, 0.014),
+			CFrame.new(-0.27, 0.07, -0.56) * CFrame.Angles(0, 0, math.rad(-18)),
 			eyeCF,
 			root,
 			FRAME_COLOUR
@@ -315,21 +317,21 @@ local function buildGreybox(jet: Model, root: BasePart, eye: Attachment): Model
 			model
 		part(
 			"BowR",
-			Vector3.new(0.05, 1.7, 0.05),
-			CFrame.new(0.95, 0.25, -2.0) * CFrame.Angles(0, 0, math.rad(18)),
+			Vector3.new(0.014, 0.48, 0.014),
+			CFrame.new(0.27, 0.07, -0.56) * CFrame.Angles(0, 0, math.rad(18)),
 			eyeCF,
 			root,
 			FRAME_COLOUR
 		).Parent =
 			model
-		part("BowTop", Vector3.new(1.3, 0.05, 0.05), CFrame.new(0, 1.05, -1.9), eyeCF, root, FRAME_COLOUR).Parent =
+		part("BowTop", Vector3.new(0.36, 0.014, 0.014), CFrame.new(0, 0.29, -0.53), eyeCF, root, FRAME_COLOUR).Parent =
 			model
 	end
 	-- Gunsight glass (analogue kit)
 	local sight = part(
 		"Gunsight",
-		Vector3.new(0.3, 0.26, 0.02),
-		CFrame.new(0, -0.15, -2.1),
+		Vector3.new(0.084, 0.073, 0.006),
+		CFrame.new(0, -0.042, -0.59),
 		eyeCF,
 		root,
 		Color3.fromRGB(150, 200, 170)
@@ -340,7 +342,7 @@ local function buildGreybox(jet: Model, root: BasePart, eye: Attachment): Model
 	sight.CastShadow = false
 	sight.Parent = model
 
-	local surface = surfaceFor(panel, 200)
+	local surface = surfaceFor(panel, 714)
 	for i, key in { "Speed", "Altitude", "G", "RPM" } do
 		local holder = Instance.new("Frame")
 		holder.Name = key
@@ -386,7 +388,7 @@ local function buildFromTemplate(template: Model, root: BasePart): Model
 			continue
 		end
 		local key = face:GetAttribute("Gauge")
-		local surface = surfaceFor(face, DIAL_SIZE / math.max(face.Size.X, 0.05))
+		local surface = surfaceFor(face, DIAL_SIZE / math.max(face.Size.X, 0.014))
 		if key == "Radar" then
 			makeScope(surface)
 		elseif type(key) == "string" and GAUGES[key] then

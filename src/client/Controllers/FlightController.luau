@@ -130,7 +130,7 @@ local function step(dt: number)
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { FlightController.jet :: Model }
 	local travel = Units.velocityToStuds(nextState.velocity) * dt * 1.5
-	local hit = workspace:Raycast(root.Position, travel + travel.Unit * 8, params)
+	local hit = workspace:Raycast(root.Position, travel + travel.Unit * 2.2, params)
 	if hit then
 		crashed = true
 		linear.VectorVelocity = Vector3.zero

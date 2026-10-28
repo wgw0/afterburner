@@ -107,7 +107,7 @@ local function playAsset(name: string, position: Vector3?, volume: number): Soun
 		local anchor = Instance.new("Attachment")
 		anchor.WorldPosition = position
 		anchor.Parent = workspace.Terrain
-		s.RollOffMaxDistance = 3000
+		s.RollOffMaxDistance = 840
 		s.Parent = anchor
 		s:Play()
 		task.delay(6, function()

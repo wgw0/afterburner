@@ -71,8 +71,9 @@ function SkyBuilder.build(): string
 
 	-- Haze: warm near the ground, bluing with distance
 	local atmosphere = child(Lighting, "Atmosphere", "Atmosphere") :: Atmosphere
-	-- (density works per stud, and the map is 40,000 studs across: 0.3 swallowed the ground)
-	atmosphere.Density = 0.1
+	-- (density works per stud, but not linearly: 0.1 suited the old 40,000-stud map, and 0.35 (0.1 / 0.28)
+	-- swallowed the ground on the 11,200-stud one; 0.2 looked right from 336 studs up)
+	atmosphere.Density = 0.2
 	atmosphere.Offset = 0.05
 	atmosphere.Color = Color3.fromRGB(214, 210, 196)
 	atmosphere.Decay = Color3.fromRGB(122, 142, 172)
@@ -107,7 +108,7 @@ function SkyBuilder.build(): string
 		variant.Name = spec.name
 		variant.BaseMaterial = spec.material
 		variant.ColorMap = spec.colorMap
-		variant.StudsPerTile = 2048 -- fields ~400 studs (110 m) across
+		variant.StudsPerTile = 573 -- fields ~110 studs (110 m) across
 		variant.MaterialPattern = Enum.MaterialPattern.Regular -- terrain doesn't draw Organic variants
 		variant.Parent = MaterialService
 		MaterialService:SetBaseMaterialOverride(spec.material, spec.name)

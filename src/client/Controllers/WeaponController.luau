@@ -62,7 +62,7 @@ local function makeTracer(): BasePart
 	p.CastShadow = false
 	p.Material = Enum.Material.Neon
 	p.Color = TRACER_COLOUR
-	p.Size = Vector3.new(0.18, 0.18, 6)
+	p.Size = Vector3.new(0.05, 0.05, 1.7)
 	return p
 end
 
@@ -165,8 +165,8 @@ local function update(dt: number)
 				end
 			else
 				if entry.part then
-					local length = math.clamp((to - from).Magnitude * 1.5, 2, 30)
-					entry.part.Size = Vector3.new(0.18, 0.18, length)
+					local length = math.clamp((to - from).Magnitude * 1.5, 0.56, 8.4)
+					entry.part.Size = Vector3.new(0.05, 0.05, length)
 					entry.part.CFrame = CFrame.lookAt(to, to + (to - from))
 				end
 				entry.round = nextRound

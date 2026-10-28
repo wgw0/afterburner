@@ -19,23 +19,23 @@ local Scale = require(Shared.Config.Scale)
 local WorldEdge = require(Shared.WorldEdge)
 
 local TILE = 2048 -- the largest a part can be
-local FAR = 150000 -- how far the plain runs out (studs from the centre)
+local FAR = 42000 -- how far the plain runs out (studs from the centre)
 local LAND = Color3.fromRGB(98, 122, 56)
 local SEA = Color3.fromRGB(34, 92, 104)
-local LAND_DEPTH = 40 -- land reaches below sea level, so a coast shows a bank, not a gap
-local UNDERLAY = -40 -- top of the underlay: below the sea floor and the terrain shell, so it never shows through
-local UNDERLAY_BAND = 1024 -- z-depth of each underlay band (the coasts are straight within one)
+local LAND_DEPTH = 11.2 -- land reaches below sea level, so a coast shows a bank, not a gap
+local UNDERLAY = -11.2 -- top of the underlay: below the sea floor and the terrain shell, so it never shows through
+local UNDERLAY_BAND = 288 -- z-depth of each underlay band (the coasts are straight within one)
 
 local LIMIT = Scale.MAP_HALF_EXTENT
 local CEILING = Scale.CEILING
-local FLOOR = -30
-local SHOW_RANGE = 3000 -- the border starts to show this far away
+local FLOOR = -8.4
+local SHOW_RANGE = 840 -- the border starts to show this far away
 local OPACITY = 0.9 -- at the border itself, in the middle of the patch
 local STRIPES = "rbxassetid://72392086444235" -- tools/blender/out/textures/Border_Stripes.png
-local BORDER_TILE = 400 -- border tile size, and one repeat of the stripe texture, so tiles join up
+local BORDER_TILE = 112 -- border tile size, and one repeat of the stripe texture, so tiles join up
 local WALL_TILES = 6 -- border tiles each way from the point nearest the camera
 local PATCH_RADIUS = BORDER_TILE * WALL_TILES -- the patch fades out by here
-local DRIFT = 40 -- studs per second the stripes slide along
+local DRIFT = 11.2 -- studs per second the stripes slide along
 
 local WorldEdgeController = {
 	Priority = 40,
@@ -66,7 +66,7 @@ local function slab(x0: number, x1: number, z0: number, z1: number, land: boolea
 	if x1 - x0 < 1 or z1 - z0 < 1 then
 		return
 	end
-	local top = if underlay then UNDERLAY elseif land then WorldEdge.PLAIN_HEIGHT else WorldEdge.WATER - 0.3
+	local top = if underlay then UNDERLAY elseif land then WorldEdge.PLAIN_HEIGHT else WorldEdge.WATER - 0.1
 	local depth = if land and not underlay then LAND_DEPTH else 2
 	local p = part("Plain")
 	p.Size = Vector3.new(TILE, depth, TILE)

@@ -94,11 +94,11 @@ end
 -- jets on the same spot (found in the 24-jet stress test: they collided on spawn).
 local SLOT_OFFSETS = {
 	Vector3.zero,
-	Vector3.new(-500, 0, 0),
-	Vector3.new(500, 0, 0),
-	Vector3.new(0, 300, 600),
-	Vector3.new(-500, 300, 600),
-	Vector3.new(500, 300, 600),
+	Vector3.new(-140, 0, 0),
+	Vector3.new(140, 0, 0),
+	Vector3.new(0, 84, 168),
+	Vector3.new(-140, 84, 168),
+	Vector3.new(140, 84, 168),
 }
 
 -- The spawn slot furthest from every other jet, so nobody spawns into a fight (or into another jet).
@@ -116,7 +116,7 @@ function MatchService:PickSpawn(): CFrame
 		for _, jet in jets do
 			nearest = math.min(nearest, (jet.root.Position - candidate.Position).Magnitude)
 		end
-		local score = nearest + math.random() * 200 -- a little variety between similar spawns
+		local score = nearest + math.random() * 56 -- a little variety between similar spawns
 		if score > bestScore then
 			best, bestScore = candidate, score
 		end

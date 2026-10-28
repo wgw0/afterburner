@@ -371,11 +371,11 @@ export type Weapon = { --[[ fields per §5.4 ]] }
 
 | Constant | Value *(tune)* | Meaning |
 |---|---|---|
-| `STUDS_PER_METRE` | `1 / 0.28` | Visual scale (Roblox convention) |
+| `STUDS_PER_METRE` | `1` | Visual scale: 1 stud = 1 m. (It was 1 / 0.28, the Roblox convention, but the terrain then took over 2 minutes to load: see §19.) |
 | `SPEED_SCALE` | `0.38` | World speed = real speed × this |
 | `DISTANCE_DISPLAY_SCALE` | `1 / SPEED_SCALE` | Displayed distances are inflated so HUD numbers look real |
-| `MAP_HALF_EXTENT` | `20000` studs | Play area radius |
-| `CEILING` | `12000` studs | Hard ceiling (displays as ~50,000 ft) |
+| `MAP_HALF_EXTENT` | `5600` studs | Play area radius (~14.7 km real) |
+| `CEILING` | `5600` studs | Hard ceiling (displays as ~48,000 ft) |
 
 **Rule:** the flight model runs in **"game metres"** (already scaled), so maths stays realistic-shaped. `Units` converts:
 
@@ -1299,7 +1299,7 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 
 ### 19.1 Map requirements ("Strait", the launch map)
 
-- Play area: 40,000 × 40,000 studs centred on the origin. Terrain within that area, with a visual horizon beyond it (low-detail terrain or a skirt mesh, non-collidable).
+- Play area: 11,200 × 11,200 studs (11.2 km at 1 stud = 1 m) centred on the origin. Terrain within that area, with a visual horizon beyond it (low-detail terrain or a skirt mesh, non-collidable).
 - Features: coastline, mountain range with valleys (low-level flying), open sea (BVR), 2 airbases at opposite ends (runways, hangars, control tower as low-poly props), a few landmarks for navigation.
 - Spawn points: tagged parts (`SpawnPoint`) with attributes `Team`, `Type = "Air" | "Runway"`, `Altitude`.
 - Zone markers for Air Superiority: tagged parts `CaptureZone` with `Radius`, `MinAlt`, `MaxAlt`, `Name`.
@@ -1316,7 +1316,7 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 
 - `Workspace.StreamingEnabled = true`, with a streaming target radius tuned so terrain is visible far enough *(tune; test on mobile)*. **Current: streaming is off** (`Workspace.StreamingEnabled = false`). Streaming kept unloading the map: on every death (the focus jumps back to the runway) and whenever Roblox judged memory short, which a Studio session near 10 GB always is; warming it up made the frame rate crawl while the terrain was built. With it off the whole map loads once behind the loading screen and stays, at 60 fps. The cost is a longer join and more memory, to revisit for mobile (MAP-04, PRF-03). `StreamingService` and the underlay stay in place for if streaming comes back. `Terrain.Decoration` (grass blades) is off: it only draws within a few dozen studs, which a jet never sees.
 - With no characters, streaming centres on each player's `ReplicationFocus`: the jet's Root while flying, the runway while on the menu (`AircraftService`).
-- Keep terrain data lean: nothing below the surface layer on land and a shallow sea. `tools/StraitBuilder` writes the height field straight into voxels with only a thin shell under the surface (thick enough to close steep slopes), so the Strait map is 383 million cells for a 41 × 41 km area with mountains up to ~1,500 studs. (`tools/TerrainBuilder.trim()` did the same job for the old placeholder.) Buried voxels still have to be downloaded. Trimming took the Phase 1 terrain from 1.42 billion to 429 million cells, and with streaming the client is ready in about 1 s (it was 43 s with streaming off).
+- Keep terrain data lean: nothing below the surface layer on land and a shallow sea. `tools/StraitBuilder` writes the height field straight into voxels with only a thin shell under the surface (thick enough to close steep slopes), so the Strait map is 14.8 million cells for an 11.5 km (30 km real) square with mountains up to ~470 studs. At the old scale (1 stud = 0.28 m) the same map was 294 million cells and the client took 133 s to build it, at 12-15 fps; at 1 stud = 1 m PLAY unlocks in about 8 s and the terrain is complete by 10 s, at 60 fps. (`tools/TerrainBuilder.trim()` did the same job for the old placeholder.) Buried voxels still have to be downloaded. Trimming took the Phase 1 terrain from 1.42 billion to 429 million cells, and with streaming the client is ready in about 1 s (it was 43 s with streaming off).
 - `Workspace.Gravity` stays at the default. The flight model includes gravity in its own maths, and the `LinearVelocity` constraint (with a high `MaxForce`) sets the velocity outright each step, so Roblox's gravity has no extra effect on a live jet. When a jet dies, its constraints are removed and normal gravity takes over for the wreck.
 - Fog and `Atmosphere` density to hide the edge of streamed terrain.
 

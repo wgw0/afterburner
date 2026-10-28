@@ -2,7 +2,7 @@
 --!native
 -- "Strait" terrain (DEVELOPMENT.md §19, MAP-02). A height field written straight into voxels:
 --   * West landmass: rolling lowland and river valleys rising into a ridged mountain range (peaks up to
---     ~1,750 studs, about 1,300 m real) with passes cut through it for low flying.
+--     ~490 studs, about 1,300 m real) with passes cut through it for low flying.
 --   * East landmass: hills rising into a lower, broken range.
 --   * A north-south channel between them with the island runway in the middle, rocky islets for terrain
 --     masking, and open sea in the south where the coasts fall away.
@@ -24,22 +24,22 @@ local WorldEdge = require(ReplicatedStorage.Shared.WorldEdge)
 
 local Terrain = workspace.Terrain
 
-local HALF = WorldEdge.TERRAIN_HALF -- terrain edge (the play area ends at 20,000)
+local HALF = WorldEdge.TERRAIN_HALF -- terrain edge (the play area ends at 5,600)
 local CHUNK = 128 -- studs per WriteVoxels call (small chunks keep the vertical span low on slopes)
-local GRID = 16 -- the height field is sampled every 16 studs and interpolated per 4-stud column
+local GRID = 8 -- the height field is sampled every 8 studs and interpolated per 4-stud column
 local WATER = WorldEdge.WATER -- sea surface
 local SEED = 2026
-local ISLAND_RADIUS = 3000
-local ISLAND_FLAT = 1500 -- the runway area stays flat at y = 0
-local BASE_HEIGHT = 20 -- airbase ground level
-local SPAWN_CLEARANCE = 700 -- spawn at least this far above the ground
+local ISLAND_RADIUS = 840
+local ISLAND_FLAT = 420 -- the runway area stays flat at y = 0
+local BASE_HEIGHT = 5.6 -- airbase ground level
+local SPAWN_CLEARANCE = 196 -- spawn at least this far above the ground
 local SHELL = 4 -- studs of solid terrain under the surface, at least
 
 local StraitBuilder = {}
 
 StraitBuilder.AIRBASES = {
-	West = { position = Vector3.new(-11500, 0, -9000) },
-	East = { position = Vector3.new(12000, 0, 8500) },
+	West = { position = Vector3.new(-3220, 0, -2520) },
+	East = { position = Vector3.new(3360, 0, 2380) },
 }
 
 local function smoothstep(a: number, b: number, x: number): number
@@ -78,7 +78,7 @@ local function ridged(x: number, z: number, scale: number, octaves: number, seed
 	return total / norm
 end
 
--- x of the west and east coastlines at z. South of z = 9000 both coasts curve away into open sea.
+-- x of the west and east coastlines at z. South of z = 2520 both coasts curve away into open sea.
 StraitBuilder.coastX = WorldEdge.coastX
 
 -- Islets in the channel: { x, z, radius, peak }
@@ -86,33 +86,33 @@ local ISLETS = {}
 do
 	local rng = Random.new(SEED + 3)
 	while #ISLETS < 10 do
-		local z = rng:NextNumber(-17000, 8000)
+		local z = rng:NextNumber(-4760, 2240)
 		local west, east = StraitBuilder.coastX(z)
 		local x = if rng:NextNumber() < 0.5
-			then rng:NextNumber(west + 1400, -ISLAND_RADIUS - 900)
-			else rng:NextNumber(ISLAND_RADIUS + 900, east - 1400)
-		if not (math.abs(z) < ISLAND_RADIUS + 900 and math.abs(x) < ISLAND_RADIUS + 900) then
-			table.insert(ISLETS, { x, z, rng:NextNumber(220, 520), rng:NextNumber(60, 260) })
+			then rng:NextNumber(west + 392, -ISLAND_RADIUS - 252)
+			else rng:NextNumber(ISLAND_RADIUS + 252, east - 392)
+		if not (math.abs(z) < ISLAND_RADIUS + 252 and math.abs(x) < ISLAND_RADIUS + 252) then
+			table.insert(ISLETS, { x, z, rng:NextNumber(61.6, 145.6), rng:NextNumber(16.8, 72.8) })
 		end
 	end
 end
 
--- 0 outside an airbase, 1 on it (with an 800-stud blend), plus whether the point is on the runway/apron.
+-- 0 outside an airbase, 1 on it (with a 224-stud blend), plus whether the point is on the runway/apron.
 local function airbaseAt(x: number, z: number): (number, Enum.Material?)
 	for name, base in StraitBuilder.AIRBASES do
 		local dx, dz = x - base.position.X, z - base.position.Z
-		local outside = math.max(math.abs(dx) - 1400, math.abs(dz) - 3800, 0)
-		if outside < 800 then
+		local outside = math.max(math.abs(dx) - 392, math.abs(dz) - 1064, 0)
+		if outside < 224 then
 			local material: Enum.Material? = nil
 			local side = if name == "West" then 1 else -1
-			local runway = math.abs(dx) < 90 and math.abs(dz) < 3000
-			local taxiway = dx * side >= 0 and dx * side <= 250 and math.abs(dz) < 40
+			local runway = math.abs(dx) < 25.2 and math.abs(dz) < 840
+			local taxiway = dx * side >= 0 and dx * side <= 70 and math.abs(dz) < 11.2
 			if runway or taxiway then
 				material = Enum.Material.Asphalt
-			elseif dx * side > 250 and dx * side < 1050 and math.abs(dz) < 700 then
+			elseif dx * side > 70 and dx * side < 294 and math.abs(dz) < 196 then
 				material = Enum.Material.Concrete
 			end
-			return 1 - smoothstep(0, 800, outside), material
+			return 1 - smoothstep(0, 224, outside), material
 		end
 	end
 	return 0, nil
@@ -122,58 +122,58 @@ end
 local function rawHeight(x: number, z: number): number
 	-- Central island: flat runway area, a low rim of hills, a rocky headland, beaches.
 	local r = math.sqrt(x * x + z * z)
-	local islandEdge = ISLAND_RADIUS + 260 * fbm(x, z, 1400, 2, SEED + 11)
-	if r < islandEdge + 900 then
+	local islandEdge = ISLAND_RADIUS + 72.8 * fbm(x, z, 392, 2, SEED + 11)
+	if r < islandEdge + 252 then
 		local s = math.clamp((r - ISLAND_FLAT) / (islandEdge - ISLAND_FLAT), 0, 1)
-		local rim = math.sin(s * math.pi) * (40 + 70 * math.max(fbm(x, z, 700, 3, SEED + 12), 0))
-		local headland = 330 * math.exp(-((x + 1600) ^ 2 + (z + 2300) ^ 2) / (420 * 420))
+		local rim = math.sin(s * math.pi) * (11.2 + 19.6 * math.max(fbm(x, z, 196, 3, SEED + 12), 0))
+		local headland = 92.4 * math.exp(-((x + 448) ^ 2 + (z + 644) ^ 2) / (117.6 * 117.6))
 		local land = rim * smoothstep(0, 0.15, s) + headland
 		if r <= islandEdge then
-			return math.max(land - smoothstep(0.85, 1, s) * 8, WATER + 1 + (1 - s) * 2)
+			return math.max(land - smoothstep(0.85, 1, s) * 2.24, WATER + 0.28 + (1 - s) * 0.56)
 		end
 		-- Shelving into the sea
-		return lerp(WATER - 2, WATER - 16, smoothstep(islandEdge, islandEdge + 900, r))
+		return lerp(WATER - 0.56, WATER - 4.48, smoothstep(islandEdge, islandEdge + 252, r))
 	end
 
 	local west, east = StraitBuilder.coastX(z)
-	local d = math.max(west - x, x - east) + 380 * fbm(x, z, 2200, 3, SEED + 1) -- distance inland
+	local d = math.max(west - x, x - east) + 106.4 * fbm(x, z, 616, 3, SEED + 1) -- distance inland
 
 	if d < 0 then
 		-- Sea: shallow shelf, islets
-		local h = lerp(WATER - 2, WATER - 16, smoothstep(0, 700, -d))
+		local h = lerp(WATER - 0.56, WATER - 4.48, smoothstep(0, 196, -d))
 		for _, islet in ISLETS do
 			local dist = math.sqrt((x - islet[1]) ^ 2 + (z - islet[2]) ^ 2)
 			if dist < islet[3] * 1.3 then
 				local shape = 1 - (dist / islet[3]) ^ 2
-				local rough = 1 + 0.35 * fbm(x, z, 120, 2, SEED + 13)
-				h = math.max(h, WATER - 3 + (islet[4] + 6) * shape * rough)
+				local rough = 1 + 0.35 * fbm(x, z, 33.6, 2, SEED + 13)
+				h = math.max(h, WATER - 0.84 + (islet[4] + 1.68) * shape * rough)
 			end
 		end
 		return h
 	end
 
-	local inland = smoothstep(0, 900, d)
-	local deep = smoothstep(800, 4000, d)
+	local inland = smoothstep(0, 252, d)
+	local deep = smoothstep(224, 1120, d)
 
 	-- Lowland: gentle rise from the beach, rolling hills, hilly patches
-	local h = WATER + 3 + 60 * inland
-	h += inland * (55 + 70 * fbm(x, z, 2600, 4, SEED + 2))
-	local hilly = smoothstep(-0.2, 0.5, fbm(x, z, 7000, 2, SEED + 3))
-	h += inland * hilly * 260 * math.max(fbm(x, z, 1500, 4, SEED + 4), 0) ^ 1.4
+	local h = WATER + 0.84 + 16.8 * inland
+	h += inland * (15.4 + 19.6 * fbm(x, z, 728, 4, SEED + 2))
+	local hilly = smoothstep(-0.2, 0.5, fbm(x, z, 1960, 2, SEED + 3))
+	h += inland * hilly * 72.8 * math.max(fbm(x, z, 420, 4, SEED + 4), 0) ^ 1.4
 
 	-- Mountains (west high, east lower), with passes
-	local ridgeW = -15600 + 900 * math.sin(z / 3100)
-	local ridgeE = 15800 + 700 * math.sin(z / 2700 + 1)
-	local maskW = math.exp(-((x - ridgeW) / 2900) ^ 2)
-	local maskE = math.exp(-((x - ridgeE) / 2300) ^ 2)
-	local passes = 0.25 + 0.75 * smoothstep(-0.25, 0.35, math.noise(z / 4300, 3.1, SEED + 5))
-	local crest = ridged(x, z, 2600, 5, SEED + 6)
-	h += deep * passes * (maskW * (300 + 1450 * crest) + maskE * (160 + 620 * crest))
+	local ridgeW = -4368 + 252 * math.sin(z / 868)
+	local ridgeE = 4424 + 196 * math.sin(z / 756 + 1)
+	local maskW = math.exp(-((x - ridgeW) / 812) ^ 2)
+	local maskE = math.exp(-((x - ridgeE) / 644) ^ 2)
+	local passes = 0.25 + 0.75 * smoothstep(-0.25, 0.35, math.noise(z / 1204, 3.1, SEED + 5))
+	local crest = ridged(x, z, 728, 5, SEED + 6)
+	h += deep * passes * (maskW * (84 + 406 * crest) + maskE * (44.8 + 173.6 * crest))
 
 	-- River valleys wind down toward the sea
-	local v = math.abs(math.noise(x / 5600, z / 5600, SEED + 7) + 0.25 * math.noise(x / 1400, z / 1400, SEED + 8))
+	local v = math.abs(math.noise(x / 1568, z / 1568, SEED + 7) + 0.25 * math.noise(x / 392, z / 392, SEED + 8))
 	local valley = 1 - smoothstep(0.02, 0.14, v)
-	h = lerp(h, WATER + 10 + 0.15 * (h - WATER), valley * inland * 0.75)
+	h = lerp(h, WATER + 2.8 + 0.15 * (h - WATER), valley * inland * 0.75)
 
 	-- Airbases are flattened
 	local base = airbaseAt(x, z)
@@ -199,23 +199,23 @@ local function surfaceMaterial(x: number, z: number, h: number, slope: number): 
 	if baseMaterial then
 		return baseMaterial
 	end
-	if h < WATER + 0.5 then
+	if h < WATER + 0.14 then
 		return Enum.Material.Sand
 	end
-	if h < WATER + 6 and slope < 0.5 then
+	if h < WATER + 1.68 and slope < 0.5 then
 		return Enum.Material.Sand
 	end
-	local jitter = 120 * math.noise(x / 400, z / 400, SEED + 20)
-	if h > 1250 + jitter and slope < 0.85 then
+	local jitter = 33.6 * math.noise(x / 112, z / 112, SEED + 20)
+	if h > 350 + jitter and slope < 0.85 then
 		return Enum.Material.Snow
 	end
-	if slope > 0.85 or h > 950 + jitter then
+	if slope > 0.85 or h > 266 + jitter then
 		return Enum.Material.Rock
 	end
-	if slope > 0.5 or h > 650 + jitter then
+	if slope > 0.5 or h > 182 + jitter then
 		return Enum.Material.Ground
 	end
-	if math.noise(x / 900, z / 900, SEED + 21) > 0.25 then
+	if math.noise(x / 252, z / 252, SEED + 21) > 0.25 then
 		return Enum.Material.LeafyGrass
 	end
 	return Enum.Material.Grass
@@ -334,7 +334,7 @@ function StraitBuilder.terrain(part: number?, parts: number?): string
 			-- Clear first: writeChunk only writes from the new shell's bottom up, so a deeper old shell
 			-- would otherwise stay underneath.
 			Terrain:FillRegion(
-				Region3.new(Vector3.new(x0, -128, z0), Vector3.new(x0 + CHUNK, 2048, z0 + CHUNK)),
+				Region3.new(Vector3.new(x0, -64, z0), Vector3.new(x0 + CHUNK, 640, z0 + CHUNK)),
 				4,
 				Enum.Material.Air
 			)
@@ -365,7 +365,7 @@ function StraitBuilder.edges(part: number?, parts: number?): string
 			if sx < band or sx >= strips - band or sz < band or sz >= strips - band then
 				local x0, z0 = -HALF + sx * CHUNK, -HALF + sz * CHUNK
 				Terrain:FillRegion(
-					Region3.new(Vector3.new(x0, -128, z0), Vector3.new(x0 + CHUNK, 2048, z0 + CHUNK)),
+					Region3.new(Vector3.new(x0, -64, z0), Vector3.new(x0 + CHUNK, 640, z0 + CHUNK)),
 					4,
 					Enum.Material.Air
 				)
@@ -414,8 +414,8 @@ function StraitBuilder.airbases(): string
 			prop(
 				folder,
 				"Hangar",
-				Vector3.new(220, 90, 180),
-				CFrame.new(p.X + side * 1250, BASE_HEIGHT + 45, p.Z + h * 260),
+				Vector3.new(61.6, 25.2, 50.4),
+				CFrame.new(p.X + side * 350, BASE_HEIGHT + 12.6, p.Z + h * 72.8),
 				grey,
 				Enum.Material.Metal
 			)
@@ -423,16 +423,16 @@ function StraitBuilder.airbases(): string
 		prop(
 			folder,
 			"Tower",
-			Vector3.new(50, 170, 50),
-			CFrame.new(p.X + side * 1150, BASE_HEIGHT + 85, p.Z - 560),
+			Vector3.new(14, 47.6, 14),
+			CFrame.new(p.X + side * 322, BASE_HEIGHT + 23.8, p.Z - 156.8),
 			Color3.fromRGB(205, 200, 190),
 			Enum.Material.Concrete
 		)
 		prop(
 			folder,
 			"TowerCab",
-			Vector3.new(80, 30, 80),
-			CFrame.new(p.X + side * 1150, BASE_HEIGHT + 185, p.Z - 560),
+			Vector3.new(22.4, 8.4, 22.4),
+			CFrame.new(p.X + side * 322, BASE_HEIGHT + 51.8, p.Z - 156.8),
 			Color3.fromRGB(60, 90, 110),
 			Enum.Material.Glass
 		)
@@ -457,10 +457,10 @@ function StraitBuilder.spawns(): string
 		local facing = Vector3.new(-x, 0, -z * 0.5).Unit
 		local highest = 0
 		for step = 0, 4 do
-			local p = Vector3.new(x, 0, z) + facing * step * 500
+			local p = Vector3.new(x, 0, z) + facing * step * 140
 			highest = math.max(highest, StraitBuilder.height(p.X, p.Z))
 		end
-		local position = Vector3.new(x, math.max(1200, highest + SPAWN_CLEARANCE), z)
+		local position = Vector3.new(x, math.max(336, highest + SPAWN_CLEARANCE), z)
 		local part = Instance.new("Part")
 		part.Name = name
 		part.Anchored = true
@@ -468,7 +468,7 @@ function StraitBuilder.spawns(): string
 		part.CanQuery = false
 		part.CanTouch = false
 		part.Transparency = 1
-		part.Size = Vector3.new(8, 8, 8)
+		part.Size = Vector3.new(2, 2, 2)
 		part.CFrame = CFrame.lookAt(position, position + facing)
 		part:SetAttribute("Type", "Air")
 		part:SetAttribute("Team", team)
@@ -477,10 +477,10 @@ function StraitBuilder.spawns(): string
 		part.Parent = folder
 	end
 	for i = 0, 5 do
-		local z = -15000 + i * 3600
+		local z = -4200 + i * 1008
 		local west, east = StraitBuilder.coastX(z)
-		add(`West{i + 1}`, "West", math.max(west - 2500, -17500), z)
-		add(`East{i + 1}`, "East", math.min(east + 2500, 17500), z + 1800)
+		add(`West{i + 1}`, "West", math.max(west - 700, -4900), z)
+		add(`East{i + 1}`, "East", math.min(east + 700, 4900), z + 504)
 	end
 	folder.Parent = map
 	return "spawns done (12)"

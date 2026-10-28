@@ -46,7 +46,7 @@ local SNAP_VIEWS: { [Enum.KeyCode]: Vector2 } = { -- (yaw, pitch) in degrees
 	[Enum.KeyCode.Up] = Vector2.new(0, 70),
 }
 local COCKPIT_ROLL_FOLLOW = 0.25 -- how much of the jet's roll the cockpit view keeps in Mouse Aim
-local DEFAULT_CHASE_OFFSET = Vector3.new(0, 12, 80) -- studs (up, behind) if the model has no ChaseCam
+local DEFAULT_CHASE_OFFSET = Vector3.new(0, 3.4, 22) -- studs (up, behind) if the model has no ChaseCam
 
 local CameraController = {
 	Priority = 40,
@@ -88,8 +88,8 @@ local function followCamera(model: Model, dt: number): CFrame?
 	end
 	local look = chaseLook:Update(dt, root.CFrame.LookVector)
 	look = if look.Magnitude > 1e-3 then look.Unit else root.CFrame.LookVector
-	local position = root.Position - look * 90 + Vector3.new(0, 22, 0)
-	return CFrame.lookAt(position, root.Position + look * 60)
+	local position = root.Position - look * 25 + Vector3.new(0, 6.2, 0)
+	return CFrame.lookAt(position, root.Position + look * 17)
 end
 
 -- Head angles (yaw, pitch) that keep the padlock target in view, or nil when not padlocking.
@@ -148,7 +148,7 @@ local function cockpitView(root: BasePart, dt: number): CFrame
 	local eye = root:FindFirstChild("CockpitEye") :: Attachment?
 	local eyeCF = if eye then eye.WorldCFrame else jetCF
 	local g = if state then state.gLoad else 1
-	local shift = gShift:Update(dt, math.clamp((g - 1) * 0.04, -0.15, 0.35))
+	local shift = gShift:Update(dt, math.clamp((g - 1) * 0.011, -0.042, 0.098))
 	local position = eyeCF.Position - jetCF.UpVector * shift
 
 	local snap = padlockView(jetCF) or snapView()
@@ -232,7 +232,7 @@ local function update(dt: number)
 			spectateLabel.Visible = true
 		else
 			orbitAngle += dt * 0.25
-			local offset = Vector3.new(math.cos(orbitAngle) * 160, 60, math.sin(orbitAngle) * 160)
+			local offset = Vector3.new(math.cos(orbitAngle) * 45, 17, math.sin(orbitAngle) * 45)
 			camera.CFrame = CFrame.lookAt(deathPosition + offset, deathPosition)
 		end
 		return
@@ -241,8 +241,8 @@ local function update(dt: number)
 		-- Behind the menus: a slow, high orbit of the map (following a jet behind the hangar looked odd)
 		if menuOpen() then
 			orbitAngle += dt * 0.03
-			local focus = Vector3.new(300, 100, 0)
-			local position = focus + Vector3.new(math.cos(orbitAngle) * 1800, 700, math.sin(orbitAngle) * 1800)
+			local focus = Vector3.new(84, 28, 0)
+			local position = focus + Vector3.new(math.cos(orbitAngle) * 504, 196, math.sin(orbitAngle) * 504)
 			camera.CFrame = CFrame.lookAt(position, focus)
 			return
 		end
@@ -268,8 +268,8 @@ local function update(dt: number)
 			end
 		end
 		orbitAngle += dt * 0.05
-		local focus = Vector3.new(300, 100, 0)
-		local position = focus + Vector3.new(math.cos(orbitAngle) * 1400, 600, math.sin(orbitAngle) * 1400)
+		local focus = Vector3.new(84, 28, 0)
+		local position = focus + Vector3.new(math.cos(orbitAngle) * 392, 168, math.sin(orbitAngle) * 392)
 		camera.CFrame = CFrame.lookAt(position, focus)
 		return
 	end

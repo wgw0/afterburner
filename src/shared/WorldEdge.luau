@@ -6,22 +6,22 @@
 
 local WorldEdge = {}
 
-WorldEdge.TERRAIN_HALF = 20480 -- terrain edge (the play area ends at Scale.MAP_HALF_EXTENT)
-WorldEdge.EDGE_FADE = 2500 -- studs over which the terrain eases into the plain
-WorldEdge.WATER = -6 -- sea surface
-WorldEdge.PLAIN_HEIGHT = 24 -- the outside land
-WorldEdge.SEA_FLOOR = -22
+WorldEdge.TERRAIN_HALF = 5760 -- terrain edge (the play area ends at Scale.MAP_HALF_EXTENT)
+WorldEdge.EDGE_FADE = 700 -- studs over which the terrain eases into the plain
+WorldEdge.WATER = -1.68 -- sea surface
+WorldEdge.PLAIN_HEIGHT = 6.72 -- the outside land
+WorldEdge.SEA_FLOOR = -6.16
 
 local function smoothstep(a: number, b: number, x: number): number
 	local t = math.clamp((x - a) / (b - a), 0, 1)
 	return t * t * (3 - 2 * t)
 end
 
--- x of the west and east coastlines at z. South of z = 9000 both coasts curve away into open sea.
+-- x of the west and east coastlines at z. South of z = 2520 both coasts curve away into open sea.
 function WorldEdge.coastX(z: number): (number, number)
-	local recede = math.max(z - 9000, 0) ^ 2 / 10000
-	local west = -8200 + 900 * math.sin(z / 2600) + 450 * math.sin(z / 900 + 1.3) - recede
-	local east = 8200 + 900 * math.sin(z / 2900 + 2) + 450 * math.sin(z / 1000 + 0.4) + recede
+	local recede = math.max(z - 2520, 0) ^ 2 / 2800
+	local west = -2296 + 252 * math.sin(z / 728) + 126 * math.sin(z / 252 + 1.3) - recede
+	local east = 2296 + 252 * math.sin(z / 812 + 2) + 126 * math.sin(z / 280 + 0.4) + recede
 	return west, east
 end
 
@@ -34,7 +34,7 @@ end
 function WorldEdge.outsideHeight(x: number, z: number): number
 	local west, east = WorldEdge.outsideCoastX(z)
 	local inland = math.max(west - x, x - east)
-	return WorldEdge.SEA_FLOOR + (WorldEdge.PLAIN_HEIGHT - WorldEdge.SEA_FLOOR) * smoothstep(-150, 250, inland)
+	return WorldEdge.SEA_FLOOR + (WorldEdge.PLAIN_HEIGHT - WorldEdge.SEA_FLOOR) * smoothstep(-42, 70, inland)
 end
 
 -- 0 well inside the terrain, 1 at its edge: how far a terrain height should be pulled to outsideHeight.

@@ -14,7 +14,7 @@ local Units = require(Shared.Units)
 
 local FlightController = require(script.Parent.FlightController)
 
-local CULL_DISTANCE = 1500 -- studs from the camera; further away nobody can see the surfaces move
+local CULL_DISTANCE = 420 -- studs (~420 m) from the camera; further away nobody can see the surfaces move
 local RATE = 120 -- degrees per second of surface travel (actuator speed)
 
 type Surface = {

@@ -9,7 +9,7 @@ local Signature = {}
 local RAD = math.pi / 180
 Signature.REAR_ASPECT_LIMIT = 60 * RAD -- rear-aspect seekers only see a jet within this of its tail
 Signature.NOTCH_SPEED = 30 -- m/s: radial speeds below this are filtered as ground clutter
-Signature.LOW_ALTITUDE = 300 -- real metres (~400 studs): below this there is always ground clutter behind a target
+Signature.LOW_ALTITUDE = 300 -- real metres (~114 studs): below this there is always ground clutter behind a target
 
 -- Angle (radians) between the target's tailpipe direction and the direction to the observer.
 -- 0 = looking straight up its tailpipe, π = head-on.

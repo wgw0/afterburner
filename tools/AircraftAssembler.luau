@@ -15,7 +15,8 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Contract = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AircraftModelContract"))
 
-local STUDS = 1 / 0.28
+local STUDS =
+	require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Scale")).STUDS_PER_METRE
 
 -- Untextured look per texture set, until the PBR skins exist
 local SET_LOOK: { [string]: { color: Color3, material: Enum.Material, transparency: number?, reflectance: number? } } =
@@ -218,7 +219,7 @@ function AircraftAssembler.build(id: string, source: Instance): (Model?, { strin
 		or fit.rotation.UpVector:Dot(Vector3.yAxis) < 0.999
 	table.insert(report, `scale x{string.format("%.3f", fit.scale)}{if turned then ", axes corrected" else ""}`)
 	table.insert(report, `layout fit within {string.format("%.2f", fit.residual)} studs`)
-	if fit.residual > 0.5 then
+	if fit.residual > 0.14 then
 		table.insert(report, "WARNING: parts don't match the manifest layout well; check the import")
 	end
 
@@ -229,7 +230,7 @@ function AircraftAssembler.build(id: string, source: Instance): (Model?, { strin
 
 	local root = Instance.new("Part")
 	root.Name = "Root"
-	root.Size = Vector3.new(1, 1, 1)
+	root.Size = Vector3.new(0.28, 0.28, 0.28)
 	root.CFrame = CFrame.new()
 	root.Transparency = 1
 	root.CanCollide = false
@@ -381,7 +382,7 @@ function AircraftAssembler.buildCockpit(id: string, source: Instance, maps: { [s
 		report,
 		`scale x{string.format("%.3f", fit.scale)}, layout fit within {string.format("%.2f", fit.residual)} studs`
 	)
-	if fit.residual > 0.2 then
+	if fit.residual > 0.06 then
 		table.insert(report, "WARNING: parts don't match the manifest layout well; check the import")
 	end
 
@@ -390,7 +391,7 @@ function AircraftAssembler.buildCockpit(id: string, source: Instance, maps: { [s
 	model:SetAttribute("Triangles", manifest.triangles)
 	local root = Instance.new("Part")
 	root.Name = "CockpitRoot"
-	root.Size = Vector3.new(0.2, 0.2, 0.2)
+	root.Size = Vector3.new(0.06, 0.06, 0.06)
 	root.CFrame = CFrame.new()
 	root.Transparency = 1
 	root.Massless = true

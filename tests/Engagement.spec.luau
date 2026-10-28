@@ -54,7 +54,11 @@ return function(ctx)
 					nextFlareId += 1
 					table.insert(
 						flares,
-						Countermeasures.newFlare(nextFlareId, target.cframe * CFrame.new(0, -2, 15), target.velocity)
+						Countermeasures.newFlare(
+							nextFlareId,
+							target.cframe * CFrame.new(0, -0.56, 4.2),
+							target.velocity
+						)
 					)
 				end
 			end
