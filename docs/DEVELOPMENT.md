@@ -51,6 +51,7 @@
 - [33. Testing strategy (TST)](#33-testing-strategy-tst)
 - [34. Performance budgets (PRF)](#34-performance-budgets-prf)
 - [35. Release process (REL)](#35-release-process-rel)
+- [36. The Ground Roamer (VEH)](#36-the-ground-roamer-veh)
 - [Appendix A: Remote catalogue](#appendix-a-remote-catalogue)
 - [Appendix B: Attributes and tags](#appendix-b-attributes-and-tags)
 - [Appendix C: Phase-by-phase task index](#appendix-c-phase-by-phase-task-index)
@@ -1935,12 +1936,48 @@ On every push and PR:
 
 ---
 
+## 36. The Ground Roamer (VEH)
+
+A drivable 4x4 for exploring the map from the ground, for fun: modelled on a classic British short-wheelbase
+soft-top utility vehicle of the 1970s, with no maker's names or badges (its badge reads GROUND ROAMER).
+
+**Taking it out.** The Hangar's DRIVE button calls `RequestGroundRoamer(true, skin?)`. `GroundRoamerService`
+clones `ServerStorage.Vehicles.GroundRoamer`, puts it on the ground at one of `Config.GroundRoamer.SpawnSpots`
+(an airbase apron or the island), dresses it in the skin, parents it to `workspace.Vehicles` with `OwnerUserId` and
+`Skin` attributes, and gives its root's network ownership to the player. One per player; it is put away on
+`RequestGroundRoamer(false)` (the F key), when the player spawns a jet or leaves, or when it is faster than
+`MaxSpeed` or has fallen out of the world. The menu stays hidden while you drive.
+
+**Driving.** `DriveController` runs `Shared/GroundVehicle` every physics step (`PreSimulation`) and applies the
+returned forces as impulses to the root, so Roblox integrates the body and its collisions with the terrain:
+- four raycast wheels, each a spring and damper along the ground normal, with anti-roll bars per axle;
+- drive (all four wheels), brakes and rolling resistance along each tyre's heading, lateral grip against
+  sliding, all within a friction circle (grip x load); air drag;
+- steering eased towards the input, its lock reduced with speed.
+Studs are metres, and `workspace.Gravity` is Roblox's 196.2, so the vehicle cancels all but 9.81 m/s². The
+template's ballast holds the centre of mass 0.6 m up. Wheels have no collision; the root is the collision box.
+Controls: W/S (triggers) throttle, brake and reverse; A/D (left stick) steer; Space (X) handbrake; V (Y) chase
+or driver's view; L headlamps; F (B) put it away. CameraController hands the view to `DriveController:CameraCFrame`.
+Tuning is in `Config/GroundRoamer` (top speed 29 m/s, about 65 mph); `tests/GroundVehicle.spec` drives the model on
+a simple rigid body (rest height, top speed, braking, steering, no rollover at full lock, holding on a slope).
+
+**Art and setup.** `tools/blender/groundroamer_generate.py` (model and manifest
+`tools/Manifests/Vehicles/GroundRoamer.luau`), `groundroamer_paint.py` (skins BronzeGreen, Sand, PastelGreen, Red)
+and `groundroamer_decals.py` (badge and plates); see docs/art/GROUND_ROAMER.md. In Studio: import
+`GroundRoamer.fbx`, upload the textures and run `GroundRoamerBuilder.template(import, maps)`.
+
+Known limits: other players see the vehicle move, but its wheels don't turn or spin for them (Motor6D transforms
+are local); touch controls aren't wired yet.
+
+---
+
 ## Appendix A: Remote catalogue
 
 | Remote | Direction | Type | Arguments | Rate limit *(tune)* | Section |
 |---|---|---|---|---|---|
 | `PlayerDataUpdate` | S→C | Reliable | `delta: table` | n/a | §22 |
 | `RequestSpawn` | C→S | Reliable | `airframeId: string` | 1/s | §10 |
+| `RequestGroundRoamer` | C→S | Function | `takeOut: boolean, skin: string?` → `ok, reason?` | 0.5/s | §36 |
 | `JetSpawned` | S→C | Reliable | `jetId, airframeId, pilotUserId` | n/a | §10 |
 | `JetDestroyed` | S→All | Reliable | `jetId, killerId?, cause` | n/a | §10 |
 | `DamageState` | S→C (pilot) | Reliable | `components: {[string]: number}` | n/a | §12 |
@@ -1990,6 +2027,9 @@ On every push and PR:
 | Jet model | `Team` | string | |
 | Jet model | `IsAI` | boolean | |
 | Jet model | `Afterburner` | boolean | Drives other players' afterburner FX. Set by the server from the pilot's throttle report (5 Hz) |
+| Ground Roamer model | `OwnerUserId` | number | The driver; their DriveController drives it |
+| Ground Roamer model | `Skin` | string | Its skin |
+| Ground Roamer part | `TextureSet` | string | Body, Canvas, Details, Glass or Decals: which SurfaceAppearance it wears |
 | ReplicatedStorage | `Environment` | string | `"Test"` / `"Prod"` (missing = Test in Studio, Prod live) |
 | ReplicatedStorage | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"` (missing = Single) |
 | ReplicatedStorage | `ServerReady` | boolean | Boot finished |
