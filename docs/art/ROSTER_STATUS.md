@@ -27,7 +27,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Eurofighter Typhoon | `Typhoon` | No | | | | | |
+| VI | Eurofighter Typhoon | `Typhoon` | No | `art/typhoon` (on `art/su35s`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Rafale C | `RafaleC` | No | | | | | |
 | VII | F-22A Raptor | `F22A` | No | | | | | |
 | VII | F-35A | `F35A` | No | | | | | |
@@ -188,3 +188,7 @@ Built on `art/gripenc`. Files in `tools/blender/out/`: `FA18E_base.fbx` (manifes
 ## Su-35S (`art/su35s`, art only)
 
 Built on `art/fa18e`. Files in `tools/blender/out/`: `Su35S_base.fbx` (manifest `tools/Manifests/Su35S.luau`), `textures/Su35S_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Flanker and Desert skins, `Su35S_cockpit.fbx` and `Su35S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su35S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su35S_<Skin>_paint_*.png` and `Su35S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su35S.luau` exists, with `ModelName = "Su35S"`.
+
+## Eurofighter Typhoon (`art/typhoon`, art only)
+
+Built on `art/su35s`. Files in `tools/blender/out/`: `Typhoon_base.fbx` (manifest `tools/Manifests/Typhoon.luau`), `textures/Typhoon_<Skin>_<Set>_<Map>.png` for the AirDefence, TwoTone, DarkGrey and Desert skins, `Typhoon_cockpit.fbx` and `Typhoon_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Typhoon_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Typhoon_<Skin>_paint_*.png` and `Typhoon_cockpit_*.png`). Install it like the other jets once `AircraftData/Typhoon.luau` exists, with `ModelName = "Typhoon"`.

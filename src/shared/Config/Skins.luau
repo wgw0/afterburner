@@ -144,6 +144,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Flanker", DisplayName = "Flanker Blue", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the Typhoon has no flight data yet
+	Typhoon = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Grey", Default = true },
+		{ Id = "TwoTone", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

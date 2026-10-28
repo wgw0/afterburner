@@ -38,6 +38,7 @@ GENERATORS = {
     "GripenC": "gripenc_generate",
     "FA18E": "fa18e_generate",
     "Su35S": "su35s_generate",
+    "Typhoon": "typhoon_generate",
 }
 
 
