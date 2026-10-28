@@ -116,6 +116,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Naval", DisplayName = "Naval Blue", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the MiG-29SMT has no flight data yet
+	MiG29SMT = {
+		{ Id = "VKS", DisplayName = "Aerospace Forces Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Blue-Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey-Green Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

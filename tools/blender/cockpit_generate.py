@@ -34,6 +34,7 @@ GENERATORS = {
     "F16C": "f16c_generate",
     "F15E": "f15e_generate",
     "Su30SM": "su30sm_generate",
+    "MiG29SMT": "mig29smt_generate",
 }
 
 

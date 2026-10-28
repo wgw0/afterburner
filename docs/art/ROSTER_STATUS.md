@@ -23,7 +23,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | F-16C Block 50 | `F16C` | No | `art/f16c` (on master, with the art-only jets before it) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | MiG-29SMT | `MiG29SMT` | No | | | | | |
+| V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Gripen C | `GripenC` | No | | | | | |
 | VI | F/A-18E Super Hornet | `FA18E` | No | | | | | |
 | VI | Su-35S | `Su35S` | No | | | | | |
@@ -172,3 +172,7 @@ Built on `art/f16c`. Files in `tools/blender/out/`: `F15E_base.fbx` (manifest `t
 ## Su-30SM (`art/su30sm`, art only)
 
 Built on `art/f15e`. Files in `tools/blender/out/`: `Su30SM_base.fbx` (manifest `tools/Manifests/Su30SM.luau`), `textures/Su30SM_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Naval and Desert skins, `Su30SM_cockpit.fbx` and `Su30SM_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su30SM_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su30SM_<Skin>_paint_*.png` and `Su30SM_cockpit_*.png`). Install it like the other jets once `AircraftData/Su30SM.luau` exists, with `ModelName = "Su30SM"`.
+
+## MiG-29SMT (`art/mig29smt`, art only)
+
+Built on `art/su30sm`. Files in `tools/blender/out/`: `MiG29SMT_base.fbx` (manifest `tools/Manifests/MiG29SMT.luau`), `textures/MiG29SMT_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Splinter and Desert skins, `MiG29SMT_cockpit.fbx` and `MiG29SMT_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`MiG29SMT_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/MiG29SMT_<Skin>_paint_*.png` and `MiG29SMT_cockpit_*.png`). Install it like the other jets once `AircraftData/MiG29SMT.luau` exists, with `ModelName = "MiG29SMT"`.

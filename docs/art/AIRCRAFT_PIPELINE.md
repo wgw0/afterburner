@@ -421,3 +421,12 @@ There are four skins: `Strike` (gunship grey all over, low-visibility markings; 
 - The jet has 41 parts and 11,676 triangles. The cockpit (the front one) is 1,720 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (two blue-greys over light grey, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).
+
+## 24. MiG-29SMT (art only)
+
+`tools/blender/mig29smt_generate.py` builds the MiG-29SMT and `tools/blender/mig29smt_paint.py` paints it. Its Id is `MiG29SMT`; it has no flight data yet.
+
+- The SMT's airframe is the MiG-29A's, so the script imports `mig29_generate.py` (its measurements, overlays and builders) and changes what the SMT changes. The dorsal hump (more fuel) is raised and widened from the canopy back to between the fins, and the retractable refuelling probe (`RefuellingProbe`) is on the left of the nose. The painter reuses the MiG-29A's panel layout.
+- The jet has 39 parts and 11,996 triangles, with the MiG-29A's 7 hardpoints. The cockpit is 1,768 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
+
+There are four skins: `VKS` (two greys, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Splinter` (grey-green splinter) and `Desert` (no national markings).
