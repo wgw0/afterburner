@@ -441,3 +441,13 @@ There are four skins: `VKS` (two greys, red stars; the default), `Blue` (overall
 - The national marking is a simplified Swedish roundel: a blue disc with a yellow ring.
 
 There are four skins: `Grey` (two greys, low-visibility markings; the default), `DarkGrey` (low-visibility), `Splinter` (greens and brown, full-colour markings) and `Arctic` (white and light grey, no national markings).
+
+## 26. F/A-18E Super Hornet (art only)
+
+`tools/blender/fa18e_generate.py` builds the F/A-18E and `tools/blender/fa18e_paint.py` paints it. Its Id is `FA18E`; it has no flight data yet.
+
+- Commons has no three-view of the Super Hornet (the only US Navy drawing of it is an artwork with its weapons), so the script builds it from the F/A-18C (`fa18c_generate.py`) and the published differences. It is 1.24 m longer (18.31 m): a 0.86 m plug behind the cockpit and 0.38 m in the rear fuselage. Stations are mapped through `stretch()` before the F/A-18C module computes anything, so all of its shapes, parts and attachments follow. The wing is larger (span 13.62 m over the wingtip rails, chords 15% longer), and so are the leading-edge extensions, the tailerons and the fins. The intakes are boxier and raked more, for the caret intakes.
+- The jet has 38 parts and 10,816 triangles, with 11 hardpoints: the wingtip rails, three pylons under each wing, two on the intakes and the centreline. The cockpit is the F/A-18C's layout (1,624 triangles).
+- The painter reuses the F/A-18C's panel layout on the stretched stations, with the larger wing.
+
+There are four skins: `Navy` (two greys, low-visibility markings; the default), `CAG` (the greys with full-colour markings), `Adversary` (blue splinter, no national markings) and `Ghost` (overall dark grey, low-visibility).

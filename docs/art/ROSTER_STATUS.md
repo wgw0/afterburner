@@ -25,7 +25,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | F/A-18E Super Hornet | `FA18E` | No | | | | | |
+| VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Su-35S | `Su35S` | No | | | | | |
 | VI | Eurofighter Typhoon | `Typhoon` | No | | | | | |
 | VI | Rafale C | `RafaleC` | No | | | | | |
@@ -180,3 +180,7 @@ Built on `art/su30sm`. Files in `tools/blender/out/`: `MiG29SMT_base.fbx` (manif
 ## Gripen C (`art/gripenc`, art only)
 
 Built on `art/mig29smt`. Files in `tools/blender/out/`: `GripenC_base.fbx` (manifest `tools/Manifests/GripenC.luau`), `textures/GripenC_<Skin>_<Set>_<Map>.png` for the Grey, DarkGrey, Splinter and Arctic skins, `GripenC_cockpit.fbx` and `GripenC_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`GripenC_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/GripenC_<Skin>_paint_*.png` and `GripenC_cockpit_*.png`). Install it like the other jets once `AircraftData/GripenC.luau` exists, with `ModelName = "GripenC"`.
+
+## F/A-18E Super Hornet (`art/fa18e`, art only)
+
+Built on `art/gripenc`. Files in `tools/blender/out/`: `FA18E_base.fbx` (manifest `tools/Manifests/FA18E.luau`), `textures/FA18E_<Skin>_<Set>_<Map>.png` for the Navy, CAG, Adversary and Ghost skins, `FA18E_cockpit.fbx` and `FA18E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18E_<Skin>_paint_*.png` and `FA18E_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18E.luau` exists, with `ModelName = "FA18E"`.
