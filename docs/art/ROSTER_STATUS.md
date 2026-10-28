@@ -32,7 +32,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | VII | F-22A Raptor | `F22A` | No | `art/f22a` (on `art/rafalec`) | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | F-35A | `F35A` | No | `art/f35a` (on `art/f22a`) | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | Su-57 | `Su57` | No | `art/su57` (on `art/f35a`) | Done | VKS (default), Dark, Grey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VIII | Tempest-class concept | `Tempest` | No | | | | | |
+| VIII | Tempest-class concept | `Tempest` | No | `art/tempest` (on `master`) | Done | Shadow (default), Storm, Night, Demonstrator | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 
 ## Cockpit system (`art/cockpits`)
 
@@ -208,3 +208,7 @@ Built on `art/f22a`. Files in `tools/blender/out/`: `F35A_base.fbx` (manifest `t
 ## Su-57 (`art/su57`, art only)
 
 Built on `art/f35a`. Files in `tools/blender/out/`: `Su57_base.fbx` (manifest `tools/Manifests/Su57.luau`), `textures/Su57_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Grey and Desert skins, `Su57_cockpit.fbx` and `Su57_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su57_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su57_<Skin>_paint_*.png` and `Su57_cockpit_*.png`). Install it like the other jets once `AircraftData/Su57.luau` exists, with `ModelName = "Su57"`.
+
+## Tempest-class concept (`art/tempest`, art only)
+
+Built on `master`. Files in `tools/blender/out/`: `Tempest_base.fbx` (manifest `tools/Manifests/Tempest.luau`), `textures/Tempest_<Skin>_<Set>_<Map>.png` for the Shadow, Storm, Night and Demonstrator skins, `Tempest_cockpit.fbx` and `Tempest_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Tempest_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Tempest_<Skin>_paint_*.png` and `Tempest_cockpit_*.png`). Install it like the other jets once `AircraftData/Tempest.luau` exists, with `ModelName = "Tempest"`.
