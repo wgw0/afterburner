@@ -412,3 +412,12 @@ There are four skins: `Viper` (two greys, low-visibility markings; the default),
 - The jet has 41 parts and 12,076 triangles, with 9 hardpoints: the four on the tanks' lower corners replace the F-15C's fuselage stations. The cockpit (the front one) is 1,648 triangles: the HUD over the up-front controls, three displays (the left one is the radar face) and standby instruments.
 
 There are four skins: `Strike` (gunship grey all over, low-visibility markings; the default), `Ghost` (two light greys, low-visibility), `Splinter` (three-grey splinter, full-colour markings) and `Desert` (no national markings).
+
+## 23. Su-30SM (art only)
+
+`tools/blender/su30sm_generate.py` builds the Su-30SM and `tools/blender/su30sm_paint.py` paints it. Its Id is `Su30SM`; it has no flight data yet.
+
+- The Su-30SM's airframe is the Su-27S's, so the script imports `su27s_generate.py` (its measurements, overlays and builders) and changes what the Su-30SM changes. The canopy runs back over the rear seat (`RearSeat`) and the dorsal hump starts behind it. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit on the leading-edge extensions. Two more wing pylons give 12 hardpoints. The painter reuses the Su-27S's panel layout, with the canards painted like the tailerons.
+- The jet has 41 parts and 11,676 triangles. The cockpit (the front one) is 1,720 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
+
+There are four skins: `VKS` (two blue-greys over light grey, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).

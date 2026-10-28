@@ -14,15 +14,15 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | II | MiG-23MLD | `MiG23MLD` | Yes | `art/mig23` (on `art/f4e`) | Done (wings at 45°) | Tactical (default), TwoTone, Grey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-16A | `F16A` | Yes | `art/f16a` (on `art/mig23`) | Done | Falcon (default), Blue, Desert, Euro | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | MiG-29A | `MiG29A` | Yes | `art/mig29` (on `art/f16a`) | Done | Grey (default), Euro, BlueGrey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| III | F-14A Tomcat | `F14A` | No | `art/f14a` (on `art/mig29`) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| III | Mirage 2000C | `Mirage2000C` | No | `art/mirage2000` (on `art/f14a`) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | F-15C Eagle | `F15C` | No | `art/f15c` (on `art/mirage2000`) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | F/A-18C | `FA18C` | No | `art/fa18c` (on `art/f15c`) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | Su-27S | `Su27S` | No | `art/su27s` (on `art/fa18c`) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| IV | Tornado F3 | `TornadoF3` | No | `art/tornadof3` (on `art/su27s`) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | F-16C Block 50 | `F16C` | No | `art/f16c` (on `art/tornadof3`) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| III | F-14A Tomcat | `F14A` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| III | Mirage 2000C | `Mirage2000C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | F-15C Eagle | `F15C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | F/A-18C | `FA18C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | Su-27S | `Su27S` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | Tornado F3 | `TornadoF3` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | F-16C Block 50 | `F16C` | No | `art/f16c` (on master, with the art-only jets before it) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | Su-30SM | `Su30SM` | No | | | | | |
+| V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | MiG-29SMT | `MiG29SMT` | No | | | | | |
 | V | Gripen C | `GripenC` | No | | | | | |
 | VI | F/A-18E Super Hornet | `FA18E` | No | | | | | |
@@ -168,3 +168,7 @@ Built on `art/tornadof3`. Files in `tools/blender/out/`: `F16C_base.fbx` (manife
 ## F-15E Strike Eagle (`art/f15e`, art only)
 
 Built on `art/f16c`. Files in `tools/blender/out/`: `F15E_base.fbx` (manifest `tools/Manifests/F15E.luau`), `textures/F15E_<Skin>_<Set>_<Map>.png` for the Strike, Ghost, Splinter and Desert skins, `F15E_cockpit.fbx` and `F15E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15E_<Skin>_paint_*.png` and `F15E_cockpit_*.png`). Install it like the other jets once `AircraftData/F15E.luau` exists, with `ModelName = "F15E"`.
+
+## Su-30SM (`art/su30sm`, art only)
+
+Built on `art/f15e`. Files in `tools/blender/out/`: `Su30SM_base.fbx` (manifest `tools/Manifests/Su30SM.luau`), `textures/Su30SM_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Naval and Desert skins, `Su30SM_cockpit.fbx` and `Su30SM_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su30SM_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su30SM_<Skin>_paint_*.png` and `Su30SM_cockpit_*.png`). Install it like the other jets once `AircraftData/Su30SM.luau` exists, with `ModelName = "Su30SM"`.
