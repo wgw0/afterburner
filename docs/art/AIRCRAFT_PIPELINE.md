@@ -430,3 +430,14 @@ There are four skins: `VKS` (two blue-greys over light grey, red stars; the defa
 - The jet has 39 parts and 11,996 triangles, with the MiG-29A's 7 hardpoints. The cockpit is 1,768 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (two greys, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Splinter` (grey-green splinter) and `Desert` (no national markings).
+
+## 25. Gripen C (art only)
+
+`tools/blender/gripenc_generate.py` builds the Gripen C and `tools/blender/gripenc_paint.py` paints it. Its Id is `GripenC`; it has no flight data yet.
+
+- The reference is Kaboldy's Commons three-view of the Gripen (CC BY-SA 3.0), mirrored nose left. The scale comes from the published span over the wingtip rails (8.4 m, 101.9 px/m), which gives the length 14.2 m against the published 14.1 m. In the overlays the model sits on the drawing's lines; the wing's leading edge is one straight line, where the drawing has a small dogtooth.
+- The jet is built from the fuselage (the radome, the one-piece canopy and the dorsal spine) and `Intakes`, the D-shaped intakes beside the cockpit, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit just ahead of the wing. The cropped delta wing has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip rails. There is a single fin with its rudder.
+- The jet has 33 parts and 9,508 triangles, with 7 hardpoints: the wingtip rails, four wing pylons and the centreline. The cockpit is 1,544 triangles, in charcoal: the HUD over three colour displays (the middle one is the radar face), with standby instruments under them.
+- The national marking is a simplified Swedish roundel: a blue disc with a yellow ring.
+
+There are four skins: `Grey` (two greys, low-visibility markings; the default), `DarkGrey` (low-visibility), `Splinter` (greens and brown, full-colour markings) and `Arctic` (white and light grey, no national markings).
