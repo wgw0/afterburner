@@ -1,5 +1,5 @@
 --!strict
--- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). Tiers I–VI so far.
+-- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). All eight tiers.
 --   Requires: research needs RP earned in one of these jets (any branch, same or lower tier), topped
 --     up from the free RP pool. Owning a prerequisite is what makes a node researchable.
 --   RP / Credits: research cost (RP) and purchase cost once researched (Credits).
@@ -19,6 +19,7 @@ local TIER_II = { "F4E", "MiG23MLD", "MirageF1" }
 local TIER_III = { "F16A", "F14A", "MiG29A", "Mirage2000C" }
 local TIER_IV = { "F15C", "FA18C", "Su27S", "TornadoF3" }
 local TIER_V = { "F16C", "F15E", "Su30SM", "MiG29SMT", "GripenC" }
+local TIER_VI = { "FA18E", "Su35S", "Typhoon", "RafaleC" }
 
 local NODES: { Node } = {
 	{ Id = "F5E", Tier = 1, Branch = "NATO", Requires = {}, RP = 0, Credits = 0 },
@@ -46,6 +47,18 @@ local NODES: { Node } = {
 	{ Id = "Su35S", Tier = 6, Branch = "East", Requires = TIER_V, RP = 90000, Credits = 145000 },
 	{ Id = "Typhoon", Tier = 6, Branch = "Europe", Requires = TIER_V, RP = 90000, Credits = 145000 },
 	{ Id = "RafaleC", Tier = 6, Branch = "Europe", Requires = TIER_V, RP = 85000, Credits = 138000 },
+	{ Id = "F22A", Tier = 7, Branch = "NATO", Requires = TIER_VI, RP = 160000, Credits = 260000 },
+	{ Id = "F35A", Tier = 7, Branch = "NATO", Requires = TIER_VI, RP = 145000, Credits = 235000 },
+	{ Id = "Su57", Tier = 7, Branch = "East", Requires = TIER_VI, RP = 160000, Credits = 260000 },
+	-- The prestige jet: researched from any Tier VII jet (DESIGN also wants two of them and a challenge chain)
+	{
+		Id = "Tempest",
+		Tier = 8,
+		Branch = "Europe",
+		Requires = { "F22A", "F35A", "Su57" },
+		RP = 300000,
+		Credits = 500000,
+	},
 }
 
 local byId: { [string]: Node } = {}
@@ -61,7 +74,7 @@ local TechTree = {}
 
 TechTree.NODES = table.freeze(NODES)
 TechTree.BRANCHES = table.freeze({ "NATO", "East", "Europe" })
-TechTree.MAX_TIER = 6
+TechTree.MAX_TIER = 8
 
 function TechTree.get(id: string): Node?
 	return byId[id]

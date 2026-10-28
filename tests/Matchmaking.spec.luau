@@ -46,9 +46,9 @@ return function(ctx)
 		end)
 
 		it("a band with no jets inside falls back to the closest one below", function()
-			local jets = Matchmaking.aiAirframes({ br = 14, min = 13, max = 14 })
+			local jets = Matchmaking.aiAirframes({ br = 15, min = 14, max = 15 })
 			expect(#jets).toBe(1)
-			expect(br(jets[1]) < 13).toBe(true)
+			expect(br(jets[1]) < 14).toBe(true)
 		end)
 	end)
 end

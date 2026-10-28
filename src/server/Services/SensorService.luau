@@ -44,6 +44,12 @@ local function radarOf(jet: Jet): any
 	return airframe and airframe.Radar
 end
 
+-- Radar cross-section factor (Signature.radarDetects): 1 for ordinary jets, small for stealth ones.
+local function stealthOf(jet: Jet): number
+	local airframe = Progression.airframeForModel(jet.model) :: any
+	return airframe and airframe.Stealth or 1
+end
+
 local function realVelocity(jet: Jet): Vector3
 	return Units.velocityFromStuds(jet.root.AssemblyLinearVelocity)
 end
@@ -58,7 +64,13 @@ function SensorService:CanTrack(shooter: Jet, target: Jet): (boolean, string)
 	if not radar then
 		return false, "no radar"
 	end
-	local ok, reason = Signature.radarDetects(radar, shooter.root.CFrame, target.root.Position, realVelocity(target))
+	local ok, reason = Signature.radarDetects(
+		radar,
+		shooter.root.CFrame,
+		target.root.Position,
+		realVelocity(target),
+		stealthOf(target)
+	)
 	if not ok then
 		return false, reason
 	end
