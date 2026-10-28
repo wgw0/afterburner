@@ -123,6 +123,12 @@ local function radarOf(jet: Model): Signature.RadarSpec?
 	return airframe and airframe.Radar
 end
 
+-- Radar cross-section factor: 1 for ordinary jets, small for stealth ones (matches SensorService).
+local function stealthOf(jet: Model): number
+	local airframe = Progression.airframeForModel(jet) :: any
+	return airframe and airframe.Stealth or 1
+end
+
 -- Why your radar can't see `model` right now ("ok" if it can).
 local function reasonFor(model: Model): string
 	local jet, root = FlightController.jet, FlightController.root
@@ -132,7 +138,7 @@ local function reasonFor(model: Model): string
 		return "range"
 	end
 	local velocity = Units.velocityFromStuds(otherRoot.AssemblyLinearVelocity)
-	local ok, reason = Signature.radarDetects(radar, root.CFrame, otherRoot.Position, velocity)
+	local ok, reason = Signature.radarDetects(radar, root.CFrame, otherRoot.Position, velocity, stealthOf(model))
 	if ok and not clearLineOfSight(root.Position, otherRoot.Position) then
 		return "terrain"
 	end
@@ -220,7 +226,7 @@ local function update()
 		local spotted = range <= visualRange and hasLos()
 		local onRadar = false
 		if radar then
-			onRadar = Signature.radarDetects(radar, myCF, otherRoot.Position, velocity) and hasLos()
+			onRadar = Signature.radarDetects(radar, myCF, otherRoot.Position, velocity, stealthOf(model)) and hasLos()
 		end
 		if spotted or onRadar or id == self.lockId then
 			seen[id] = true
