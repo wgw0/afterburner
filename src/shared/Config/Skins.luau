@@ -158,6 +158,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the F-22A has no flight data yet
+	F22A = {
+		{ Id = "AirDominance", DisplayName = "Air Dominance Grey", Default = true },
+		{ Id = "Dark", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Light Ghost Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

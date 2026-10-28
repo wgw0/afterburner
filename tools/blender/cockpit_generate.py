@@ -40,6 +40,7 @@ GENERATORS = {
     "Su35S": "su35s_generate",
     "Typhoon": "typhoon_generate",
     "RafaleC": "rafalec_generate",
+    "F22A": "f22a_generate",
 }
 
 
