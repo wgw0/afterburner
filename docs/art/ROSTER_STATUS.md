@@ -31,7 +31,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | VI | Rafale C | `RafaleC` | No | `art/rafalec` (on `art/typhoon`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | F-22A Raptor | `F22A` | No | `art/f22a` (on `art/rafalec`) | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | F-35A | `F35A` | No | `art/f35a` (on `art/f22a`) | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VII | Su-57 | `Su57` | No | | | | | |
+| VII | Su-57 | `Su57` | No | `art/su57` (on `art/f35a`) | Done | VKS (default), Dark, Grey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VIII | Tempest-class concept | `Tempest` | No | | | | | |
 
 ## Cockpit system (`art/cockpits`)
@@ -204,3 +204,7 @@ Built on `art/rafalec`. Files in `tools/blender/out/`: `F22A_base.fbx` (manifest
 ## F-35A Lightning II (`art/f35a`, art only)
 
 Built on `art/f22a`. Files in `tools/blender/out/`: `F35A_base.fbx` (manifest `tools/Manifests/F35A.luau`), `textures/F35A_<Skin>_<Set>_<Map>.png` for the Stealth, Dark, Ghost and Aggressor skins, `F35A_cockpit.fbx` and `F35A_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F35A_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F35A_<Skin>_paint_*.png` and `F35A_cockpit_*.png`). Install it like the other jets once `AircraftData/F35A.luau` exists, with `ModelName = "F35A"`.
+
+## Su-57 (`art/su57`, art only)
+
+Built on `art/f35a`. Files in `tools/blender/out/`: `Su57_base.fbx` (manifest `tools/Manifests/Su57.luau`), `textures/Su57_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Grey and Desert skins, `Su57_cockpit.fbx` and `Su57_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su57_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su57_<Skin>_paint_*.png` and `Su57_cockpit_*.png`). Install it like the other jets once `AircraftData/Su57.luau` exists, with `ModelName = "Su57"`.

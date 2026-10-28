@@ -42,6 +42,7 @@ GENERATORS = {
     "RafaleC": "rafalec_generate",
     "F22A": "f22a_generate",
     "F35A": "f35a_generate",
+    "Su57": "su57_generate",
 }
 
 

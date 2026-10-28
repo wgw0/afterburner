@@ -500,3 +500,13 @@ There are four skins: `AirDominance` (two greys, low-visibility markings; the de
 - The jet has 36 parts and 10,536 triangles, with 10 hardpoints: two in each internal bay and three pylons under each wing. The cockpit is 1,344 triangles, in charcoal, with the side stick: the panoramic display as two large faces (the left one is the radar), with standby instruments under them. The real jet has no head-up display; the cockpit keeps one for the game's sight.
 
 There are four skins: `Stealth` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Aggressor` (grey splinter, no national markings).
+
+## 32. Su-57 (art only)
+
+`tools/blender/su57_generate.py` builds the Su-57 and `tools/blender/su57_paint.py` paints it. Its Id is `Su57`; it has no flight data yet.
+
+- The reference is XaHyMaH's Commons three-view of the T-50 (CC BY-SA 3.0), the Su-57's prototype, mirrored nose left and rebuilt as a composite. The scale comes from the published 20.1 m length (98.0 px/m), which gives a 14.3 m span against the published 14.1 m. In the overlays the model sits on the drawing's lines.
+- The builders are the F/A-18C's (as for the F-22A). The jet is built from the chined forebody with the bubble canopy and the wide, flat lifting body ending in the tail sting (`Fuselage`); `Nacelles` are the widely spaced engine nacelles under the body with their raked intakes (and dark `IntakeDucts`), and `Strakes` the leading-edge extensions. The wing (forward-swept trailing edge) has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 27 degrees; the real fins are all-moving, here they have rudders.
+- The jet has 38 parts and 11,212 triangles, with 10 hardpoints: the two main bays in tandem (two stations each), the small bays under the extensions and two pylons under each wing. The cockpit is 1,720 triangles, in charcoal: the HUD over two large colour displays (the left one is the radar face), with standby instruments under them.
+
+There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Grey` (two light greys, low-visibility) and `Desert` (no national markings).
