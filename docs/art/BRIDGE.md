@@ -12,7 +12,8 @@ between the towers.
 | Generator | `tools/blender/bridge_generate.py` |
 | Textures | `tools/blender/bridge_textures.py` |
 | Preview renders | `tools/blender/bridge_preview.py` |
-| Manifest | `tools/Manifests/Scenery/SevernBridge.luau` (parts, sets, tile sizes) |
+| Manifest | `tools/Manifests/Scenery/SevernBridge.luau` (parts, sets, tile sizes, deck profile) |
+| Placement (Studio) | `tools/BridgeBuilder.luau` |
 | References | `docs/art/reference/SevernBridge/` (kept out of git; see its SOURCES.md) |
 
 ```
@@ -62,19 +63,58 @@ concrete).
 
 ## Placing it in the Strait
 
-The channels run north to south, so the bridge's length goes along world x (turn the model 90 degrees about y). Its
-deck needs about 1.7 km of water or less to land on both shores. Without the coastline noise, the two channels are
-closest to that width on the line z = -400:
+`tools/BridgeBuilder.luau` places both bridges. The channels run north to south, so each bridge turns 90 degrees
+about y and its length runs along world x; its water line sits on the sea (y = -1.68, `WorldEdge.WATER`).
 
-| Crossing | Gap at z = -400 | Bridge centre |
-|---|---|---|
-| West | 1,724 m (x -2,463 to -739) | (-1,601, -1.68, -400) |
-| East | 1,700 m (x 739 to 2,439) | (1,589, -1.68, -400) |
+### Steps in Studio (Edit mode, after the terrain is built)
 
-y = -1.68 puts the model's water line on the sea (`WorldEdge.WATER`). The real coasts wobble by up to about 100 m
-from the noise in `StraitBuilder`, so check both ends against `StraitBuilder.height(x, z)` in Studio and slide the
-centre along x (or the line along z) until the abutments sit on land. The 790 m from each tower to its end leaves
-room for that.
+1. Import `tools/blender/out/SevernBridge.fbx` (Forward -Z, Up Y, as for the jets). It arrives as a Model with 14
+   MeshParts; leave it in workspace for now.
+2. Upload the 16 `Severn` textures from `tools/blender/out/textures/` (`SevernBridge_Severn_<Set>_<Map>.png`, sets
+   Steel, Concrete, Road and Cable, maps Color, Normal, Roughness and Metalness) and note their asset ids. The
+   `Weathered` skin is the same 16 files with `Weathered` in their names.
+3. Run:
 
-Collision: set the towers, tower piers, anchorages, approaches and deck to precise collision; the cables, hangers,
-lamp posts and lights can have `CanCollide` off.
+```lua
+local B = require(game.ServerStorage.Tools.BridgeBuilder)
+print(B.template(workspace.SevernBridge)) -- lays the parts out as ServerStorage.BridgeTemplate
+print(B.skin({
+	Steel = { Color = 0, Normal = 0, Roughness = 0, Metalness = 0 },
+	Concrete = { Color = 0, Normal = 0, Roughness = 0, Metalness = 0 },
+	Road = { Color = 0, Normal = 0, Roughness = 0, Metalness = 0 },
+	Cable = { Color = 0, Normal = 0, Roughness = 0, Metalness = 0 },
+})) -- the uploaded asset ids
+print(B.plan()) -- where each crossing fits the real coastline
+print(B.place()) -- BridgeWest and BridgeEast in workspace.Map.Bridges
+```
+
+4. Delete the imported `workspace.SevernBridge`. `B.clear()` removes the placed bridges; `skin()` can run again at
+   any time (it updates the template and the placed copies).
+
+What `template()` does: puts every part where the manifest says (origin at midspan on the water line), works out
+the import's scale from the deck's length and warns if part sizes don't match the manifest (a sign the importer
+turned the axes). It anchors everything and sets collision: precise for the deck, towers, tower piers, anchorages
+and approaches (a convex hull would fill the window between the tower legs and bridge the gaps between pieces that
+share a mesh); no collision for the road surface, walkways, barriers, lamp posts, cables, hangers and lights.
+Without `skin()` the parts keep plain colours by set; the tower lights are red Neon either way. The models use
+`StreamingMesh` level of detail, like the scenery.
+
+What `plan()` does: for each side it tries crossing lines z = -1000 to 1000 (every 20 studs) and, on each, finds
+the island's shore and the landmass coast with `StraitBuilder.height` (the coast is the first 150 studs of
+unbroken land, so islets don't count). The bridge is centred on the gap. A line fits when both tower piers stand
+in water, both abutments (15 studs in from the deck's ends) stand on land, and the ground along the deck (every 8
+studs, on the centre line and 16 studs either side) stays below the deck's underside, apart from the last 60 studs
+at each end. Of the lines that fit, it picks the gap nearest 1,700 studs, preferring lines near z = -400. The
+report gives each chosen line, its gap and how far each end sits into or above the ground.
+
+Without the coastline noise, both channels are about 1,700 m wide on z = -400 (west centre near x = -1,601, east
+near x = 1,589); the real coasts wobble by up to about 100 m, which is why `plan()` searches the real heights.
+
+### Follow-ups
+
+- Roads: `SceneryBuilder.roads()` keeps roads off the island and doesn't know about the bridges. Each landmass's
+  road network, and a road on the island, need to meet the bridge ends.
+- Terrain at the abutments: where `plan()` reports an end several studs into the ground, flatten or cut the
+  terrain there so the road meets the deck (or the end reads as an embankment).
+- Textures: the bridge's UVs run past 0..1 and rely on `SurfaceAppearance` maps repeating. Check in game that they
+  tile. If they clamp instead, the meshes need splitting into tile-sized pieces with UVs inside 0..1.
