@@ -20,11 +20,11 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | IV | F/A-18C | `FA18C` | Yes | master | Done | Navy (default), Gull, Adversary, Ghost | Done | Installed with four skins and the cockpit; spawned and flown in play |
 | IV | Su-27S | `Su27S` | Yes | master | Done | Flanker (default), Grey, Naval, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
 | IV | Tornado F3 | `TornadoF3` | Yes | master | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
-| V | F-16C Block 50 | `F16C` | No | `art/f16c` (on master, with the art-only jets before it) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | F-16C Block 50 | `F16C` | Yes | master | Done | Viper (default), Ghost, Arctic, Night | Done | Installed with four skins and the cockpit; spawned and flown in play |
+| V | F-15E | `F15E` | Yes | master | Done | Strike (default), Ghost, Splinter, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
+| V | Su-30SM | `Su30SM` | Yes | master | Done | VKS (default), Blue, Naval, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
+| V | MiG-29SMT | `MiG29SMT` | Yes | master | Done | VKS (default), Blue, Splinter, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
+| V | Gripen C | `GripenC` | Yes | master | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Installed with four skins and the cockpit; spawned and flown in play |
 | VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Eurofighter Typhoon | `Typhoon` | No | `art/typhoon` (on `art/su35s`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
