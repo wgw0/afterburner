@@ -33,7 +33,7 @@ LAYOUT = {
     "fin_lines": [1.8, 2.4],
     "upper_only": ["CanopyFrame"],
     "radome": 380,
-    "dark": ["IntakeDuct"],
+    "ducts": ["IntakeDuct"],
     "antiglare": (380, 495, 0.10, 0.35),
     "lip": (["Intake"], 815),
     "hot": (2200, 2290),
