@@ -36,6 +36,7 @@ GENERATORS = {
     "Su30SM": "su30sm_generate",
     "MiG29SMT": "mig29smt_generate",
     "GripenC": "gripenc_generate",
+    "FA18E": "fa18e_generate",
 }
 
 
