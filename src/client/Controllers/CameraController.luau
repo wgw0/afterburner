@@ -15,6 +15,7 @@
 -- When your jet is destroyed (AIR-03 / CAM-06): a short orbit of the explosion, then the kill cam follows
 -- whoever shot you down. While waiting to respawn you spectate other jets (Left/Right arrows to switch).
 -- With nothing to watch, or with the menus open, the camera slowly orbits the map centre.
+-- While driving the Ground Roamer, DriveController supplies the view (§36).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +28,7 @@ local Signal = require(Shared.Util.Signal)
 local Spring = require(Shared.Util.Spring)
 local Units = require(Shared.Units)
 
+local DriveController = require(script.Parent.DriveController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
@@ -218,6 +220,14 @@ local function update(dt: number)
 	end
 	camera.CameraType = Enum.CameraType.Scriptable
 	camera.FieldOfView = fov:Update(dt, targetFov())
+
+	-- Driving the Ground Roamer (§36): its own chase and driver's views
+	local drive = DriveController:CameraCFrame(dt)
+	if drive then
+		camera.CFrame = drive
+		spectateLabel.Visible = false
+		return
+	end
 
 	local root = FlightController.root
 	spectateLabel.Visible = false

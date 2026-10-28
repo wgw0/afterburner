@@ -2,7 +2,8 @@
 -- The menus (DEVELOPMENT.md §24, UI-01–04 / UI-06), drawn with React (UI/App). Replaces the Phase 1
 -- spawn menu. Shown whenever you aren't flying (after the death camera); the results screen while a
 -- match's results are up. Owns the menu state and turns screen actions into intents for the server.
--- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again.
+-- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again. DRIVE takes out the Ground
+-- Roamer (§36); the menu stays hidden while you drive.
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
@@ -16,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 
 local CameraController = require(script.Parent.CameraController)
+local DriveController = require(script.Parent.DriveController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local MatchController = require(script.Parent.MatchController)
@@ -122,6 +124,13 @@ render = function()
 		Status = status,
 		CanPlay = allowed,
 		OnPlay = spawn,
+		OnDrive = function()
+			setStatus("Fetching the Ground Roamer…")
+			task.spawn(function()
+				local ok, why = DriveController:TakeOut(nil)
+				setStatus(if ok then "" else why or "Couldn't take it out")
+			end)
+		end,
 		OnResearch = function(id)
 			return PlayerDataController:Research(id)
 		end,
@@ -252,7 +261,15 @@ function MenuController:Start()
 		end
 	end)
 
-	setVisible(FlightController.jet == nil)
+	DriveController.VehicleChanged:Connect(function(vehicle)
+		if vehicle then
+			setVisible(false)
+		elseif FlightController.jet == nil and not CameraController:InDeathCam() then
+			setVisible(true)
+		end
+	end)
+
+	setVisible(FlightController.jet == nil and DriveController.vehicle == nil)
 	render()
 	-- The match status line counts down; refresh it twice a second while the menu is up
 	task.spawn(function()
