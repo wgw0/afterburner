@@ -26,6 +26,9 @@ local NODES: { Node } = {
 	{ Id = "MirageF1", Tier = 2, Branch = "Europe", Requires = TIER_I, RP = 1600, Credits = 2900 },
 	{ Id = "F16A", Tier = 3, Branch = "NATO", Requires = TIER_II, RP = 7500, Credits = 12500 },
 	{ Id = "MiG29A", Tier = 3, Branch = "East", Requires = TIER_II, RP = 7500, Credits = 12500 },
+	-- The F-14A follows the F-16A in its branch: the Phoenix makes it the strongest Tier III jet
+	{ Id = "F14A", Tier = 3, Branch = "NATO", Requires = { "F16A", "MiG29A" }, RP = 9500, Credits = 15500 },
+	{ Id = "Mirage2000C", Tier = 3, Branch = "Europe", Requires = TIER_II, RP = 7500, Credits = 12500 },
 }
 
 local byId: { [string]: Node } = {}
