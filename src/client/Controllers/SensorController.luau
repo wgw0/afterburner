@@ -32,6 +32,16 @@ local UPDATE_INTERVAL = 0.2
 local RADAR_LOCK_ON = 1.0 -- seconds a radar contact is held before the lock request
 local VISUAL_RANGE = 3000 -- real metres
 local CONTRAIL_VISUAL_RANGE = 5000
+local MESSAGE_TIME = 3 -- seconds a lock message stays on the HUD
+
+-- Why the radar can't see a target, in HUD words (Signature.radarDetects reasons, plus terrain)
+local REASONS = {
+	range = "OUT OF RADAR RANGE",
+	cone = "NOT IN RADAR CONE",
+	clutter = "GROUND CLUTTER",
+	notch = "TARGET NOTCHING",
+	terrain = "TERRAIN IN THE WAY",
+}
 
 export type Contact = {
 	model: Model,
@@ -58,6 +68,8 @@ local SensorController = {
 	irLocked = false, -- held for the missile's LockTime
 	seekerCaged = false, -- the pilot switched the heat-seeker off (lock key)
 	threats = {} :: { Threat },
+	message = "", -- why a lock failed or broke, shown on the HUD until messageUntil
+	messageUntil = 0,
 	LockChanged = Signal.new(), -- (id, state)
 }
 
@@ -106,6 +118,73 @@ function SensorController:PadlockTarget(): Model?
 	return best
 end
 
+local function radarOf(jet: Model): Signature.RadarSpec?
+	local airframe = Progression.airframeForModel(jet) :: any
+	return airframe and airframe.Radar
+end
+
+-- Why your radar can't see `model` right now ("ok" if it can).
+local function reasonFor(model: Model): string
+	local jet, root = FlightController.jet, FlightController.root
+	local radar = jet and radarOf(jet)
+	local otherRoot = model.PrimaryPart
+	if not (root and radar and otherRoot) then
+		return "range"
+	end
+	local velocity = Units.velocityFromStuds(otherRoot.AssemblyLinearVelocity)
+	local ok, reason = Signature.radarDetects(radar, root.CFrame, otherRoot.Position, velocity)
+	if ok and not clearLineOfSight(root.Position, otherRoot.Position) then
+		return "terrain"
+	end
+	return reason
+end
+
+local function say(text: string)
+	SensorController.message = text
+	SensorController.messageUntil = os.clock() + MESSAGE_TIME
+end
+
+-- Explains why the lock key found nothing to lock: the reason for the jet nearest your nose.
+function SensorController:ExplainNoLock()
+	local jet, root = FlightController.jet, FlightController.root
+	if not (jet and root) then
+		return
+	end
+	if not radarOf(jet) then
+		say("NO RADAR")
+		return
+	end
+	local best, bestDot = nil, -2
+	for _, model in workspace.Jets:GetChildren() do
+		local otherRoot = model:IsA("Model") and model ~= jet and model.PrimaryPart
+		if otherRoot then
+			local dot = root.CFrame.LookVector:Dot((otherRoot.Position - root.Position).Unit)
+			if dot > bestDot then
+				best, bestDot = model, dot
+			end
+		end
+	end
+	say(if best then `NO LOCK: {REASONS[reasonFor(best)] or "NO TARGET"}` else "NO LOCK: NO TARGETS")
+end
+
+-- Shows a message on the HUD for a few seconds (e.g. "NO LOCK: PRESS T").
+function SensorController:Say(text: string)
+	say(text)
+end
+
+local function lockBroken(id: number, heading: string)
+	local model = SensorController:GetModel(id)
+	if not model then -- dropped from the contacts once the radar lost it
+		for _, other in workspace.Jets:GetChildren() do
+			if other:IsA("Model") and other:GetAttribute("JetId") == id then
+				model = other
+			end
+		end
+	end
+	local reason = if model then REASONS[reasonFor(model)] else nil
+	say(if reason then `{heading}: {reason}` else heading)
+end
+
 local function update()
 	local self = SensorController
 	local jet, root = FlightController.jet, FlightController.root
@@ -114,8 +193,7 @@ local function update()
 		self.irTargetId, self.irHeldFor, self.irLocked = 0, 0, false
 		return
 	end
-	local airframe = Progression.airframeForModel(jet) :: any
-	local radar = airframe and airframe.Radar
+	local radar = radarOf(jet)
 	local myCF = root.CFrame
 	local seen: { [number]: boolean } = {}
 
@@ -187,6 +265,9 @@ local function update()
 		local lost = not (contact and contact.onRadar)
 		local unanswered = self.acquireStart == 0 and os.clock() - self.requestedAt > 2
 		if lost or unanswered then
+			if lost then
+				lockBroken(self.acquiringId, "LOCK BROKEN")
+			end
 			self.acquiringId = 0
 		elseif self.acquireStart > 0 and os.clock() - self.acquireStart >= RADAR_LOCK_ON then
 			self.acquireStart = 0 -- asked; waiting for the server's answer
@@ -222,6 +303,12 @@ function SensorController:Init()
 	losParams.FilterDescendantsInstances = { workspace:WaitForChild("Jets") }
 
 	Net.Client.on("LockState", function(targetId: number, state: string)
+		if state == "Lost" then
+			-- The server sends no target with a lost lock: explain it against the one we had
+			lockBroken(if self.lockId ~= 0 then self.lockId else self.acquiringId, "LOCK LOST")
+		elseif state == "Locked" then
+			self.messageUntil = 0
+		end
 		self.lockId = if state == "Locked" then targetId else 0
 		self.acquiringId = 0
 		self.LockChanged:Fire(targetId, state)
