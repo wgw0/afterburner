@@ -1,7 +1,7 @@
 --!strict
 -- Hangar, the home screen (UI-02): the selected jet on a turntable, your lineup, your other jets, the
 -- Play button with the match status, and training.
--- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnDetails(id),
+-- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnDrive() (the Ground Roamer), OnDetails(id),
 --   OnLineup(ids) -> (ok, err), OnLesson(lessonId), Lessons ({ {id, name} }), TrainingNote.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -239,6 +239,17 @@ local function Hangar(props: any)
 			Disabled = not (props.CanPlay and selected),
 			OnClick = function()
 				props.OnPlay(selected)
+			end,
+		}),
+		Drive = e(C.Button, {
+			Text = "DRIVE",
+			Style = "Ghost",
+			TextSize = 14,
+			Size = UDim2.fromOffset(110, 44),
+			Position = UDim2.new(0.5, -260, 1, -102),
+			Disabled = props.OnDrive == nil,
+			OnClick = function()
+				props.OnDrive()
 			end,
 		}),
 		Details = e(C.Button, {
