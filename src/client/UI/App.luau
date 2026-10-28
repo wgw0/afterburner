@@ -163,6 +163,7 @@ local function App(props: any)
 			Status = props.Status,
 			CanPlay = props.CanPlay,
 			OnPlay = props.OnPlay,
+			OnDrive = props.OnDrive,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,

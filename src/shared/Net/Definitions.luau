@@ -16,6 +16,12 @@ local definitions: { [string]: Definition } = {
 	-- Aircraft lifecycle (§10)
 	RequestSpawn = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 1 } },
 	ReportCrash = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 1 } },
+	-- Take out (true, skin) or put away (false) the Ground Roamer (§36): returns (ok, reason)
+	RequestGroundRoamer = {
+		direction = "Function",
+		args = { "boolean", "string?" },
+		rate = { burst = 3, perSecond = 0.5 },
+	},
 	-- Pilot's throttle/afterburner/G for other players' effects, 5 Hz: throttle, afterburner, gLoad
 	FlightTelemetry = {
 		direction = "ClientToServer",
