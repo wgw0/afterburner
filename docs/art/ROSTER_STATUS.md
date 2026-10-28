@@ -21,7 +21,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | IV | Su-27S | `Su27S` | No | `art/su27s` (on `art/fa18c`) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | IV | Tornado F3 | `TornadoF3` | No | `art/tornadof3` (on `art/su27s`) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | F-16C Block 50 | `F16C` | No | `art/f16c` (on `art/tornadof3`) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | F-15E | `F15E` | No | | | | | |
+| V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Su-30SM | `Su30SM` | No | | | | | |
 | V | MiG-29SMT | `MiG29SMT` | No | | | | | |
 | V | Gripen C | `GripenC` | No | | | | | |
@@ -164,3 +164,7 @@ Built on `art/su27s`. Files in `tools/blender/out/`: `TornadoF3_base.fbx` (manif
 ## F-16C Block 50 (`art/f16c`, art only)
 
 Built on `art/tornadof3`. Files in `tools/blender/out/`: `F16C_base.fbx` (manifest `tools/Manifests/F16C.luau`), `textures/F16C_<Skin>_<Set>_<Map>.png` for the Viper, Ghost, Arctic and Night skins, `F16C_cockpit.fbx` and `F16C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F16C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F16C_<Skin>_paint_*.png` and `F16C_cockpit_*.png`). Install it like the other jets once `AircraftData/F16C.luau` exists, with `ModelName = "F16C"`.
+
+## F-15E Strike Eagle (`art/f15e`, art only)
+
+Built on `art/f16c`. Files in `tools/blender/out/`: `F15E_base.fbx` (manifest `tools/Manifests/F15E.luau`), `textures/F15E_<Skin>_<Set>_<Map>.png` for the Strike, Ghost, Splinter and Desert skins, `F15E_cockpit.fbx` and `F15E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15E_<Skin>_paint_*.png` and `F15E_cockpit_*.png`). Install it like the other jets once `AircraftData/F15E.luau` exists, with `ModelName = "F15E"`.

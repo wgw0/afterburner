@@ -102,6 +102,13 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "Arctic", DisplayName = "Arctic Splinter", Credits = 5000 },
 		{ Id = "Night", DisplayName = "Dark Grey", Credits = 5000 },
 	},
+	-- Art only so far: the F-15E has no flight data yet
+	F15E = {
+		{ Id = "Strike", DisplayName = "Gunship Grey", Default = true },
+		{ Id = "Ghost", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },
