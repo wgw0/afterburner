@@ -403,3 +403,12 @@ There are four skins: `AirDefence` (two light greys, low-visibility roundels; th
 - The jet has 36 parts and 10,776 triangles, with the F-16A's 7 hardpoints. The cockpit is 1,528 triangles, with the side stick: the HUD over the up-front controls, two multifunction displays (the left one is the radar face) and the standby instruments.
 
 There are four skins: `Viper` (two greys, low-visibility markings; the default), `Ghost` (two blues, low-visibility), `Arctic` (white and grey aggressor splinter, no national markings) and `Night` (overall dark grey, low-visibility).
+
+## 22. F-15E Strike Eagle (art only)
+
+`tools/blender/f15e_generate.py` builds the F-15E and `tools/blender/f15e_paint.py` paints it. Its Id is `F15E`; it has no flight data yet.
+
+- The F-15E's airframe is the F-15C's, so the script imports `f15c_generate.py` (its measurements, overlays and builders) and changes what the F-15E changes. The canopy runs back over the rear seat, with a frame between the cockpits, and the spine rises behind it. `ConformalTanks` run along the outsides of the intakes, under the wing roots (body texture set). `Pods` are the navigation and targeting pods under the intakes, and `RearSeat` is the second seat. The painter reuses the F-15C's panel layout, with the fuselage star moved onto the tanks.
+- The jet has 41 parts and 12,076 triangles, with 9 hardpoints: the four on the tanks' lower corners replace the F-15C's fuselage stations. The cockpit (the front one) is 1,648 triangles: the HUD over the up-front controls, three displays (the left one is the radar face) and standby instruments.
+
+There are four skins: `Strike` (gunship grey all over, low-visibility markings; the default), `Ghost` (two light greys, low-visibility), `Splinter` (three-grey splinter, full-colour markings) and `Desert` (no national markings).
