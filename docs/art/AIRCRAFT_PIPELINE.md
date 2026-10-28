@@ -480,3 +480,13 @@ There are four skins: `AirDefence` (light grey, low-visibility roundels; the def
 - The jet has 35 parts and 9,864 triangles, with 11 hardpoints: the wingtip rails, three pylons under each wing, two under the intakes and the centreline. The cockpit is 1,484 triangles, in charcoal, with the side stick: the HUD over the radar display (the middle face) and a colour display either side.
 
 There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
+
+## 30. F-22A Raptor (art only)
+
+`tools/blender/f22a_generate.py` builds the F-22A and `tools/blender/f22a_paint.py` paints it. Its Id is `F22A`; it has no flight data yet.
+
+- The reference is ZakuTalk's Commons three-view (CC BY-SA 2.0), rebuilt as a composite with both views nose left. Its two views are not at quite the same scale (the side view is 2.2% shorter), so stations and half widths are the top view's, and side-view readings go through `side()` and `Z()`, which scale them by 1.022. The scale comes from the published 18.92 m length (95.8 px/m), which gives a 13.8 m span against the published 13.56 m. In the overlays the model sits on the drawing's lines.
+- The builders are the F/A-18C's. The jet is built from the chined forebody with the frameless bubble canopy and the wide, flat centre body (`Fuselage`); `Nacelles` are the raked caret intakes running back to the engines (with dark `IntakeDucts`), and `Strakes` the chines from the intakes to the wing roots. The diamond wing (swept leading edge, forward-swept trailing edge) has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 28 degrees with rudders.
+- The jet has 38 parts and 10,812 triangles, with 8 hardpoints: six in the main weapons bay and one in each side bay. The cockpit is 1,328 triangles, in charcoal, with the side stick: the HUD over the up-front controls, the large primary display in the middle (the radar face) and two smaller displays.
+
+There are four skins: `AirDominance` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Splinter` (grey splinter, no national markings).
