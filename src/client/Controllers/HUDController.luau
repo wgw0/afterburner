@@ -257,7 +257,7 @@ local function build(): ScreenGui
 	for _, name in { "G", "Mach", "AoA" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Left)
 	end
-	for _, name in { "VS", "Throttle", "Gun", "Missile", "CM" } do
+	for _, name in { "VS", "Throttle", "Gun", "Missile", "LockNote", "CM" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Right)
 	end
 
@@ -638,6 +638,10 @@ local function update()
 		else
 			readouts.Missile.Text = ""
 		end
+		-- Why the last lock failed or broke, for a few seconds, above the missile
+		readouts.LockNote.Position = UDim2.fromOffset(rightX, bottomY - 40)
+		readouts.LockNote.Text = if os.clock() < SensorController.messageUntil then SensorController.message else ""
+		readouts.LockNote.TextColor3 = AMBER
 		readouts.CM.Position = UDim2.fromOffset(leftX, bottomY - 20)
 		readouts.CM.Text = string.format(
 			"FLR %d  CHF %d",

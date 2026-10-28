@@ -9,7 +9,8 @@ local Signature = {}
 local RAD = math.pi / 180
 Signature.REAR_ASPECT_LIMIT = 60 * RAD -- rear-aspect seekers only see a jet within this of its tail
 Signature.NOTCH_SPEED = 30 -- m/s: radial speeds below this are filtered as ground clutter
-Signature.LOW_ALTITUDE = 300 -- real metres (~114 studs): below this there is always ground clutter behind a target
+Signature.LOW_ALTITUDE = 300 -- real metres: below this there is always ground clutter behind a target
+Signature.CLUTTER_RANGE = 0.35 -- a pulse radar looking into clutter still sees this share of its range
 
 -- Angle (radians) between the target's tailpipe direction and the direction to the observer.
 -- 0 = looking straight up its tailpipe, π = head-on.
@@ -61,7 +62,8 @@ export type RadarSpec = { Range: number, Cone: number, CanNotch: boolean }
 
 -- Can this radar see the target right now? Returns (detected, reason). Line-of-sight to terrain is
 -- checked separately by the caller (it needs raycasts).
---   Pulse radar (CanNotch = false): blind when looking down into ground clutter.
+--   Pulse radar (CanNotch = false): looking down into ground clutter, it only sees close targets
+--   (CLUTTER_RANGE of its range), where the return stands out of the clutter.
 --   Pulse-Doppler (CanNotch = true): sees down, but loses targets flying perpendicular (the notch).
 function Signature.radarDetects(
 	radar: RadarSpec,
@@ -89,9 +91,10 @@ function Signature.radarDetects(
 	local clutter = lookingDown or targetLow
 	if clutter then
 		if not radar.CanNotch then
-			return false, "clutter"
-		end
-		if
+			if range > radar.Range * Signature.CLUTTER_RANGE * rcs ^ 0.25 then
+				return false, "clutter"
+			end
+		elseif
 			math.abs(Signature.radialSpeed(radarCF.Position, targetPosition, targetVelocity)) < Signature.NOTCH_SPEED
 		then
 			return false, "notch"

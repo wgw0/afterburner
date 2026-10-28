@@ -120,19 +120,21 @@ return function(ctx)
 			expect(notched).toBe(false)
 			expect(why).toBe("notch")
 		end)
-		it("a pulse radar can't look down into clutter, but sees a target above it", function()
+		it("a pulse radar only sees close targets in clutter, but sees a target above it", function()
 			local radar = { Range = 30000, Cone = 60, CanNotch = false }
 			local high = CFrame.lookAt(
 				Vector3.new(0, Units.toStuds(5000), 0),
-				Vector3.new(0, Units.toStuds(3000), -Units.toStuds(8000))
+				Vector3.new(0, Units.toStuds(3000), -Units.toStuds(16000))
 			)
 			local _, why = Signature.radarDetects(
 				radar,
 				high,
-				Vector3.new(0, Units.toStuds(3000), -Units.toStuds(8000)),
+				Vector3.new(0, Units.toStuds(3000), -Units.toStuds(16000)),
 				Vector3.new(0, 0, 250)
 			)
 			expect(why).toBe("clutter")
+			local close = Vector3.new(0, Units.toStuds(3000), -Units.toStuds(8000))
+			expect((Signature.radarDetects(radar, CFrame.lookAt(high.Position, close), close, Vector3.zero))).toBe(true)
 			local low = CFrame.lookAt(
 				Vector3.new(0, Units.toStuds(3000), 0),
 				Vector3.new(0, Units.toStuds(5000), -Units.toStuds(8000))

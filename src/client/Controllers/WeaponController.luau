@@ -210,7 +210,8 @@ local function fireMissile()
 	if WeaponData.isRadar(missile) then
 		target = SensorController.lockId
 		if target == 0 then
-			return -- radar missiles need a lock
+			SensorController:Say("NO RADAR LOCK") -- radar missiles need a lock
+			return
 		end
 	elseif SensorController.irLocked then
 		target = SensorController.irTargetId
@@ -246,6 +247,8 @@ local function toggleLock()
 	end
 	if best ~= 0 then
 		SensorController:StartRadarLock(best)
+	else
+		SensorController:ExplainNoLock()
 	end
 end
 
