@@ -7,6 +7,16 @@ return {
 	length = 1890,
 	clearance = 46.95,
 	towerHeight = 136,
+	profile = {
+		roadMid = 50,
+		roadEnd = 18,
+		endY = 945,
+		towerY = 494,
+		anchorY = 799,
+		deckDepth = 3.05,
+		roadHalf = 11.43,
+		walkOut = 15.9,
+	},
 	triangles = 19044,
 	sets = {
 		Steel = {

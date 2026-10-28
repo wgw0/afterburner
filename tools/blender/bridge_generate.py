@@ -387,6 +387,17 @@ def write_manifest(out_dir, luau_path):
         "length": 2 * END_Y,
         "clearance": round(road_z(0) - 3.05, 2),
         "towerHeight": TOWER_TOP,
+        # The deck's vertical curve and the stations the placement tool (tools/BridgeBuilder.luau) checks
+        "profile": {
+            "roadMid": ROAD_MID,
+            "roadEnd": ROAD_END,
+            "endY": END_Y,
+            "towerY": TOWER_Y,
+            "anchorY": ANCHOR_Y,
+            "deckDepth": 3.05,
+            "roadHalf": ROAD_HALF,
+            "walkOut": WALK_OUT,
+        },
         "triangles": sum(p["triangles"] for p in parts),
         "sets": {
             "Steel": {"tile": TILE["Steel"]},
