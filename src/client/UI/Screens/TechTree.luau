@@ -190,13 +190,30 @@ local function TechTreeScreen(props: any)
 	local columns: { [string]: any } = {
 		Layout = C.List({ Horizontal = true, Gap = 18, Align = "Center" }),
 	}
+	-- Each tier's row is as tall as its tallest branch (several jets in a tier stack in one row)
+	local rowHeight: { [number]: number } = {}
+	local total = 30
+	for tier = 1, TechTree.MAX_TIER do
+		local most = 1
+		for _, branch in TechTree.BRANCHES do
+			local count = 0
+			for _, node in TechTree.branch(branch) do
+				if node.Tier == tier then
+					count += 1
+				end
+			end
+			most = math.max(most, count)
+		end
+		rowHeight[tier] = most * CARD_H + (most - 1) * 8
+		total += 14 + rowHeight[tier]
+	end
 	-- Tier labels down the left
 	local tiers: { [string]: any } = { Layout = C.List({ Gap = 14 }) }
 	tiers.Head = e(C.Label, { Text = "", Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 0 })
 	for tier = 1, TechTree.MAX_TIER do
 		tiers[`T{tier}`] = e(C.Label, {
 			Text = `TIER {TIER_NAMES[tier]}`,
-			Size = UDim2.new(1, 0, 0, CARD_H),
+			Size = UDim2.new(1, 0, 0, rowHeight[tier]),
 			Color = Theme.Dim,
 			Heavy = true,
 			TextSize = 18,
@@ -234,7 +251,7 @@ local function TechTreeScreen(props: any)
 				end
 			end
 			cards[`T{tier}`] = e("Frame", {
-				Size = UDim2.new(1, 0, 0, math.max(count, 1) * CARD_H + (math.max(count, 1) - 1) * 8),
+				Size = UDim2.new(1, 0, 0, rowHeight[tier]),
 				BackgroundTransparency = 1,
 				LayoutOrder = tier,
 			}, row)
@@ -252,11 +269,11 @@ local function TechTreeScreen(props: any)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	}, {
 		Padding = e("UIPadding", { PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) }),
-		Row = e("Frame", { Size = UDim2.new(1, 0, 0, 640), BackgroundTransparency = 1 }, columns),
+		Row = e("Frame", { Size = UDim2.new(1, 0, 0, total), BackgroundTransparency = 1 }, columns),
 		Hint = e(C.Label, {
 			Text = `Free RP: {C.number(data.FreeRP)}  ·  Research spends RP from the best jet you own that leads to it, then free RP.`,
 			Size = UDim2.new(1, 0, 0, 20),
-			Position = UDim2.fromOffset(0, 650),
+			Position = UDim2.fromOffset(0, total + 16), -- below everything
 			Align = "Center",
 			Color = Theme.Dim,
 			TextSize = 13,

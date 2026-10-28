@@ -30,7 +30,10 @@ local GRID = 8 -- the height field is sampled every 8 studs and interpolated per
 local WATER = WorldEdge.WATER -- sea surface
 local SEED = 2026
 local ISLAND_RADIUS = 840
-local ISLAND_FLAT = 420 -- the runway area stays flat at y = 0
+local ISLAND_FLAT = 420 -- the runway area stays flat at ISLAND_HEIGHT
+-- The flat's height above the sea. Near the sea surface, distant terrain (drawn in coarser voxels) sinks
+-- under the water, so the runway looked flooded from afar.
+local ISLAND_HEIGHT = 8
 local BASE_HEIGHT = 5.6 -- airbase ground level
 local SPAWN_CLEARANCE = 196 -- spawn at least this far above the ground
 local SHELL = 4 -- studs of solid terrain under the surface, at least
@@ -129,7 +132,7 @@ local function rawHeight(x: number, z: number): number
 		local headland = 92.4 * math.exp(-((x + 448) ^ 2 + (z + 644) ^ 2) / (117.6 * 117.6))
 		local land = rim * smoothstep(0, 0.15, s) + headland
 		if r <= islandEdge then
-			return math.max(land - smoothstep(0.85, 1, s) * 2.24, WATER + 0.28 + (1 - s) * 0.56)
+			return math.max(land - smoothstep(0.85, 1, s) * 2.24, WATER + 0.28 + (1 - s) * (ISLAND_HEIGHT - 0.28))
 		end
 		-- Shelving into the sea
 		return lerp(WATER - 0.56, WATER - 4.48, smoothstep(islandEdge, islandEdge + 252, r))
@@ -379,6 +382,30 @@ function StraitBuilder.edges(part: number?, parts: number?): string
 		end
 	end
 	return string.format("edges %d/%d: %d chunks in %.0f s", index, count, written, os.clock() - started)
+end
+
+-- Rewrites only the chunks around the central island (after a change to its shape).
+function StraitBuilder.island(): string
+	local strips = (2 * HALF) // CHUNK
+	local reach = ISLAND_RADIUS + 400
+	local started = os.clock()
+	local written = 0
+	for sx = 0, strips - 1 do
+		for sz = 0, strips - 1 do
+			local x0, z0 = -HALF + sx * CHUNK, -HALF + sz * CHUNK
+			if math.max(math.abs(x0 + CHUNK / 2), math.abs(z0 + CHUNK / 2)) < reach then
+				Terrain:FillRegion(
+					Region3.new(Vector3.new(x0, -64, z0), Vector3.new(x0 + CHUNK, 640, z0 + CHUNK)),
+					4,
+					Enum.Material.Air
+				)
+				writeChunk(x0, z0)
+				written += 1
+				task.wait()
+			end
+		end
+	end
+	return string.format("island: %d chunks in %.0f s", written, os.clock() - started)
 end
 
 local function prop(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, material: Enum.Material)

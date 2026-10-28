@@ -1,5 +1,5 @@
 --!strict
--- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). Phase 5 covers Tiers I–III.
+-- The research graph (DESIGN §6, DEVELOPMENT.md §23.3). Tiers I–IV so far.
 --   Requires: research needs RP earned in one of these jets (any branch, same or lower tier), topped
 --     up from the free RP pool. Owning a prerequisite is what makes a node researchable.
 --   RP / Credits: research cost (RP) and purchase cost once researched (Credits).
@@ -16,6 +16,7 @@ export type Node = {
 
 local TIER_I = { "F5E", "MiG21bis", "MirageIII" }
 local TIER_II = { "F4E", "MiG23MLD", "MirageF1" }
+local TIER_III = { "F16A", "F14A", "MiG29A", "Mirage2000C" }
 
 local NODES: { Node } = {
 	{ Id = "F5E", Tier = 1, Branch = "NATO", Requires = {}, RP = 0, Credits = 0 },
@@ -29,6 +30,11 @@ local NODES: { Node } = {
 	-- The F-14A follows the F-16A in its branch: the Phoenix makes it the strongest Tier III jet
 	{ Id = "F14A", Tier = 3, Branch = "NATO", Requires = { "F16A", "MiG29A" }, RP = 9500, Credits = 15500 },
 	{ Id = "Mirage2000C", Tier = 3, Branch = "Europe", Requires = TIER_II, RP = 7500, Credits = 12500 },
+	{ Id = "F15C", Tier = 4, Branch = "NATO", Requires = TIER_III, RP = 22000, Credits = 38000 },
+	-- The F/A-18C is the cheaper NATO Tier IV jet; the Eagle and Flanker are the benchmarks
+	{ Id = "FA18C", Tier = 4, Branch = "NATO", Requires = TIER_III, RP = 19000, Credits = 33000 },
+	{ Id = "Su27S", Tier = 4, Branch = "East", Requires = TIER_III, RP = 22000, Credits = 38000 },
+	{ Id = "TornadoF3", Tier = 4, Branch = "Europe", Requires = TIER_III, RP = 19000, Credits = 33000 },
 }
 
 local byId: { [string]: Node } = {}
@@ -44,7 +50,7 @@ local TechTree = {}
 
 TechTree.NODES = table.freeze(NODES)
 TechTree.BRANCHES = table.freeze({ "NATO", "East", "Europe" })
-TechTree.MAX_TIER = 3
+TechTree.MAX_TIER = 4
 
 function TechTree.get(id: string): Node?
 	return byId[id]
