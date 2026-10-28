@@ -12,8 +12,8 @@ well.
   * the chines from the intakes to the wing roots
   * the trapezoidal wing with leading-edge flaps, flaperons and ailerons, and the tailerons on the elevon
     controls
-  * twin fins canted out 25 degrees with rudders, the single nozzle with its afterburner cone, ejection
-    seat, landing gear (struts, wheels, doors)
+  * the tail booms either side of the nozzle, carrying twin fins canted out 25 degrees with rudders
+  * the single nozzle with its afterburner cone, ejection seat, landing gear (struts, wheels, doors)
 
 Run headless:
   blender -b --python tools/blender/f35a_generate.py -- --out <dir> --manifest-luau tools/Manifests/F35A.luau
@@ -121,14 +121,19 @@ kit.AILERON_SPAN = (3.95, 5.30)
 kit.RAIL_Y = (wing_le_y(W(643)) + wing_te_y(W(643))) / 2
 kit.RAIL_LENGTH = 0.5
 
-STAB_ROOT_X, STAB_TIP_X = W(213), W(443)
+# Tail booms: the fairings either side of the nozzle that carry the fins and the tailerons, (xd, half width m,
+# half height m) at x = BOOM_X, centred at BOOM_Z
+BOOM_X, BOOM_Z = 1.60, 0.45
+BOOM = [(1250, 0.06, 0.05), (1350, 0.24, 0.22), (1500, 0.28, 0.26), (1750, 0.26, 0.22), (1860, 0.08, 0.06)]
+
+STAB_ROOT_X, STAB_TIP_X = BOOM_X, W(443)
 STAB_ROOT_LE, STAB_ROOT_TE = Y(1590), Y(1845)
 STAB_TIP_LE, STAB_TIP_TE = Y(1680), Y(1795)
-STAB_Z = Z(345)
+STAB_Z = BOOM_Z
 STAB_THICKNESS = 0.04
 
-FIN_X, FIN_CANT = W(180), math.radians(25)
-FIN_ROOT_Z, FIN_TIP_Z = Z(300), Z(53)
+FIN_X, FIN_CANT = BOOM_X - 0.05, math.radians(25)
+FIN_ROOT_Z, FIN_TIP_Z = BOOM_Z + 0.20, Z(53)
 FIN_ROOT_LE, FIN_ROOT_TE = Y(1320), Y(1655)
 FIN_TIP_LE, FIN_TIP_TE = Y(1630), Y(1775)
 FIN_THICKNESS = 0.045
@@ -310,6 +315,16 @@ def build_tail(col_wings, col_body):
                         hinge={"axis": tuple(b - a), "min": -30, "max": 30, "control": "Rudder"})
 
 
+def build_booms(col):
+    """The tail booms either side of the nozzle, which the fins sit on and the tailerons pivot from."""
+    parts = []
+    for side in (1, -1):
+        rings = [rounded_ring(side * BOOM_X, lambda _z, xd=xd: Y(xd), hw, BOOM_Z, hh, 2.6, 16) for xd, hw, hh in BOOM]
+        parts.append(kit.lofted(rings, True, True))
+    v, f = kit.merge(*parts)
+    kit.make_object("TailBooms", v, f, col, "Body")
+
+
 def build_engine(col):
     p0, p1 = (0, NOZZLE_Y0, NOZZLE_Z), (0, NOZZLE_Y1, NOZZLE_Z)
     nv, nf = kit.cylinder(p0, p1, NOZZLE_R, 20, radius1=NOZZLE_R - 0.05, caps=False)
@@ -395,6 +410,7 @@ def main():
     kit.build_fuselage(cols["Body"])
     build_intakes(cols["Body"])
     build_lerx(cols["Body"])
+    build_booms(cols["Body"])
     kit.build_canopy(cols["Glass"], cols["Body"])
     kit.build_wings(cols["Wings"])
     build_tail(cols["Wings"], cols["Body"])

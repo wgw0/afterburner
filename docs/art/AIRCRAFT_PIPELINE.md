@@ -497,7 +497,8 @@ There are four skins: `AirDominance` (two greys, low-visibility markings; the de
 
 - The reference is the Commons three-view made from the programme's public-domain renders: shaded images, so the outlines are silhouettes and the fit is looser than from a line drawing (about 5 cm). Its side view and its top view (turned nose left) were rebuilt as a composite. The scale comes from the published 15.67 m length (119.3 px/m), which gives an 11.0 m span against the published 10.7 m.
 - The builders are the F/A-18C's (as for the F-22A), with one engine. The jet is built from the chined forebody with the bubble canopy and the wide body over the engine (`Fuselage`); `Nacelles` are the intakes either side of the cockpit (with dark `IntakeDucts`), and `Strakes` the chines to the wing roots. The trapezoidal wing has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 25 degrees with rudders.
-- The jet has 36 parts and 10,536 triangles, with 10 hardpoints: two in each internal bay and three pylons under each wing. The cockpit is 1,344 triangles, in charcoal, with the side stick: the panoramic display as two large faces (the left one is the radar), with standby instruments under them. The real jet has no head-up display; the cockpit keeps one for the game's sight.
+- `TailBooms` are the fairings either side of the nozzle: the fins sit on them and the tailerons pivot from them (without them both floated clear of the body).
+- The jet has 37 parts and 10,856 triangles, with 10 hardpoints: two in each internal bay and three pylons under each wing. The cockpit is 1,344 triangles, in charcoal, with the side stick: the panoramic display as two large faces (the left one is the radar), with standby instruments under them. The real jet has no head-up display; the cockpit keeps one for the game's sight.
 
 There are four skins: `Stealth` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Aggressor` (grey splinter, no national markings).
 
@@ -510,3 +511,15 @@ There are four skins: `Stealth` (two greys, low-visibility markings; the default
 - The jet has 38 parts and 11,212 triangles, with 10 hardpoints: the two main bays in tandem (two stations each), the small bays under the extensions and two pylons under each wing. The cockpit is 1,720 triangles, in charcoal: the HUD over two large colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Grey` (two light greys, low-visibility) and `Desert` (no national markings).
+
+## 33. Tempest-class concept (art only)
+
+`tools/blender/tempest_generate.py` builds the Tempest and `tools/blender/tempest_paint.py` paints it. Its Id is `Tempest`; it has no flight data yet.
+
+- The Tempest is a fictionalised sixth-generation concept, not a real aircraft, so it is designed rather than measured: its tables are in centimetres from the nose tip, on the same scheme as the measured jets. It follows the general shape of the published sixth-generation concepts without copying any one of them, and carries no manufacturer names or logos. It is 17.5 m long with a 13.6 m span.
+- The builders are the F-22A's, without the tailplane. The jet is built from a long chined forebody with a large bubble canopy blending into a wide, flat body (`Fuselage`); `Nacelles` are caret intakes under the leading-edge extensions (`Strakes`) running back to two engines. The broad tailless delta has a forward-swept trailing edge, leading-edge flaps and two elevons a side: the kit builds them as `Flap` and `Aileron` parts, and `elevons()` puts all four on the elevon controls. Twin fins are canted out 35 degrees, with rudders.
+- The jet has 36 parts and 10,332 triangles, with 8 hardpoints: six in the large internal bay and one in each side bay. The cockpit is 1,320 triangles, in charcoal, with the side stick: a wide display as two large faces (the left one is the radar) and a slim HUD for the game's sight.
+- It was built after the world scale changed to 1 stud = 1 m, so its manifests say `studsPerMetre = 1`. The assembler takes the scale from `Config.Scale`, so the earlier manifests' 3.5714 does no harm.
+- Its marking is a fictional roundel: charcoal ring, white, teal centre.
+
+There are four skins: `Shadow` (two dark greys, low-visibility markings; the default), `Storm` (light grey, full-colour markings), `Night` (near-black blue-grey, low-visibility) and `Demonstrator` (white and blue-grey splinter, full-colour markings).
