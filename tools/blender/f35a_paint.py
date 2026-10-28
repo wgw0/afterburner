@@ -26,7 +26,7 @@ def edge(fn):
 
 
 LAYOUT = {
-    "body": ["Fuselage", "Nacelles", "Strakes"],
+    "body": ["Fuselage", "Nacelles", "Strakes", "TailBooms"],
     "frames": [150, 230, 590, 700, 850, 1000, 1150, 1300, 1420],
     "side_lines": [(0.40, 100, 550), (0.10, 600, 1450), (-0.40, 300, 1400)],
     "side_panels": [(150, 230, -0.10, 0.20), (800, 950, -0.70, -0.40), (1100, 1200, 0.30, 0.60)],
