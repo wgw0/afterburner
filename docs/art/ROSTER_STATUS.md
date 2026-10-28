@@ -29,10 +29,10 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | VI | Su-35S | `Su35S` | Yes | master | Done | VKS (default), Dark, Flanker, Desert | Done | Installed with four skins and the cockpit; spawned in play |
 | VI | Eurofighter Typhoon | `Typhoon` | Yes | master | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Installed with four skins and the cockpit; spawned in play |
 | VI | Rafale C | `RafaleC` | Yes | master | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Installed with four skins and the cockpit; spawned in play |
-| VII | F-22A Raptor | `F22A` | No | `art/f22a` (on `art/rafalec`) | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VII | F-35A | `F35A` | No | `art/f35a` (on `art/f22a`) | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VII | Su-57 | `Su57` | No | `art/su57` (on `art/f35a`) | Done | VKS (default), Dark, Grey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VIII | Tempest-class concept | `Tempest` | No | `art/tempest` (on `master`) | Done | Shadow (default), Storm, Night, Demonstrator | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VII | F-22A Raptor | `F22A` | Yes | master | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Installed with four skins and the cockpit; spawned in play |
+| VII | F-35A | `F35A` | Yes | master | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Installed with four skins and the cockpit; spawned in play |
+| VII | Su-57 | `Su57` | Yes | master | Done | VKS (default), Dark, Grey, Desert | Done | Installed with four skins and the cockpit; spawned in play |
+| VIII | Tempest-class concept | `Tempest` | Yes | master | Done | Shadow (default), Storm, Night, Demonstrator | Done | Installed with four skins and the cockpit; spawned in play |
 
 ## Cockpit system (`art/cockpits`)
 
