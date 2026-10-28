@@ -25,10 +25,10 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | Su-30SM | `Su30SM` | Yes | master | Done | VKS (default), Blue, Naval, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
 | V | MiG-29SMT | `MiG29SMT` | Yes | master | Done | VKS (default), Blue, Splinter, Desert | Done | Installed with four skins and the cockpit; spawned and flown in play |
 | V | Gripen C | `GripenC` | Yes | master | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Installed with four skins and the cockpit; spawned and flown in play |
-| VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Eurofighter Typhoon | `Typhoon` | No | `art/typhoon` (on `art/su35s`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Rafale C | `RafaleC` | No | `art/rafalec` (on `art/typhoon`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VI | F/A-18E Super Hornet | `FA18E` | Yes | master | Done | Navy (default), CAG, Adversary, Ghost | Done | Installed with four skins and the cockpit; spawned in play |
+| VI | Su-35S | `Su35S` | Yes | master | Done | VKS (default), Dark, Flanker, Desert | Done | Installed with four skins and the cockpit; spawned in play |
+| VI | Eurofighter Typhoon | `Typhoon` | Yes | master | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Installed with four skins and the cockpit; spawned in play |
+| VI | Rafale C | `RafaleC` | Yes | master | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Installed with four skins and the cockpit; spawned in play |
 | VII | F-22A Raptor | `F22A` | No | `art/f22a` (on `art/rafalec`) | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | F-35A | `F35A` | No | `art/f35a` (on `art/f22a`) | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | Su-57 | `Su57` | No | `art/su57` (on `art/f35a`) | Done | VKS (default), Dark, Grey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
