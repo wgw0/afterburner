@@ -96,8 +96,8 @@ return function(ctx)
 
 	describe("Signature", function()
 		local jet = CFrame.new(0, Units.toStuds(3000), 0) -- facing -Z
-		local behind = jet.Position + Vector3.new(0, 0, 500)
-		local ahead = jet.Position + Vector3.new(0, 0, -500)
+		local behind = jet.Position + Vector3.new(0, 0, 140)
+		local ahead = jet.Position + Vector3.new(0, 0, -140)
 		it("rear-aspect seekers can't see a jet head-on; all-aspect can", function()
 			expect(Signature.ir(jet, 1, false, ahead, true)).toBe(0)
 			expect(Signature.ir(jet, 1, false, ahead, false) > 0).toBe(true)
@@ -270,15 +270,15 @@ return function(ctx)
 		end)
 
 		it("midcourse: steers at the true target while the launcher keeps its lock", function()
-			local arh = Guidance.newARH(Vector3.new(0, 0, -50000), Vector3.zero, 0)
-			local p = Guidance.arhTrack(arh, missile, spec, target(-40000), true, false, 0.1, 1)
-			expect(p).toBe(Vector3.new(0, 0, -40000))
+			local arh = Guidance.newARH(Vector3.new(0, 0, -14000), Vector3.zero, 0)
+			local p = Guidance.arhTrack(arh, missile, spec, target(-11200), true, false, 0.1, 1)
+			expect(p).toBe(Vector3.new(0, 0, -11200))
 			expect(arh.active).toBe(false)
 		end)
 
 		it("lock lost in midcourse: flies to the last known position, extrapolated (not dumb)", function()
-			local arh = Guidance.newARH(Vector3.new(0, 0, -40000), Vector3.new(100, 0, 0), 0)
-			local p = Guidance.arhTrack(arh, missile, spec, target(-40000), false, false, 0.1, 2) :: Vector3
+			local arh = Guidance.newARH(Vector3.new(0, 0, -11200), Vector3.new(100, 0, 0), 0)
+			local p = Guidance.arhTrack(arh, missile, spec, target(-11200), false, false, 0.1, 2) :: Vector3
 			expect(p ~= nil).toBe(true)
 			expect(p.X > 0).toBe(true) -- moved with the last known velocity
 			expect(arh.lost).toBe(false)
@@ -289,24 +289,24 @@ return function(ctx)
 			local arh = Guidance.newARH(Vector3.new(0, 0, -near), Vector3.zero, 0)
 			Guidance.arhTrack(arh, missile, spec, target(-near), true, false, 0.1, 1)
 			expect(arh.active).toBe(true)
-			local p = Guidance.arhTrack(arh, missile, spec, target(-near + 50), false, false, 0.1, 1.1)
-			expect(p).toBe(Vector3.new(0, 0, -near + 50))
+			local p = Guidance.arhTrack(arh, missile, spec, target(-near + 14), false, false, 0.1, 1.1)
+			expect(p).toBe(Vector3.new(0, 0, -near + 14))
 		end)
 
 		it("an active seeker loses a target outside its gimbal or one that notches for over a second", function()
 			local arh = Guidance.newARH(nil, nil, 0)
 			arh.active = true
-			local behind = { position = Vector3.new(0, 0, 5000), velocity = Vector3.zero }
+			local behind = { position = Vector3.new(0, 0, 1400), velocity = Vector3.zero }
 			expect((Guidance.arhTrack(arh, missile, spec, behind, true, false, 0.1, 1))).toBe(nil)
 			expect(arh.lost).toBe(true)
 			local notched = Guidance.newARH(nil, nil, 0)
 			notched.active = true
 			for _ = 1, 9 do
-				Guidance.arhTrack(notched, missile, spec, target(-5000), false, true, 0.1, 1)
+				Guidance.arhTrack(notched, missile, spec, target(-1400), false, true, 0.1, 1)
 			end
 			expect(notched.lost).toBe(false) -- 0.9 s
 			for _ = 1, 3 do
-				Guidance.arhTrack(notched, missile, spec, target(-5000), false, true, 0.1, 1)
+				Guidance.arhTrack(notched, missile, spec, target(-1400), false, true, 0.1, 1)
 			end
 			expect(notched.lost).toBe(true)
 		end)

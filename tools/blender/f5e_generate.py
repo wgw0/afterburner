@@ -21,7 +21,7 @@ and, with --manifest-luau, the same manifest as a Luau module for the Studio ass
 Axes. Blender: X right, Y forward (the nose points +Y), Z up. With the FBX exporter's default
 Forward -Z / Up Y, Blender +Y becomes -Z, which is the nose direction the game's model contract uses.
 The manifest is written in Roblox axes: x right, y up, z aft (nose toward -z). Units: metres
-(1 m = 3.5714 studs in the game). The origin sits at the centre of gravity (25% of the mean
+(1 m = 1 stud in the game). The origin sits at the centre of gravity (25% of the mean
 aerodynamic chord), the point the flight model rotates the jet about.
 
 Run headless:
@@ -41,7 +41,7 @@ from mathutils import Vector
 
 AIRFRAME = "F5E"
 LENGTH = 14.45  # metres, pitot to nozzle (written to the manifest)
-STUDS_PER_METRE = 1 / 0.28
+STUDS_PER_METRE = 1.0  # Config/Scale.STUDS_PER_METRE
 
 # ---------------------------------------------------------------------------------------------------
 # Reference. Shapes are measured from the Wikimedia Commons three-view "Northrop F-5E Tiger II

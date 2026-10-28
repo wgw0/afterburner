@@ -119,9 +119,9 @@ return function(ctx)
 				local p = part.Position
 				local inside = math.abs(p.X) < Scale.MAP_HALF_EXTENT and math.abs(p.Z) < Scale.MAP_HALF_EXTENT
 				expect(inside).toBe(true)
-				-- Nothing solid within 300 studs below or 1,500 studs ahead
-				expect(workspace:Raycast(p, Vector3.new(0, -300, 0), params)).toBe(nil)
-				expect(workspace:Raycast(p, part.CFrame.LookVector * 1500, params)).toBe(nil)
+				-- Nothing solid within 84 studs below or 420 studs ahead
+				expect(workspace:Raycast(p, Vector3.new(0, -84, 0), params)).toBe(nil)
+				expect(workspace:Raycast(p, part.CFrame.LookVector * 420, params)).toBe(nil)
 				count += 1
 			end
 			expect(count >= 8).toBe(true)

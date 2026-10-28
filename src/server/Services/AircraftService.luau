@@ -44,8 +44,8 @@ export type SpawnOptions = {
 }
 
 local CRASH_GRACE = 1.0 -- seconds after spawn before crash checks apply
-local COLLISION_DISTANCE = 16 -- studs between roots counts as a mid-air collision
-local CRASH_REPORT_RANGE = 150 -- studs: a reported crash must be this close to the ground
+local COLLISION_DISTANCE = 4.5 -- studs between roots counts as a mid-air collision
+local CRASH_REPORT_RANGE = 42 -- studs: a reported crash must be this close to the ground
 local OUT_OF_BOUNDS_SECONDS = 10 -- outside the play area this long and the jet is lost
 -- Extremities (Root attachments) whose paths are checked too, so a wingtip clipping a hill in a bank or
 -- the nose or tail striking first counts as a crash, not only the centre of mass hitting.
@@ -80,7 +80,7 @@ end
 local function spawnCFrame(id: number): CFrame
 	-- Spread spawns around a ring so simultaneous spawns never overlap, all heading toward the test range.
 	local angle = (id * 137.5) % 360
-	local offset = CFrame.Angles(0, math.rad(angle), 0) * Vector3.new(0, 0, 2500)
+	local offset = CFrame.Angles(0, math.rad(angle), 0) * Vector3.new(0, 0, 700)
 	local position = Vector3.new(0, Flight.SPAWN_ALTITUDE_STUDS, 0) + offset
 	return CFrame.lookAt(position, Vector3.new(0, Flight.SPAWN_ALTITUDE_STUDS, 0))
 end
@@ -284,9 +284,9 @@ local function checkCollisions()
 		jet.lastPosition = position
 		local length = travel.Magnitude
 		local crashed = false
-		if length > 0.01 and length < 2000 then
+		if length > 0.01 and length < 560 then
 			-- The path since last tick, extended a little ahead for the nose.
-			crashed = workspace:Raycast(position - travel, travel + travel.Unit * 6, worldParams) ~= nil
+			crashed = workspace:Raycast(position - travel, travel + travel.Unit * 1.7, worldParams) ~= nil
 		end
 		for _, name in CRASH_PROBES do
 			local probe = jet.root:FindFirstChild(name)
@@ -297,7 +297,7 @@ local function checkCollisions()
 			local last = jet.lastProbes[name]
 			jet.lastProbes[name] = here
 			local step = if last then here - last else Vector3.zero
-			if not crashed and step.Magnitude > 0.01 and step.Magnitude < 2000 then
+			if not crashed and step.Magnitude > 0.01 and step.Magnitude < 560 then
 				crashed = workspace:Raycast(last :: Vector3, step, worldParams) ~= nil
 			end
 		end

@@ -4,11 +4,13 @@
 --   require(game.ServerStorage.Tools.GreyboxBuilder).install()            -- every greybox jet
 --   require(game.ServerStorage.Tools.GreyboxBuilder).install({ "F16A" })  -- just these
 -- Only replaces models marked Greybox = true, so it never overwrites final art.
--- Dimensions are in metres at the visual scale (1 stud = 0.28 m); the nose points along -Z.
+-- Dimensions are in metres at the visual scale (Config/Scale.STUDS_PER_METRE); the nose points along -Z.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local STUDS = 1 / 0.28
+local Scale = require(ReplicatedStorage.Shared.Config.Scale)
+
+local STUDS = Scale.STUDS_PER_METRE
 local RAD = math.pi / 180
 
 type PartSpec = {

@@ -40,11 +40,11 @@ local active: { [Model]: JetFx } = {}
 local function trailPair(root: BasePart, anchor: Attachment, name: string, trove: Trove.Trove): Trail
 	local a0 = Instance.new("Attachment")
 	a0.Name = name .. "0"
-	a0.Position = anchor.Position + Vector3.new(0, 0.15, 0)
+	a0.Position = anchor.Position + Vector3.new(0, 0.042, 0)
 	a0.Parent = root
 	local a1 = Instance.new("Attachment")
 	a1.Name = name .. "1"
-	a1.Position = anchor.Position - Vector3.new(0, 0.15, 0)
+	a1.Position = anchor.Position - Vector3.new(0, 0.042, 0)
 	a1.Parent = root
 	local trail = Instance.new("Trail")
 	trail.Name = name
@@ -75,7 +75,7 @@ local function setup(model: Model)
 		if nozzle:IsA("Attachment") and string.match(nozzle.Name, "^Nozzle%d+$") then
 			local tail = Instance.new("Attachment")
 			tail.Name = nozzle.Name .. "FlameTail"
-			tail.Position = nozzle.Position + Vector3.new(0, 0, 14)
+			tail.Position = nozzle.Position + Vector3.new(0, 0, 3.9)
 			tail.Parent = root
 			local beam = Instance.new("Beam")
 			beam.Attachment0 = nozzle
@@ -84,14 +84,14 @@ local function setup(model: Model)
 			beam.LightEmission = 1
 			beam.LightInfluence = 0
 			beam.Color = FLAME_COLOUR
-			beam.Width0 = 1.8
-			beam.Width1 = 0.2
+			beam.Width0 = 0.5
+			beam.Width1 = 0.056
 			beam.Transparency = NumberSequence.new(0.1, 1)
 			beam.Enabled = false
 			beam.Parent = root
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 150, 60)
-			light.Range = 30
+			light.Range = 8.4
 			light.Brightness = 0
 			light.Parent = nozzle
 			table.insert(fx.flames, beam)
@@ -99,11 +99,11 @@ local function setup(model: Model)
 			local smoke = Instance.new("ParticleEmitter")
 			smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
 			smoke.Color = ColorSequence.new(Color3.fromRGB(60, 60, 60), Color3.fromRGB(25, 25, 25))
-			smoke.Size = NumberSequence.new(3, 14)
+			smoke.Size = NumberSequence.new(0.84, 3.9)
 			smoke.Transparency = NumberSequence.new(0.35, 1)
 			smoke.Lifetime = NumberRange.new(2.5, 4)
 			smoke.Rate = 40
-			smoke.Speed = NumberRange.new(2, 6)
+			smoke.Speed = NumberRange.new(0.56, 1.7)
 			smoke.EmissionDirection = Enum.NormalId.Back
 			smoke.Enabled = false
 			smoke.Parent = nozzle
@@ -112,11 +112,11 @@ local function setup(model: Model)
 			fire.Texture = "rbxasset://textures/particles/fire_main.dds"
 			fire.Color = ColorSequence.new(Color3.fromRGB(255, 200, 110), Color3.fromRGB(255, 70, 20))
 			fire.LightEmission = 1
-			fire.Size = NumberSequence.new(4, 1)
+			fire.Size = NumberSequence.new(1.1, 0.28)
 			fire.Transparency = NumberSequence.new(0.1, 1)
 			fire.Lifetime = NumberRange.new(0.3, 0.6)
 			fire.Rate = 60
-			fire.Speed = NumberRange.new(4, 10)
+			fire.Speed = NumberRange.new(1.1, 2.8)
 			fire.EmissionDirection = Enum.NormalId.Back
 			fire.Enabled = false
 			fire.Parent = nozzle
@@ -178,7 +178,7 @@ local function update()
 		for i, beam in fx.flames do
 			beam.Enabled = afterburner or throttle > 0.95
 			local strength = if afterburner then 1 else 0.35
-			beam.Width0 = 1.8 * strength * flicker
+			beam.Width0 = 0.5 * strength * flicker
 			fx.lights[i].Brightness = if afterburner then 3 * flicker else 0
 		end
 		local altitude = Units.altitudeMetres(root.Position.Y)

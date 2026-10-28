@@ -16,7 +16,7 @@ return function(ctx)
 	local F5E = AircraftData.get("F5E") :: any
 	local GUN = WeaponData.get("M39A2_Twin") :: any
 	local DT = 1 / 30
-	local HITBOX = Vector3.new(26, 7, 48) -- studs, rough F-5E
+	local HITBOX = Vector3.new(7.3, 2, 13.4) -- studs, rough F-5E
 
 	type Pilot = {
 		state: any,
@@ -59,8 +59,8 @@ return function(ctx)
 			target = { id = 1, cframe = other.state.cframe, velocity = other.state.velocity },
 			missile = nil,
 			gun = GUN,
-			mapHalfExtent = 20000,
-			ceiling = 20000,
+			mapHalfExtent = 5600,
+			ceiling = 5600,
 			maxG = F5E.MaxG,
 			cornerSpeed = FlightModel.cornerSpeed(F5E, me.state.altitude),
 		}
@@ -73,8 +73,8 @@ return function(ctx)
 			newPilot(CFrame.lookAt(Vector3.new(0, altitude, 0), Vector3.new(0, altitude, -1)), profileA, seed, false)
 		local startB = if passiveB
 			then CFrame.lookAt(
-				Vector3.new(60, altitude, -Units.toStuds(1200)),
-				Vector3.new(60, altitude, -Units.toStuds(5000))
+				Vector3.new(17, altitude, -Units.toStuds(1200)),
+				Vector3.new(17, altitude, -Units.toStuds(5000))
 			)
 			else CFrame.lookAt(Vector3.new(0, altitude, -Units.toStuds(3500)), Vector3.new(0, altitude, 0))
 		local b = newPilot(startB, profileB, seed + 1000, passiveB)
@@ -188,8 +188,8 @@ return function(ctx)
 				target = nil,
 				missile = nil,
 				gun = GUN,
-				mapHalfExtent = 20000,
-				ceiling = 20000,
+				mapHalfExtent = 5600,
+				ceiling = 5600,
 			}
 			for k, v in fields do
 				base[k] = v
@@ -249,7 +249,7 @@ return function(ctx)
 		it("heads back inside the map when patrolling near the edge", function()
 			local c = ctxWith({})
 			c.me.cframe =
-				CFrame.lookAt(Vector3.new(19000, Units.toStuds(3000), 0), Vector3.new(21000, Units.toStuds(3000), 0))
+				CFrame.lookAt(Vector3.new(5320, Units.toStuds(3000), 0), Vector3.new(5880, Units.toStuds(3000), 0))
 			local d = AIBrain.decide(AIBrain.newMemory(6), AIBrain.PROFILES.Normal, c)
 			expect(d.aim.X).toBeLessThan(0.5)
 		end)

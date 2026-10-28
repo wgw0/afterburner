@@ -2,7 +2,7 @@
 -- Target drones for solo gun testing (test environment only). Server-flown jets using the same
 -- FlightModel and Instructor as players, so they move like real aircraft and fly worse as they're
 -- damaged. The foundation for the AI pilots in Phase 4 (AI-01).
---   "ahead":  appears 700 studs ahead along your nose (in your gunsight), same heading, slightly slower
+--   "ahead":  appears 200 studs ahead along your nose (in your gunsight), same heading, slightly slower
 --   "circle": orbits the test range at a steady bank
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -31,8 +31,8 @@ type Drone = {
 }
 
 local MAX_DRONES = 6
-local CIRCLE_CENTRE = Vector3.new(300, 0, 0)
-local CIRCLE_RADIUS = 2600 -- studs
+local CIRCLE_CENTRE = Vector3.new(84, 0, 0)
+local CIRCLE_RADIUS = 730 -- studs
 
 local DroneService = {
 	Priority = 40,
@@ -58,11 +58,11 @@ local function spawnDrone(mode: string, near: AircraftService.Jet?)
 	if mode == "ahead" and near then
 		local flat = Vector3.new(near.root.CFrame.LookVector.X, 0, near.root.CFrame.LookVector.Z)
 		flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
-		local position = near.root.Position + near.root.CFrame.LookVector * 700
+		local position = near.root.Position + near.root.CFrame.LookVector * 200
 		cframe = CFrame.lookAt(position, position + flat)
 		speed = math.max(Units.velocityFromStuds(near.root.AssemblyLinearVelocity.Magnitude) - 15, 150)
 	else
-		local position = CIRCLE_CENTRE + Vector3.new(CIRCLE_RADIUS, 1100, 0)
+		local position = CIRCLE_CENTRE + Vector3.new(CIRCLE_RADIUS, 310, 0)
 		cframe = CFrame.lookAt(position, position + Vector3.new(0, 0, -1))
 	end
 
@@ -84,13 +84,13 @@ end
 
 local function aimFor(drone: Drone): Vector3
 	if drone.mode == "circle" then
-		-- Fly the tangent of the circle, nudged back toward the radius and to 1,100 studs altitude.
+		-- Fly the tangent of the circle, nudged back toward the radius and to 310 studs altitude.
 		local position = drone.jet.root.Position
 		local fromCentre = Vector3.new(position.X - CIRCLE_CENTRE.X, 0, position.Z - CIRCLE_CENTRE.Z)
 		local radial = if fromCentre.Magnitude > 1 then fromCentre.Unit else Vector3.new(1, 0, 0)
 		local tangent = Vector3.new(radial.Z, 0, -radial.X)
 		local radiusError = (fromCentre.Magnitude - CIRCLE_RADIUS) / CIRCLE_RADIUS
-		local altitudeError = (1100 - position.Y) / 1100
+		local altitudeError = (310 - position.Y) / 310
 		return (tangent - radial * radiusError * 2 + Vector3.new(0, altitudeError * 0.5, 0)).Unit
 	end
 	return drone.heading

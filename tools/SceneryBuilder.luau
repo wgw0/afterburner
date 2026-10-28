@@ -19,12 +19,12 @@ local ServerStorage = game:GetService("ServerStorage")
 local Strait = require(script.Parent.StraitBuilder)
 
 local SEED = 4242
-local WATER = -6
+local WATER = -1.68 -- sea surface (WorldEdge.WATER)
 local ROAD_TEXTURE = "rbxassetid://88361153151301" -- tools/blender/out/textures/Road_Color.png
-local ROAD_WIDTH = 26 -- studs (7.3 m, two lanes)
-local ROAD_STEP = 32 -- studs between road segment joints
-local GRID = 200 -- road routing grid (studs)
-local MERGE_SIDE = 1.5 -- studs a merged road part may stray sideways from the road's true line
+local ROAD_WIDTH = 7.3 -- studs (7.3 m, two lanes)
+local ROAD_STEP = 9 -- studs between road segment joints
+local GRID = 56 -- road routing grid (studs)
+local MERGE_SIDE = 0.42 -- studs a merged road part may stray sideways from the road's true line
 local MERGE_UP = 0.6 -- ...and up or down
 local MERGE_MAX = 2000 -- studs: the longest road part (parts top out at 2,048)
 
@@ -43,12 +43,12 @@ terrainOnly.FilterDescendantsInstances = { workspace.Terrain }
 terrainOnly.IgnoreWater = true
 
 local function surface(x: number, z: number): number
-	local hit = workspace:Raycast(Vector3.new(x, 2000, z), Vector3.new(0, -2600, 0), terrainOnly)
+	local hit = workspace:Raycast(Vector3.new(x, 560, z), Vector3.new(0, -730, 0), terrainOnly)
 	return if hit then hit.Position.Y else height(x, z)
 end
 
 local function slope(x: number, z: number): number
-	local d = 20
+	local d = 5.6
 	local dx = height(x + d, z) - height(x - d, z)
 	local dz = height(x, z + d) - height(x, z - d)
 	return math.sqrt(dx * dx + dz * dz) / (2 * d)
@@ -56,7 +56,7 @@ end
 
 local function nearAirbase(x: number, z: number, margin: number): boolean
 	for _, base in Strait.AIRBASES do
-		if math.abs(x - base.position.X) < 1400 + margin and math.abs(z - base.position.Z) < 3800 + margin then
+		if math.abs(x - base.position.X) < 392 + margin and math.abs(z - base.position.Z) < 1064 + margin then
 			return true
 		end
 	end
@@ -64,12 +64,12 @@ local function nearAirbase(x: number, z: number, margin: number): boolean
 end
 
 local function onIsland(x: number, z: number): boolean
-	return x * x + z * z < 3600 * 3600
+	return x * x + z * z < 1008 * 1008
 end
 
 -- Distance in from the terrain's edge: the outer band eases into the flat world outside (WorldEdge)
 local function fromEdge(x: number, z: number): number
-	return 20480 - math.max(math.abs(x), math.abs(z))
+	return 5760 - math.max(math.abs(x), math.abs(z))
 end
 
 local function folder(parent: Instance, name: string, className: string?): Instance
@@ -238,7 +238,7 @@ local function place(
 )
 	local t = template(name)
 	local s = scale or 1
-	local ground = math.min(height(x, z), height(x + 8, z + 8), height(x - 8, z - 8)) - (sink or 1.5)
+	local ground = math.min(height(x, z), height(x + 2.2, z + 2.2), height(x - 2.2, z - 2.2)) - (sink or 1.5)
 	local cf = CFrame.new(x, ground, z) * CFrame.Angles(0, yaw - (t:GetAttribute("FrontYaw") or 0) :: number, 0)
 	local pivot = t.WorldPivot
 	local picks: { [string]: Color3 } = {}
@@ -265,17 +265,17 @@ end
 -- Roads ------------------------------------------------------------------------------------------------------
 
 local roadSegments: { { a: Vector3, b: Vector3 } } = {}
-local roadHash: { [number]: { Vector2 } } = {} -- road sample points by 64-stud cell
+local roadHash: { [number]: { Vector2 } } = {} -- road sample points by 18-stud cell
 
 local function hashKey(x: number, z: number): number
-	return math.floor(x / 64) * 100000 + math.floor(z / 64)
+	return math.floor(x / 18) * 100000 + math.floor(z / 18)
 end
 
 -- True if (x, z) is within clearance of a road's edge.
 local function nearRoad(x: number, z: number, clearance: number): boolean
 	local reach = clearance + ROAD_WIDTH / 2 + ROAD_STEP / 2
-	local r = math.ceil(reach / 64)
-	local cx, cz = math.floor(x / 64), math.floor(z / 64)
+	local r = math.ceil(reach / 18)
+	local cx, cz = math.floor(x / 18), math.floor(z / 18)
 	local here = Vector2.new(x, z)
 	for i = -r, r do
 		for j = -r, r do
@@ -291,7 +291,7 @@ end
 
 local function roadPart(parent: Instance, a: Vector3, b: Vector3)
 	local length = (b - a).Magnitude
-	if length < 1 then
+	if length < 0.28 then
 		return
 	end
 	local p = Instance.new("Part")
@@ -303,13 +303,13 @@ local function roadPart(parent: Instance, a: Vector3, b: Vector3)
 	p.CastShadow = false
 	p.Material = Enum.Material.SmoothPlastic
 	p.Color = Color3.fromRGB(60, 62, 66)
-	p.Size = Vector3.new(ROAD_WIDTH, 2, length + 3)
+	p.Size = Vector3.new(ROAD_WIDTH, 2, length + 0.84)
 	p.CFrame = CFrame.lookAt((a + b) / 2, b)
 	local tex = Instance.new("Texture")
 	tex.Texture = ROAD_TEXTURE
 	tex.Face = Enum.NormalId.Top
 	tex.StudsPerTileU = ROAD_WIDTH
-	tex.StudsPerTileV = 64
+	tex.StudsPerTileV = 18
 	tex.Parent = p
 	p.Parent = parent
 end
@@ -362,7 +362,7 @@ local function layRoad(parent: Instance, points: { Vector2 })
 	local run: { Vector3 } = {} -- an unbroken stretch of road, one point per ROAD_STEP
 	local prev: Vector3? = nil
 	for _, s in samples do
-		if height(s.X, s.Y) < WATER + 1 then
+		if height(s.X, s.Y) < WATER + 0.28 then
 			mergeRun(parent, run)
 			run = {}
 			prev = nil
@@ -370,7 +370,7 @@ local function layRoad(parent: Instance, points: { Vector2 })
 		end
 		-- highest of the centre and the edges, so a camber in the ground doesn't swallow one side
 		local h = surface(s.X, s.Y)
-		for _, o in { Vector2.new(10, 0), Vector2.new(-10, 0), Vector2.new(0, 10), Vector2.new(0, -10) } do
+		for _, o in { Vector2.new(2.8, 0), Vector2.new(-2.8, 0), Vector2.new(0, 2.8), Vector2.new(0, -2.8) } do
 			h = math.max(h, surface(s.X + o.X, s.Y + o.Y))
 		end
 		local here = Vector3.new(s.X, h + 1.6, s.Y) -- 2 studs thick: the drawn terrain sits above its collision surface
@@ -484,17 +484,17 @@ local function route(from: Vector2, to: Vector2, cache: { [number]: number }): {
 					local ni, nj = i + di, j + dj
 					local nh = h(ni, nj)
 					if
-						nh > WATER + 4
-						and nh < 520
+						nh > WATER + 1.1
+						and nh < 146
 						and not onIsland(ni * GRID, nj * GRID)
-						and not nearAirbase(ni * GRID, nj * GRID, 100)
-						and fromEdge(ni * GRID, nj * GRID) > 1500
+						and not nearAirbase(ni * GRID, nj * GRID, 28)
+						and fromEdge(ni * GRID, nj * GRID) > 420
 					then
 						local dist = GRID * math.sqrt(di * di + dj * dj)
 						local grade = math.abs(nh - here) / dist
 						if grade < 0.18 then
 							local nk = key(ni, nj)
-							local c = cost[key(i, j)] + dist * (1 + 30 * grade + nh / 500)
+							local c = cost[key(i, j)] + dist * (1 + 30 * grade + nh / 140)
 							if cost[nk] == nil or c < cost[nk] then
 								cost[nk] = c
 								came[nk] = key(i, j)
@@ -522,19 +522,19 @@ local function findTowns(): { Town }
 	end
 	local rng = Random.new(SEED)
 	local candidates = {}
-	for x = -19000, 19000, 900 do
-		for z = -19000, 19000, 900 do
-			local px, pz = x + rng:NextNumber(-300, 300), z + rng:NextNumber(-300, 300)
-			if math.abs(px) > 4500 and fromEdge(px, pz) > 3000 and not nearAirbase(px, pz, 2500) then
+	for x = -5320, 5320, 252 do
+		for z = -5320, 5320, 252 do
+			local px, pz = x + rng:NextNumber(-84, 84), z + rng:NextNumber(-84, 84)
+			if math.abs(px) > 1260 and fromEdge(px, pz) > 840 and not nearAirbase(px, pz, 700) then
 				local h0 = height(px, pz)
-				if h0 > 15 and h0 < 260 then
+				if h0 > 4.2 and h0 < 73 then
 					local lo, hi = h0, h0
-					for _, o in { Vector2.new(300, 0), Vector2.new(-300, 0), Vector2.new(0, 300), Vector2.new(0, -300) } do
+					for _, o in { Vector2.new(84, 0), Vector2.new(-84, 0), Vector2.new(0, 84), Vector2.new(0, -84) } do
 						local hh = height(px + o.X, pz + o.Y)
 						lo, hi = math.min(lo, hh), math.max(hi, hh)
 					end
-					if hi - lo < 45 and lo > WATER + 4 then
-						table.insert(candidates, { x = px, z = pz, score = (hi - lo) + rng:NextNumber(0, 25) })
+					if hi - lo < 12.6 and lo > WATER + 1.1 then
+						table.insert(candidates, { x = px, z = pz, score = (hi - lo) + rng:NextNumber(0, 7) })
 					end
 				end
 			end
@@ -550,7 +550,7 @@ local function findTowns(): { Town }
 		if perSide[sideKey] < 6 then
 			local ok = true
 			for _, t in towns do
-				if (t.centre - Vector2.new(c.x, c.z)).Magnitude < 4200 then
+				if (t.centre - Vector2.new(c.x, c.z)).Magnitude < 1176 then
 					ok = false
 					break
 				end
@@ -558,7 +558,7 @@ local function findTowns(): { Town }
 			if ok then
 				table.insert(towns, {
 					centre = Vector2.new(c.x, c.z),
-					radius = rng:NextNumber(420, 760),
+					radius = rng:NextNumber(118, 213),
 					angle = rng:NextNumber(0, math.pi),
 					west = west,
 				})
@@ -573,7 +573,7 @@ local function gates(): { { pos: Vector2, west: boolean } }
 	local out = {}
 	for name, base in Strait.AIRBASES do
 		local side = if name == "West" then 1 else -1
-		table.insert(out, { pos = Vector2.new(base.position.X + side * 1700, base.position.Z), west = name == "West" })
+		table.insert(out, { pos = Vector2.new(base.position.X + side * 476, base.position.Z), west = name == "West" })
 	end
 	return out
 end
@@ -649,8 +649,8 @@ function SceneryBuilder.towns(): string
 	local placed = 0
 	local occupied: { [number]: boolean } = {}
 	local function free(x: number, z: number, r: number): boolean
-		local cr = math.ceil(r / 32)
-		local cx, cz = math.floor(x / 32), math.floor(z / 32)
+		local cr = math.ceil(r / 9)
+		local cx, cz = math.floor(x / 9), math.floor(z / 9)
 		for i = -cr, cr do
 			for j = -cr, cr do
 				if occupied[(cx + i) * 100000 + cz + j] then
@@ -661,15 +661,15 @@ function SceneryBuilder.towns(): string
 		return true
 	end
 	local function claim(x: number, z: number, r: number)
-		local cr = math.ceil(r / 32)
-		local cx, cz = math.floor(x / 32), math.floor(z / 32)
+		local cr = math.ceil(r / 9)
+		local cx, cz = math.floor(x / 9), math.floor(z / 9)
 		for i = -cr, cr do
 			for j = -cr, cr do
 				occupied[(cx + i) * 100000 + cz + j] = true
 			end
 		end
 	end
-	local SIZES = { House = 24, Apartment = 56, Shop = 26, Warehouse = 76, Church = 56, Barn = 34 }
+	local SIZES = { House = 6.7, Apartment = 15.7, Shop = 7.3, Warehouse = 21.3, Church = 15.7, Barn = 9.5 }
 	for index, t in findTowns() do
 		local model = lodModel(`Town{index}`, root)
 		local roads = folder(model, "Streets")
@@ -682,7 +682,7 @@ function SceneryBuilder.towns(): string
 			local o = c + along * (k * t.radius)
 			table.insert(streets, { o - across * t.radius * 0.65, o + across * t.radius * 0.65 })
 		end
-		table.insert(streets, { c + across * 240 - along * t.radius * 0.6, c + across * 240 + along * t.radius * 0.6 })
+		table.insert(streets, { c + across * 67 - along * t.radius * 0.6, c + across * 67 + along * t.radius * 0.6 })
 		for _, s in streets do
 			layRoad(roads, s)
 		end
@@ -693,9 +693,9 @@ function SceneryBuilder.towns(): string
 			local dir = (s[2] - s[1]).Unit
 			local normal = Vector2.new(-dir.Y, dir.X)
 			local length = (s[2] - s[1]).Magnitude
-			for d = 30, length - 30, 64 do
+			for d = 8.4, length - 8.4, 18 do
 				for _, sideSign in { -1, 1 } do
-					local p = s[1] + dir * d + normal * sideSign * 48
+					local p = s[1] + dir * d + normal * sideSign * 13.4
 					table.insert(plots, { p = p, out = normal * sideSign, fromCentre = (p - c).Magnitude / t.radius })
 				end
 			end
@@ -719,10 +719,10 @@ function SceneryBuilder.towns(): string
 				kind = "Shop"
 			end
 			local r = SIZES[kind]
-			local q = plot.p + plot.out * (r - 24)
-			if rng:NextNumber() < 0.85 and free(q.X, q.Y, r) and not nearRoad(q.X, q.Y, r - 8) then
+			local q = plot.p + plot.out * (r - 6.7)
+			if rng:NextNumber() < 0.85 and free(q.X, q.Y, r) and not nearRoad(q.X, q.Y, r - 2.2) then
 				local h = height(q.X, q.Y)
-				if h > WATER + 3 and slope(q.X, q.Y) < 0.25 then
+				if h > WATER + 0.84 and slope(q.X, q.Y) < 0.25 then
 					place(kind, model, q.X, q.Y, math.atan2(plot.out.X, plot.out.Y), rng)
 					claim(q.X, q.Y, r)
 					placed += 1
@@ -735,7 +735,7 @@ function SceneryBuilder.towns(): string
 		for _ = 1, 14 do
 			local a, r = rng:NextNumber(0, 2 * math.pi), rng:NextNumber(0.2, 1.05) * t.radius
 			local x, z = c.X + math.cos(a) * r, c.Y + math.sin(a) * r
-			if free(x, z, 12) and not nearRoad(x, z, 20) and height(x, z) > WATER + 3 then
+			if free(x, z, 3.4) and not nearRoad(x, z, 5.6) and height(x, z) > WATER + 0.84 then
 				place(
 					if rng:NextNumber() < 0.6 then "TreeBroadleaf" else "TreePoplar",
 					model,
@@ -754,29 +754,29 @@ function SceneryBuilder.towns(): string
 		local seg = roadSegments[i]
 		if rng:NextNumber() < 0.35 then
 			local dir = Vector2.new(seg.b.X - seg.a.X, seg.b.Z - seg.a.Z)
-			if dir.Magnitude > 1 then
+			if dir.Magnitude > 0.28 then
 				dir = dir.Unit
 				local normal = Vector2.new(-dir.Y, dir.X) * (if rng:NextNumber() < 0.5 then 1 else -1)
-				local p = Vector2.new(seg.a.X, seg.a.Z) + normal * 110
+				local p = Vector2.new(seg.a.X, seg.a.Z) + normal * 31
 				local farFromTowns = true
 				for _, t in towns do
-					if (t.centre - p).Magnitude < t.radius + 300 then
+					if (t.centre - p).Magnitude < t.radius + 84 then
 						farFromTowns = false
 					end
 				end
 				if
 					farFromTowns
-					and not nearAirbase(p.X, p.Y, 400)
+					and not nearAirbase(p.X, p.Y, 112)
 					and not onIsland(p.X, p.Y)
-					and free(p.X, p.Y, 90)
+					and free(p.X, p.Y, 25)
 					and slope(p.X, p.Y) < 0.2
-					and height(p.X, p.Y) > WATER + 3
+					and height(p.X, p.Y) > WATER + 0.84
 				then
 					local yaw = math.atan2(normal.X, normal.Y)
 					place("House", farms, p.X, p.Y, yaw, rng)
-					local b = p + dir * 70 + normal * 30
+					local b = p + dir * 20 + normal * 8.4
 					place("Barn", farms, b.X, b.Y, yaw + math.pi / 2, rng)
-					claim(p.X, p.Y, 90)
+					claim(p.X, p.Y, 25)
 					placed += 2
 				end
 			end
@@ -795,12 +795,12 @@ function SceneryBuilder.woods(): string
 		if clumps >= 760 then
 			break
 		end
-		local x, z = rng:NextNumber(-20000, 20000), rng:NextNumber(-20000, 20000)
+		local x, z = rng:NextNumber(-5600, 5600), rng:NextNumber(-5600, 5600)
 		local h = height(x, z)
-		local ok = h > 10 and h < 820 and fromEdge(x, z) > 300 and not nearAirbase(x, z, 300) and not onIsland(x, z)
+		local ok = h > 2.8 and h < 230 and fromEdge(x, z) > 84 and not nearAirbase(x, z, 84) and not onIsland(x, z)
 		if ok then
 			for _, t in findTowns() do
-				if (t.centre - Vector2.new(x, z)).Magnitude < t.radius + 150 then
+				if (t.centre - Vector2.new(x, z)).Magnitude < t.radius + 42 then
 					ok = false
 				end
 			end
@@ -808,14 +808,14 @@ function SceneryBuilder.woods(): string
 		if ok and slope(x, z) < 0.5 then
 			clumps += 1
 			local count = rng:NextInteger(10, 30)
-			local radius = rng:NextNumber(70, 220)
+			local radius = rng:NextNumber(20, 62)
 			for _ = 1, count do
 				local a, r = rng:NextNumber(0, 2 * math.pi), radius * math.sqrt(rng:NextNumber())
 				local tx, tz = x + math.cos(a) * r, z + math.sin(a) * r
 				local th = height(tx, tz)
-				if th > WATER + 4 and not nearRoad(tx, tz, 30) then
+				if th > WATER + 1.1 and not nearRoad(tx, tz, 8.4) then
 					local roll = rng:NextNumber()
-					local kind = if th > 380
+					local kind = if th > 106
 						then (if roll < 0.85 then "TreeConifer" else "TreeBroadleaf")
 						elseif roll < 0.5 then "TreeBroadleaf"
 						elseif roll < 0.78 then "TreeConifer"
@@ -851,15 +851,15 @@ function SceneryBuilder.airbases(): string
 		local side = if name == "West" then 1 else -1
 		local towardRunway = if side > 0 then math.pi / 2 else -math.pi / 2 -- yaw facing -side * X
 		for h = -1, 1 do
-			place("Hangar", model, p.X + side * 1250, p.Z + h * 260, towardRunway, rng, 1, 0.5)
+			place("Hangar", model, p.X + side * 350, p.Z + h * 73, towardRunway, rng, 1, 0.5)
 		end
-		place("Tower", model, p.X + side * 1150, p.Z - 600, towardRunway, rng, 1, 0.5)
-		place("OpsBuilding", model, p.X + side * 1230, p.Z - 820, towardRunway, rng, 1, 0.5)
-		for _, dz in { -1250, -950, 950, 1250 } do
-			place("Shelter", model, p.X + side * 700, p.Z + dz, towardRunway, rng, 1, 0.5)
+		place("Tower", model, p.X + side * 322, p.Z - 168, towardRunway, rng, 1, 0.5)
+		place("OpsBuilding", model, p.X + side * 344, p.Z - 230, towardRunway, rng, 1, 0.5)
+		for _, dz in { -350, -266, 266, 350 } do
+			place("Shelter", model, p.X + side * 196, p.Z + dz, towardRunway, rng, 1, 0.5)
 		end
 		for i = 0, 2 do
-			place("FuelTank", model, p.X + side * 1320, p.Z + 640 + i * 80, 0, rng, 1, 0.5)
+			place("FuelTank", model, p.X + side * 370, p.Z + 179 + i * 22, 0, rng, 1, 0.5)
 		end
 	end
 	return "airbases rebuilt"
@@ -956,7 +956,7 @@ function SceneryBuilder.installMergedWoods(source: Instance, paletteAssetId: num
 	for i, a in meshes do
 		local b = meshes[(i + #meshes // 2 - 1) % #meshes + 1]
 		local want = (a.centre - b.centre).Magnitude
-		if want > 2000 then
+		if want > 560 then
 			table.insert(ratios, (a.part.Position - b.part.Position).Magnitude / want)
 		end
 	end

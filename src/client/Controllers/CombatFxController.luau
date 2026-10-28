@@ -52,7 +52,7 @@ local function makeAnchor(): FxAnchor
 	part.CanTouch = false
 	part.CanQuery = false
 	part.Transparency = 1
-	part.Size = Vector3.new(1, 1, 1)
+	part.Size = Vector3.new(0.28, 0.28, 0.28)
 	local fire = emitter(part, FIRE_TEXTURE)
 	fire.Color = ColorSequence.new(Color3.fromRGB(255, 200, 120), Color3.fromRGB(255, 80, 20))
 	fire.LightEmission = 1
@@ -65,7 +65,7 @@ local function makeAnchor(): FxAnchor
 	local light = Instance.new("PointLight")
 	light.Color = Color3.fromRGB(255, 160, 80)
 	light.Brightness = 0
-	light.Range = 60
+	light.Range = 17
 	light.Parent = part
 	return { part = part, fire = fire, smoke = smoke, sparks = sparks, light = light }
 end
@@ -109,26 +109,26 @@ end
 
 local function explosion(position: Vector3)
 	withAnchor(position, 6, function(a)
-		a.fire.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 18), NumberSequenceKeypoint.new(1, 40) })
+		a.fire.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 5), NumberSequenceKeypoint.new(1, 11) })
 		a.fire.Lifetime = NumberRange.new(0.5, 1.1)
-		a.fire.Speed = NumberRange.new(20, 60)
+		a.fire.Speed = NumberRange.new(5.6, 17)
 		a.fire.SpreadAngle = Vector2.new(180, 180)
 		a.fire.Transparency = NumberSequence.new(0.1, 1)
 		a.fire:Emit(40)
 		a.smoke.Color = ColorSequence.new(Color3.fromRGB(70, 70, 70), Color3.fromRGB(30, 30, 30))
-		a.smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 20), NumberSequenceKeypoint.new(1, 70) })
+		a.smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 5.6), NumberSequenceKeypoint.new(1, 20) })
 		a.smoke.Lifetime = NumberRange.new(2.5, 4.5)
-		a.smoke.Speed = NumberRange.new(8, 25)
+		a.smoke.Speed = NumberRange.new(2.2, 7)
 		a.smoke.SpreadAngle = Vector2.new(180, 180)
 		a.smoke.Transparency = NumberSequence.new(0.3, 1)
 		a.smoke:Emit(25)
-		a.sparks.Size = NumberSequence.new(1.5, 0)
+		a.sparks.Size = NumberSequence.new(0.42, 0)
 		a.sparks.Lifetime = NumberRange.new(0.6, 1.4)
-		a.sparks.Speed = NumberRange.new(60, 160)
+		a.sparks.Speed = NumberRange.new(17, 45)
 		a.sparks.SpreadAngle = Vector2.new(180, 180)
-		a.sparks.Acceleration = Vector3.new(0, -60, 0)
+		a.sparks.Acceleration = Vector3.new(0, -17, 0)
 		a.sparks:Emit(50)
-		a.light.Range = 120
+		a.light.Range = 34
 		a.light.Brightness = 8
 		task.delay(0.35, function()
 			a.light.Brightness = 0
@@ -139,9 +139,9 @@ end
 
 local function sparks(position: Vector3, count: number)
 	withAnchor(position, 1.5, function(a)
-		a.sparks.Size = NumberSequence.new(0.6, 0)
+		a.sparks.Size = NumberSequence.new(0.17, 0)
 		a.sparks.Lifetime = NumberRange.new(0.2, 0.5)
-		a.sparks.Speed = NumberRange.new(30, 80)
+		a.sparks.Speed = NumberRange.new(8.4, 22)
 		a.sparks.SpreadAngle = Vector2.new(70, 70)
 		a.sparks.Acceleration = Vector3.zero
 		a.sparks:Emit(count)
@@ -154,9 +154,9 @@ local function dust(position: Vector3, material: Enum.Material)
 		a.smoke.Color = if water
 			then ColorSequence.new(Color3.fromRGB(230, 240, 255))
 			else ColorSequence.new(Color3.fromRGB(120, 105, 85))
-		a.smoke.Size = NumberSequence.new(3, 9)
+		a.smoke.Size = NumberSequence.new(0.84, 2.5)
 		a.smoke.Lifetime = NumberRange.new(0.6, 1.2)
-		a.smoke.Speed = NumberRange.new(4, 12)
+		a.smoke.Speed = NumberRange.new(1.1, 3.4)
 		a.smoke.SpreadAngle = Vector2.new(30, 30)
 		a.smoke.Transparency = NumberSequence.new(0.4, 1)
 		a.smoke:Emit(3)
@@ -180,7 +180,7 @@ local function updateMuzzles()
 			end
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 190, 110)
-			light.Range = 25
+			light.Range = 7
 			light.Parent = muzzle
 			local flash = Instance.new("Part")
 			flash.Anchored = true
@@ -203,8 +203,8 @@ local function updateMuzzles()
 				if model == me then
 					gunSound.Parent = SoundService
 				else
-					gunSound.RollOffMinDistance = 40
-					gunSound.RollOffMaxDistance = 2500
+					gunSound.RollOffMinDistance = 11
+					gunSound.RollOffMaxDistance = 700
 					gunSound.Parent = root
 				end
 				gunSound:Play()
@@ -225,8 +225,8 @@ local function updateMuzzles()
 			local muzzle = fx.light.Parent :: Attachment
 			local flicker = math.random()
 			fx.light.Brightness = 2 + 3 * flicker
-			fx.flash.Size = Vector3.one * (0.8 + 1.4 * flicker)
-			fx.flash.CFrame = muzzle.WorldCFrame * CFrame.new(0, 0, -1)
+			fx.flash.Size = Vector3.one * (0.22 + 0.39 * flicker)
+			fx.flash.CFrame = muzzle.WorldCFrame * CFrame.new(0, 0, -0.28)
 			fx.flash.Transparency = if flicker > 0.4 then 0.1 else 0.7
 		end
 	end

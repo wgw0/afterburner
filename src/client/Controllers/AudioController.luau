@@ -103,8 +103,8 @@ local function setupOther(model: Model)
 		return
 	end
 	engine.RollOffMode = Enum.RollOffMode.InverseTapered
-	engine.RollOffMinDistance = 60
-	engine.RollOffMaxDistance = 3000
+	engine.RollOffMinDistance = 17
+	engine.RollOffMaxDistance = 840
 	local trove = Trove.new()
 	trove:Add(engine)
 	others[model] = { engine = engine, trove = trove }

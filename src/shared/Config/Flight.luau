@@ -42,6 +42,6 @@ return table.freeze({
 	VAPOUR_G = 5,
 
 	-- Phase 1 test spawn
-	SPAWN_ALTITUDE_STUDS = 1200, -- ~2,900 ft real: low enough to see the ground clearly
+	SPAWN_ALTITUDE_STUDS = 336, -- ~2,900 ft real: low enough to see the ground clearly
 	SPAWN_SPEED = 220, -- real m/s
 })

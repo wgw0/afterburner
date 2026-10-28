@@ -111,27 +111,27 @@ return function(ctx)
 			end
 		end)
 		it("flags a speed hack", function()
-			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -300) }
+			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -84) }
 			local b = {
 				time = 0.1,
-				position = Vector3.new(0, 0, -30),
+				position = Vector3.new(0, 0, -8.4),
 				velocity = Vector3.new(0, 0, -Units.velocityToStuds(2000)),
 			}
 			expect(select(2, MovementCheck.evaluate(a, b, limits))).toBe("speed")
 		end)
 		it("flags a teleport", function()
-			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -300) }
-			local b = { time = 0.1, position = Vector3.new(5000, 0, 0), velocity = Vector3.new(0, 0, -300) }
+			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -84) }
+			local b = { time = 0.1, position = Vector3.new(1400, 0, 0), velocity = Vector3.new(0, 0, -84) }
 			expect(select(2, MovementCheck.evaluate(a, b, limits))).toBe("teleport")
 		end)
 		it("flags impossible acceleration", function()
-			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -300) }
-			local b = { time = 0.1, position = Vector3.new(0, 0, -30), velocity = Vector3.new(0, 0, 300) }
+			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -84) }
+			local b = { time = 0.1, position = Vector3.new(0, 0, -8.4), velocity = Vector3.new(0, 0, 84) }
 			expect(select(2, MovementCheck.evaluate(a, b, limits))).toBe("acceleration")
 		end)
 		it("a sudden stop (crashing) is not flagged", function()
-			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -300) }
-			local b = { time = 0.1, position = Vector3.new(0, 0, -20), velocity = Vector3.zero }
+			local a = { time = 0, position = Vector3.zero, velocity = Vector3.new(0, 0, -84) }
+			local b = { time = 0.1, position = Vector3.new(0, 0, -5.6), velocity = Vector3.zero }
 			expect((MovementCheck.evaluate(a, b, limits))).toBe(true)
 		end)
 		it("three strikes resets, three resets kicks; old strikes expire", function()

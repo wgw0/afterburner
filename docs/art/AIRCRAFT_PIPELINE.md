@@ -13,7 +13,7 @@ How a jet goes from Blender into the game: a modular mid-poly model with moving 
 
 ## 1. Structure (F-5E)
 
-Blender axes are X right, Y forward (the nose points to +Y) and Z up, in metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, which is the nose direction the game expects. The game uses 1 m = 3.5714 studs. Every part is modelled at real size and the assembler converts to studs. The model's origin is the centre of gravity (25% of the mean wing chord), because the flight model rotates the jet about its root part.
+Blender axes are X right, Y forward (the nose points to +Y) and Z up, in metres. The FBX exporter (Forward −Z, Up Y) turns Blender +Y into Roblox −Z, which is the nose direction the game expects. The game uses 1 m = 1 stud (it was 3.5714 studs until the world-scale change; installed models were scaled by 0.28). Every part is modelled at real size and the assembler converts to studs. The model's origin is the centre of gravity (25% of the mean wing chord), because the flight model rotates the jet about its root part.
 
 The budget is 5,000 to 12,000 triangles for the whole jet. The F-5E has 10,704, about half of them in the fuselage. Roblox allows 20,000 per MeshPart, so the limit comes from performance, not the engine.
 

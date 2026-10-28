@@ -22,7 +22,7 @@ import bmesh
 import bpy
 from mathutils import Matrix, Vector
 
-STUDS = 1 / 0.28  # studs per metre
+STUDS = 1.0  # studs per metre (Config/Scale.STUDS_PER_METRE)
 MAX_TRIS = 10000
 MAX_SPAN = 1800  # studs: a MeshPart can't be bigger than 2,048, so a group's trees must fit inside this
 TRUNK = (88, 64, 44)  # SceneryBuilder's trunk colour
@@ -96,7 +96,7 @@ def groups(trees, tris_of):
             xs = [t["pos"][0] for t in items]
             zs = [t["pos"][2] for t in items]
             span = max(max(xs) - min(xs), max(zs) - min(zs))
-        if (total <= MAX_TRIS and span <= MAX_SPAN) or size < 64:
+        if (total <= MAX_TRIS and span <= MAX_SPAN) or size < 18:
             if items:
                 out.append(items)
             return
@@ -108,7 +108,7 @@ def groups(trees, tris_of):
         for i, q in enumerate(quads):
             split(q, x0 + half * (i % 2), z0 + half * (i // 2), half)
 
-    split(trees, -20480, -20480, 40960)
+    split(trees, -5760, -5760, 11520)
     return out
 
 
