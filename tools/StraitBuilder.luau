@@ -24,7 +24,11 @@ local WorldEdge = require(ReplicatedStorage.Shared.WorldEdge)
 
 local Terrain = workspace.Terrain
 
-local HALF = WorldEdge.TERRAIN_HALF -- terrain edge (the play area ends at 20,000)
+-- SCALE TEST (branch scale-test): build the same map shape at about 1 stud = 1 m. New studs = old studs * K,
+-- so height_new(x, z) = K * height_old(x / K, z / K). Everything below is in old studs except writeChunk
+-- and terrain(), which work in new studs. The scenery, spawns and WorldEdge are not scaled.
+local K = 0.28
+local HALF = 5760 -- 20480 * K, rounded up to a multiple of CHUNK
 local CHUNK = 128 -- studs per WriteVoxels call (small chunks keep the vertical span low on slopes)
 local GRID = 16 -- the height field is sampled every 16 studs and interpolated per 4-stud column
 local WATER = WorldEdge.WATER -- sea surface
@@ -34,6 +38,7 @@ local ISLAND_FLAT = 1500 -- the runway area stays flat at y = 0
 local BASE_HEIGHT = 20 -- airbase ground level
 local SPAWN_CLEARANCE = 700 -- spawn at least this far above the ground
 local SHELL = 4 -- studs of solid terrain under the surface, at least
+local WATER_K = WATER * K -- sea surface in new studs
 
 local StraitBuilder = {}
 
@@ -185,13 +190,18 @@ end
 
 -- Surface height (studs) at a point. Near the terrain's edge it eases into the flat world outside
 -- (WorldEdge), so the client's plain tiles carry on from it without a step.
-function StraitBuilder.height(x: number, z: number): number
+local function unscaledHeight(x: number, z: number): number
 	local h = rawHeight(x, z)
 	local fade = WorldEdge.fade(x, z)
 	if fade > 0 then
 		h += (WorldEdge.outsideHeight(x, z) - h) * fade
 	end
 	return h
+end
+
+-- Surface height in new studs at a point in new studs.
+function StraitBuilder.height(x: number, z: number): number
+	return K * unscaledHeight(x / K, z / K)
 end
 
 local function surfaceMaterial(x: number, z: number, h: number, slope: number): Enum.Material
@@ -277,7 +287,7 @@ local function writeChunk(x0: number, z0: number)
 			bRow[k] = bottom
 			sRow[k] = math.sqrt((n2 - n1) ^ 2 + (n4 - n3) ^ 2) / 8
 			low = math.min(low, bottom)
-			high = math.max(high, h, WATER)
+			high = math.max(high, h, WATER_K)
 		end
 		bottoms[i], slopes[i] = bRow, sRow
 	end
@@ -298,7 +308,7 @@ local function writeChunk(x0: number, z0: number)
 		for k = 1, columns do
 			local h = heights[i + 1][k + 1]
 			local bottom = bottoms[i][k]
-			local surface = surfaceMaterial(px, z0 + (k - 1) * 4 + 2, h, slopes[i][k])
+			local surface = surfaceMaterial(px / K, (z0 + (k - 1) * 4 + 2) / K, h / K, slopes[i][k])
 			for j = 1, layers do
 				local yb = y0 + (j - 1) * 4
 				local solid = math.clamp((h - yb) / 4, 0, 1)
@@ -306,10 +316,10 @@ local function writeChunk(x0: number, z0: number)
 					mx[j][k] = surface
 					ox[j][k] = solid
 				end
-				if solid < 0.5 and yb < WATER then
+				if solid < 0.5 and yb < WATER_K then
 					-- Water above the ground, up to the sea surface (partial in the top voxel)
 					mx[j][k] = water
-					ox[j][k] = math.clamp((WATER - yb) / 4, 0, 1)
+					ox[j][k] = math.clamp((WATER_K - yb) / 4, 0, 1)
 				end
 			end
 		end
