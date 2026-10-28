@@ -53,6 +53,132 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "BlueGrey", DisplayName = "Blue-Grey", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- Art only so far: the F-14A has no flight data yet
+	F14A = {
+		{ Id = "Navy", DisplayName = "Navy Grey", Default = true },
+		{ Id = "Gull", DisplayName = "Gull Grey and White", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Three-Tone Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Mirage 2000C has no flight data yet
+	Mirage2000C = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Blue-Grey", Default = true },
+		{ Id = "Grey", DisplayName = "Low-Visibility Grey", Credits = 5000 },
+		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the F-15C has no flight data yet
+	F15C = {
+		{ Id = "ModEagle", DisplayName = "Mod Eagle Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Air Superiority Blue", Credits = 5000 },
+		{ Id = "Aggressor", DisplayName = "Aggressor Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the F/A-18C has no flight data yet
+	FA18C = {
+		{ Id = "Navy", DisplayName = "Navy Grey", Default = true },
+		{ Id = "Gull", DisplayName = "Gull Grey and White", Credits = 5000 },
+		{ Id = "Adversary", DisplayName = "Adversary Camouflage", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Three-Tone Grey", Credits = 5000 },
+	},
+	-- Art only so far: the Su-27S has no flight data yet
+	Su27S = {
+		{ Id = "Flanker", DisplayName = "Flanker Blue", Default = true },
+		{ Id = "Grey", DisplayName = "Low-Visibility Grey", Credits = 5000 },
+		{ Id = "Naval", DisplayName = "Naval Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Tornado F3 has no flight data yet
+	TornadoF3 = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Grey", Default = true },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Pink", Credits = 5000 },
+	},
+	-- Art only so far: the F-16C has no flight data yet
+	F16C = {
+		{ Id = "Viper", DisplayName = "Viper Grey", Default = true },
+		{ Id = "Ghost", DisplayName = "Blue Ghost", Credits = 5000 },
+		{ Id = "Arctic", DisplayName = "Arctic Splinter", Credits = 5000 },
+		{ Id = "Night", DisplayName = "Dark Grey", Credits = 5000 },
+	},
+	-- Art only so far: the F-15E has no flight data yet
+	F15E = {
+		{ Id = "Strike", DisplayName = "Gunship Grey", Default = true },
+		{ Id = "Ghost", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Su-30SM has no flight data yet
+	Su30SM = {
+		{ Id = "VKS", DisplayName = "Aerospace Forces Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Blue-Grey", Credits = 5000 },
+		{ Id = "Naval", DisplayName = "Naval Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the MiG-29SMT has no flight data yet
+	MiG29SMT = {
+		{ Id = "VKS", DisplayName = "Aerospace Forces Grey", Default = true },
+		{ Id = "Blue", DisplayName = "Blue-Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey-Green Splinter", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Gripen C has no flight data yet
+	GripenC = {
+		{ Id = "Grey", DisplayName = "Two-Tone Grey", Default = true },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Splinter Camouflage", Credits = 5000 },
+		{ Id = "Arctic", DisplayName = "Arctic", Credits = 5000 },
+	},
+	-- Art only so far: the F/A-18E has no flight data yet
+	FA18E = {
+		{ Id = "Navy", DisplayName = "Navy Grey", Default = true },
+		{ Id = "CAG", DisplayName = "CAG Markings", Credits = 5000 },
+		{ Id = "Adversary", DisplayName = "Adversary Blue", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Dark Grey", Credits = 5000 },
+	},
+	-- Art only so far: the Su-35S has no flight data yet
+	Su35S = {
+		{ Id = "VKS", DisplayName = "Aerospace Forces Splinter", Default = true },
+		{ Id = "Dark", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Flanker", DisplayName = "Flanker Blue", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Typhoon has no flight data yet
+	Typhoon = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Grey", Default = true },
+		{ Id = "TwoTone", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the Rafale C has no flight data yet
+	RafaleC = {
+		{ Id = "AirDefence", DisplayName = "Air Defence Grey", Default = true },
+		{ Id = "TwoTone", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "DarkGrey", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
+	-- Art only so far: the F-22A has no flight data yet
+	F22A = {
+		{ Id = "AirDominance", DisplayName = "Air Dominance Grey", Default = true },
+		{ Id = "Dark", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Light Ghost Grey", Credits = 5000 },
+		{ Id = "Splinter", DisplayName = "Grey Splinter", Credits = 5000 },
+	},
+	-- Art only so far: the F-35A has no flight data yet
+	F35A = {
+		{ Id = "Stealth", DisplayName = "Stealth Grey", Default = true },
+		{ Id = "Dark", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Ghost", DisplayName = "Light Ghost Grey", Credits = 5000 },
+		{ Id = "Aggressor", DisplayName = "Grey Splinter", Credits = 5000 },
+	},
+	-- Art only so far: the Su-57 has no flight data yet
+	Su57 = {
+		{ Id = "VKS", DisplayName = "Aerospace Forces Splinter", Default = true },
+		{ Id = "Dark", DisplayName = "Dark Grey", Credits = 5000 },
+		{ Id = "Grey", DisplayName = "Two-Tone Grey", Credits = 5000 },
+		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
+	},
 	MiG23MLD = {
 		{ Id = "Tactical", DisplayName = "Tactical Camouflage", Default = true },
 		{ Id = "TwoTone", DisplayName = "Two-Tone Grey-Green", Credits = 5000 },

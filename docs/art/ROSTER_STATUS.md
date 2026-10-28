@@ -14,24 +14,24 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | II | MiG-23MLD | `MiG23MLD` | Yes | `art/mig23` (on `art/f4e`) | Done (wings at 45°) | Tactical (default), TwoTone, Grey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | F-16A | `F16A` | Yes | `art/f16a` (on `art/mig23`) | Done | Falcon (default), Blue, Desert, Euro | Done | Import, upload textures for 4 skins and the cockpit, play test |
 | III | MiG-29A | `MiG29A` | Yes | `art/mig29` (on `art/f16a`) | Done | Grey (default), Euro, BlueGrey, Desert | Done | Import, upload textures for 4 skins and the cockpit, play test |
-| III | F-14A Tomcat | `F14A` | No | | | | | |
-| III | Mirage 2000C | `Mirage2000C` | No | | | | | |
-| IV | F-15C Eagle | `F15C` | No | | | | | |
-| IV | F/A-18C | `FA18C` | No | | | | | |
-| IV | Su-27S | `Su27S` | No | | | | | |
-| IV | Tornado F3 | `TornadoF3` | No | | | | | |
-| V | F-16C Block 50 | `F16C` | No | | | | | |
-| V | F-15E | `F15E` | No | | | | | |
-| V | Su-30SM | `Su30SM` | No | | | | | |
-| V | MiG-29SMT | `MiG29SMT` | No | | | | | |
-| V | Gripen C | `GripenC` | No | | | | | |
-| VI | F/A-18E Super Hornet | `FA18E` | No | | | | | |
-| VI | Su-35S | `Su35S` | No | | | | | |
-| VI | Eurofighter Typhoon | `Typhoon` | No | | | | | |
-| VI | Rafale C | `RafaleC` | No | | | | | |
-| VII | F-22A Raptor | `F22A` | No | | | | | |
-| VII | F-35A | `F35A` | No | | | | | |
-| VII | Su-57 | `Su57` | No | | | | | |
+| III | F-14A Tomcat | `F14A` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done (wings at 35°) | Navy (default), Gull, Ghost, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| III | Mirage 2000C | `Mirage2000C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | AirDefence (default), Grey, Tactical, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | F-15C Eagle | `F15C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | ModEagle (default), Blue, Aggressor, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | F/A-18C | `FA18C` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | Navy (default), Gull, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | Su-27S | `Su27S` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | Flanker (default), Grey, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| IV | Tornado F3 | `TornadoF3` | No | in `art/f15e` (its own branch was deleted after the rebase onto master) | Done | AirDefence (default), DarkGrey, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | F-16C Block 50 | `F16C` | No | `art/f16c` (on master, with the art-only jets before it) | Done | Viper (default), Ghost, Arctic, Night | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VI | Eurofighter Typhoon | `Typhoon` | No | `art/typhoon` (on `art/su35s`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VI | Rafale C | `RafaleC` | No | `art/rafalec` (on `art/typhoon`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VII | F-22A Raptor | `F22A` | No | `art/f22a` (on `art/rafalec`) | Done | AirDominance (default), Dark, Ghost, Splinter | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VII | F-35A | `F35A` | No | `art/f35a` (on `art/f22a`) | Done | Stealth (default), Dark, Ghost, Aggressor | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
+| VII | Su-57 | `Su57` | No | `art/su57` (on `art/f35a`) | Done | VKS (default), Dark, Grey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VIII | Tempest-class concept | `Tempest` | No | | | | | |
 
 ## Cockpit system (`art/cockpits`)
@@ -128,3 +128,83 @@ Files in `tools/blender/out/`:
 - Previews: `MiG29A_{side,top,front,threequarter}.png`, `MiG29A_overlay_{side,top}.png`, `textures/MiG29A_<Skin>_paint_*.png` and `MiG29A_cockpit_*.png`
 
 To do in Studio: import the model, run `install("MiG29A", workspace.MiG29A_base)` (twin nozzles, `NozzleL` and `NozzleR`), make the skin SurfaceAppearances, install the cockpit, then play test. Both rudders are on the `Rudder` control, and the stabilators are on the elevon controls.
+
+## F-14A Tomcat (`art/f14a`, art only)
+
+Built on `art/mig29`. This branch also repaints the MiG-29A's Grey skin: its intake mouths were white, and are now dark ducts. Re-upload the 4 `MiG29A_Grey_Body_*.png` maps (only the Color map changed).
+
+Files in `tools/blender/out/`:
+- Model: `F14A_base.fbx`, plus `tools/Manifests/F14A.luau`
+- Skins: `textures/F14A_<Skin>_<Set>_<Map>.png` for the Navy, Gull, Ghost and Desert skins
+- Cockpit: `F14A_cockpit.fbx` and `F14A_Cockpit_{Color,Normal,Roughness,Metalness}.png`
+- Previews: `F14A_{side,top,front,threequarter}.png`, `F14A_overlay_{side,top}.png`, `textures/F14A_<Skin>_paint_*.png` and `F14A_cockpit_*.png`
+
+To do in Studio, when the F-14A gets flight data (an `AircraftData/F14A.luau` with `ModelName = "F14A"`): import the model, run `install("F14A", workspace.F14A_base)`, make the skin SurfaceAppearances, install the cockpit, then play test.
+
+## Mirage 2000C (`art/mirage2000`, art only)
+
+Built on `art/f14a`. Files in `tools/blender/out/`: `Mirage2000C_base.fbx` (manifest `tools/Manifests/Mirage2000C.luau`), `textures/Mirage2000C_<Skin>_<Set>_<Map>.png` for the AirDefence, Grey, Tactical and Desert skins, `Mirage2000C_cockpit.fbx` and `Mirage2000C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Mirage2000C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Mirage2000C_<Skin>_paint_*.png` and `Mirage2000C_cockpit_*.png`). Install it like the other jets once `AircraftData/Mirage2000C.luau` exists, with `ModelName = "Mirage2000C"`.
+
+## F-15C Eagle (`art/f15c`, art only)
+
+Built on `art/mirage2000`. Files in `tools/blender/out/`: `F15C_base.fbx` (manifest `tools/Manifests/F15C.luau`), `textures/F15C_<Skin>_<Set>_<Map>.png` for the ModEagle, Blue, Aggressor and Desert skins, `F15C_cockpit.fbx` and `F15C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15C_<Skin>_paint_*.png` and `F15C_cockpit_*.png`). Install it like the other jets once `AircraftData/F15C.luau` exists, with `ModelName = "F15C"`.
+
+## F/A-18C Hornet (`art/fa18c`, art only)
+
+Built on `art/f15c`. Files in `tools/blender/out/`: `FA18C_base.fbx` (manifest `tools/Manifests/FA18C.luau`), `textures/FA18C_<Skin>_<Set>_<Map>.png` for the Navy, Gull, Adversary and Ghost skins, `FA18C_cockpit.fbx` and `FA18C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18C_<Skin>_paint_*.png` and `FA18C_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18C.luau` exists, with `ModelName = "FA18C"`.
+
+## Su-27S Flanker (`art/su27s`, art only)
+
+Built on `art/fa18c`. Files in `tools/blender/out/`: `Su27S_base.fbx` (manifest `tools/Manifests/Su27S.luau`), `textures/Su27S_<Skin>_<Set>_<Map>.png` for the Flanker, Grey, Naval and Desert skins, `Su27S_cockpit.fbx` and `Su27S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su27S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su27S_<Skin>_paint_*.png` and `Su27S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su27S.luau` exists, with `ModelName = "Su27S"`.
+
+## Tornado F3 (`art/tornadof3`, art only)
+
+Built on `art/su27s`. Files in `tools/blender/out/`: `TornadoF3_base.fbx` (manifest `tools/Manifests/TornadoF3.luau`), `textures/TornadoF3_<Skin>_<Set>_<Map>.png` for the AirDefence, DarkGrey, Splinter and Desert skins, `TornadoF3_cockpit.fbx` and `TornadoF3_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`TornadoF3_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/TornadoF3_<Skin>_paint_*.png` and `TornadoF3_cockpit_*.png`). Install it like the other jets once `AircraftData/TornadoF3.luau` exists, with `ModelName = "TornadoF3"`.
+
+## F-16C Block 50 (`art/f16c`, art only)
+
+Built on `art/tornadof3`. Files in `tools/blender/out/`: `F16C_base.fbx` (manifest `tools/Manifests/F16C.luau`), `textures/F16C_<Skin>_<Set>_<Map>.png` for the Viper, Ghost, Arctic and Night skins, `F16C_cockpit.fbx` and `F16C_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F16C_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F16C_<Skin>_paint_*.png` and `F16C_cockpit_*.png`). Install it like the other jets once `AircraftData/F16C.luau` exists, with `ModelName = "F16C"`.
+
+## F-15E Strike Eagle (`art/f15e`, art only)
+
+Built on `art/f16c`. Files in `tools/blender/out/`: `F15E_base.fbx` (manifest `tools/Manifests/F15E.luau`), `textures/F15E_<Skin>_<Set>_<Map>.png` for the Strike, Ghost, Splinter and Desert skins, `F15E_cockpit.fbx` and `F15E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F15E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F15E_<Skin>_paint_*.png` and `F15E_cockpit_*.png`). Install it like the other jets once `AircraftData/F15E.luau` exists, with `ModelName = "F15E"`.
+
+## Su-30SM (`art/su30sm`, art only)
+
+Built on `art/f15e`. Files in `tools/blender/out/`: `Su30SM_base.fbx` (manifest `tools/Manifests/Su30SM.luau`), `textures/Su30SM_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Naval and Desert skins, `Su30SM_cockpit.fbx` and `Su30SM_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su30SM_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su30SM_<Skin>_paint_*.png` and `Su30SM_cockpit_*.png`). Install it like the other jets once `AircraftData/Su30SM.luau` exists, with `ModelName = "Su30SM"`.
+
+## MiG-29SMT (`art/mig29smt`, art only)
+
+Built on `art/su30sm`. Files in `tools/blender/out/`: `MiG29SMT_base.fbx` (manifest `tools/Manifests/MiG29SMT.luau`), `textures/MiG29SMT_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Splinter and Desert skins, `MiG29SMT_cockpit.fbx` and `MiG29SMT_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`MiG29SMT_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/MiG29SMT_<Skin>_paint_*.png` and `MiG29SMT_cockpit_*.png`). Install it like the other jets once `AircraftData/MiG29SMT.luau` exists, with `ModelName = "MiG29SMT"`.
+
+## Gripen C (`art/gripenc`, art only)
+
+Built on `art/mig29smt`. Files in `tools/blender/out/`: `GripenC_base.fbx` (manifest `tools/Manifests/GripenC.luau`), `textures/GripenC_<Skin>_<Set>_<Map>.png` for the Grey, DarkGrey, Splinter and Arctic skins, `GripenC_cockpit.fbx` and `GripenC_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`GripenC_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/GripenC_<Skin>_paint_*.png` and `GripenC_cockpit_*.png`). Install it like the other jets once `AircraftData/GripenC.luau` exists, with `ModelName = "GripenC"`.
+
+## F/A-18E Super Hornet (`art/fa18e`, art only)
+
+Built on `art/gripenc`. Files in `tools/blender/out/`: `FA18E_base.fbx` (manifest `tools/Manifests/FA18E.luau`), `textures/FA18E_<Skin>_<Set>_<Map>.png` for the Navy, CAG, Adversary and Ghost skins, `FA18E_cockpit.fbx` and `FA18E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18E_<Skin>_paint_*.png` and `FA18E_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18E.luau` exists, with `ModelName = "FA18E"`.
+
+## Su-35S (`art/su35s`, art only)
+
+Built on `art/fa18e`. Files in `tools/blender/out/`: `Su35S_base.fbx` (manifest `tools/Manifests/Su35S.luau`), `textures/Su35S_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Flanker and Desert skins, `Su35S_cockpit.fbx` and `Su35S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su35S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su35S_<Skin>_paint_*.png` and `Su35S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su35S.luau` exists, with `ModelName = "Su35S"`.
+
+## Eurofighter Typhoon (`art/typhoon`, art only)
+
+Built on `art/su35s`. Files in `tools/blender/out/`: `Typhoon_base.fbx` (manifest `tools/Manifests/Typhoon.luau`), `textures/Typhoon_<Skin>_<Set>_<Map>.png` for the AirDefence, TwoTone, DarkGrey and Desert skins, `Typhoon_cockpit.fbx` and `Typhoon_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Typhoon_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Typhoon_<Skin>_paint_*.png` and `Typhoon_cockpit_*.png`). Install it like the other jets once `AircraftData/Typhoon.luau` exists, with `ModelName = "Typhoon"`.
+
+## Rafale C (`art/rafalec`, art only)
+
+Built on `art/typhoon`. Files in `tools/blender/out/`: `RafaleC_base.fbx` (manifest `tools/Manifests/RafaleC.luau`), `textures/RafaleC_<Skin>_<Set>_<Map>.png` for the AirDefence, TwoTone, DarkGrey and Desert skins, `RafaleC_cockpit.fbx` and `RafaleC_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`RafaleC_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/RafaleC_<Skin>_paint_*.png` and `RafaleC_cockpit_*.png`). Install it like the other jets once `AircraftData/RafaleC.luau` exists, with `ModelName = "RafaleC"`.
+
+## F-22A Raptor (`art/f22a`, art only)
+
+Built on `art/rafalec`. Files in `tools/blender/out/`: `F22A_base.fbx` (manifest `tools/Manifests/F22A.luau`), `textures/F22A_<Skin>_<Set>_<Map>.png` for the AirDominance, Dark, Ghost and Splinter skins, `F22A_cockpit.fbx` and `F22A_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F22A_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F22A_<Skin>_paint_*.png` and `F22A_cockpit_*.png`). Install it like the other jets once `AircraftData/F22A.luau` exists, with `ModelName = "F22A"`.
+
+## F-35A Lightning II (`art/f35a`, art only)
+
+Built on `art/f22a`. Files in `tools/blender/out/`: `F35A_base.fbx` (manifest `tools/Manifests/F35A.luau`), `textures/F35A_<Skin>_<Set>_<Map>.png` for the Stealth, Dark, Ghost and Aggressor skins, `F35A_cockpit.fbx` and `F35A_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`F35A_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/F35A_<Skin>_paint_*.png` and `F35A_cockpit_*.png`). Install it like the other jets once `AircraftData/F35A.luau` exists, with `ModelName = "F35A"`.
+
+## Su-57 (`art/su57`, art only)
+
+Built on `art/f35a`. Files in `tools/blender/out/`: `Su57_base.fbx` (manifest `tools/Manifests/Su57.luau`), `textures/Su57_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Grey and Desert skins, `Su57_cockpit.fbx` and `Su57_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su57_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su57_<Skin>_paint_*.png` and `Su57_cockpit_*.png`). Install it like the other jets once `AircraftData/Su57.luau` exists, with `ModelName = "Su57"`.
