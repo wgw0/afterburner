@@ -490,3 +490,13 @@ There are four skins: `AirDefence` (light grey, low-visibility roundels; the def
 - The jet has 38 parts and 10,812 triangles, with 8 hardpoints: six in the main weapons bay and one in each side bay. The cockpit is 1,328 triangles, in charcoal, with the side stick: the HUD over the up-front controls, the large primary display in the middle (the radar face) and two smaller displays.
 
 There are four skins: `AirDominance` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Splinter` (grey splinter, no national markings).
+
+## 31. F-35A Lightning II (art only)
+
+`tools/blender/f35a_generate.py` builds the F-35A and `tools/blender/f35a_paint.py` paints it. Its Id is `F35A`; it has no flight data yet.
+
+- The reference is the Commons three-view made from the programme's public-domain renders: shaded images, so the outlines are silhouettes and the fit is looser than from a line drawing (about 5 cm). Its side view and its top view (turned nose left) were rebuilt as a composite. The scale comes from the published 15.67 m length (119.3 px/m), which gives an 11.0 m span against the published 10.7 m.
+- The builders are the F/A-18C's (as for the F-22A), with one engine. The jet is built from the chined forebody with the bubble canopy and the wide body over the engine (`Fuselage`); `Nacelles` are the intakes either side of the cockpit (with dark `IntakeDucts`), and `Strakes` the chines to the wing roots. The trapezoidal wing has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 25 degrees with rudders.
+- The jet has 36 parts and 10,536 triangles, with 10 hardpoints: two in each internal bay and three pylons under each wing. The cockpit is 1,344 triangles, in charcoal, with the side stick: the panoramic display as two large faces (the left one is the radar), with standby instruments under them. The real jet has no head-up display; the cockpit keeps one for the game's sight.
+
+There are four skins: `Stealth` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Aggressor` (grey splinter, no national markings).
