@@ -460,3 +460,13 @@ There are four skins: `Navy` (two greys, low-visibility markings; the default), 
 - The jet has 39 parts and 11,352 triangles. The cockpit is 1,720 triangles, in charcoal: the HUD over two large colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Flanker` (the Su-27's blues) and `Desert` (no national markings).
+
+## 28. Eurofighter Typhoon (art only)
+
+`tools/blender/typhoon_generate.py` builds the Typhoon and `tools/blender/typhoon_paint.py` paints it. Its Id is `Typhoon`; it has no flight data yet.
+
+- The reference is Inductiveload's public-domain Commons line drawing of the Typhoon, rebuilt as a composite with both views nose left. The scale comes from the published 15.96 m length (118.1 px/m), which gives a 10.9 m span against the published 10.95 m. In the overlays the model sits on the drawing's lines.
+- The jet is built from the fuselage (the radome, the bubble canopy and the spine, widening over the twin engines) and `Intakes`, the chin intake under the fuselage with its splitter, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit beside the cockpit. The cropped delta wing has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip pods. There is a single fin with its rudder, and twin nozzles. The builders are the Gripen C's, with twin engines.
+- The jet has 35 parts and 9,528 triangles, with 11 hardpoints: three pylons under each wing, four semi-recessed under the intake trunk and the centreline. The cockpit is 1,520 triangles, in charcoal: the HUD over the up-front controls and three colour displays (the middle one is the radar face).
+
+There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour RAF roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
