@@ -12,7 +12,8 @@ LAYOUT keys (stations are the generator's drawing stations, xd; lengths in metre
   spars         chord fractions; ribs (from, to, step) in |x|
   fin, rudder   parts; fin_lines: heights of the fin's panel lines; upper_only: parts never given the
                 underside colour (fins, fairings on top)
-  radome        xd where the radome ends; dark: other parts painted the radome colour (shock cones)
+  radome        xd where the radome ends; dark: other parts painted the radome colour (shock cones);
+                ducts: parts painted as dark intake ducts (recessed mouths)
   antiglare     (from, to, half width at from, half width at to)
   lip           (parts, xd): intake lips in bare metal ahead of xd; duct: parts whose aft-facing
                 insides are dark
@@ -179,6 +180,8 @@ def paint_airframe(L, P, N, part, ids, ao, scheme):
     radome = fus & (xd < L["radome"])
     dark = on(*L.get("dark", []))
     colour = np.where((radome | dark)[..., None], scheme["radome"], colour)
+    ducts = on(*L.get("ducts", []))  # recessed intake mouths
+    colour = np.where(ducts[..., None], DUCT, colour)
     a0, a1, h0, h1 = L["antiglare"]
     ag_half = np.clip((xd - a0) / max(a1 - a0, 1), 0, 1) * (h1 - h0) + h0
     antiglare = fus & (xd >= a0) & (xd <= a1) & (nz > 0.4) & (xa < ag_half)
@@ -242,7 +245,8 @@ def paint_airframe(L, P, N, part, ids, ao, scheme):
     if scheme.get("underside_metal"):  # aluminium lacquer: a little sheen
         metal = np.maximum(metal, 0.35 * under)
         rough = np.where(under > 0.5, 0.45, rough)
-    metal = np.where(marks | radome | dark | antiglare | duct | well, 0.0, metal)
+    metal = np.where(marks | radome | dark | antiglare | duct | ducts | well, 0.0, metal)
+    rough = np.where(ducts, 0.9, rough)
     rough = np.where(marks, 0.5, rough)
     rough = np.where(antiglare | well, 0.85, rough)
     metal = np.where(lip | hot, 0.85, metal)
