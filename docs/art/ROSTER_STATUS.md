@@ -28,7 +28,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Eurofighter Typhoon | `Typhoon` | No | `art/typhoon` (on `art/su35s`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Rafale C | `RafaleC` | No | | | | | |
+| VI | Rafale C | `RafaleC` | No | `art/rafalec` (on `art/typhoon`) | Done | AirDefence (default), TwoTone, DarkGrey, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VII | F-22A Raptor | `F22A` | No | | | | | |
 | VII | F-35A | `F35A` | No | | | | | |
 | VII | Su-57 | `Su57` | No | | | | | |
@@ -192,3 +192,7 @@ Built on `art/fa18e`. Files in `tools/blender/out/`: `Su35S_base.fbx` (manifest 
 ## Eurofighter Typhoon (`art/typhoon`, art only)
 
 Built on `art/su35s`. Files in `tools/blender/out/`: `Typhoon_base.fbx` (manifest `tools/Manifests/Typhoon.luau`), `textures/Typhoon_<Skin>_<Set>_<Map>.png` for the AirDefence, TwoTone, DarkGrey and Desert skins, `Typhoon_cockpit.fbx` and `Typhoon_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Typhoon_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Typhoon_<Skin>_paint_*.png` and `Typhoon_cockpit_*.png`). Install it like the other jets once `AircraftData/Typhoon.luau` exists, with `ModelName = "Typhoon"`.
+
+## Rafale C (`art/rafalec`, art only)
+
+Built on `art/typhoon`. Files in `tools/blender/out/`: `RafaleC_base.fbx` (manifest `tools/Manifests/RafaleC.luau`), `textures/RafaleC_<Skin>_<Set>_<Map>.png` for the AirDefence, TwoTone, DarkGrey and Desert skins, `RafaleC_cockpit.fbx` and `RafaleC_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`RafaleC_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/RafaleC_<Skin>_paint_*.png` and `RafaleC_cockpit_*.png`). Install it like the other jets once `AircraftData/RafaleC.luau` exists, with `ModelName = "RafaleC"`.

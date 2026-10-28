@@ -470,3 +470,13 @@ There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark`
 - The jet has 35 parts and 9,528 triangles, with 11 hardpoints: three pylons under each wing, four semi-recessed under the intake trunk and the centreline. The cockpit is 1,520 triangles, in charcoal: the HUD over the up-front controls and three colour displays (the middle one is the radar face).
 
 There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour RAF roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
+
+## 29. Rafale C (art only)
+
+`tools/blender/rafalec_generate.py` builds the Rafale C and `tools/blender/rafalec_paint.py` paints it. Its Id is `RafaleC`; it has no flight data yet.
+
+- The reference is Kaboldy's Commons three-view of the Rafale (CC BY-SA 3.0), cropped inside its border and scaled to 2000 px, with both views nose left. The scale comes from the published 15.27 m length (127.5 px/m), which gives a 10.8 m span against the published 10.9 m. The drawing is the two-seat Rafale B: the C's single-seat canopy is shorter, with a spine behind it. In the overlays the model sits on the drawing's lines, apart from the B's rear canopy.
+- The jet is built from the fuselage (the radome, the canopy and the spine, widening forward into the canard roots and over the twin engines) and `Intakes`, either side of the cockpit under the canard roots, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, on the elevon controls) are close-coupled ahead of the cropped delta wing, which has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip rails. There is a single fin with its rudder and tip pod, and twin nozzles. `Pitot` holds the nose probe and the fixed refuelling probe. The builders are the Gripen C's and the Typhoon's.
+- The jet has 35 parts and 9,864 triangles, with 11 hardpoints: the wingtip rails, three pylons under each wing, two under the intakes and the centreline. The cockpit is 1,484 triangles, in charcoal, with the side stick: the HUD over the radar display (the middle face) and a colour display either side.
+
+There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
