@@ -26,7 +26,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | F/A-18E Super Hornet | `FA18E` | No | `art/fa18e` (on `art/gripenc`) | Done | Navy (default), CAG, Adversary, Ghost | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| VI | Su-35S | `Su35S` | No | | | | | |
+| VI | Su-35S | `Su35S` | No | `art/su35s` (on `art/fa18e`) | Done | VKS (default), Dark, Flanker, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | Eurofighter Typhoon | `Typhoon` | No | | | | | |
 | VI | Rafale C | `RafaleC` | No | | | | | |
 | VII | F-22A Raptor | `F22A` | No | | | | | |
@@ -184,3 +184,7 @@ Built on `art/mig29smt`. Files in `tools/blender/out/`: `GripenC_base.fbx` (mani
 ## F/A-18E Super Hornet (`art/fa18e`, art only)
 
 Built on `art/gripenc`. Files in `tools/blender/out/`: `FA18E_base.fbx` (manifest `tools/Manifests/FA18E.luau`), `textures/FA18E_<Skin>_<Set>_<Map>.png` for the Navy, CAG, Adversary and Ghost skins, `FA18E_cockpit.fbx` and `FA18E_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`FA18E_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/FA18E_<Skin>_paint_*.png` and `FA18E_cockpit_*.png`). Install it like the other jets once `AircraftData/FA18E.luau` exists, with `ModelName = "FA18E"`.
+
+## Su-35S (`art/su35s`, art only)
+
+Built on `art/fa18e`. Files in `tools/blender/out/`: `Su35S_base.fbx` (manifest `tools/Manifests/Su35S.luau`), `textures/Su35S_<Skin>_<Set>_<Map>.png` for the VKS, Dark, Flanker and Desert skins, `Su35S_cockpit.fbx` and `Su35S_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`Su35S_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/Su35S_<Skin>_paint_*.png` and `Su35S_cockpit_*.png`). Install it like the other jets once `AircraftData/Su35S.luau` exists, with `ModelName = "Su35S"`.

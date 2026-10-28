@@ -451,3 +451,12 @@ There are four skins: `Grey` (two greys, low-visibility markings; the default), 
 - The painter reuses the F/A-18C's panel layout on the stretched stations, with the larger wing.
 
 There are four skins: `Navy` (two greys, low-visibility markings; the default), `CAG` (the greys with full-colour markings), `Adversary` (blue splinter, no national markings) and `Ghost` (overall dark grey, low-visibility).
+
+## 27. Su-35S (art only)
+
+`tools/blender/su35s_generate.py` builds the Su-35S and `tools/blender/su35s_paint.py` paints it. Its Id is `Su35S`; it has no flight data yet.
+
+- The Su-35S's airframe is the Su-27S's, so the script imports `su27s_generate.py` (its measurements, overlays and builders) and changes what the Su-35S changes: the longer, thicker tail sting, the refuelling probe on the left of the windscreen (`RefuellingProbe`), and two more wing pylons (12 hardpoints). The painter reuses the Su-27S's panel layout.
+- The jet has 39 parts and 11,352 triangles. The cockpit is 1,720 triangles, in charcoal: the HUD over two large colour displays (the left one is the radar face), with standby instruments under them.
+
+There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Flanker` (the Su-27's blues) and `Desert` (no national markings).
