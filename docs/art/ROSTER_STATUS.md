@@ -24,7 +24,7 @@ Jets without flight data in `src/shared/AircraftData/` get the art only, under t
 | V | F-15E | `F15E` | No | `art/f15e` (on `art/f16c`) | Done | Strike (default), Ghost, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | Su-30SM | `Su30SM` | No | `art/su30sm` (on `art/f15e`) | Done | VKS (default), Blue, Naval, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | V | MiG-29SMT | `MiG29SMT` | No | `art/mig29smt` (on `art/su30sm`) | Done | VKS (default), Blue, Splinter, Desert | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
-| V | Gripen C | `GripenC` | No | | | | | |
+| V | Gripen C | `GripenC` | No | `art/gripenc` (on `art/mig29smt`) | Done | Grey (default), DarkGrey, Splinter, Arctic | Done | Import and upload when it gets flight data (the skin entries are already in Config.Skins) |
 | VI | F/A-18E Super Hornet | `FA18E` | No | | | | | |
 | VI | Su-35S | `Su35S` | No | | | | | |
 | VI | Eurofighter Typhoon | `Typhoon` | No | | | | | |
@@ -176,3 +176,7 @@ Built on `art/f15e`. Files in `tools/blender/out/`: `Su30SM_base.fbx` (manifest 
 ## MiG-29SMT (`art/mig29smt`, art only)
 
 Built on `art/su30sm`. Files in `tools/blender/out/`: `MiG29SMT_base.fbx` (manifest `tools/Manifests/MiG29SMT.luau`), `textures/MiG29SMT_<Skin>_<Set>_<Map>.png` for the VKS, Blue, Splinter and Desert skins, `MiG29SMT_cockpit.fbx` and `MiG29SMT_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`MiG29SMT_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/MiG29SMT_<Skin>_paint_*.png` and `MiG29SMT_cockpit_*.png`). Install it like the other jets once `AircraftData/MiG29SMT.luau` exists, with `ModelName = "MiG29SMT"`.
+
+## Gripen C (`art/gripenc`, art only)
+
+Built on `art/mig29smt`. Files in `tools/blender/out/`: `GripenC_base.fbx` (manifest `tools/Manifests/GripenC.luau`), `textures/GripenC_<Skin>_<Set>_<Map>.png` for the Grey, DarkGrey, Splinter and Arctic skins, `GripenC_cockpit.fbx` and `GripenC_Cockpit_{Color,Normal,Roughness,Metalness}.png`, and previews (`GripenC_{side,top,front,threequarter,overlay_side,overlay_top}.png`, `textures/GripenC_<Skin>_paint_*.png` and `GripenC_cockpit_*.png`). Install it like the other jets once `AircraftData/GripenC.luau` exists, with `ModelName = "GripenC"`.
