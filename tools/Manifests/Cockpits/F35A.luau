@@ -4,7 +4,7 @@
 return {
 	airframe = "F35A",
 	units = "metres (Roblox axes: x right, y up, z aft), in the jet's Root space",
-	studsPerMetre = 3.5714,
+	studsPerMetre = 1,
 	triangles = 1344,
 	eye = { 0, 1.1634, -5.6915 },
 	fit = {

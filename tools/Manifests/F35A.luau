@@ -4,9 +4,9 @@
 return {
 	airframe = "F35A",
 	units = "metres (Roblox axes: x right, y up, z aft)",
-	studsPerMetre = 3.5714,
+	studsPerMetre = 1,
 	length = 15.67,
-	triangles = 10536,
+	triangles = 10856,
 	parts = {
 		{
 			name = "Fuselage",
@@ -51,6 +51,17 @@ return {
 				size = { 4.2414, 0.08, 8.0469 },
 			},
 			triangles = 52,
+		},
+		{
+			name = "TailBooms",
+			set = "Body",
+			kind = "Static",
+			pivot = { 0, 0, 0 },
+			bounds = {
+				centre = { 0, 0.45, 3.6547 },
+				size = { 3.76, 0.52, 5.1132 },
+			},
+			triangles = 320,
 		},
 		{
 			name = "Canopy",
@@ -224,10 +235,10 @@ return {
 			name = "StabilatorR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 1.7854, 0.4023, 4.9099 },
+			pivot = { 1.6, 0.45, 4.9099 },
 			bounds = {
-				centre = { 2.7494, 0.4023, 5.0168 },
-				size = { 1.9279, 0.0847, 2.1375 },
+				centre = { 2.6567, 0.45, 5.0168 },
+				size = { 2.1133, 0.0847, 2.1375 },
 			},
 			hinge = {
 				axis = { 1, 0, 0 },
@@ -241,10 +252,10 @@ return {
 			name = "StabilatorL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -1.7854, 0.4023, 4.9099 },
+			pivot = { -1.6, 0.45, 4.9099 },
 			bounds = {
-				centre = { -2.7494, 0.4023, 5.0168 },
-				size = { 1.9279, 0.0847, 2.1375 },
+				centre = { -2.6567, 0.45, 5.0168 },
+				size = { 2.1133, 0.0847, 2.1375 },
 			},
 			hinge = {
 				axis = { 1, 0, 0 },
@@ -260,8 +271,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 1.9753, 1.8072, 3.5918 },
-				size = { 1.0475, 2.1087, 3.8139 },
+				centre = { 2.0467, 1.7424, 3.5918 },
+				size = { 1.1079, 2.2382, 3.8139 },
 			},
 			triangles = 440,
 		},
@@ -269,13 +280,13 @@ return {
 			name = "RudderR",
 			set = "Body",
 			kind = "ControlSurface",
-			pivot = { 1.8117, 1.4292, 4.1621 },
+			pivot = { 1.9133, 1.4292, 4.2208 },
 			bounds = {
-				centre = { 1.8063, 1.4266, 4.4199 },
-				size = { 0.6206, 1.2405, 1.3677 },
+				centre = { 1.9082, 1.4268, 4.4734 },
+				size = { 0.6191, 1.2398, 1.3072 },
 			},
 			hinge = {
-				axis = { 0.3567, 0.7649, 0.5364 },
+				axis = { 0.3627, 0.7778, 0.5133 },
 				min = -30,
 				max = 30,
 				control = "Rudder",
@@ -288,8 +299,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { -1.9753, 1.8072, 3.5918 },
-				size = { 1.0475, 2.1087, 3.8139 },
+				centre = { -2.0467, 1.7424, 3.5918 },
+				size = { 1.1079, 2.2382, 3.8139 },
 			},
 			triangles = 440,
 		},
@@ -297,13 +308,13 @@ return {
 			name = "RudderL",
 			set = "Body",
 			kind = "ControlSurface",
-			pivot = { -1.8117, 1.4292, 4.1621 },
+			pivot = { -1.9133, 1.4292, 4.2208 },
 			bounds = {
-				centre = { -1.8063, 1.4266, 4.4199 },
-				size = { 0.6206, 1.2405, 1.3677 },
+				centre = { -1.9082, 1.4268, 4.4734 },
+				size = { 0.6191, 1.2398, 1.3072 },
 			},
 			hinge = {
-				axis = { -0.3567, 0.7649, 0.5364 },
+				axis = { -0.3627, 0.7778, 0.5133 },
 				min = -30,
 				max = 30,
 				control = "Rudder",
