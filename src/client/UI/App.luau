@@ -176,6 +176,8 @@ local function App(props: any)
 			OnMultiplayer = function()
 				props.OnTravel("Lobby")
 			end,
+			FirstSession = props.FirstSession,
+			OnFinishOnboarding = props.OnFinishOnboarding,
 			Selected = props.Selected,
 			OnSelect = props.OnSelect,
 			Status = props.Status,

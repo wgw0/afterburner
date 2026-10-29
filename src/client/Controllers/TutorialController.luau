@@ -8,6 +8,9 @@
 --   4 Missiles: select a heat-seeker, get the lock tone on a drone, hit 2 drones with heat-seekers.
 --   5 Defend: drop a flare, then beat 3 heat-seekers fired at you from behind (DebugLaunchAtMe).
 --   6 First fight: a head-on merge with an Easy AI pilot that fights only you (TrainingBout); win it.
+-- First session (TUT-04): a new pilot arrives on a training server and lesson 1 starts by itself; after
+-- each of lessons 1–3 they're taken back to the menu, where the welcome card offers the next lesson or
+-- multiplayer. Any lesson can be quit by holding the hangar key (shown on the panel).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +28,7 @@ local WeaponData = require(Shared.WeaponData)
 local BindingsController = require(script.Parent.BindingsController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
+local PlayerDataController = require(script.Parent.PlayerDataController)
 local SensorController = require(script.Parent.SensorController)
 
 local ORANGE = Color3.fromRGB(255, 138, 61)
@@ -64,6 +68,8 @@ local panel: Frame
 local titleLabel: TextLabel
 local stepLabel: TextLabel
 local hintLabel: TextLabel
+local quitLabel: TextLabel
+local firstStarted = false -- the first-session lesson has been started (once per visit)
 local runner: LessonRunner.Runner? = nil
 local pendingLesson: string? = nil
 local props: Folder? = nil
@@ -431,6 +437,11 @@ local function build()
 	hintLabel = label(panel, 13, Color3.fromRGB(190, 200, 220), Enum.Font.Gotham)
 	hintLabel.Position = UDim2.new(0, 12, 1, -24)
 	hintLabel.Size = UDim2.new(1, -24, 0, 18)
+	-- How to get out: the hangar key (BindingsController), top right
+	quitLabel = label(panel, 11, Color3.fromRGB(150, 162, 186), Enum.Font.GothamBold)
+	quitLabel.Position = UDim2.new(1, -212, 0, 6)
+	quitLabel.Size = UDim2.fromOffset(200, 16)
+	quitLabel.TextXAlignment = Enum.TextXAlignment.Right
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
@@ -456,6 +467,7 @@ local function render()
 	local step = r:current()
 	local index, total = r:progress()
 	titleLabel.Text = `{r.lesson.title}  ·  STEP {index}/{total}`
+	quitLabel.Text = `HOLD {string.upper(BindingsController:Label("Hangar"))} TO QUIT`
 	if step then
 		stepLabel.Text = step.text
 		hintLabel.Text = withKeys(step.hint or "")
@@ -494,6 +506,28 @@ function TutorialController:_start()
 	render()
 end
 
+-- A new pilot's first visit to training: not yet onboarded (they haven't skipped or gone to multiplayer).
+function TutorialController:FirstSession(): boolean
+	local data = PlayerDataController.data
+	return ServerRole.isTraining() and data ~= nil and not (data.Flags and data.Flags.Onboarded)
+end
+
+-- First session: start lesson 1 by itself once the map is ready (lesson 1 not done yet).
+local function startFirstLesson()
+	local data = PlayerDataController.data
+	if firstStarted or runner or not TutorialController:FirstSession() then
+		return
+	end
+	if (data.Lessons and data.Lessons.Flight) or not Players.LocalPlayer:GetAttribute("MapReady") then
+		return
+	end
+	firstStarted = true
+	local ok = TutorialController:Begin("Flight", data.Lineup[1] or "F5E")
+	if not ok then
+		firstStarted = false
+	end
+end
+
 function TutorialController:Cancel()
 	pendingLesson = nil
 	stop()
@@ -528,6 +562,15 @@ local function update(dt: number)
 		end)
 		TutorialController.Finished:Fire(id)
 		Net.Client.fire("LessonCompleted", id) -- the onboarding funnel (ANL-02)
+		if TutorialController:FirstSession() then
+			-- Back to the menu, where the welcome card has what's next
+			hintLabel.Text = "Nice flying! Back to the menu for what's next…"
+			task.delay(4, function()
+				if FlightController.jet and not runner then
+					Net.Client.fire("ReturnToHangar")
+				end
+			end)
+		end
 	end
 end
 
@@ -574,6 +617,12 @@ function TutorialController:Start()
 		end
 	end)
 	RunService.RenderStepped:Connect(update)
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			startFirstLesson()
+		end
+	end)
 end
 
 return TutorialController

@@ -3,7 +3,8 @@
 -- Nothing here earns rewards. Shown in place of the Hangar on a training server (ServerRole).
 -- props: Data, Selected, OnSelect(id), Status, CanPlay, OnPlay(id), Lessons ({ {id, name} }), OnLesson(id),
 --   VsAIRunning (bool), ModeName (the running match's name), OnVsAI(modeId, difficulty, count), OnFreeFlight(),
---   OnMultiplayer() (back to a lobby: the button left of FLY, where TRAINING sits in the lobby).
+--   OnMultiplayer() (back to a lobby: the button left of FLY, where TRAINING sits in the lobby),
+--   FirstSession (a new pilot: show the welcome card, TUT-04), OnFinishOnboarding() (stay in training).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -42,6 +43,85 @@ local function choices(list: { any }, value: string, width: number, order: numbe
 		})
 	end
 	return e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = order }, buttons)
+end
+
+-- The first three lessons, as the welcome card walks a new pilot through them
+local BASICS = { { "Flight", "Basic flight" }, { "Energy", "Energy" }, { "Guns", "Guns" } }
+
+-- A new pilot's welcome (TUT-04): lessons 1–3 ticked off as they go, the next one, or skip to multiplayer.
+local function Welcome(props: any)
+	local done = props.Data.Lessons or {}
+	local nextLesson = nil
+	local rows: { [string]: any } = { Layout = C.List({ Gap = 4 }) }
+	for i, lesson in BASICS do
+		local finished = done[lesson[1]] == true
+		if not finished and not nextLesson then
+			nextLesson = lesson
+		end
+		rows[lesson[1]] = e(C.Label, {
+			Text = `{if finished then "✓" else tostring(i) .. "."}  {lesson[2]}`,
+			Size = UDim2.new(1, 0, 0, 22),
+			TextSize = 15,
+			Bold = nextLesson == lesson,
+			Color = if finished then Theme.Good elseif nextLesson == lesson then Theme.Text else Theme.Dim,
+			LayoutOrder = i,
+		})
+	end
+	local complete = nextLesson == nil
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(440, 262),
+		Position = UDim2.fromScale(0.5, 0.36),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Padding = 20,
+		StrokeColor = Theme.Accent,
+		StrokeThickness = 2,
+	}, {
+		Title = e(C.Label, {
+			Text = if complete then "TRAINING COMPLETE" else "WELCOME, PILOT",
+			Size = UDim2.new(1, 0, 0, 28),
+			Heavy = true,
+			TextSize = 24,
+			Color = Theme.Accent,
+		}),
+		Text = e(C.Label, {
+			Text = if complete
+				then "You've got the basics. Time for a real fight, or keep practising here."
+				else "Three short lessons get you flying and fighting. You can skip them any time.",
+			Size = UDim2.new(1, 0, 0, 36),
+			Position = UDim2.fromOffset(0, 34),
+			TextSize = 13,
+			Wrap = true,
+			Color = Theme.Dim,
+		}),
+		Lessons = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 74),
+			Position = UDim2.fromOffset(0, 78),
+			BackgroundTransparency = 1,
+		}, rows),
+		Primary = e(C.Button, {
+			Text = if complete then "PLAY MULTIPLAYER" else `START: {string.upper((nextLesson :: any)[2])}`,
+			Style = "Primary",
+			Size = UDim2.new(0.56, -6, 0, 44),
+			Position = UDim2.new(0, 0, 1, -44),
+			TextSize = 15,
+			OnClick = function()
+				if complete then
+					props.OnMultiplayer()
+				else
+					props.OnLesson((nextLesson :: any)[1])
+				end
+			end,
+		}),
+		Secondary = e(C.Button, {
+			Text = if complete then "KEEP TRAINING" else "SKIP TO MULTIPLAYER",
+			Style = "Ghost",
+			Size = UDim2.new(0.44, -6, 0, 44),
+			Position = UDim2.new(1, 0, 1, -44),
+			AnchorPoint = Vector2.new(1, 0),
+			TextSize = 12,
+			OnClick = if complete then props.OnFinishOnboarding else props.OnMultiplayer,
+		}),
+	})
 end
 
 local function Training(props: any)
@@ -176,7 +256,16 @@ local function Training(props: any)
 	})
 
 	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
-		Preview = if airframe
+		Welcome = if props.FirstSession
+			then e(Welcome, {
+				Data = data,
+				OnLesson = props.OnLesson,
+				OnMultiplayer = props.OnMultiplayer,
+				OnFinishOnboarding = props.OnFinishOnboarding,
+			})
+			else nil,
+		-- The welcome card takes the turntable's place for a new pilot
+		Preview = if airframe and not props.FirstSession
 			then e(JetPreview, {
 				AirframeId = selected,
 				Skin = Progression.skinFor(data, selected),

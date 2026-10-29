@@ -22,6 +22,7 @@ local TechTree = require(Shared.TechTree)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local DataService = require(script.Parent.DataService)
+local MatchmakingService = require(script.Parent.MatchmakingService)
 
 local ADMINS: { number } = {} -- extra admin user ids (live config later, §31.1)
 local MAX_GRANT = 1e7
@@ -114,6 +115,26 @@ local COMMANDS: { [string]: Command } = {
 				return true
 			end)
 			return ok == true, if ok then `Reset {who.Name}'s save` else "Save not loaded"
+		end,
+	},
+	-- Replays the first-session flow (TUT-04 testing): clears the lessons and the onboarded flag, then sends
+	-- the player to training as a new pilot. The training reward isn't paid twice (TutorialComplete stays).
+	["onboarding.restart"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who = target(admin, args)
+			if not who then
+				return false, "Player not found"
+			end
+			local ok = DataService:Update(who, function(data)
+				data.Lessons = {}
+				data.Flags.Onboarded = nil
+				return true
+			end)
+			if ok then
+				MatchmakingService:StartFirstSession(who)
+			end
+			return ok == true, if ok then `{who.Name} starts the first session again` else "Save not loaded"
 		end,
 	},
 	-- Clears challenges and achievements back to a fresh account's (LIV-01/02 testing). Stats are kept.
