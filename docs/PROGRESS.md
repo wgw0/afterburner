@@ -303,6 +303,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - Radar: lock failure reasons on the HUD, pulse radars see close targets in clutter, stealth now shrinks detection range, zooming scopes (§14.2, §14.5). Locks checked in play by Will.
 - The island raised above the sea so it doesn't look flooded from afar (§37.5). Checked from the air.
 - Tech tree rows size to their tallest branch; the RP note sits below everything.
+- Missile and radar ranges cut for the map's size (about 29 km across): radar missiles and radars by 60%, heat-seekers by 40% (AIM-7F 10 km, AIM-9X 5.4 km, F-15C radar 24 km). Checked in play by Will.
 - Two Severn Bridges to the island (§37.5). Placed and checked in play; roads to them still to do.
 - The Ground Roamer, a drivable 4x4 (§36). Driven in play; airbase spawn spots, other players' wheel spin and touch controls still to do.
 - Betty voice warnings and RWR recordings (AUD-04 above).
