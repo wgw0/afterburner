@@ -1143,6 +1143,12 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 **Acceptance:** a tester who throttles back, breaks hard and flares at the right time defeats a rear-aspect IR missile most of the time *(target: 70–85%)*. Flaring with the afterburner on and flying straight should usually fail.
 
+### 15.4 As built: flare programmes (CMS-04, November 2026)
+
+- **A programme is a short burst, not a stream:** on Tier V and up, one press of the flare key fires 2 salvos of 2 flares, 0.5 s apart (4 flares; about 7 defences from a full load of 30). A press while one is running doesn't start another. Tier I–IV still drop one flare per press, and chaff is unchanged. Rules in `Countermeasures` (`PROGRAMME`, `hasProgramme`, `autoDue`; tested in `FlareProgramme.spec`, which also checks every Tier V+ jet carries at least 5 programmes).
+- **Automatic** (Will's call: press plus auto): with the `AutoFlares` setting on (the default; Settings → Controls → Automatic flares), a heat-seeker guiding on a player's Tier V+ jet fires the programme once, when it's `AUTO_TIME` (2 s) from arriving. Flares burn out in 3 s and lose most of their heat in the first, so one fired at launch from range would be cold by the time the missile arrives. Once per missile, so it can't drain the jet. AI pilots keep dispensing for themselves.
+- Server-side in `MissileService` (`runProgramme`, `checkAutoFlares` each missile step). Checked in Studio: F-5E one press, one flare; F-16C a press (and a second during it) 4 flares; an AIM-9L fired at the F-16C set the programme off 2.6 s after launch; with the setting off, nothing fired.
+
 ---
 
 ## 16. Anti-cheat and validation (SEC)

@@ -36,6 +36,11 @@ local SECTIONS = {
 			},
 			{ key = "MouseSensitivity", label = "Mouse sensitivity", step = 0.1, format = "%.1f×" },
 			{ key = "InvertPitch", label = "Invert pitch", hint = "Flips the mouse's up and down." },
+			{
+				key = "AutoFlares",
+				label = "Automatic flares",
+				hint = "Tier V and up: your flare programme fires by itself as a heat-seeker closes in.",
+			},
 		},
 	},
 	{

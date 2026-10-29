@@ -34,6 +34,8 @@ local SPECS: { [string]: Spec } = {
 	EffectsQuality = { kind = "enum", values = { "Auto", "Low", "Medium", "High" }, default = "Auto" },
 	Contrails = { kind = "boolean", default = true },
 	Vapour = { kind = "boolean", default = true },
+	-- CMS-04: Tier V+ jets fire their flare programme by themselves when a heat-seeker closes in
+	AutoFlares = { kind = "boolean", default = true },
 	-- The jet picked in the hangar, so a match server launches you in it (it follows you between servers)
 	SelectedJet = (function(): Spec
 		local ids = {}

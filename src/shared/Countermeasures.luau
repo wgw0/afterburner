@@ -15,6 +15,24 @@ Countermeasures.FLARE_EJECT = 25 -- m/s, downward and back
 Countermeasures.SEEKER_FOV = math.rad(6) -- a flare must appear this close to the tracked target to tempt the seeker
 Countermeasures.DECOY_FACTOR = 0.22 -- per-flare decoy strength (tuned in Engagement.spec: proper defence ≈ 80%)
 
+-- Flare programmes (CMS-04): from Tier V a press fires a short programme instead of one flare: SALVOS
+-- salvos of PER_SALVO flares, INTERVAL seconds apart (2 × 2 over 0.5 s: 4 flares, ~7 defences from 30).
+-- With the AutoFlares setting on, a heat-seeker guiding on you also fires it once, AUTO_TIME seconds
+-- before it would arrive: flares burn out in FLARE_BURN, so one fired at launch from range would be cold.
+Countermeasures.PROGRAMME_TIER = 5
+Countermeasures.PROGRAMME = table.freeze({ salvos = 2, perSalvo = 2, interval = 0.5 })
+Countermeasures.AUTO_TIME = 2.0
+
+function Countermeasures.hasProgramme(tier: number): boolean
+	return tier >= Countermeasures.PROGRAMME_TIER
+end
+
+-- Whether an incoming heat-seeker is close enough to fire the automatic programme: (distance in metres,
+-- closing speed in m/s; nothing if it isn't closing).
+function Countermeasures.autoDue(distanceMetres: number, closingSpeed: number): boolean
+	return closingSpeed > 0 and distanceMetres / closingSpeed <= Countermeasures.AUTO_TIME
+end
+
 export type Flare = {
 	id: number,
 	position: Vector3, -- studs
