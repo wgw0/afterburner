@@ -416,7 +416,13 @@ local function makeMatch(match: Queue.Match)
 		pcall(store.queueRemove, keyOf(entry.userId))
 	end
 	local record = { role = "Match", mode = match.mode, players = users, band = match.band, formed = now() }
-	Telemetry.event("MatchFormed", match.longestWait, { mode = match.mode, players = #users, spread = match.spread })
+	Telemetry.event(
+		"MatchFormed",
+		match.longestWait,
+		{ mode = match.mode, players = #users, spread = math.round(match.spread * 10) / 10 },
+		nil,
+		{ "mode", "spread" }
+	)
 
 	if studio then
 		-- No reserved servers in Studio: this server becomes the match

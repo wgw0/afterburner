@@ -78,6 +78,9 @@ function PlayerData.template(): { [string]: any }
 		Achievements = {},
 		Title = "", -- the title shown on the scoreboard (Config/LevelRewards), "" for none
 		LevelRewardsClaimed = 0, -- the level whose Credits / Free RP milestones have been paid up to
+		Lessons = {}, -- [lessonId] = true once finished (TelemetryService)
+		Onboarding = {}, -- onboarding funnel steps already logged (ANL-02)
+		TopTier = 0, -- highest tier owned, for the progression event
 		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
 		Flags = {},
 		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)

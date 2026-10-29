@@ -527,6 +527,7 @@ local function update(dt: number)
 			end
 		end)
 		TutorialController.Finished:Fire(id)
+		Net.Client.fire("LessonCompleted", id) -- the onboarding funnel (ANL-02)
 	end
 end
 

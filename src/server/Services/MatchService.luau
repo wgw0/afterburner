@@ -287,14 +287,17 @@ local function endMatch(reason: string)
 		else nil
 	local winner = if mode.Teams then winnerTeam or "Draw" else ranking[1] and ranking[1].name
 	results = { winner = winner, winnerTeam = winnerTeam, reason = reason, ranking = ranking }
+	local duration = os.clock() - stateSince -- before the state (and its clock) moves on
 	setState("Results")
 	clearJets()
 	MatchService.MatchEnded:Fire(ranking, reason, winnerTeam)
-	Telemetry.event("MatchEnded", os.clock() - stateSince, {
+	-- Value: how long it lasted (s). Sent: the mode and the BR band's top (ANL-04).
+	Telemetry.event("MatchEnded", duration, {
 		mode = mode.Id,
+		band = band.max,
 		reason = reason,
 		pilots = #ranking,
-	})
+	}, nil, { "mode", "band" })
 end
 
 local function onKill(jet: Jet, credit: any, cause: string)
