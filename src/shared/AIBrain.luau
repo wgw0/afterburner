@@ -10,6 +10,8 @@
 --   Attack       target close: lead pursuit, guns when the solution is good
 --   Engage       target known but far: pursue, climb for an energy advantage
 --   Patrol       no target: fly to waypoints inside the map
+--   Objective    Air Superiority: fly to the zone the match gave it and circle inside; only enemies within
+--                OBJECTIVE_ENGAGE pull it away
 
 local Ballistics = require(script.Parent.Ballistics)
 local Units = require(script.Parent.Units)
@@ -30,6 +32,9 @@ export type Profile = {
 }
 
 local AIBrain = {}
+
+-- Air Superiority: enemies closer than this (real metres) pull an AI off its zone
+AIBrain.OBJECTIVE_ENGAGE = 4000
 
 AIBrain.PROFILES = table.freeze({
 	Easy = table.freeze({
@@ -134,6 +139,7 @@ export type Context = {
 	ceiling: number, -- studs
 	maxG: number?, -- airframe G limit (default 7)
 	cornerSpeed: number?, -- real m/s (default 180)
+	objective: { position: Vector3, radius: number }?, -- a zone to take or hold (studs)
 }
 
 export type Memory = {
@@ -233,9 +239,12 @@ function AIBrain.chooseState(memory: Memory, profile: Profile, ctx: Context): st
 
 	if ctx.target then
 		local range = Units.toMetres((ctx.target.cframe.Position - ctx.me.cframe.Position).Magnitude)
+		if ctx.objective and range > AIBrain.OBJECTIVE_ENGAGE then
+			return "Objective" -- the zone matters more than a distant enemy
+		end
 		return if range <= 1500 then "Attack" else "Engage"
 	end
-	return "Patrol"
+	return if ctx.objective then "Objective" else "Patrol"
 end
 
 function AIBrain.decide(memory: Memory, profile: Profile, ctx: Context): Decision
@@ -314,6 +323,20 @@ function AIBrain.decide(memory: Memory, profile: Profile, ctx: Context): Decisio
 		end
 		decision.throttle = 1
 		decision.afterburner = true
+	elseif state == "Objective" and ctx.objective then
+		-- Fly to the zone at a working height, then circle inside it
+		local centre = Vector3.new(ctx.objective.position.X, Units.toStuds(1200), ctx.objective.position.Z)
+		local offset = Vector3.new(myPos.X - centre.X, 0, myPos.Z - centre.Z)
+		if offset.Magnitude < ctx.objective.radius * 0.6 then
+			local tangent = Vector3.new(-offset.Z, 0, offset.X)
+			tangent = if tangent.Magnitude > 1 then tangent.Unit else flat(me.cframe.LookVector)
+			local climb = math.clamp((centre.Y - myPos.Y) / Units.toStuds(600), -0.3, 0.3)
+			decision.aim = (tangent + Vector3.new(0, climb, 0)).Unit
+			decision.throttle = 0.75
+		else
+			decision.aim = (centre - myPos).Unit
+			decision.throttle = 0.9
+		end
 	elseif (state == "Attack" or state == "Engage") and ctx.target then
 		local target = ctx.target
 		local targetPos = target.cframe.Position

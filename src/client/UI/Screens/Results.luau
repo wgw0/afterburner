@@ -37,7 +37,10 @@ local function Results(props: any)
 		end
 	end, { rewards })
 
-	local reason = if match.reason == "ScoreLimit" then "kill limit reached" else "time's up"
+	local reason = if match.reason == "ScoreLimit"
+		then "kill limit reached"
+		elseif match.reason == "Tickets" then "out of tickets"
+		else "time's up"
 	local children: { [string]: any } = {
 		Title = e(C.Label, {
 			Text = if match.teams and match.winner == "Draw"

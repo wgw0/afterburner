@@ -81,6 +81,8 @@ local TARGET_RANGE = 9000 -- real metres
 
 local AIService = {
 	Priority = 36,
+	-- Set by MatchService in Air Superiority: the zone this pilot should take or hold (nil = none)
+	objectiveFor = nil :: ((pilot: any) -> { position: Vector3, radius: number }?)?,
 }
 
 local pilots: { Pilot } = {}
@@ -294,6 +296,7 @@ local function stepPilot(pilot: Pilot, dt: number)
 			ceiling = Scale.CEILING,
 			maxG = airframe.MaxG,
 			cornerSpeed = FlightModel.cornerSpeed(airframe, Units.altitudeMetres(root.Position.Y)),
+			objective = if AIService.objectiveFor then AIService.objectiveFor(pilot) else nil,
 		})
 		local decision = pilot.decision :: AIBrain.Decision
 		if decision.fire ~= pilot.triggerDown then

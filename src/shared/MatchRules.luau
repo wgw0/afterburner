@@ -19,6 +19,7 @@ export type ModeConfig = {
 	CountdownSeconds: number,
 	ResultsSeconds: number,
 	Teams: { string }?, -- team modes: the team ids (ScoreLimit is then team kills)
+	Objective: "Zones"?, -- Air Superiority: zones and tickets decide it (AirSuperiority.luau)
 }
 
 export type Score = {
@@ -32,7 +33,7 @@ export type Score = {
 	team: string?,
 }
 
-MatchRules.POINTS = table.freeze({ Kill = 100, Assist = 50, ForcedCrashKill = 100 })
+MatchRules.POINTS = table.freeze({ Kill = 100, Assist = 50, ForcedCrashKill = 100, Capture = 150 })
 
 MatchRules.MODES = table.freeze({
 	FreeFlight = table.freeze({
@@ -71,6 +72,21 @@ MatchRules.MODES = table.freeze({
 		ResultsSeconds = 12,
 		Teams = table.freeze({ "West", "East" }),
 	} :: ModeConfig),
+	-- MCH-06: the same two teams fight over three zones; tickets decide it (AirSuperiority.luau), or the
+	-- team ahead on tickets at the time limit.
+	AirSuperiority = table.freeze({
+		Id = "AirSuperiority",
+		DisplayName = "Air Superiority",
+		ScoreLimit = 0,
+		TimeLimit = 720,
+		Respawn = { Type = "Timer", Delay = 5 },
+		AIFill = 8,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 12,
+		Teams = table.freeze({ "West", "East" }),
+		Objective = "Zones",
+	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({
 		Id = "Stress",
@@ -87,7 +103,7 @@ MatchRules.MODES = table.freeze({
 
 -- Public servers take turns between these modes, one match each, until a mode-select screen exists (UI-05).
 -- A server set to a mode outside the list (Free Flight, the stress test) stays on it.
-MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch" })
+MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority" })
 
 -- The mode after this one in the rotation, or the same mode if it isn't in the rotation.
 function MatchRules.nextMode(modeId: string): string

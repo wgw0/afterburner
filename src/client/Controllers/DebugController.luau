@@ -200,6 +200,12 @@ local function build()
 			end,
 		},
 		{
+			"MODE: AIR SUPERIORITY",
+			function()
+				Net.Client.fire("DebugSetMode", "AirSuperiority")
+			end,
+		},
+		{
 			"MODE: STRESS (24 JETS)",
 			function()
 				Net.Client.fire("DebugSetMode", "Stress")

@@ -8,8 +8,12 @@
 --                AI fills each side to even numbers, teams spawn over their own coast, the first team
 --                to the kill limit (or ahead at the time limit) wins. Teammates can't hurt each other
 --                (Lib/Teams, checked by the combat, missile, sensor and AI services).
+--   Air Superiority (MCH-06): the same teams over three zones (AirSuperiority.luau). Holding zones
+--                bleeds the enemy's tickets, every jet lost costs its team tickets, a team on 0 loses
+--                (or the team ahead at the time limit wins). Pilots inside a zone as it flips score a
+--                capture. AI pilots head for the zones (AIService.objectiveFor).
 -- Rotation: after each match's results the server moves on to the next mode in MatchRules.ROTATION
--- (Dogfight, then Team Deathmatch, then Dogfight…). Free Flight and the stress test aren't in it.
+-- (Dogfight, Team Deathmatch, Air Superiority, Dogfight…). Free Flight and the stress test aren't in it.
 -- The mode comes from the GameMode attribute on ReplicatedStorage (default Dogfight); in the test
 -- environment it can be switched live from the tuning panel.
 
@@ -22,6 +26,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
+local AirSuperiority = require(Shared.AirSuperiority)
 local MatchRules = require(Shared.MatchRules)
 local Matchmaking = require(Shared.Matchmaking)
 local Net = require(Shared.Net)
@@ -54,6 +59,7 @@ local scores: { [any]: MatchRules.Score } = {}
 local pilotStates: { [any]: MatchRules.PilotState } = {}
 local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
+local zoneState: AirSuperiority.State? = nil -- Air Superiority only
 
 local function humans(): { Player }
 	return Players:GetPlayers()
@@ -227,6 +233,7 @@ local function startMatch()
 	pilotStates = {}
 	results = nil
 	Teams.clear()
+	zoneState = if mode.Objective == "Zones" and mode.Teams then AirSuperiority.newState(mode.Teams) else nil
 	clearJets()
 	refreshBand()
 	for _, player in humans() do
@@ -240,7 +247,10 @@ end
 
 local function endMatch(reason: string)
 	local ranking = MatchRules.ranking(scores)
-	local winnerTeam = if mode.Teams then MatchRules.winningTeam(mode, scores) else nil
+	local winnerTeam = if zoneState
+		then AirSuperiority.leader(zoneState)
+		elseif mode.Teams then MatchRules.winningTeam(mode, scores)
+		else nil
 	local winner = if mode.Teams then winnerTeam or "Draw" else ranking[1] and ranking[1].name
 	results = { winner = winner, winnerTeam = winnerTeam, reason = reason, ranking = ranking }
 	setState("Results")
@@ -266,6 +276,9 @@ local function onKill(jet: Jet, credit: any, cause: string)
 		return -- leaving or respawning with nobody's damage on you isn't a death
 	end
 	MatchRules.recordKill(scores, victim, credit.killer, credit.assists, credit.forcedCrash)
+	if zoneState then
+		AirSuperiority.jetLost(zoneState, Teams.of(victim))
+	end
 	Telemetry.event("Death", 1, { cause = cause, mode = mode.Id })
 end
 
@@ -283,6 +296,64 @@ local function respawnAI()
 			end
 		end
 	end
+end
+
+-- Air Superiority: who's in which zone, the captures and the ticket bleed. Pilots of the capturing team
+-- inside a zone as it flips score a capture.
+local function stepZones(dt: number)
+	local state = zoneState
+	if not state then
+		return
+	end
+	local presence: { [string]: { [string]: number } } = {}
+	local inside: { [string]: { any } } = {}
+	for _, jet in AircraftService:GetJets() do
+		local team = Teams.of(jet.identity)
+		if team then
+			for _, zone in state.zones do
+				if AirSuperiority.contains(zone, jet.root.Position) then
+					presence[zone.id] = presence[zone.id] or {}
+					presence[zone.id][team] = (presence[zone.id][team] or 0) + 1
+					inside[zone.id] = inside[zone.id] or {}
+					table.insert(inside[zone.id], jet.identity)
+				end
+			end
+		end
+	end
+	for _, capture in AirSuperiority.step(state, presence, dt) do
+		for _, identity in inside[capture.zone] or {} do
+			local score = scores[identity]
+			if score and score.team == capture.team then
+				score.score += MatchRules.POINTS.Capture
+			end
+		end
+		Telemetry.event("ZoneCaptured", 1, { zone = capture.zone, team = capture.team })
+	end
+end
+
+-- The zone an AI pilot should go for: the nearest one its team doesn't own, else one of its own (spread
+-- by pilot, so they don't all stack on one).
+local function objectiveFor(pilot: any): { position: Vector3, radius: number }?
+	local zones = zoneState
+	local team = Teams.of(pilot.identity)
+	if not zones or state ~= "InProgress" or not team or not pilot.jet then
+		return nil
+	end
+	local position = pilot.jet.root.Position
+	local best, bestDistance = nil, math.huge
+	for _, zone in zones.zones do
+		if zone.owner ~= team then
+			local distance = (Vector3.new(zone.position.X, position.Y, zone.position.Z) - position).Magnitude
+			if distance < bestDistance then
+				best, bestDistance = zone, distance
+			end
+		end
+	end
+	if not best then
+		local index = table.find(AIService:GetPilots(), pilot) or 1
+		best = zones.zones[index % #zones.zones + 1]
+	end
+	return { position = best.position, radius = best.radius }
 end
 
 local function publishPlayerTimers()
@@ -305,6 +376,20 @@ local function broadcast()
 		timeLeft = mode.ResultsSeconds - elapsed
 	end
 	local ranking = if results then results.ranking else MatchRules.ranking(scores)
+	local zones = nil
+	if zoneState then
+		zones = {}
+		for _, zone in zoneState.zones do
+			table.insert(zones, {
+				id = zone.id,
+				position = zone.position,
+				radius = zone.radius,
+				top = zone.top,
+				progress = zone.progress,
+				owner = zone.owner,
+			})
+		end
+	end
 	Net.Server.fireAll("MatchState", {
 		mode = mode.Id,
 		modeName = mode.DisplayName,
@@ -317,6 +402,10 @@ local function broadcast()
 		reason = results and results.reason,
 		teams = mode.Teams,
 		teamScores = if mode.Teams then MatchRules.teamScores(mode, scores) else nil,
+		zones = zones,
+		tickets = if zoneState
+			then { West = math.ceil(zoneState.tickets.West or 0), East = math.ceil(zoneState.tickets.East or 0) }
+			else nil,
 		br = if mode.Scored then { min = band.min, max = band.max } else nil,
 	})
 end
@@ -343,7 +432,11 @@ local function tick(dt: number)
 			clearJets()
 			setState("Waiting")
 		else
+			stepZones(dt)
 			local ended, reason = MatchRules.checkEnd(mode, scores, elapsed)
+			if zoneState and AirSuperiority.checkEnd(zoneState) then
+				ended, reason = true, "Tickets"
+			end
 			if ended then
 				endMatch(reason :: string)
 			end
@@ -356,6 +449,7 @@ local function tick(dt: number)
 				mode = (MatchRules.MODES :: any)[nextId]
 				ReplicatedStorage:SetAttribute("GameMode", nextId)
 				Teams.clear()
+				zoneState = nil
 			end
 			setState(if #humans() > 0 then "Countdown" else "Waiting")
 		end
@@ -383,6 +477,7 @@ function MatchService:SetMode(modeId: string)
 	pilotStates = {}
 	results = nil
 	Teams.clear()
+	zoneState = nil
 	AIService:RemoveAll()
 	setState(if modeId == "FreeFlight" then "InProgress" else "Waiting")
 end
@@ -402,6 +497,7 @@ function MatchService:Init()
 	end
 	ReplicatedStorage:SetAttribute("GameMode", mode.Id)
 	AircraftService.spawnGate = spawnGate
+	AIService.objectiveFor = objectiveFor
 	CombatService.Kill:Connect(onKill)
 
 	Players.PlayerAdded:Connect(function(player)
