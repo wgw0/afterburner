@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 7 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 6 Content and polish for a soft launch | 8 / 43 | In progress: content done, launch plumbing not started (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -285,7 +285,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **TUT-04** First-session flow and funnel analytics
 - [x] **SET-02** Settings UI
   - A SETTINGS tab in the menu (`UI/Screens/Settings`): control scheme, mouse sensitivity, invert pitch, default view, field of view, HUD units, master and cockpit volume, Reduce flashing. Changes apply at once and save through `SettingsController`; − / + buttons around a bar work with mouse, touch and gamepad. Units now switches the HUD (km/h, metres, m/s) and Reduce flashing holds HUD warnings and RWR marks steady and dims explosions and muzzle flashes. Checked in play and by Will. *The menu only shows between flights; ReduceShake waits for a camera shake to reduce.*
-- [ ] **SET-03** Accessibility options
+- [x] **SET-03** Accessibility options
+  - Subtitles for Betty's lines and the RWR warnings, HUD colour presets (green, cyan, white: cyan and white stay clear of the red and amber warnings), menu size 80–140% (menus, banner, scoreboard), Reduce flashing (SET-02), and shapes as well as colours on the scopes (teammates round, enemies square). Checked in play and by Will. *Reduce shake waits for a camera shake to reduce.*
 - [ ] **ANL-02** Onboarding funnel
 - [ ] **ANL-04** Combat and balance events
 - [ ] **OPS-01** ConfigService with live overrides
