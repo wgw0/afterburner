@@ -311,8 +311,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - REPORT in the hangar on match servers and on the results scoreboard; a report window (pilot, reason, a pointer to Roblox's own report). Each report is stored (UserIds only) with the target's anti-cheat record from that server; admin `reports.top` / `reports.show` to review (DEVELOPMENT.md §32.1). Checked in Studio (refusals, rate limit, storage and admin read-back) and by Will.
 - [ ] **TST-04** Headless unit tests in CI (if a suitable runner is available)
 - [ ] **PRF-03** Mobile performance pass
-- [ ] **REL-03** Version module, changelog, tagging process
+- [x] **REL-03** Version module, changelog, tagging process
+  - `Shared/Version` (0.6.0, the soft-launch build) shown in Settings with the server's build, `CHANGELOG.md` (CI fails without a section for the version), and `scripts/release.sh` to date the changelog, commit and tag (tried end to end in a throwaway clone). Admin `server.info`. Checked in Studio and by Will. *No release tagged yet: the first tag is v0.6.0 at the soft launch.*
 - [ ] **REL-04** Release checklist and rollback drill
+  - Built: [RELEASE.md](RELEASE.md) (release checklist, rolling back, the add-only rule for save changes), the environment worked out from the experience (no manual Prod switch), and older code keeping newer saves intact (tested). Checked by Will. *Still to do: the rollback drill on the test experience (RELEASE.md, last section), then tick.*
 
 **Done outside the plan (October 2026).** Work Will asked for that belongs to no task; how it was built is in DEVELOPMENT.md §37.
 
