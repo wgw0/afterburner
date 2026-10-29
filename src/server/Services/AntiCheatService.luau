@@ -42,6 +42,22 @@ local watches: { [number]: Watch } = {}
 local strikes: { [Player]: MovementCheck.Strikes } = {}
 local lastWarn: { [Player]: number } = {}
 local kicked: { [Player]: boolean } = {}
+-- Each pilot's recent strikes and totals, for reports (CMP-03). Kept by UserId for a while after they
+-- leave, since a report often comes from the results screen.
+type Record = { violations: number, resets: number, kicked: boolean, recent: { any }, leftAt: number? }
+local records: { [number]: Record } = {}
+local RECENT_KEPT = 20
+local KEEP_AFTER_LEAVING = 15 * 60
+
+local function recordFor(pilot: Player): Record
+	local record = records[pilot.UserId]
+	if not record then
+		record = { violations = 0, resets = 0, kicked = false, recent = {} }
+		records[pilot.UserId] = record
+	end
+	record.leftAt = nil
+	return record
+end
 
 -- Counters on ServerStorage, readable by tests and admin tools (server-only).
 local function publish()
@@ -57,6 +73,7 @@ local function resetJet(jet: Jet, watch: Watch)
 		return
 	end
 	AntiCheatService.resets += 1
+	recordFor(pilot).resets += 1
 	publish()
 	jet.root:SetNetworkOwner(nil)
 	jet.model:PivotTo(good.cframe)
@@ -94,6 +111,19 @@ local function check(jet: Jet, watch: Watch, now: number)
 
 	AntiCheatService.violations += 1
 	publish()
+	local record = recordFor(pilot)
+	record.violations += 1
+	table.insert(record.recent, {
+		at = os.time(),
+		reason = reason,
+		detail = math.round(detail or 0),
+		speed = { math.round(previous.velocity.Magnitude), math.round(sample.velocity.Magnitude) },
+		moved = math.round((sample.position - previous.position).Magnitude),
+		airframe = jet.airframeId,
+	})
+	if #record.recent > RECENT_KEPT then
+		table.remove(record.recent, 1)
+	end
 	Telemetry.event("AntiCheatStrike", detail, { reason = reason }, pilot)
 	if os.clock() - (lastWarn[pilot] or 0) > 5 then
 		lastWarn[pilot] = os.clock()
@@ -113,6 +143,7 @@ local function check(jet: Jet, watch: Watch, now: number)
 		resetJet(jet, watch)
 	elseif action == "kick" then
 		kicked[pilot] = true
+		recordFor(pilot).kicked = true
 		AntiCheatService.kicks += 1
 		publish()
 		Telemetry.event("AntiCheatKick", 1, { reason = reason }, pilot)
@@ -141,7 +172,32 @@ function AntiCheatService:Init()
 		strikes[player] = nil
 		lastWarn[player] = nil
 		kicked[player] = nil
+		local record = records[player.UserId]
+		if record then
+			record.leftAt = os.time()
+		end
+		for userId, old in records do
+			if old.leftAt and os.time() - old.leftAt > KEEP_AFTER_LEAVING then
+				records[userId] = nil
+			end
+		end
 	end)
+end
+
+-- A pilot's anti-cheat record on this server: totals and their newest `count` strikes (newest last).
+-- Works for a while after they leave. Nil if they've never had a strike here.
+function AntiCheatService:Snapshot(userId: number, count: number?): any
+	local record = records[userId]
+	if not record then
+		return nil
+	end
+	local n = count or RECENT_KEPT
+	return {
+		violations = record.violations,
+		resets = record.resets,
+		kicked = record.kicked,
+		recent = { table.unpack(record.recent, math.max(#record.recent - n + 1, 1), #record.recent) },
+	}
 end
 
 function AntiCheatService:Start()

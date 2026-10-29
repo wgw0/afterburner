@@ -1,7 +1,9 @@
 --!strict
 -- Match results (UI-06): who won, your reward lines counting up, your pilot level bar filling, and the
--- top of the scoreboard. props: Match (MatchState), Rewards (MatchRewards payload or nil), Data.
+-- top of the scoreboard, with REPORT on other human pilots (CMP-03). props: Match (MatchState), Rewards
+-- (MatchRewards payload or nil), Data, OnReport(userId).
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -180,11 +182,29 @@ local function Results(props: any)
 		if i > 8 then
 			break
 		end
-		board[`R{i}`] = e(C.Label, {
-			Text = string.format("%d. %s   %d K  %d D  %d", i, score.name, score.kills, score.deaths, score.score),
-			TextSize = 14,
-			Color = if score.isAI then Theme.Dim else Theme.Text,
-			LayoutOrder = i,
+		local reportable = props.OnReport
+			and not score.isAI
+			and (score.userId or 0) > 0
+			and score.userId ~= Players.LocalPlayer.UserId
+		board[`R{i}`] = e("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = i }, {
+			Line = e(C.Label, {
+				Text = string.format("%d. %s   %d K  %d D  %d", i, score.name, score.kills, score.deaths, score.score),
+				Size = UDim2.new(1, if reportable then -76 else 0, 1, 0),
+				TextSize = 14,
+				Color = if score.isAI then Theme.Dim else Theme.Text,
+			}),
+			Report = if reportable
+				then e(C.Button, {
+					Text = "REPORT",
+					Style = "Ghost",
+					TextSize = 11,
+					Size = UDim2.fromOffset(70, 22),
+					Position = UDim2.new(1, -70, 0, 1),
+					OnClick = function()
+						props.OnReport(score.userId)
+					end,
+				})
+				else nil,
 		})
 	end
 	children.Board = e(C.Panel, {

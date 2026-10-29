@@ -36,6 +36,7 @@ local TutorialController = require(script.Parent.TutorialController)
 local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
 local DailyReward = require(UI:WaitForChild("DailyReward"))
+local ReportDialog = require(UI:WaitForChild("ReportDialog"))
 local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
 local Sounds = require(UI:WaitForChild("Sounds"))
 
@@ -62,9 +63,11 @@ local MenuController = {
 
 local gui: ScreenGui
 local root: any
-local modalGui: ScreenGui -- the daily reward window, above the menu (LIV-03)
+local modalGui: ScreenGui -- the daily reward and report windows, above the menu (LIV-03, CMP-03)
 local modalRoot: any
 local daily = { dismissed = false, pending = false, result = nil :: any }
+-- The report window while it's open: { target, reason, pending, message, sent }
+local report: any = nil
 local state = {
 	screen = "Hangar",
 	detailId = nil :: string?,
@@ -181,8 +184,81 @@ local function fixSelection()
 	end
 end
 
--- The daily login reward window: once a day, while the menu is up (not over the results screen).
+-- Pilots you could report: everyone else on this server, and the human pilots from the last match's
+-- scoreboard (who may have left already).
+local function reportTargets(): { any }
+	local me = Players.LocalPlayer.UserId
+	local list, added = {}, {}
+	local function add(userId: number?, name: string)
+		if userId and userId > 0 and userId ~= me and not added[userId] then
+			added[userId] = true
+			table.insert(list, { userId = userId, name = name })
+		end
+	end
+	for _, player in Players:GetPlayers() do
+		add(player.UserId, player.Name)
+	end
+	local match = MatchController.state
+	for _, score in (match and match.ranking) or {} do
+		if not score.isAI then
+			add(score.userId, score.name)
+		end
+	end
+	return list
+end
+
+local function renderReport()
+	modalGui.Enabled = true
+	modalRoot:render(React.createElement(ReportDialog, {
+		Targets = reportTargets(),
+		Target = report.target,
+		Reason = report.reason,
+		Pending = report.pending,
+		Message = report.message,
+		Sent = report.sent,
+		OnTarget = function(userId: number)
+			report.target = userId
+			report.message = nil
+			render()
+		end,
+		OnReason = function(id: string)
+			report.reason = id
+			report.message = nil
+			render()
+		end,
+		OnSend = function()
+			local sending = report
+			sending.pending = true
+			render()
+			task.spawn(function()
+				local ok, result, message = pcall(Net.Client.invoke, "ReportPlayer", sending.target, sending.reason)
+				sending.pending = false
+				if ok and result == true then
+					sending.sent = true
+					sending.message = message
+					Sounds.play("UIConfirm")
+				elseif ok and result == false then
+					sending.message = message
+				else
+					sending.message = "Too many reports just now. Try again in a moment."
+				end
+				render()
+			end)
+		end,
+		OnClose = function()
+			report = nil
+			render()
+		end,
+	}))
+end
+
+-- The daily login reward window: once a day, while the menu is up (not over the results screen). The report
+-- window takes its place while open.
 local function renderDaily(resultsUp: boolean)
+	if report and MenuController.visible then
+		renderReport()
+		return
+	end
 	local data = PlayerDataController.data
 	local today = os.time() // 86400
 	local show = MenuController.visible
@@ -236,7 +312,8 @@ render = function()
 	local status = state.status
 	local lobby = ServerRole.isLobby()
 	-- A match server: straight into the air as the match starts, in the jet picked
-	if state.autoLaunch and match and ServerRole.isMatch() and not FlightController.jet then
+	-- (held while the report window is open, then launches once it closes)
+	if state.autoLaunch and not report and match and ServerRole.isMatch() and not FlightController.jet then
 		local airframe = state.selected and AircraftData.get(state.selected) :: any
 		if match.state == "InProgress" and allowed and airframe then
 			state.autoLaunch = false
@@ -308,6 +385,10 @@ render = function()
 			return PlayerDataController:SetLineup(ids)
 		end,
 		Role = ServerRole.get(),
+		OnReport = function(userId: number?)
+			report = { target = userId }
+			render()
+		end,
 		OnTravel = function(target: string)
 			local text = if target == "Training"
 				then "Heading to a training server…"
@@ -370,11 +451,16 @@ local function gamepadSelect()
 		return
 	end
 	local selected = GuiService.SelectedObject
-	-- The daily reward window first, while it's up
+	-- The daily reward or report window first, while it's up
 	if modalGui.Enabled then
+		if selected and selected:IsDescendantOf(modalGui) and selected.Visible then
+			return
+		end
 		local action = modalGui:FindFirstChild("Action", true)
-		if action and action:IsA("GuiButton") and selected ~= action then
+		if action and action:IsA("GuiButton") then
 			GuiService.SelectedObject = action
+		else
+			GuiService:Select(modalGui)
 		end
 		return
 	end
@@ -399,6 +485,7 @@ local function setVisible(visible: boolean)
 	gui.Enabled = visible
 	if not visible then
 		modalGui.Enabled = false
+		report = nil
 	end
 	if visible then
 		if state.screen == "Results" then
