@@ -57,7 +57,7 @@ type CombatState = {
 local CombatService = {
 	Priority = 30,
 	JetDamaged = Signal.new(), -- (jet, component, amount, attackerPlayer?)
-	Kill = Signal.new(), -- (victimJet, credit, cause)
+	Kill = Signal.new(), -- (victimJet, credit, cause); credit.weapon: the killer's last weapon id ("Gun" or a missile)
 }
 
 local states: { [number]: CombatState } = {}
@@ -334,6 +334,7 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 		then DamageModel.resolveCredit(state.attackers, os.clock(), cause)
 		else { killer = nil, assists = {}, forcedCrash = false }
 	local killer: any? = credit.killer
+	credit.weapon = if killer and state then state.attackerWeapon[killer] or "Gun" else nil
 	local killerUserId = if killer and typeof(killer) == "Instance" then (killer :: Player).UserId else 0
 	local killerJetId = 0
 	if killer then

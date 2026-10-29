@@ -6,8 +6,11 @@
 --     Mastery, Camo (skin in use), Skins = { [skinId] = true } (bought; the default is always owned) }
 --   Flags.AllUnlocked: full access (the game's owner and admins, Progression.unlockEverything)
 --   PilotXP is XP into the current level (TotalXP keeps the lifetime sum).
+--   Challenges: today's and this week's challenges and their progress (Challenges.luau); Achievements:
+--     { [id] = { At, Badge } } (Achievements.luau). Stats are lifetime counts (Progression.applyRewards).
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
+local Challenges = require(script.Parent.Challenges)
 local Economy = require(script.Parent.Config.Economy)
 local Settings = require(script.Parent.Config.Settings)
 
@@ -29,6 +32,8 @@ PlayerData.REPLICATED = table.freeze({
 	"Settings",
 	"Stats",
 	"Flags",
+	"Challenges",
+	"Achievements",
 })
 
 local function deepCopy<T>(value: T): T
@@ -68,6 +73,8 @@ function PlayerData.template(): { [string]: any }
 		ProcessedReceipts = {},
 		Settings = Settings.defaults(),
 		Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },
+		Challenges = Challenges.newState(),
+		Achievements = {},
 		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
 		Flags = {},
 		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)

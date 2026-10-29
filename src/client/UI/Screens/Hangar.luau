@@ -4,7 +4,7 @@
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), SideText and OnSide() (the button left of
 --   PLAY: TRAINING in a lobby, LEAVE MATCH on a match server), OnDetails(id),
 --   OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
---   lobby: the mode picker over PLAY).
+--   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -15,6 +15,7 @@ local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
 
 local UI = script.Parent.Parent
+local ChallengesPanel = require(UI.ChallengesPanel)
 local C = require(UI.Components)
 local JetPreview = require(UI.JetPreview)
 local Theme = require(UI.Theme)
@@ -282,6 +283,7 @@ local function Hangar(props: any)
 			Bold = true,
 			TextSize = 16,
 		}),
+		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 		Lineup = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),
 			Position = UDim2.fromOffset(20, 20),

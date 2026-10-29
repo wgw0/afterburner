@@ -15,6 +15,7 @@ local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
 local Screens = script.Parent.Screens
 local AircraftDetail = require(Screens.AircraftDetail)
+local Career = require(Screens.Career)
 local Hangar = require(Screens.Hangar)
 local Results = require(Screens.Results)
 local SettingsScreen = require(Screens.Settings)
@@ -69,7 +70,7 @@ local function TopBar(props: any)
 			Color = Theme.Accent,
 		}),
 		Tabs = e("Frame", {
-			Size = UDim2.fromOffset(460, 40),
+			Size = UDim2.fromOffset(620, 40),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
@@ -77,7 +78,8 @@ local function TopBar(props: any)
 			Layout = C.List({ Horizontal = true, Gap = 12, Align = "Center" }),
 			Hangar = tab("Hangar", "HANGAR", 1),
 			Tree = tab("TechTree", "TECH TREE", 2),
-			Settings = tab("Settings", "SETTINGS", 3),
+			Career = tab("Career", "CAREER", 3),
+			Settings = tab("Settings", "SETTINGS", 4),
 		}),
 		Wallet = e("Frame", {
 			Size = UDim2.fromOffset(520, Theme.TopBar),
@@ -136,6 +138,8 @@ local function App(props: any)
 	local body
 	if screen == "Results" and props.Match then
 		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data })
+	elseif screen == "Career" then
+		body = e(Career, { Data = data })
 	elseif screen == "Settings" then
 		body = e(SettingsScreen, { Values = props.Settings, OnSet = props.OnSetting, OnCapture = props.OnCapture })
 	elseif screen == "TechTree" then
@@ -196,6 +200,7 @@ local function App(props: any)
 			end,
 			OnLineup = props.OnLineup,
 			PlayText = props.PlayText,
+			OnReroll = props.OnReroll,
 			QueueMode = props.QueueMode,
 			OnQueueMode = props.OnQueueMode,
 		})

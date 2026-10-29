@@ -102,6 +102,23 @@ local COMMANDS: { [string]: Command } = {
 			return ok == true, if ok then `Reset {who.Name}'s save` else "Save not loaded"
 		end,
 	},
+	-- Clears challenges and achievements back to a fresh account's (LIV-01/02 testing). Stats are kept.
+	["career.reset"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who = target(admin, args)
+			if not who then
+				return false, "Player not found"
+			end
+			local ok = DataService:Update(who, function(data)
+				local fresh = PlayerData.template()
+				data.Challenges = fresh.Challenges
+				data.Achievements = fresh.Achievements
+				return true
+			end)
+			return ok == true, if ok then `Reset {who.Name}'s challenges and achievements` else "Save not loaded"
+		end,
+	},
 	["give.credits"] = {
 		testOnly = true,
 		run = function(admin, args)
