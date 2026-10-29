@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 18 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
+| 6 Content and polish for a soft launch | 19 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -289,8 +289,9 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **LIV-01** Daily/weekly challenges with rerolls
   - 3 dailies a day (the same for everyone) and 2 weeklies from pools of 12 and 6, one reroll a day, Credits and XP paid on completion, counted in scored matches only; a panel on the right of the Hangar and a toast for each (`Challenges.luau`, `ChallengeService`, DEVELOPMENT.md §26.2a). Checked in play and by Will.
 - [ ] **LIV-02** Achievements and Roblox badges
-  - Achievements done: 20 plus a secret one (Threading the Needle: fly under a bridge, which also pays 100 XP), in five rarities, on a CAREER tab with lifetime stats and a level track (titles, Pink / Blue / Violet HUD colours, Credits and Free RP milestones, level skins at 10, 25 and 50). Checked in play and by Will. *Badges wait for the live experience (release checklist §35.3 step 6, Will's call); the level skins' art is being painted (a separate session).*
-- [ ] **LIV-03** Login streak rewards
+  - Achievements done: 20 plus a secret one (Threading the Needle: fly under a bridge, which also pays 100 XP), in five rarities, on a CAREER tab with lifetime stats and a level track (titles, Pink / Blue / Violet HUD colours, Credits and Free RP milestones, level skins at 10, 25 and 50, painted for all 27 jets). Checked in play and by Will. *Badges wait for the live experience (release checklist §35.3 step 6, Will's call).*
+- [x] **LIV-03** Login streak rewards
+  - A DAILY REWARD window once a day: a 7-day week from 250 to 1,500 Credits (+500 Free RP on day 7), titles Regular (day 7) and Devoted (day 30, +5,000 Cr); one missed day forgiven, a longer break back to the start of that week (`Streak.luau`, DEVELOPMENT.md §26.2a). Checked in play and by Will.
 - [x] **TUT-03** Lessons 4–6
   - 4 Missiles (lock a far drone, hit two with heat-seekers), 5 Defend (survive missiles fired at you with flares and turns), 6 First fight (one AI opponent, head-on from 2.5 km). They run on **training servers**: TRAINING in the top bar takes you to a private server with all six lessons, Vs AI (free-for-all, teams or zones; Easy to Ace; 1–11 opponents), free flight and any jet, with no rewards. AI in Vs AI fly jets near the one you picked. Checked in play (any jet spawned, lesson 4 ran, a Hard Teams match with 3 AI started, results showed no rewards) and by Will. *Lessons 5–6 not yet played end to end.*
 - [x] **TUT-04** First-session flow and funnel analytics
