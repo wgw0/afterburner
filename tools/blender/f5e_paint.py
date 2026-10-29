@@ -521,7 +521,8 @@ def paint_airframe(P, N, part, ids, ao, scheme):
         y0 = wing_le(ix) - 0.48 * (wing_le(ix) - wing_te(ix))
         m = wing & face & (np.sign(x) == sign)
         ins = np.maximum(ins, np.where(m, star_and_bar(x - x0, y - y0, wr), 0))
-    colour = colour * (1 - ins[..., None]) + scheme["insignia"] * ins[..., None]
+    if scheme.get("markings") != "none":
+        colour = colour * (1 - ins[..., None]) + scheme["insignia"] * ins[..., None]
 
     # Intake lips (bare metal) and the duct (dark)
     lip_inner = gen.fuselage_params(655)[0] - 0.06
@@ -559,6 +560,9 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     grime = np.clip((grime - 0.52) * 2.0, 0, 1) * (0.05 + 0.05 * down) * (0.4 + 0.9 * seam_wake)
     colour *= (1 - grime - 0.3 * line)[..., None]
     import cockpit_kit  # the cockpit well, seen through the canopy: cockpit-dark
+    import livery_paint
+
+    colour = livery_paint.lines(scheme, colour, line)
 
     well = fus & cockpit_kit.well_mask(P)
     colour = np.where(well[..., None], srgb(46, 48, 50), colour)
@@ -571,16 +575,21 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     colour = np.where(chips[..., None], METAL * 0.75, colour)
 
     # ---- Roughness, metalness, height ---------------------------------------------------------------
-    rough = 0.56 + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
+    rough0, metal0 = livery_paint.base(scheme, False)
+    rough = rough0 + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
     rough = np.where(antiglare, 0.78, rough)
     rough = np.where(walk, 0.88, rough)
     rough = np.where(radome, 0.45, rough)
     rough = np.maximum(rough, soot * 0.85)
-    metal = np.zeros(shape, np.float32)
+    metal = np.where(radome | antiglare | walk | well, 0.0, np.full(shape, metal0, np.float32))
     metal = np.where(lip, 0.35, metal)
     rough = np.where(lip, 0.48, rough)
     metal = np.where(chips, 0.7, metal)
     rough = np.where(chips, 0.45, rough)
+    keep = radome | antiglare | lip | duct | well | (fus & (xd < 95 + 18))
+    colour, rough, metal = livery_paint.trim(scheme, P, N, ao, line, colour, rough, metal, fus, wing | surf,
+                                             wing_le(np.abs(x)) - y, [on("StabilatorL"), on("StabilatorR")],
+                                             fin | rudder, keep, Y(232) - 0.3, Y(1360) + 0.2)
     height = -line - 0.35 * rivet
     return colour, np.clip(rough, 0.05, 1), metal, height
 
@@ -766,7 +775,9 @@ def main():
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
-    scheme = SCHEMES[args.skin]
+    import livery_paint
+
+    scheme = livery_paint.with_liveries(SCHEMES)[args.skin]
 
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"

@@ -35,6 +35,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import f5e_paint as paint  # noqa: E402
 import cockpit_kit  # noqa: E402
+import livery_paint  # noqa: E402
 
 kit = paint.gen
 srgb, smooth, groove, rivets, fbm, cell_tone = paint.srgb, paint.smooth, paint.groove, paint.rivets, paint.fbm, paint.cell_tone
@@ -235,13 +236,15 @@ def paint_airframe(L, P, N, part, ids, ao, scheme):
     grime = fbm(P, 2.2, 4, seed=21, stretch=(3.0, 0.3, 3.0))
     grime = np.clip((grime - 0.52) * 2.0, 0, 1) * (0.05 + 0.05 * down)
     colour *= (1 - grime - 0.3 * line)[..., None]
+    colour = livery_paint.lines(scheme, colour, line)
     well = fus & cockpit_kit.well_mask(P)  # the cockpit well, seen through the canopy: cockpit-dark
     colour = np.where(well[..., None], WELL, colour)
     colour *= (0.55 + 0.45 * np.power(np.clip(ao, 0, 1), 0.8))[..., None]
 
     metal_paint = bool(scheme.get("metal"))
-    rough = (0.38 if metal_paint else 0.56) + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
-    metal = np.full(shape, 0.75 if metal_paint else 0.0, np.float32)
+    rough0, metal0 = livery_paint.base(scheme, metal_paint)
+    rough = rough0 + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
+    metal = np.full(shape, metal0, np.float32)
     if scheme.get("underside_metal"):  # aluminium lacquer: a little sheen
         metal = np.maximum(metal, 0.35 * under)
         rough = np.where(under > 0.5, 0.45, rough)
@@ -252,6 +255,10 @@ def paint_airframe(L, P, N, part, ids, ao, scheme):
     metal = np.where(lip | hot, 0.85, metal)
     rough = np.where(hot, 0.45, rough)
     rough = np.maximum(rough, soot * 0.85)
+    keep = radome | dark | ducts | antiglare | lip | duct | hot | well
+    tails = [on(n) for n in L.get("tail", [])]
+    colour, rough, metal = livery_paint.trim(scheme, P, N, ao, line, colour, rough, metal, fus, wing | surf, le - y, tails,
+                                             fin | rudder, keep, Y(L["radome"]) - 0.3, Y(h0_) + 0.2)
     height = -line - 0.35 * rivet
     return colour, np.clip(rough, 0.05, 1), metal, height
 
@@ -319,7 +326,7 @@ def main(L, schemes, default_skin):
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
-    scheme = schemes[args.skin]
+    scheme = livery_paint.with_liveries(schemes)[args.skin]
 
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
