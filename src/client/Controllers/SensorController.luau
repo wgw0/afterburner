@@ -10,6 +10,8 @@
 --     tone and the HUD). The server keeps its own copy and decides what can actually be fired.
 --     The lock key cages the seeker (off, silent) and uncages it again. With none of the selected
 --     missile left, the seeker is off and nothing is shown as lockable.
+--   TWS (SNS-07): with an active radar missile selected, no hard lock and a track-while-scan radar (Tier IV+
+--     pulse-Doppler), the radar contact nearest the nose is the TWS target: the missile can go at it unlocked.
 --   RWR: threats the server says are painting you.
 -- Updated 5× a second; the HUD, scopes, camera (padlock) and audio read from here.
 
@@ -65,6 +67,7 @@ local SensorController = {
 	acquiringId = 0, -- radar lock-on in progress (before / while asking the server), 0 = none
 	acquireStart = 0,
 	requestedAt = 0,
+	twsTargetId = 0, -- the contact a TWS shot would go at (SNS-07), 0 = none
 	irTargetId = 0, -- what the selected heat-seeker sees, 0 = nothing
 	irHeldFor = 0, -- seconds the seeker has held irTargetId
 	irLocked = false, -- held for the missile's LockTime
@@ -129,6 +132,13 @@ end
 local function radarOf(jet: Model): Signature.RadarSpec?
 	local airframe = Progression.airframeForModel(jet) :: any
 	return airframe and airframe.Radar
+end
+
+-- Does this jet's radar track while scanning (Tier IV+ pulse-Doppler, SNS-07)?
+function SensorController:HasTWS(): boolean
+	local jet = FlightController.jet
+	local airframe = jet and Progression.airframeForModel(jet) :: any
+	return airframe ~= nil and Signature.hasTWS(airframe.Tier, airframe.Radar)
 end
 
 -- Radar cross-section factor: 1 for ordinary jets, small for stealth ones (matches SensorService).
@@ -205,6 +215,7 @@ local function update()
 	if not (jet and root) then
 		table.clear(self.contacts)
 		self.irTargetId, self.irHeldFor, self.irLocked = 0, 0, false
+		self.twsTargetId = 0
 		return
 	end
 	local radar = radarOf(jet)
@@ -267,12 +278,20 @@ local function update()
 	end
 	local bestId, bestDot = 0, -2
 	table.clear(self.lockable)
+	self.twsTargetId = 0
 	if missile and WeaponData.isRadar(missile) then
+		local tws = missile.Class == "ARH" and self.lockId == 0 and self:HasTWS()
+		local bestTws, bestTwsDot = 0, -2
 		for id, contact in self.contacts do
 			if contact.onRadar and not contact.friendly then
 				self.lockable[id] = true
+				local dot = myCF.LookVector:Dot((contact.position - myCF.Position).Unit)
+				if tws and dot > bestTwsDot then
+					bestTws, bestTwsDot = id, dot
+				end
 			end
 		end
+		self.twsTargetId = bestTws
 	end
 	if self.acquiringId ~= 0 then
 		local contact = self.contacts[self.acquiringId]

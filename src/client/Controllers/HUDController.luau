@@ -462,6 +462,7 @@ local MARKER_STYLES = {
 	Lockable = { size = 34, circle = true, thickness = 2 },
 	Locking = { size = 34, circle = false, thickness = 2.5 },
 	Locked = { size = 38, circle = false, thickness = 3 },
+	Track = { size = 30, circle = false, thickness = 2 }, -- the TWS target: an active radar missile goes here (SNS-07)
 	Friendly = { size = 14, circle = true, thickness = 1.5 }, -- a teammate (team modes)
 }
 
@@ -760,12 +761,19 @@ local function update()
 				markerState = "Locked"
 			elseif id == SensorController.irTargetId or id == SensorController.acquiringId then
 				markerState = "Locking"
+			elseif id == SensorController.twsTargetId then
+				markerState = "Track"
 			elseif SensorController.lockable[id] then
 				markerState = "Lockable"
 			end
 		end
 		styleMarker(m, markerState)
-		m.label.Text = string.format("%s %.1fkm", (model:GetAttribute("PilotName") :: string?) or "?", range / 1000)
+		m.label.Text = string.format(
+			"%s%s %.1fkm",
+			if markerState == "Track" then "TWS · " else "",
+			(model:GetAttribute("PilotName") :: string?) or "?",
+			range / 1000
+		)
 		local off = math.deg(math.acos(math.clamp((otherRoot.Position - myPosition).Unit:Dot(look), -1, 1)))
 		if range <= LEAD_RANGE and off <= LEAD_CONE and off < bestOff then
 			bestOff, bestModel = off, model
@@ -806,6 +814,8 @@ local function update()
 		targetModel = SensorController:GetModel(SensorController.irTargetId)
 	elseif missileSpec and not isIR and SensorController.lockId ~= 0 then
 		targetModel = SensorController:GetModel(SensorController.lockId)
+	elseif missileSpec and not isIR and SensorController.twsTargetId ~= 0 then
+		targetModel = SensorController:GetModel(SensorController.twsTargetId)
 	end
 
 	-- The seeker circle shows the heat-seeker searching at the boresight; once it sees a target, the
@@ -813,7 +823,9 @@ local function update()
 	seekerCircle.Visible = isIR and SensorController.irTargetId == 0
 	seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
-	local ready = if isIR then SensorController.irLocked else SensorController.lockId ~= 0
+	local ready = if isIR
+		then SensorController.irLocked
+		else SensorController.lockId ~= 0 or SensorController.twsTargetId ~= 0
 	local lockModel = if ready then targetModel else nil
 	local lockRoot = lockModel and lockModel.PrimaryPart
 	lockLabel.Visible = false
@@ -821,7 +833,7 @@ local function update()
 		local screen, onScreen = camera:WorldToViewportPoint(lockRoot.Position)
 		if onScreen and screen.Z > 0 then
 			lockLabel.Visible = true
-			lockLabel.TextColor3 = RED
+			lockLabel.TextColor3 = if isIR or SensorController.lockId ~= 0 then RED else GREEN -- green: a TWS track
 			lockLabel.Position = UDim2.fromOffset(screen.X, screen.Y - 24)
 			local rel = lockRoot.Position - myPosition
 			local closure = -(Units.velocityFromStuds(lockRoot.AssemblyLinearVelocity) - myVelocity):Dot(rel.Unit)

@@ -209,7 +209,8 @@ local function fireMissile()
 	end
 	local target = 0
 	if WeaponData.isRadar(missile) then
-		target = SensorController.lockId
+		-- A hard lock, else (active radar missiles, TWS radars) the TWS target (SNS-07)
+		target = if SensorController.lockId ~= 0 then SensorController.lockId else SensorController.twsTargetId
 		if target == 0 then
 			SensorController:Say("NO RADAR LOCK") -- radar missiles need a lock
 			return

@@ -85,6 +85,17 @@ function SensorService:CanTrack(shooter: Jet, target: Jet): (boolean, string)
 	return true, "ok"
 end
 
+-- Does this jet's radar track while scanning (SNS-07)?
+function SensorService:HasTWS(jet: Jet): boolean
+	local airframe = Progression.airframeForModel(jet.model) :: any
+	return airframe ~= nil and Signature.hasTWS(airframe.Tier, airframe.Radar)
+end
+
+-- Can `shooter` fire an active radar missile at `target` on a TWS track (no hard lock)?
+function SensorService:CanTWS(shooter: Jet, target: Jet): boolean
+	return self:HasTWS(shooter) and (self:CanTrack(shooter, target))
+end
+
 -- Is the target notching relative to a radar at `radarPosition`?
 function SensorService:IsNotching(radarPosition: Vector3, target: Jet): boolean
 	return math.abs(Signature.radialSpeed(radarPosition, target.root.Position, realVelocity(target)))
