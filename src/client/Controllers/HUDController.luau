@@ -28,6 +28,8 @@ local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
 local SettingsController = require(script.Parent.SettingsController)
 
+local DamageDiagram = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("DamageDiagram"))
+
 local GREEN = Color3.fromRGB(110, 255, 150) -- the HUD colour: changes with the HUDColour setting
 -- HUDColour presets (SET-03): cyan and white stay clear of the red and amber warnings for red-green
 -- colour blindness
@@ -46,8 +48,8 @@ local FRIENDLY = Color3.fromRGB(90, 165, 255) -- teammates (team modes)
 local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
-local BOX_WIDTH_DEG = 28
-local BOX_HEIGHT_DEG = 22
+local BOX_WIDTH_DEG = 29.5 -- about 5% roomier than 28 × 22 (Will), so the readouts sit further apart
+local BOX_HEIGHT_DEG = 23.2
 local LADDER_STEP = 5 -- degrees between pitch rungs
 
 local HUDController = {
@@ -76,6 +78,7 @@ local terrainCheckAt = 0
 local terrainAhead = false
 local aimReticle: Frame
 local fuelLabel: TextLabel
+local damageDiagram: DamageDiagram.Diagram -- above the fuel readout once you're damaged (DMG-05)
 local helpLabel: TextLabel
 -- HUD-02: guns
 local leadMarker: Frame
@@ -84,6 +87,16 @@ local hitUntil = 0
 local killFeed: Frame
 local feedLines: { { label: TextLabel, expires: number } } = {}
 local targetMarkers: { [Model]: any } = {}
+-- Gunsights (GUN-07): each target's smoothed acceleration for the LCOS pipper, and the last second of where
+-- your gun pointed for the EEGS funnel
+local targetMotion: { [Model]: { velocity: Vector3, time: number, accel: Vector3 } } = {}
+local gunHistory: { { time: number, muzzle: CFrame, velocity: Vector3 } } = {}
+local FUNNEL_TIMES = { 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2 } -- seconds of flight drawn
+local funnelDots: { { Frame } } = {} -- { left, right } per FUNNEL_TIMES entry
+local fixedRing: Frame -- Simple sight (Tier I–II): the fixed reflector-sight ring around the gun cross
+local lcosRing: Frame -- LCOS / EEGS pipper: a ring with a range scale that shrinks as you close
+local lcosTicks: { Frame } = {}
+local LCOS_TICKS = 12
 local markerLayer: Frame
 -- HUD-03: missiles
 local seekerCircle: Frame
@@ -96,7 +109,6 @@ local missileWarning: TextLabel
 local warningArrow: TextLabel
 
 local TARGET_RANGE = 5000 -- real metres: show markers on jets within this
-local LEAD_RANGE = 1600 -- real metres: show the gun lead indicator within this
 local LEAD_CONE = 30 -- degrees off the nose
 local FEED_SECONDS = 7
 local FEED_LINES = 5
@@ -298,6 +310,7 @@ local function build(): ScreenGui
 	fuelLabel.AnchorPoint = Vector2.new(0, 1)
 	fuelLabel.Position = UDim2.new(0, 20, 1, -20)
 	fuelLabel.Size = UDim2.fromOffset(320, 18)
+	damageDiagram = DamageDiagram.create(gui)
 
 	helpLabel = text(gui, 13, Enum.TextXAlignment.Right)
 	helpLabel.AnchorPoint = Vector2.new(1, 1)
@@ -336,6 +349,32 @@ local function build(): ScreenGui
 	leadDot.AnchorPoint = Vector2.new(0.5, 0.5)
 	leadDot.Position = UDim2.fromScale(0.5, 0.5)
 	leadMarker.Visible = false
+	-- Gunsights by tier (GUN-07): each looks different, so you can tell which one your jet has
+	fixedRing = circle(box, 74, 1.5, GREEN)
+	fixedRing.Visible = false
+	lcosRing = circle(box, 44, 2, GREEN)
+	local lcosDot = line(lcosRing, 4, 4)
+	lcosDot.AnchorPoint = Vector2.new(0.5, 0.5)
+	lcosDot.Position = UDim2.fromScale(0.5, 0.5)
+	for i = 1, LCOS_TICKS do
+		local angle = math.rad(i / LCOS_TICKS * 360)
+		local tick = line(lcosRing, 3, 3)
+		tick.AnchorPoint = Vector2.new(0.5, 0.5)
+		tick.Position = UDim2.new(0.5, math.sin(angle) * 29, 0.5, -math.cos(angle) * 29)
+		lcosTicks[i] = tick
+	end
+	lcosRing.Visible = false
+	-- EEGS funnel (Tier V+): a dot each side per FUNNEL_TIMES entry, a wingspan apart at that range
+	for i = 1, #FUNNEL_TIMES do
+		local pair = {}
+		for side = 1, 2 do
+			local dot = line(box, 6, 6)
+			dot.AnchorPoint = Vector2.new(0.5, 0.5)
+			dot.Visible = false
+			pair[side] = dot
+		end
+		funnelDots[i] = pair
+	end
 
 	hitMarker = text(box, 30)
 	hitMarker.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -462,6 +501,7 @@ local MARKER_STYLES = {
 	Lockable = { size = 34, circle = true, thickness = 2 },
 	Locking = { size = 34, circle = false, thickness = 2.5 },
 	Locked = { size = 38, circle = false, thickness = 3 },
+	Track = { size = 30, circle = false, thickness = 2 }, -- the TWS target: an active radar missile goes here (SNS-07)
 	Friendly = { size = 14, circle = true, thickness = 1.5 }, -- a teammate (team modes)
 }
 
@@ -540,6 +580,7 @@ local function update()
 	end
 
 	gunCross.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	fixedRing.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
 	-- Pitch ladder and horizon: conformal, rotated by the *camera's* bank (the screen's tilt against
 	-- the real horizon), which matches whether the view rolls with the jet or stays level.
@@ -648,7 +689,11 @@ local function update()
 		local ammo = (jetModel:GetAttribute("Ammo") :: number?) or 0
 		local heat = (jetModel:GetAttribute("GunHeat") :: number?) or 0
 		local jammed = jetModel:GetAttribute("GunJammed") == true
-		readouts.Gun.Text = if jammed then "GUN JAM" elseif heat > 0.75 then `GUN {ammo} HOT` else `GUN {ammo}`
+		local sightName = Ballistics.sightFor(if airframe then airframe.Tier else 1)
+		readouts.Gun.Text = if jammed
+			then "GUN JAM"
+			elseif heat > 0.75 then `GUN {ammo} HOT`
+			else `GUN {ammo} · {string.upper(sightName)}`
 		readouts.Gun.TextColor3 = if jammed or ammo == 0 then RED elseif heat > 0.75 then AMBER else GREEN
 		local selected = jetModel:GetAttribute("SelectedMissile") :: string?
 		local selectedSpec = if selected and selected ~= "" then WeaponData.getMissile(selected) else nil
@@ -730,6 +775,10 @@ local function update()
 	local myPosition = root.Position
 	local myVelocity = state.velocity
 	local gun = jetModel and WeaponData.get(jetModel:GetAttribute("Gun") :: string)
+	-- The gunsight for this jet's tier (GUN-07): Simple, LCOS or EEGS
+	local sight = Ballistics.sightFor(if airframe then airframe.Tier else 1)
+	local leadRange = if sight == "Simple" then Ballistics.SIMPLE_RANGE else Ballistics.SIGHT_RANGE
+	local now = os.clock()
 	local bestOff, bestModel = math.huge, nil
 	local seen: { [Model]: boolean } = {}
 	for _, model in workspace.Jets:GetChildren() do
@@ -760,15 +809,32 @@ local function update()
 				markerState = "Locked"
 			elseif id == SensorController.irTargetId or id == SensorController.acquiringId then
 				markerState = "Locking"
+			elseif id == SensorController.twsTargetId then
+				markerState = "Track"
 			elseif SensorController.lockable[id] then
 				markerState = "Lockable"
 			end
 		end
 		styleMarker(m, markerState)
-		m.label.Text = string.format("%s %.1fkm", (model:GetAttribute("PilotName") :: string?) or "?", range / 1000)
+		m.label.Text = string.format(
+			"%s%s %.1fkm",
+			if markerState == "Track" then "TWS · " else "",
+			(model:GetAttribute("PilotName") :: string?) or "?",
+			range / 1000
+		)
 		local off = math.deg(math.acos(math.clamp((otherRoot.Position - myPosition).Unit:Dot(look), -1, 1)))
-		if range <= LEAD_RANGE and off <= LEAD_CONE and off < bestOff then
+		if range <= leadRange and off <= LEAD_CONE and off < bestOff then
 			bestOff, bestModel = off, model
+		end
+		-- Smoothed acceleration for the LCOS pipper
+		local velocity = Units.velocityFromStuds(otherRoot.AssemblyLinearVelocity)
+		local motion = targetMotion[model]
+		if motion and now - motion.time > 1e-3 then
+			local raw = (velocity - motion.velocity) / (now - motion.time)
+			motion.accel = motion.accel:Lerp(raw, 0.15)
+			motion.velocity, motion.time = velocity, now
+		elseif not motion then
+			targetMotion[model] = { velocity = velocity, time = now, accel = Vector3.zero }
 		end
 	end
 	for model, m in targetMarkers do
@@ -778,22 +844,83 @@ local function update()
 			targetMarkers[model] = nil
 		end
 	end
+	for model in targetMotion do
+		if not seen[model] then
+			targetMotion[model] = nil
+		end
+	end
 
 	leadMarker.Visible = false
+	lcosRing.Visible = false
+	fixedRing.Visible = gun ~= nil and sight == "Simple"
 	if gun and bestModel and bestModel.PrimaryPart then
 		local target = bestModel.PrimaryPart
+		local motion = targetMotion[bestModel]
 		local dir = Ballistics.leadDirection(
 			myPosition,
 			myVelocity,
 			target.Position,
 			Units.velocityFromStuds(target.AssemblyLinearVelocity),
 			gun.MuzzleVelocity,
-			gun.Lifetime
+			gun.Lifetime,
+			if sight ~= "Simple" and motion then motion.accel else nil
 		)
 		if dir then
 			local p, visible = project(camera, dir)
-			leadMarker.Visible = visible and inside(p, 10, 10)
-			leadMarker.Position = toBox(p)
+			-- Simple: the small pipper. LCOS / EEGS: the ring, its range scale lit in proportion to the range
+			local pipper = if sight == "Simple" then leadMarker else lcosRing
+			pipper.Visible = visible and inside(p, 10, 10)
+			pipper.Position = toBox(p)
+			if sight ~= "Simple" then
+				local range = Units.toMetres((target.Position - myPosition).Magnitude)
+				local lit = math.ceil(LCOS_TICKS * math.clamp(range / Ballistics.SIGHT_RANGE, 0, 1))
+				for i, tick in lcosTicks do
+					tick.Visible = i <= lit
+				end
+			end
+		end
+	end
+
+	-- EEGS funnel (Tier V+, always on): where rounds fired over the last second are now, from where the gun
+	-- pointed then, a wingspan wide at each range. Put the target's wings across it and fire.
+	local muzzle = root:FindFirstChild("GunMuzzle") :: Attachment?
+	table.insert(gunHistory, {
+		time = now,
+		muzzle = if muzzle then muzzle.WorldCFrame else root.CFrame,
+		velocity = myVelocity,
+	})
+	while #gunHistory > 0 and now - gunHistory[1].time > FUNNEL_TIMES[#FUNNEL_TIMES] + 0.1 do
+		table.remove(gunHistory, 1)
+	end
+	local showFunnel = gun ~= nil and sight == "EEGS" -- always on in Tier V+ jets
+	local right = camera.CFrame.RightVector * Units.toStuds(Ballistics.FUNNEL_WINGSPAN / 2)
+	local h = #gunHistory
+	for i, t in FUNNEL_TIMES do
+		local pair = funnelDots[i]
+		-- The history entry from about t seconds ago (newest last)
+		local entry = nil
+		for j = h, 1, -1 do
+			if now - gunHistory[j].time >= t then
+				entry = gunHistory[j]
+				break
+			end
+		end
+		local point = if showFunnel
+				and entry
+				and gun
+			then Ballistics.positionAfter(entry.muzzle, entry.velocity, gun, t)
+			else nil
+		for side = 1, 2 do
+			local dot = pair[side]
+			dot.Visible = false
+			if point then
+				local p = camera:WorldToViewportPoint(point + right * (if side == 1 then -1 else 1))
+				local screen = Vector2.new(p.X, p.Y)
+				if p.Z > 0 and inside(screen, 6, 6) then
+					dot.Visible = true
+					dot.Position = toBox(screen)
+				end
+			end
 		end
 	end
 
@@ -806,6 +933,8 @@ local function update()
 		targetModel = SensorController:GetModel(SensorController.irTargetId)
 	elseif missileSpec and not isIR and SensorController.lockId ~= 0 then
 		targetModel = SensorController:GetModel(SensorController.lockId)
+	elseif missileSpec and not isIR and SensorController.twsTargetId ~= 0 then
+		targetModel = SensorController:GetModel(SensorController.twsTargetId)
 	end
 
 	-- The seeker circle shows the heat-seeker searching at the boresight; once it sees a target, the
@@ -813,7 +942,9 @@ local function update()
 	seekerCircle.Visible = isIR and SensorController.irTargetId == 0
 	seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
-	local ready = if isIR then SensorController.irLocked else SensorController.lockId ~= 0
+	local ready = if isIR
+		then SensorController.irLocked
+		else SensorController.lockId ~= 0 or SensorController.twsTargetId ~= 0
 	local lockModel = if ready then targetModel else nil
 	local lockRoot = lockModel and lockModel.PrimaryPart
 	lockLabel.Visible = false
@@ -821,7 +952,7 @@ local function update()
 		local screen, onScreen = camera:WorldToViewportPoint(lockRoot.Position)
 		if onScreen and screen.Z > 0 then
 			lockLabel.Visible = true
-			lockLabel.TextColor3 = RED
+			lockLabel.TextColor3 = if isIR or SensorController.lockId ~= 0 then RED else GREEN -- green: a TWS track
 			lockLabel.Position = UDim2.fromOffset(screen.X, screen.Y - 24)
 			local rel = lockRoot.Position - myPosition
 			local closure = -(Units.velocityFromStuds(lockRoot.AssemblyLinearVelocity) - myVelocity):Dot(rel.Unit)
@@ -921,6 +1052,14 @@ local function update()
 	fuelLabel.Position = if InputController.device == "Touch"
 		then UDim2.new(0, 20, 1, -230)
 		else UDim2.new(0, 20, 1, -20)
+	damageDiagram.frame.Position = fuelLabel.Position - UDim2.fromOffset(0, 24)
+	local jet = FlightController.jet
+	DamageDiagram.update(
+		damageDiagram,
+		FlightController.damage,
+		jet ~= nil and jet:GetAttribute("OnFire") == true,
+		GREEN
+	)
 	local function key(id: string): string
 		return Bindings.label(BindingsController:Name(id, "keyboard"))
 	end
