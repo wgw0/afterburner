@@ -12,10 +12,12 @@
 --                bleeds the enemy's tickets, every jet lost costs its team tickets, a team on 0 loses
 --                (or the team ahead at the time limit wins). Pilots inside a zone as it flips score a
 --                capture. AI pilots head for the zones (AIService.objectiveFor).
--- Rotation: after each match's results the server moves on to the next mode in MatchRules.ROTATION
--- (Dogfight, Team Deathmatch, Air Superiority, Dogfight…). Free Flight and the stress test aren't in it.
--- The mode comes from the GameMode attribute on ReplicatedStorage (default Dogfight); in the test
--- environment it can be switched live from the tuning panel.
+-- Server roles (MatchmakingService, MMK-02/04): a lobby runs no match (Idle "Lobby"); a match server runs one
+-- match from the matchmaker's record (its mode and BR band; it waits for the players sent, or ARRIVAL_TIMEOUT,
+-- then AI fills the empty seats) and fires MatchOver after the results so everyone goes back to a lobby; a
+-- training server runs free flight or Vs AI matches that repeat.
+-- Rotation: elsewhere (the test environment's DebugSetMode) the next mode after the results is the next in
+-- MatchRules.ROTATION (Dogfight, Team Deathmatch, Air Superiority, Dogfight…).
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -44,12 +46,15 @@ local CombatService = require(script.Parent.CombatService)
 type Jet = AircraftService.Jet
 
 local BROADCAST_INTERVAL = 0.5
+local ARRIVAL_TIMEOUT = 30 -- a match server waits this long for everyone the matchmaker sent
+local IDLE_STATES = { Lobby = true, Pending = true, Closing = true }
 local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
 
 local MatchService = {
 	Priority = 50,
 	MatchEnded = Signal.new(), -- (ranking, reason)
 	MatchStarted = Signal.new(), -- (mode) a match went live (also Free Flight, which never ends)
+	MatchOver = Signal.new(), -- () a match server's results are done: send everyone home
 }
 
 local mode: MatchRules.ModeConfig = MatchRules.MODES.Dogfight
@@ -62,6 +67,7 @@ local pilotStates: { [any]: MatchRules.PilotState } = {}
 local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
 local zoneState: AirSuperiority.State? = nil -- Air Superiority only
+local record: { mode: string, players: { number }, band: Matchmaking.Band }? = nil -- match servers only
 
 local function humans(): { Player }
 	return Players:GetPlayers()
@@ -151,6 +157,9 @@ function MatchService:PickSpawn(identity: any?): CFrame
 end
 
 local function canSpawn(identity: any): (boolean, number, number?)
+	if IDLE_STATES[state] then
+		return false, math.huge, nil
+	end
 	if mode.Id == "FreeFlight" then
 		return true, 0, nil
 	end
@@ -164,6 +173,9 @@ end
 local refreshBand: () -> ()
 
 local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?, string?)
+	if state == "Lobby" then
+		return false, nil, "Press PLAY to find a match"
+	end
 	ensureScore(player, player.Name, false, player.UserId)
 	local allowed = canSpawn(player)
 	if not allowed then
@@ -185,8 +197,17 @@ local function clearJets()
 	end
 end
 
--- The match's BR band from the lineups of the players here (MMK-01), and AI jets to match it.
+-- The match's BR band (the matchmaker's, or from the lineups of the players here, MMK-01), and AI jets to
+-- match it.
 refreshBand = function()
+	if record then
+		band = record.band
+		local choices = Matchmaking.aiAirframes(band)
+		for i, pilot in AIService:GetMatchPilots() do
+			AIService:SetAirframe(pilot, choices[(i - 1) % #choices + 1])
+		end
+		return
+	end
 	local lineups = {}
 	for _, player in humans() do
 		local data = DataService:GetData(player)
@@ -204,7 +225,8 @@ refreshBand = function()
 end
 
 local function syncAIFill()
-	local wanted = if mode.AIFill > 0 and state ~= "Waiting" then math.max(mode.AIFill - #humans(), 0) else 0
+	local live = state ~= "Waiting" and not IDLE_STATES[state]
+	local wanted = if mode.AIFill > 0 and live then math.max(mode.AIFill - #humans(), 0) else 0
 	local current = AIService:GetMatchPilots()
 	while #current > wanted do
 		-- In team modes, take the AI pilot from the bigger team, so a player joining keeps the sides even
@@ -367,6 +389,20 @@ local function objectiveFor(pilot: any): { position: Vector3, radius: number }?
 	return { position = best.position, radius = best.radius }
 end
 
+-- Match servers: how many of the players the matchmaker sent are here.
+local function arrivals(): (number, number)
+	if not record then
+		return #humans(), #humans()
+	end
+	local here = 0
+	for _, userId in record.players do
+		if Players:GetPlayerByUserId(userId) then
+			here += 1
+		end
+	end
+	return here, #record.players
+end
+
 local function publishPlayerTimers()
 	for _, player in humans() do
 		local identity = player
@@ -379,7 +415,9 @@ end
 local function broadcast()
 	local elapsed = os.clock() - stateSince
 	local timeLeft = 0
-	if state == "Countdown" then
+	if state == "Waiting" and record then
+		timeLeft = ARRIVAL_TIMEOUT - elapsed
+	elseif state == "Countdown" then
 		timeLeft = mode.CountdownSeconds - elapsed
 	elseif state == "InProgress" and mode.TimeLimit > 0 then
 		timeLeft = mode.TimeLimit - elapsed
@@ -401,7 +439,10 @@ local function broadcast()
 			})
 		end
 	end
+	local arrived, expected = arrivals()
 	Net.Server.fireAll("MatchState", {
+		arrived = if record then arrived else nil,
+		expected = if record then expected else nil,
 		mode = mode.Id,
 		modeName = mode.DisplayName,
 		state = state,
@@ -423,9 +464,24 @@ end
 
 local function tick(dt: number)
 	local elapsed = os.clock() - stateSince
+	if IDLE_STATES[state] then
+		broadcastTimer += dt
+		if broadcastTimer >= BROADCAST_INTERVAL then
+			broadcastTimer = 0
+			broadcast()
+		end
+		return
+	end
 	if mode.Id == "FreeFlight" then
 		if state ~= "InProgress" then
 			setState("InProgress")
+		end
+	elseif state == "Waiting" and record then
+		-- Everyone the matchmaker sent, or whoever made it in time
+		local arrived, expected = arrivals()
+		if #humans() > 0 and (arrived >= expected or elapsed >= ARRIVAL_TIMEOUT) then
+			refreshBand()
+			setState("Countdown")
 		end
 	elseif state == "Waiting" then
 		if #humans() > 0 then
@@ -437,6 +493,11 @@ local function tick(dt: number)
 			setState("Waiting")
 		elseif elapsed >= mode.CountdownSeconds then
 			startMatch()
+		end
+	elseif state == "Results" and record then
+		if elapsed >= mode.ResultsSeconds then
+			setState("Closing")
+			MatchService.MatchOver:Fire()
 		end
 	elseif state == "InProgress" then
 		if #humans() == 0 then
@@ -493,8 +554,31 @@ end
 function MatchService:SetMode(modeId: string)
 	local config = (MatchRules.MODES :: any)[modeId]
 	if config then
+		record = nil
 		applyMode(config)
 	end
+end
+
+-- No match here: a lobby, or a reserved server still reading its record.
+function MatchService:Idle(stateName: string)
+	record = nil
+	applyMode(mode)
+	setState(stateName)
+end
+
+-- A match server: the match the matchmaker formed (mode, players, BR band).
+function MatchService:StartFromRecord(matchRecord: any)
+	local config = (MatchRules.MODES :: any)[matchRecord.mode]
+	if not config then
+		return
+	end
+	applyMode(config)
+	record = {
+		mode = matchRecord.mode,
+		players = matchRecord.players or {},
+		band = Matchmaking.bandFor(matchRecord.band and matchRecord.band.br or Matchmaking.DEFAULT_BR),
+	}
+	band = record.band
 end
 
 -- Training servers: a match of `modeId` against `count` AI pilots of one difficulty (no rewards there).

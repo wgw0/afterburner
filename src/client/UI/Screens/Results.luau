@@ -55,7 +55,7 @@ local function Results(props: any)
 			Color = Theme.Accent,
 		}),
 		Sub = e(C.Label, {
-			Text = `{reason}  ·  next match in {match.timeLeft or 0}s`,
+			Text = `{reason}  ·  {if match.expected then "back to the lobby" else "next match"} in {match.timeLeft or 0}s`,
 			Size = UDim2.new(1, 0, 0, 18),
 			Position = UDim2.fromOffset(0, 58),
 			Align = "Center",

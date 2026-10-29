@@ -1,21 +1,35 @@
 --!strict
--- What kind of server this is (DEVELOPMENT.md §26, MMK-02): read anywhere from the ServerRole attribute on
--- ReplicatedStorage, which the server's TrainingService sets at boot.
---   Multiplayer: a public server running the match rotation (the default).
---   Training:    a private (reserved) server made for one player: lessons, Vs AI and free flight, with any
---                jet and no rewards.
+-- What this server is for (DEVELOPMENT.md §25, MMK-02): read anywhere from the ServerRole attribute on
+-- ReplicatedStorage, which MatchmakingService sets.
+--   Lobby:    a public server: the hangar and the matchmaking queue. No flying (the Ground Roamer is fine).
+--   Match:    a reserved server running one match for the players the matchmaker sent, then home.
+--   Training: a reserved server made for one player: lessons, Vs AI and free flight, any jet, no rewards.
+--   Pending:  a reserved server still reading its record (a second or two after it starts).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+export type Role = "Lobby" | "Match" | "Training" | "Pending"
+
 local ServerRole = {}
 
-function ServerRole.get(): string
+function ServerRole.get(): Role
 	local role = ReplicatedStorage:GetAttribute("ServerRole")
-	return if role == "Training" then "Training" else "Multiplayer"
+	if role == "Match" or role == "Training" or role == "Pending" then
+		return role
+	end
+	return "Lobby"
 end
 
 function ServerRole.isTraining(): boolean
 	return ServerRole.get() == "Training"
+end
+
+function ServerRole.isLobby(): boolean
+	return ServerRole.get() == "Lobby"
+end
+
+function ServerRole.isMatch(): boolean
+	return ServerRole.get() == "Match"
 end
 
 return ServerRole

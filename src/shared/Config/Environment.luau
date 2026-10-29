@@ -2,7 +2,7 @@
 -- Which environment and place role this server is running as.
 -- Set by attributes on ReplicatedStorage (so clients can read them too):
 --   Environment = "Test" | "Prod"
---   PlaceRole   = "Single" | "Lobby" | "Battle"
+--   PlaceRole   = "Single" | "Lobby" | "Battle" (else worked out from Config/Places)
 -- Missing Environment defaults to "Test" in Studio and "Prod" on live servers, so debug tools never leak live.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,7 +30,7 @@ function Environment.placeRole(): PlaceRole
 	if value == "Lobby" or value == "Battle" then
 		return value
 	end
-	return "Single"
+	return require(script.Parent.Places).kind() :: PlaceRole -- from the place ids (Config/Places)
 end
 
 return Environment

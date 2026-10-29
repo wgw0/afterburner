@@ -38,6 +38,17 @@ This is the Phase 4 exit test: 8 players and bots, a full match, then a chat abo
    memory.
 5. Set Playability back to **Private** when you're done.
 
+### Matchmaking (MMK-03/04)
+
+Publish the place to the test experience first: matchmaking needs real servers, and Studio only switches roles in place.
+
+1. Join: you land in a **lobby** (PLAY, a mode picker over it, TRAINING top right).
+2. Press PLAY alone: after about 30 s you should be teleported to a match with 5 AI (a loading screen shows during the trip).
+3. With friends: everyone picks the same mode (or Any) and presses PLAY within a few seconds. You should all land in the **same** match, and the AI fill the rest of the 6 seats.
+4. Finish or LEAVE MATCH: you go back to a lobby (maybe a different lobby server from the one you started on; that's expected).
+5. TRAINING from the lobby, then MULTIPLAYER: private server and back.
+6. Note how long each queue took and anything odd, in the results log below.
+
 ### The two-servers save check (Phase 5)
 
 ProfileStore locks a pilot's data to one server. To check a hand-over loses nothing:

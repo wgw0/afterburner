@@ -39,7 +39,11 @@ function Matchmaking.band(lineups: { { string } }): Band
 			top = br
 		end
 	end
-	local br = top or Matchmaking.DEFAULT_BR
+	return Matchmaking.bandFor(top or Matchmaking.DEFAULT_BR)
+end
+
+-- The band for a match whose highest lineup BR is `br`.
+function Matchmaking.bandFor(br: number): Band
 	return { br = br, min = br - Matchmaking.BAND_WIDTH, max = br }
 end
 
