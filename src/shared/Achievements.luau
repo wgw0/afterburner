@@ -3,33 +3,58 @@
 -- Config/Badges. Pure: ChallengeService decides from match events which ones a player has just earned.
 -- Saved per player as data.Achievements = { [id] = { At = unix, Badge = true once the badge was awarded } }.
 
-export type Def = { id: string, name: string, text: string, secret: boolean? } -- secret: hidden until earned
+-- rarity: how hard it is, Common → Legendary (Achievements.RARITIES); shown as the card's colour in Career.
+-- secret: hidden until earned.
+export type Def = { id: string, rarity: string, name: string, text: string, secret: boolean? }
 
 local Achievements = {}
 
+Achievements.RARITIES = table.freeze({ "Common", "Uncommon", "Rare", "Epic", "Legendary" })
+
 Achievements.LIST = table.freeze({
-	{ id = "FirstBlood", name = "First Blood", text = "Shoot down your first jet." },
-	{ id = "GunsOnly", name = "Guns Only", text = "Shoot a jet down with your guns." },
-	{ id = "Victor", name = "Victor", text = "Win a match." },
-	{ id = "AceInADay", name = "Ace in a Day", text = "Get 5 kills in one life." },
-	{ id = "Untouchable", name = "Untouchable", text = "Win a match without taking a hit." },
-	{ id = "Notched", name = "Notched", text = "Defeat a radar missile fired at you." },
-	{ id = "ZoneHunter", name = "Zone Hunter", text = "Capture a zone in Air Superiority." },
-	{ id = "Veteran", name = "Veteran", text = "Finish 50 matches." },
-	{ id = "TestPilot", name = "Test Pilot", text = "Fly the Tempest in a match." },
-	{ id = "FoxOne", name = "Fox One", text = "Shoot a jet down with a semi-active radar missile." },
-	{ id = "FoxThree", name = "Fox Three", text = "Shoot a jet down with an active radar missile." },
-	{ id = "DoubleTrouble", name = "Double Trouble", text = "Get 2 kills within 10 seconds." },
-	{ id = "HatTrick", name = "Hat Trick", text = "Get 3 kills in one life." },
-	{ id = "Flawless", name = "Flawless", text = "Get 3 kills in a match without being shot down." },
-	{ id = "TeamPlayer", name = "Team Player", text = "Get 3 assists in one match." },
-	{ id = "EscapeArtist", name = "Escape Artist", text = "Defeat 3 missiles in one life." },
-	{ id = "TopOfTheTable", name = "Top of the Table", text = "Finish first in a free-for-all Dogfight." },
-	{ id = "Centurion", name = "Centurion", text = "Shoot down 100 jets." },
-	{ id = "Collector", name = "Collector", text = "Own 10 jets." },
-	{ id = "HighFlyer", name = "High Flyer", text = "Reach pilot level 25." },
+	{ id = "FirstBlood", rarity = "Common", name = "First Blood", text = "Shoot down your first jet." },
+	{ id = "GunsOnly", rarity = "Common", name = "Guns Only", text = "Shoot a jet down with your guns." },
+	{ id = "Victor", rarity = "Common", name = "Victor", text = "Win a match." },
+	{ id = "AceInADay", rarity = "Epic", name = "Ace in a Day", text = "Get 5 kills in one life." },
+	{ id = "Untouchable", rarity = "Epic", name = "Untouchable", text = "Win a match without taking a hit." },
+	{ id = "Notched", rarity = "Uncommon", name = "Notched", text = "Defeat a radar missile fired at you." },
+	{ id = "ZoneHunter", rarity = "Common", name = "Zone Hunter", text = "Capture a zone in Air Superiority." },
+	{ id = "Veteran", rarity = "Rare", name = "Veteran", text = "Finish 50 matches." },
+	{ id = "TestPilot", rarity = "Legendary", name = "Test Pilot", text = "Fly the Tempest in a match." },
+	{
+		id = "FoxOne",
+		rarity = "Uncommon",
+		name = "Fox One",
+		text = "Shoot a jet down with a semi-active radar missile.",
+	},
+	{
+		id = "FoxThree",
+		rarity = "Uncommon",
+		name = "Fox Three",
+		text = "Shoot a jet down with an active radar missile.",
+	},
+	{ id = "DoubleTrouble", rarity = "Rare", name = "Double Trouble", text = "Get 2 kills within 10 seconds." },
+	{ id = "HatTrick", rarity = "Uncommon", name = "Hat Trick", text = "Get 3 kills in one life." },
+	{ id = "Flawless", rarity = "Epic", name = "Flawless", text = "Get 3 kills in a match without being shot down." },
+	{ id = "TeamPlayer", rarity = "Uncommon", name = "Team Player", text = "Get 3 assists in one match." },
+	{ id = "EscapeArtist", rarity = "Rare", name = "Escape Artist", text = "Defeat 3 missiles in one life." },
+	{
+		id = "TopOfTheTable",
+		rarity = "Rare",
+		name = "Top of the Table",
+		text = "Finish first in a free-for-all Dogfight.",
+	},
+	{ id = "Centurion", rarity = "Epic", name = "Centurion", text = "Shoot down 100 jets." },
+	{ id = "Collector", rarity = "Rare", name = "Collector", text = "Own 10 jets." },
+	{ id = "HighFlyer", rarity = "Legendary", name = "High Flyer", text = "Reach pilot level 25." },
 	-- Secret: not shown in Career until earned
-	{ id = "ThreadTheNeedle", name = "Threading the Needle", text = "Fly under a bridge.", secret = true },
+	{
+		id = "ThreadTheNeedle",
+		rarity = "Epic",
+		name = "Threading the Needle",
+		text = "Fly under a bridge.",
+		secret = true,
+	},
 } :: { Def })
 
 Achievements.ACE_KILLS = 5

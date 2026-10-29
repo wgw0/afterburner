@@ -154,7 +154,13 @@ local bridgeSeen: { [number]: { [Model]: Vector3 } } = {}
 local bridgePaidAt: { [Player]: number } = {}
 
 -- Records events for a player: challenge progress and rewards, achievements, then tells them.
-local function record(player: Player, challengeEvents: { Challenges.Event }, achievementEvents: { Achievements.Event })
+-- `extra` is added to a new achievement's toast (e.g. the XP that came with it).
+local function record(
+	player: Player,
+	challengeEvents: { Challenges.Event },
+	achievementEvents: { Achievements.Event },
+	extra: string?
+)
 	local notices = {}
 	local newAchievements = {}
 	DataService:Update(player, function(data)
@@ -183,7 +189,8 @@ local function record(player: Player, challengeEvents: { Challenges.Event }, ach
 						kind = "Achievement",
 						heading = if def.secret then "SECRET ACHIEVEMENT" else nil,
 						text = def.name,
-						detail = def.text,
+						detail = if extra then `{def.text}  ·  {extra}` else def.text,
+						rarity = def.rarity,
 					})
 					Telemetry.event("AchievementEarned", 1, { id = id }, player)
 				end
@@ -368,26 +375,34 @@ function ChallengeService:Init()
 	end)
 end
 
--- Flew under a bridge: a little XP (once a minute) and the secret achievement.
+-- Flew under a bridge: the secret achievement (anywhere you fly) and a little XP (in scored matches, once a
+-- minute). The first time, the achievement's toast carries the XP; after that a small UNDER THE BRIDGE one.
 local function bridgeRun(player: Player)
-	if not live() then
+	local data = DataService:GetData(player)
+	if not data then
 		return
 	end
+	local firstTime = data.Achievements.ThreadTheNeedle == nil
 	local now = os.clock()
-	if not bridgePaidAt[player] or now - bridgePaidAt[player] >= BRIDGE_COOLDOWN then
+	local paid = live() and (not bridgePaidAt[player] or now - bridgePaidAt[player] >= BRIDGE_COOLDOWN)
+	if paid then
 		bridgePaidAt[player] = now
-		DataService:Update(player, function(data)
-			Progression.addXP(data, BRIDGE_XP)
+		DataService:Update(player, function(d)
+			Progression.addXP(d, BRIDGE_XP)
 		end)
-		Net.Server.fire("ChallengeNotice", player, {
-			kind = "Bonus",
-			heading = "UNDER THE BRIDGE",
-			text = "Threaded the Severn Bridge",
-			xp = BRIDGE_XP,
-		})
 		Telemetry.event("BridgeRun", 1, {}, player)
+		if not firstTime then
+			Net.Server.fire("ChallengeNotice", player, {
+				kind = "Bonus",
+				heading = "UNDER THE BRIDGE",
+				text = "Threaded the Severn Bridge",
+				xp = BRIDGE_XP,
+			})
+		end
 	end
-	record(player, {}, { { kind = "BridgeRun" } })
+	if firstTime then
+		record(player, {}, { { kind = "BridgeRun" } }, if paid then `+{BRIDGE_XP} XP` else nil)
+	end
 end
 
 -- Watches players' jets near the bridges for a pass under a deck (BridgeRun.passedUnder).

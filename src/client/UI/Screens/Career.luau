@@ -212,23 +212,26 @@ local function LevelTrack(props: any)
 	})
 end
 
+-- An achievement: its border and name in its rarity's colour (faint until earned), the rarity in the corner.
 local function card(def: any, earned: any, order: number)
 	local lit = earned ~= nil
+	local colour = Theme.Rarity[def.rarity] or Theme.Accent
 	return e(C.Panel, {
 		Size = UDim2.fromOffset(CARD_W, CARD_H),
 		Color = if lit then Theme.PanelLight else Theme.Background,
 		Transparency = if lit then 0 else 0.3,
 		Padding = 12,
 		LayoutOrder = order,
-		StrokeColor = if lit then Theme.Accent else nil,
-		StrokeThickness = if lit then 1.5 else nil,
+		StrokeColor = colour,
+		StrokeThickness = if lit then 2 else 1,
+		StrokeTransparency = if lit then 0 else 0.6,
 	}, {
 		Name = e(C.Label, {
 			Text = def.name,
 			Size = UDim2.new(1, 0, 0, 22),
 			Bold = true,
 			TextSize = 16,
-			Color = if lit then Theme.Accent else Theme.Dim,
+			Color = if lit then colour else Theme.Dim,
 		}),
 		Text = e(C.Label, {
 			Text = def.text,
@@ -240,10 +243,20 @@ local function card(def: any, earned: any, order: number)
 		}),
 		When = e(C.Label, {
 			Text = if lit then os.date("!Earned %d %b %Y", earned.At) :: string else "Not yet",
-			Size = UDim2.new(1, 0, 0, 14),
+			Size = UDim2.new(0.6, 0, 0, 14),
 			Position = UDim2.new(0, 0, 1, -14),
 			TextSize = 11,
 			Color = if lit then Theme.Good else Theme.Locked,
+		}),
+		Rarity = e(C.Label, {
+			Text = if def.secret then `SECRET · {string.upper(def.rarity)}` else string.upper(def.rarity),
+			Size = UDim2.new(0.6, 0, 0, 14),
+			Position = UDim2.new(0.4, 0, 1, -14),
+			TextSize = 10,
+			Bold = true,
+			Align = "Right",
+			Color = colour,
+			Transparency = if lit then 0 else 0.4,
 		}),
 	})
 end

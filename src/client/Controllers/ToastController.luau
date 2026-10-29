@@ -25,6 +25,8 @@ local gui: ScreenGui
 local card: Frame
 local kindLabel: TextLabel
 local textLabel: TextLabel
+local stroke: UIStroke
+local stripe: Frame
 local rewardLabel: TextLabel
 local queue: { any } = {}
 local showing = false
@@ -69,6 +71,11 @@ local function showNext()
 	end
 	rewardLabel.Text = if achievement then notice.detail or "" else table.concat(rewards, "  ·  ")
 	rewardLabel.TextColor3 = if achievement then Theme.Dim else Theme.Good
+	-- An achievement wears its rarity's colour
+	local colour = notice.rarity and Theme.Rarity[notice.rarity] or Theme.Accent
+	stroke.Color = colour
+	stripe.BackgroundColor3 = colour
+	kindLabel.TextColor3 = colour
 	Sounds.play(if achievement then "LevelUp" else "UIConfirm")
 
 	card.Position = UDim2.new(0.5, 0, 0, -HEIGHT)
@@ -104,12 +111,12 @@ function ToastController:Init()
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, Theme.Radius)
 	corner.Parent = card
-	local stroke = Instance.new("UIStroke")
+	stroke = Instance.new("UIStroke")
 	stroke.Color = Theme.Accent
 	stroke.Thickness = 1.5
 	stroke.Parent = card
 	-- An orange stripe down the left edge
-	local stripe = Instance.new("Frame")
+	stripe = Instance.new("Frame")
 	stripe.Size = UDim2.new(0, 4, 1, -16)
 	stripe.Position = UDim2.fromOffset(0, 8)
 	stripe.BackgroundColor3 = Theme.Accent
