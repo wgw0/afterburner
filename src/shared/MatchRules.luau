@@ -18,6 +18,7 @@ export type ModeConfig = {
 	Scored: boolean,
 	CountdownSeconds: number,
 	ResultsSeconds: number,
+	Teams: { string }?, -- team modes: the team ids (ScoreLimit is then team kills)
 }
 
 export type Score = {
@@ -28,6 +29,7 @@ export type Score = {
 	assists: number,
 	deaths: number,
 	score: number,
+	team: string?,
 }
 
 MatchRules.POINTS = table.freeze({ Kill = 100, Assist = 50, ForcedCrashKill = 100 })
@@ -55,6 +57,19 @@ MatchRules.MODES = table.freeze({
 		Scored = true,
 		CountdownSeconds = 8,
 		ResultsSeconds = 12,
+	} :: ModeConfig),
+	-- MCH-05: two teams, West and East (they spawn over their own coast). Team kills score; no friendly fire.
+	TeamDeathmatch = table.freeze({
+		Id = "TeamDeathmatch",
+		DisplayName = "Team Deathmatch",
+		ScoreLimit = 30,
+		TimeLimit = 600,
+		Respawn = { Type = "Timer", Delay = 5 },
+		AIFill = 8,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 12,
+		Teams = table.freeze({ "West", "East" }),
 	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({
@@ -86,6 +101,14 @@ function MatchRules.recordKill(
 	if victimScore then
 		victimScore.deaths += 1
 	end
+	local victimTeam = victimScore and victimScore.team
+	local function teammate(identity: any): boolean
+		local s = scores[identity]
+		return victimTeam ~= nil and s ~= nil and s.team == victimTeam
+	end
+	if teammate(killer) then
+		return -- a teammate's crash or a stray hit scores nothing
+	end
 	if killer ~= nil and killer ~= victim and scores[killer] then
 		local k = scores[killer]
 		k.kills += 1
@@ -93,7 +116,7 @@ function MatchRules.recordKill(
 	end
 	for _, assist in assists do
 		local a = scores[assist]
-		if a and assist ~= killer and assist ~= victim then
+		if a and assist ~= killer and assist ~= victim and not teammate(assist) then
 			a.assists += 1
 			a.score += MatchRules.POINTS.Assist
 		end
@@ -119,9 +142,69 @@ function MatchRules.ranking(scores: { [any]: Score }): { Score }
 	return list
 end
 
+-- Kills per team (team modes). Every team appears, at 0 if it has none.
+function MatchRules.teamScores(config: ModeConfig, scores: { [any]: Score }): { [string]: number }
+	local totals = {}
+	for _, team in config.Teams or {} do
+		totals[team] = 0
+	end
+	for _, s in scores do
+		if s.team and totals[s.team] then
+			totals[s.team] += s.kills
+		end
+	end
+	return totals
+end
+
+-- The team a new pilot joins: the one with the fewest pilots, then the one behind on kills, then the first.
+-- `humansFirst` counts only human pilots, so players spread evenly and AI fills the gaps.
+function MatchRules.pickTeam(config: ModeConfig, scores: { [any]: Score }, humansFirst: boolean?): string?
+	local teams = config.Teams
+	if not teams then
+		return nil
+	end
+	local counts = {}
+	for _, team in teams do
+		counts[team] = 0
+	end
+	for _, s in scores do
+		if s.team and counts[s.team] and not (humansFirst and s.isAI) then
+			counts[s.team] += 1
+		end
+	end
+	local kills = MatchRules.teamScores(config, scores)
+	local best = teams[1]
+	for _, team in teams do
+		if counts[team] < counts[best] or (counts[team] == counts[best] and kills[team] < kills[best]) then
+			best = team
+		end
+	end
+	return best
+end
+
+-- The leading team, or nil for a draw (team modes).
+function MatchRules.winningTeam(config: ModeConfig, scores: { [any]: Score }): string?
+	local best, bestKills, tied = nil, -1, false
+	for _, team in config.Teams or {} do
+		local kills = MatchRules.teamScores(config, scores)[team]
+		if kills > bestKills then
+			best, bestKills, tied = team, kills, false
+		elseif kills == bestKills then
+			tied = true
+		end
+	end
+	return if tied then nil else best
+end
+
 -- Has the match ended? Returns (ended, reason).
 function MatchRules.checkEnd(config: ModeConfig, scores: { [any]: Score }, elapsed: number): (boolean, string?)
-	if config.ScoreLimit > 0 then
+	if config.ScoreLimit > 0 and config.Teams then
+		for _, kills in MatchRules.teamScores(config, scores) do
+			if kills >= config.ScoreLimit then
+				return true, "ScoreLimit"
+			end
+		end
+	elseif config.ScoreLimit > 0 then
 		for _, s in scores do
 			if s.kills >= config.ScoreLimit then
 				return true, "ScoreLimit"

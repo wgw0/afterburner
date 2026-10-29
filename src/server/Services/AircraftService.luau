@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
@@ -21,6 +22,7 @@ local Skins = require(Shared.Skins)
 local Units = require(Shared.Units)
 local Validate = require(Shared.Util.Validate)
 local WeaponData = require(Shared.WeaponData)
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 
 export type Jet = {
 	id: number,
@@ -219,6 +221,7 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 		lastProbes = {},
 	}
 	jets[id] = jet
+	model:SetAttribute("Team", Teams.of(jet.identity) or "") -- team modes (MCH-05); "" = no team
 	-- A belly landing at a shallow angle can slide the hull along the ground without the centre's path
 	-- ever crossing it, so the hull touching the map is a crash too.
 	local hull = model:FindFirstChild("Hull")

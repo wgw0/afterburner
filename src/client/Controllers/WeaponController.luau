@@ -238,7 +238,7 @@ local function toggleLock()
 	end
 	local best, bestDot = 0, -2
 	for id, contact in SensorController.contacts do
-		if contact.onRadar then
+		if contact.onRadar and not contact.friendly then
 			local dot = root.CFrame.LookVector:Dot((contact.position - root.Position).Unit)
 			if dot > bestDot then
 				best, bestDot = id, dot

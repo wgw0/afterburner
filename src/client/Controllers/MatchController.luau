@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
+local TeamConfig = require(Shared.Config.Teams)
 
 local NAVY = Color3.fromRGB(10, 18, 34)
 local ORANGE = Color3.fromRGB(255, 138, 61)
@@ -74,6 +75,30 @@ local function rowsFrame(parent: Instance, top: number): Frame
 	return f
 end
 
+local function teamName(team: string): string
+	local info = (TeamConfig :: any)[team]
+	return string.upper(if info then info.DisplayName else team)
+end
+
+local function teamColour(team: string?): Color3?
+	local info = team and (TeamConfig :: any)[team]
+	return info and info.Colour
+end
+
+-- Team modes: each team's pilots under a header with its kills, in team order.
+local function byTeam(ranking: { any }, teams: { string }, teamScores: { [string]: number }): { any }
+	local rows = {}
+	for _, team in teams do
+		table.insert(rows, { header = true, team = team, kills = teamScores[team] or 0 })
+		for _, score in ranking do
+			if score.team == team then
+				table.insert(rows, score)
+			end
+		end
+	end
+	return rows
+end
+
 local function fillRows(container: Frame, ranking: { any }, limit: number)
 	for _, child in container:GetChildren() do
 		if child:IsA("Frame") then
@@ -93,10 +118,20 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		l.Size = UDim2.fromScale(c[3] :: number, 1)
 		l.TextXAlignment = if c[1] == "PILOT" then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	end
+	local rank = 0
 	for i, score in ranking do
 		if i > limit then
 			break
 		end
+		if score.header then
+			local head = label(container, `{teamName(score.team)}   {score.kills}`, 15, teamColour(score.team))
+			head.Size = UDim2.new(1, 0, 0, 22)
+			head.TextXAlignment = Enum.TextXAlignment.Left
+			head.LayoutOrder = i
+			rank = 0
+			continue
+		end
+		rank += 1
 		local row = Instance.new("Frame")
 		row.BackgroundColor3 = Color3.new(1, 1, 1)
 		row.BackgroundTransparency = if i % 2 == 0 then 0.94 else 1
@@ -106,14 +141,15 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		row.Parent = container
 		local mine = score.userId == localPlayer.UserId
 		local values = {
-			`{i}. {score.name}`,
+			`{rank}. {score.name}`,
 			tostring(score.kills),
 			tostring(score.assists),
 			tostring(score.deaths),
 			tostring(score.score),
 		}
 		for c, column in columns do
-			local l = label(row, values[c], 15, if mine then ME elseif score.isAI then DIM else WHITE)
+			local colour = if mine then ME elseif c == 1 and score.team then teamColour(score.team) else nil
+			local l = label(row, values[c], 15, colour or (if score.isAI then DIM else WHITE))
 			l.Font = Enum.Font.Gotham
 			l.Position = UDim2.fromScale(column[2] :: number, 0)
 			l.Size = UDim2.fromScale(column[3] :: number, 1)
@@ -135,6 +171,16 @@ local function render(s: any)
 		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS`
 	elseif s.state == "Countdown" then
 		banner.Text = `{string.upper(s.modeName)}  ·  STARTS IN {s.timeLeft}`
+	elseif s.state == "InProgress" and s.teams and s.teamScores then
+		-- Team modes: both teams' kills against the limit, and which team you're on
+		local parts = {}
+		for _, team in s.teams do
+			table.insert(parts, `{teamName(team)} {s.teamScores[team] or 0}`)
+		end
+		local mine = localPlayer:GetAttribute("Team")
+		local yours = if type(mine) == "string" and mine ~= "" then `  ·  YOU: {teamName(mine)}` else ""
+		banner.Text =
+			`{string.upper(s.modeName)}  ·  {formatTime(s.timeLeft)}  ·  {table.concat(parts, " – ")} (TO {s.scoreLimit}){yours}`
 	elseif s.state == "InProgress" then
 		local leader = s.ranking[1]
 		local lead = if leader then `  ·  LEAD {leader.name} {leader.kills}/{s.scoreLimit}` else ""
@@ -144,7 +190,8 @@ local function render(s: any)
 	end
 
 	if board.Visible then
-		fillRows(boardRows, s.ranking, 16)
+		local rows = if s.teams and s.teamScores then byTeam(s.ranking, s.teams, s.teamScores) else s.ranking
+		fillRows(boardRows, rows, 18)
 	end
 end
 

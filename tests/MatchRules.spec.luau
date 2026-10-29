@@ -20,6 +20,61 @@ return function(ctx)
 			}
 		end
 
+		describe("Team Deathmatch (MCH-05)", function()
+			local tdm = MatchRules.MODES.TeamDeathmatch
+			local function teamScores()
+				local s = {}
+				for _, entry in { { "a", false }, { "b", false }, { "c", true }, { "d", true } } do
+					local score = MatchRules.newScore(entry[1], entry[2], 0)
+					score.team = MatchRules.pickTeam(tdm, s)
+					s[entry[1]] = score
+				end
+				return s
+			end
+
+			it("new pilots alternate between the teams", function()
+				local s = teamScores()
+				expect(s.a.team).toBe("West")
+				expect(s.b.team).toBe("East")
+				expect(s.c.team).toBe("West")
+				expect(s.d.team).toBe("East")
+			end)
+			it("counting humans only, a new player joins the side with fewer players", function()
+				local s = teamScores() -- West: a (human), c (AI); East: b (human), d (AI)
+				s.d.team = "West" -- now West has 3 (1 human), East 1 (1 human)
+				local e = MatchRules.newScore("e", false, 0)
+				expect(MatchRules.pickTeam(tdm, s, true)).toBe("West") -- humans 1:1, West behind on kills (tie: first)
+				s.b.kills = 2
+				expect(MatchRules.pickTeam(tdm, s, true)).toBe("West") -- humans 1:1, West behind on kills
+				s.e = e
+				e.team = "West"
+				expect(MatchRules.pickTeam(tdm, s, true)).toBe("East") -- humans 2:1
+			end)
+			it("killing a teammate scores nothing; killing an enemy counts for the team", function()
+				local s = teamScores()
+				MatchRules.recordKill(s, "c", "a", {}, false) -- a and c are both West
+				expect(s.a.kills).toBe(0)
+				expect(s.c.deaths).toBe(1)
+				MatchRules.recordKill(s, "b", "a", { "c", "d" }, false) -- West kills East; d (East) is no assist
+				expect(s.a.kills).toBe(1)
+				expect(s.c.assists).toBe(1)
+				expect(s.d.assists).toBe(0)
+				expect(MatchRules.teamScores(tdm, s).West).toBe(1)
+				expect(MatchRules.teamScores(tdm, s).East).toBe(0)
+			end)
+			it("the first team to the kill limit wins; level at the time limit is a draw", function()
+				local s = teamScores()
+				expect(MatchRules.winningTeam(tdm, s)).toBe(nil)
+				s.a.kills = tdm.ScoreLimit - 1
+				expect((MatchRules.checkEnd(tdm, s, 10))).toBe(false)
+				s.c.kills = 1
+				local ended, reason = MatchRules.checkEnd(tdm, s, 10)
+				expect(ended).toBe(true)
+				expect(reason).toBe("ScoreLimit")
+				expect(MatchRules.winningTeam(tdm, s)).toBe("West")
+			end)
+		end)
+
 		it("a kill scores for the killer, a death for the victim, assists for helpers", function()
 			local s = scores()
 			MatchRules.recordKill(s, "b", "a", { "c" }, false)

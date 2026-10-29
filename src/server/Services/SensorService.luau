@@ -8,6 +8,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Progression = require(Shared.Progression)
@@ -18,6 +19,7 @@ local Signature = require(Shared.Signature)
 local Units = require(Shared.Units)
 
 local AircraftService = require(script.Parent.AircraftService)
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 
 type Jet = AircraftService.Jet
 type Lock = { target: number, since: number }
@@ -60,6 +62,9 @@ end
 
 -- Can `shooter`'s radar see `target` right now? Returns (ok, reason).
 function SensorService:CanTrack(shooter: Jet, target: Jet): (boolean, string)
+	if Teams.areFriends(shooter.identity, target.identity) then
+		return false, "friendly" -- team modes: no locks on teammates
+	end
 	local radar = radarOf(shooter)
 	if not radar then
 		return false, "no radar"
@@ -169,7 +174,7 @@ local function updateRwr()
 		end
 		local threats: { Threat } = {}
 		for _, other in jets do
-			if other.id ~= jet.id then
+			if other.id ~= jet.id and not Teams.areFriends(jet.identity, other.identity) then
 				local radar = radarOf(other)
 				if radar then
 					local lock = locks[other.id]
