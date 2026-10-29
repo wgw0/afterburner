@@ -35,6 +35,7 @@ local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local MatchService = require(script.Parent.MatchService)
 local MissileService = require(script.Parent.MissileService)
+local PassService = require(script.Parent.PassService)
 local TextFilterService = require(script.Parent.TextFilterService)
 
 local ProgressionService = {
@@ -231,6 +232,29 @@ local function showCallsign(player: Player, callsign: string)
 	end
 end
 
+-- Shows the saved callsign if the player owns the Custom Callsign pass and Roblox's filter (run again: it
+-- changes over time) still passes it; otherwise their username. A callsign the filter now refuses is cleared.
+local function refreshCallsign(player: Player)
+	local saved = DataService:Update(player, function(data)
+		return data.Callsign
+	end)
+	if not (type(saved) == "string" and saved ~= "" and PassService:Owns(player, "CustomCallsign")) then
+		showCallsign(player, "")
+		return
+	end
+	local filtered = TextFilterService:Filter(saved, player.UserId)
+	if not player.Parent or not PassService:Owns(player, "CustomCallsign") then
+		return
+	elseif Callsign.accepted(saved, filtered) then
+		showCallsign(player, saved)
+	elseif filtered ~= nil then
+		DataService:Update(player, function(data)
+			data.Callsign = "" -- no longer allowed
+		end)
+		showCallsign(player, "")
+	end
+end
+
 function ProgressionService:Init()
 	Net.Server.handle("ResearchAircraft", function(player: Player, id: string)
 		return handleIntent(player, "Research", function(data)
@@ -282,7 +306,13 @@ function ProgressionService:Init()
 		end
 		return ok == true, err
 	end)
-	-- Your custom callsign (CMP-01): cleaned, then shown only if Roblox's filter leaves it untouched
+	-- Your custom callsign (CMP-01, needs the Custom Callsign pass): cleaned, then shown only if Roblox's filter
+	-- leaves it untouched. Clearing it is always allowed.
+	PassService.Changed:Connect(function(player, name)
+		if name == "CustomCallsign" then
+			task.spawn(refreshCallsign, player)
+		end
+	end)
 	Net.Server.handle("SetCallsign", function(player: Player, text: string)
 		if text == "" then
 			DataService:Update(player, function(data)
@@ -290,6 +320,9 @@ function ProgressionService:Init()
 			end)
 			showCallsign(player, "")
 			return true, nil
+		end
+		if not PassService:Owns(player, "CustomCallsign") then
+			return false, "Needs the Custom Callsign pass"
 		end
 		local callsign, why = Callsign.clean(text)
 		if not callsign then
@@ -312,20 +345,7 @@ function ProgressionService:Init()
 	end)
 	-- On joining: levels reached before their milestones existed still pay, and the title shows
 	DataService.ProfileLoaded:Connect(function(player, data)
-		-- The saved callsign goes through the filter again (Roblox's filter changes over time)
-		local saved = data.Callsign
-		if type(saved) == "string" and saved ~= "" then
-			task.spawn(function()
-				local filtered = TextFilterService:Filter(saved, player.UserId)
-				if player.Parent and Callsign.accepted(saved, filtered) then
-					showCallsign(player, saved)
-				elseif player.Parent and filtered ~= nil then
-					DataService:Update(player, function(d)
-						d.Callsign = "" -- no longer allowed
-					end)
-				end
-			end)
-		end
+		task.spawn(refreshCallsign, player)
 		DataService:Update(player, function(d)
 			Progression.claimLevelRewards(d)
 		end)
