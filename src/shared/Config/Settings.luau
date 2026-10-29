@@ -30,6 +30,10 @@ local SPECS: { [string]: Spec } = {
 	-- Pink, Blue and Violet unlock (none of them near the red and amber warnings) with pilot level (Config/LevelRewards); the server checks that
 	HUDColour = { kind = "enum", values = { "Green", "Cyan", "White", "Pink", "Blue", "Violet" }, default = "Green" },
 	MenuScale = { kind = "number", min = 0.8, max = 1.4, default = 1 }, -- menus, banner, scoreboard
+	-- FX-05 graphics: the effects profile (Config/Graphics; Auto picks for the device), contrails, wingtip vapour
+	EffectsQuality = { kind = "enum", values = { "Auto", "Low", "Medium", "High" }, default = "Auto" },
+	Contrails = { kind = "boolean", default = true },
+	Vapour = { kind = "boolean", default = true },
 	-- The jet picked in the hangar, so a match server launches you in it (it follows you between servers)
 	SelectedJet = (function(): Spec
 		local ids = {}

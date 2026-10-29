@@ -2,7 +2,8 @@
 -- Visual effects for every jet (DEVELOPMENT.md §20, FX-01 / FX-04): afterburner flame, contrails, wingtip
 -- vapour, and smoke / fire from a damaged engine (Smoking / OnFire attributes set by the server).
 -- Your own jet uses live flight state; other jets use the Throttle/Afterburner/GLoad attributes the
--- server sets from each pilot's telemetry. Client-only; the server never creates effects.
+-- server sets from each pilot's telemetry. Client-only; the server never creates effects. Follows the
+-- effects quality (GraphicsController, FX-05) and the Contrails / Vapour settings.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -13,6 +14,10 @@ local Trove = require(Shared.Util.Trove)
 local Units = require(Shared.Units)
 
 local FlightController = require(script.Parent.FlightController)
+local GraphicsController = require(script.Parent.GraphicsController)
+local SettingsController = require(script.Parent.SettingsController)
+
+local SMOKE_RATE, FIRE_RATE = 40, 60 -- damage smoke and fire at High
 
 local FLAME_COLOUR = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 245, 200)),
@@ -102,7 +107,7 @@ local function setup(model: Model)
 			smoke.Size = NumberSequence.new(0.84, 3.9)
 			smoke.Transparency = NumberSequence.new(0.35, 1)
 			smoke.Lifetime = NumberRange.new(2.5, 4)
-			smoke.Rate = 40
+			smoke.Rate = SMOKE_RATE * GraphicsController:Profile().particles
 			smoke.Speed = NumberRange.new(0.56, 1.7)
 			smoke.EmissionDirection = Enum.NormalId.Back
 			smoke.Enabled = false
@@ -115,7 +120,7 @@ local function setup(model: Model)
 			fire.Size = NumberSequence.new(1.1, 0.28)
 			fire.Transparency = NumberSequence.new(0.1, 1)
 			fire.Lifetime = NumberRange.new(0.3, 0.6)
-			fire.Rate = 60
+			fire.Rate = FIRE_RATE * GraphicsController:Profile().particles
 			fire.Speed = NumberRange.new(1.1, 2.8)
 			fire.EmissionDirection = Enum.NormalId.Back
 			fire.Enabled = false
@@ -159,6 +164,9 @@ local function setup(model: Model)
 end
 
 local function update()
+	local lights = GraphicsController:Profile().jetLights
+	local contrailsAllowed = SettingsController:Get("Contrails") ~= false
+	local vapourAllowed = SettingsController:Get("Vapour") ~= false
 	for model, fx in active do
 		local root = model.PrimaryPart
 		if not root then
@@ -179,10 +187,10 @@ local function update()
 			beam.Enabled = afterburner or throttle > 0.95
 			local strength = if afterburner then 1 else 0.35
 			beam.Width0 = 0.5 * strength * flicker
-			fx.lights[i].Brightness = if afterburner then 3 * flicker else 0
+			fx.lights[i].Brightness = if afterburner and lights then 3 * flicker else 0
 		end
 		local altitude = Units.altitudeMetres(root.Position.Y)
-		local contrailsOn = altitude > Flight.CONTRAIL_ALTITUDE
+		local contrailsOn = contrailsAllowed and altitude > Flight.CONTRAIL_ALTITUDE
 		for _, trail in fx.contrails do
 			trail.Enabled = contrailsOn
 		end
@@ -194,7 +202,7 @@ local function update()
 		for _, emitter in fx.fire do
 			emitter.Enabled = burning
 		end
-		local vapourOn = gLoad > Flight.VAPOUR_G
+		local vapourOn = vapourAllowed and gLoad > Flight.VAPOUR_G
 		for _, trail in fx.vapour do
 			trail.Enabled = vapourOn
 		end
@@ -214,6 +222,18 @@ function EffectsController:Start()
 		end
 	end
 	RunService.RenderStepped:Connect(update)
+	-- A new quality profile: rescale the damage emitters already on jets
+	GraphicsController.Changed:Connect(function()
+		local particles = GraphicsController:Profile().particles
+		for _, fx in active do
+			for _, emitter in fx.smoke do
+				emitter.Rate = SMOKE_RATE * particles
+			end
+			for _, emitter in fx.fire do
+				emitter.Rate = FIRE_RATE * particles
+			end
+		end
+	end)
 end
 
 return EffectsController
