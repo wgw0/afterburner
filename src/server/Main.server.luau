@@ -7,9 +7,10 @@ local ServerStorage = game:GetService("ServerStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Boot = require(Shared.Boot)
 local Environment = require(Shared.Config.Environment)
+local Version = require(Shared.Version)
 local Net = require(Shared.Net)
 
-print(`[Boot] Afterburner server: environment={Environment.get()} role={Environment.placeRole()}`)
+print(`[Boot] Afterburner {Version.label()} server: environment={Environment.get()} role={Environment.placeRole()}`)
 
 -- Read by the startup smoke test (tests/Smoke.luau).
 ReplicatedStorage:SetAttribute("ServerBootFailures", 0)

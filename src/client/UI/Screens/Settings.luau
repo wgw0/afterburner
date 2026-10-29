@@ -11,8 +11,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared.Config.Bindings)
+local Environment = require(Shared.Config.Environment)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Settings = require(Shared.Config.Settings)
+local Version = require(Shared.Version)
 
 local C = require(script.Parent.Parent.Components)
 local Theme = require(script.Parent.Parent.Theme)
@@ -436,6 +438,16 @@ local function SettingsScreen(props: any)
 		Color = Theme.Dim,
 		Align = "Center",
 		LayoutOrder = #SECTIONS * 10 + 10,
+	})
+	-- The game's version (REL-03) and the server's place version, for bug reports and rollbacks (REL-04)
+	sections.Version = e(C.Label, {
+		Text = `Afterburner {Version.label(Environment.get())}`
+			.. (if game.PlaceVersion > 0 then `  ·  build {game.PlaceVersion}` else ""),
+		Size = UDim2.fromOffset(760, 18),
+		TextSize = 12,
+		Color = Theme.Dim,
+		Align = "Center",
+		LayoutOrder = #SECTIONS * 10 + 11,
 	})
 	return e("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),

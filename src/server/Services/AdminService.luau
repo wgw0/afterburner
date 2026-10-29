@@ -19,7 +19,9 @@ local Environment = require(Shared.Config.Environment)
 local Net = require(Shared.Net)
 local PlayerData = require(Shared.PlayerData)
 local Progression = require(Shared.Progression)
+local ServerRole = require(Shared.ServerRole)
 local TechTree = require(Shared.TechTree)
+local Version = require(Shared.Version)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local ConfigService = require(script.Parent.ConfigService)
@@ -128,6 +130,25 @@ local COMMANDS: { [string]: Command } = {
 				end
 			end
 			return true, HttpService:JSONEncode({ table.unpack(list, math.max(#list - count + 1, 1), #list) })
+		end,
+	},
+	-- This server's version and where it runs (REL-04: which servers are on which release during an update or
+	-- rollback).
+	["server.info"] = {
+		testOnly = false,
+		run = function(_admin, _args)
+			return true,
+				HttpService:JSONEncode({
+					version = Version.NUMBER,
+					saveVersion = PlayerData.VERSION,
+					environment = Environment.get(),
+					role = ServerRole.get(),
+					placeId = game.PlaceId,
+					placeVersion = game.PlaceVersion,
+					jobId = game.JobId,
+					uptime = math.round(workspace.DistributedGameTime),
+					players = #Players:GetPlayers(),
+				})
 		end,
 	},
 	-- The most-reported pilots (CMP-03): { count? = 10 } -> [{ userId, count }], most first.

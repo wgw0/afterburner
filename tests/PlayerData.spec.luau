@@ -21,6 +21,20 @@ return function(ctx)
 	end)
 
 	describe("migrations", function()
+		-- After a rollback (REL-04) older code loads saves written by a newer release: it must not
+		-- downgrade the version or drop fields it doesn't know, so the newer release reads them back.
+		it("a save from a newer release keeps its version and unknown fields", function()
+			local data = PlayerData.template()
+			data.Version = PlayerData.VERSION + 2
+			data.FutureField = { Nested = 7 }
+			data.Credits = 99
+			local _, applied = PlayerData.migrate(data)
+			expect(#applied).toBe(0)
+			expect(data.Version).toBe(PlayerData.VERSION + 2)
+			expect(data.FutureField.Nested).toBe(7)
+			expect(data.Credits).toBe(99)
+		end)
+
 		it("a current save passes through unchanged", function()
 			local data = PlayerData.template()
 			data.Credits = 1234

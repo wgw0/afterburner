@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Repository integrity checks that run in CI (and locally: `bash scripts/ci-checks.sh`).
-# Catches corrupted place files, missing strict mode, merge leftovers, broken Rojo paths
-# and remote names that aren't declared in Net/Definitions.
+# Catches corrupted place files, missing strict mode, merge leftovers, broken Rojo paths,
+# remote names that aren't declared in Net/Definitions, and a version without a changelog section.
 set -uo pipefail
 
 fail=0
@@ -65,8 +65,16 @@ for name in $used; do
 	if ! grep -qx "$name" <<< "$declared"; then error "remote \"$name\" is used but not declared in $defs"; fi
 done
 
+# 6. The version (src/shared/Version.luau) is a plain semantic version with a section in CHANGELOG.md.
+version=$(grep -oE 'Version\.NUMBER = "[^"]*"' src/shared/Version.luau | grep -oE '"[^"]*"' | tr -d '"')
+if ! grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' <<< "$version"; then
+	error "src/shared/Version.luau: Version.NUMBER \"$version\" is not a version like 1.2.3"
+elif ! grep -qF "## [$version]" CHANGELOG.md 2>/dev/null; then
+	error "CHANGELOG.md has no \"## [$version]\" section for the version in src/shared/Version.luau"
+fi
+
 if [ "$fail" -ne 0 ]; then
 	echo "Integrity checks FAILED"
 	exit 1
 fi
-echo "Integrity checks passed ($(wc -l <<< "$declared") remotes declared, $(wc -w <<< "$used") used)"
+echo "Integrity checks passed (version $version, $(wc -l <<< "$declared") remotes declared, $(wc -w <<< "$used") used)"
