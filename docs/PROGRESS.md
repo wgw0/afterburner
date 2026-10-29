@@ -251,8 +251,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio and by Will.
 - [ ] **MSL-08** Loft profile
   - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude.
-- [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
-  - Built: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) lock the jet you're looking at anywhere in their gimbal (helmet cueing, "HMD" circle on the HUD), and their imaging seekers ignore single flares: only a burst plus a hard break beats them, about half the time (DEVELOPMENT.md §15.5). Waiting on Will's test.
+- [x] **MSL-09** Advanced IR (high off-boresight, flare resistance)
+  - Built: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) lock the jet you're looking at anywhere in their gimbal (helmet cueing, "HMD" circle on the HUD), and their imaging seekers ignore single flares: only a burst plus a hard break beats them, about half the time (DEVELOPMENT.md §15.5). Checked in Studio and by Will.
 - [x] **SNS-07** TWS
   - Built: Tier IV+ pulse-Doppler radars track while scanning; an active radar missile can be fired unlocked at the "TWS ·" target (the contact nearest the nose), guided while the radar still sees it, with no lock warning for the target (DEVELOPMENT.md §14.2). Checked in Studio and by Will.
   - Not started. Related radar work done: lock failure reasons on the HUD, pulse radars that see close targets in clutter, zooming cone and situation scopes (DEVELOPMENT.md §14.2).
