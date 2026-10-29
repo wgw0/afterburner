@@ -70,6 +70,7 @@ type Missile = {
 	lostTrack: boolean,
 	arh: Guidance.ARHState?, -- active radar missiles (MSL-07)
 	autoFlared: boolean?, -- its target's automatic flare programme has fired for it (CMS-04)
+	loftRange: number?, -- set when it lofts (MSL-08): the horizontal range at launch, real metres
 }
 
 local MissileService = {
@@ -194,6 +195,15 @@ local function spawnMissile(
 		lostTrack = targetId == nil,
 		arh = nil,
 	}
+	-- Long shots with a lofting missile climb first (MSL-08)
+	local lofted = if targetId and spec.Loft then AircraftService:GetJetById(targetId) else nil
+	if lofted then
+		local flat = lofted.root.Position - position
+		local range = Units.toMetres(Vector3.new(flat.X, 0, flat.Z).Magnitude)
+		if Guidance.lofts(spec, range) then
+			missile.loftRange = range
+		end
+	end
 	if spec.Class == "ARH" then
 		local target = if targetId then AircraftService:GetJetById(targetId) else nil
 		missile.arh = Guidance.newARH(
@@ -579,7 +589,10 @@ local function stepMissiles(dt: number)
 		end
 		local trackPosition, trackVelocity = trackFor(missile, dt)
 		local from = missile.state.position
-		local nextState, guiding = Guidance.step(missile.state, missile.spec, dt, trackPosition, trackVelocity)
+		local aim = if missile.loftRange and trackPosition
+			then Guidance.loftAim(missile.state, trackPosition, missile.loftRange)
+			else nil
+		local nextState, guiding = Guidance.step(missile.state, missile.spec, dt, trackPosition, trackVelocity, aim)
 		missile.guiding = guiding
 		local to = nextState.position
 

@@ -42,6 +42,7 @@ export type Missile = {
 	Damage: number,
 	Lifetime: number, -- seconds before self-destruct
 	ActiveRange: number?, -- ARH only: real metres from the target where its own seeker goes active
+	Loft: boolean?, -- radar missiles that climb on long shots (MSL-08, Guidance.loftAim)
 }
 
 local MISSILE_CLASSES = { "IR_Rear", "IR_All", "IR_Adv", "SARH", "ARH" }
@@ -130,6 +131,9 @@ function WeaponData.validate(id: string, data: any): { string }
 		if type(range) ~= "number" or range < 1000 or range > 40000 then
 			table.insert(problems, `{id}: ARH missiles need ActiveRange (1000..40000 m)`)
 		end
+	end
+	if data.Loft ~= nil and (data.Loft ~= true or not WeaponData.isRadar(data)) then
+		table.insert(problems, `{id}: Loft is only for radar missiles (true or left out)`)
 	end
 	if data.Id ~= nil and data.Id ~= id then
 		table.insert(problems, `{id}: Id "{tostring(data.Id)}" must match the module name`)

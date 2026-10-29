@@ -6,6 +6,8 @@
 --   Guidance: proportional navigation, limited by MaxG × an energy factor, so a slow missile turns badly
 --     and a long shot at a fleeing target simply runs out of energy.
 --   Seeker: must keep the target inside its gimbal limit, or guidance is lost.
+--   Loft (MSL-08): long-range radar missiles steer at a point above the target early in a long shot, so they
+--     climb into thin air, keep their speed, and dive onto the target (Guidance.loftAim).
 -- Positions are world studs; velocities are real m/s (the flight model's convention).
 
 local Atmosphere = require(script.Parent.Atmosphere)
@@ -78,13 +80,15 @@ function Guidance.maxLateral(missile: MissileState, spec: Spec): number
 end
 
 -- Advances a missile by dt. targetPosition/targetVelocity are what the seeker is tracking (nil = flying dumb).
+-- aimPosition, if given, is where it steers instead (a loft point); the seeker still has to see the target.
 -- Returns (new state, guiding?).
 function Guidance.step(
 	missile: MissileState,
 	spec: Spec,
 	dt: number,
 	targetPosition: Vector3?,
-	targetVelocity: Vector3?
+	targetVelocity: Vector3?,
+	aimPosition: Vector3?
 ): (MissileState, boolean)
 	local v = missile.velocity
 	local speed = v.Magnitude
@@ -104,7 +108,7 @@ function Guidance.step(
 		and speed >= spec.MinSpeed
 		and Guidance.inGimbal(missile, spec, targetPosition)
 	then
-		local lateral = Guidance.proNav(missile, targetPosition, targetVelocity, spec.NavConstant)
+		local lateral = Guidance.proNav(missile, aimPosition or targetPosition, targetVelocity, spec.NavConstant)
 		-- Counter gravity's sideways pull too, so the missile doesn't sag under the target.
 		local gravityLateral = Vector3.new(0, G, 0) - vhat * vhat:Dot(Vector3.new(0, G, 0))
 		lateral += gravityLateral
@@ -125,6 +129,32 @@ function Guidance.step(
 		travelled = missile.travelled + stepVelocity.Magnitude * dt,
 	},
 		guiding
+end
+
+---------------------------------------------------------------------------
+-- Loft (MSL-08)
+---------------------------------------------------------------------------
+
+Guidance.LOFT_MIN_RANGE = 8000 -- metres: shorter shots fly straight
+Guidance.LOFT_ANGLE = 30 -- degrees above the target, seen from the missile, while fully lofted
+Guidance.LOFT_MAX_HEIGHT = 6000 -- metres above the target at most
+Guidance.LOFT_FULL = 0.7 -- fully lofted while more than this share of the launch range is left...
+Guidance.LOFT_END = 0.4 -- ...easing to straight at the target by this share
+
+-- Whether a missile lofts on a shot at this range (metres).
+function Guidance.lofts(spec: { Loft: boolean? }, launchRange: number): boolean
+	return spec.Loft == true and launchRange >= Guidance.LOFT_MIN_RANGE
+end
+
+-- Where a lofting missile steers: a point above the target, higher the further it has to go, easing down
+-- onto the target as it closes. launchRange: the horizontal range at launch (metres).
+function Guidance.loftAim(missile: MissileState, targetPosition: Vector3, launchRange: number): Vector3
+	local flat = targetPosition - missile.position
+	local range = Units.toMetres(Vector3.new(flat.X, 0, flat.Z).Magnitude)
+	local left = range / math.max(launchRange, 1)
+	local ramp = math.clamp((left - Guidance.LOFT_END) / (Guidance.LOFT_FULL - Guidance.LOFT_END), 0, 1)
+	local height = math.min(range * math.tan(Guidance.LOFT_ANGLE * RAD), Guidance.LOFT_MAX_HEIGHT) * ramp
+	return targetPosition + Vector3.new(0, Units.toStuds(height), 0)
 end
 
 -- Closest distance (real metres) between two points moving linearly over one step.
