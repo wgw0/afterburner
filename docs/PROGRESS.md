@@ -245,13 +245,16 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Went further than planned: every one of the 27 jets has its own modelled, textured cockpit with live instrument faces (`AircraftAssembler.installCockpit`, `CockpitController`), so the shared kits are only the fallback. Flown hands-on in several jets by Will (MiG-21, Mirage F1, Typhoon, the Tier IV jets).
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
 - [ ] **HUD-05** Era variants (analogue vs glass symbology)
-- [ ] **GUN-07** LCOS and EEGS sights
-- [ ] **DMG-05** Pilot damage diagram on the HUD
+- [x] **GUN-07** LCOS and EEGS sights
+  - Built: Simple pipper (Tier I–II, 1.2 km), LCOS pipper leading the target's turn (Tier III–IV), and the EEGS bullet-stream funnel on top (Tier V+) (DEVELOPMENT.md §11.3). Each sight now looks different and the gun readout names it. Checked in Studio on the F-5E (ring), Su-27S (LCOS ring and range scale) and Tempest (funnel always on), and by Will.
+- [x] **DMG-05** Pilot damage diagram on the HUD
+  - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio and by Will.
 - [ ] **MSL-08** Loft profile
   - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude.
 - [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
   - Partly done: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) have wide seeker cones and gimbals and strong flare resistance. Helmet cueing (locking where the pilot looks) is not built.
-- [ ] **SNS-07** TWS
+- [x] **SNS-07** TWS
+  - Built: Tier IV+ pulse-Doppler radars track while scanning; an active radar missile can be fired unlocked at the "TWS ·" target (the contact nearest the nose), guided while the radar still sees it, with no lock warning for the target (DEVELOPMENT.md §14.2). Checked in Studio and by Will.
   - Not started. Related radar work done: lock failure reasons on the HUD, pulse radars that see close targets in clutter, zooming cone and situation scopes (DEVELOPMENT.md §14.2).
 - [x] **CMS-04** Auto-dispense programmes (Tier V+, for example "2 flares every 0.5 s")
   - Built: Tier V+ jets fire a 4-flare programme per press (2 × 2, 0.5 s apart), and with Automatic flares on (default) once per heat-seeker about 2 s before it arrives (DEVELOPMENT.md §15.4). Checked in Studio and by Will.

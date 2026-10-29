@@ -34,6 +34,7 @@ local Teams = require(ServerScriptService.Server.Lib.Teams)
 type Jet = AircraftService.Jet
 
 local LAUNCH_COOLDOWN = 0.6
+local TWS_RECHECK = 0.2 -- seconds between checks that a TWS shot's launcher still sees its target
 local STATE_INTERVAL = 1 / 15
 local BLAST_MULTIPLIER = 3 -- blast radius = proximity fuse × this
 local EJECT_SPEED = 6 -- m/s downward off the rail
@@ -71,6 +72,9 @@ type Missile = {
 	arh: Guidance.ARHState?, -- active radar missiles (MSL-07)
 	autoFlared: boolean?, -- its target's automatic flare programme has fired for it (CMS-04)
 	loftRange: number?, -- set when it lofts (MSL-08): the horizontal range at launch, real metres
+	tws: boolean?, -- fired on a track-while-scan track, not a hard lock (SNS-07)
+	twsSeen: boolean?, -- the launcher's radar still sees the target (re-checked 5× a second)
+	twsChecked: number?,
 }
 
 local MissileService = {
@@ -232,19 +236,27 @@ local function launch(jet: Jet, targetId: number): boolean
 	end
 	local spec = slot.weapon
 	local target: number? = nil
+	local tws = false
 	if WeaponData.isIR(spec) then
 		-- Only a target the server agrees the seeker has held for the lock time.
 		if targetId ~= 0 and loadout.irTarget == targetId and now - loadout.irSince >= spec.LockTime * 0.8 then
 			target = targetId
 		end
 	else
-		-- Radar missiles need the radar locked on that target; no lock, no launch.
-		if targetId == 0 or SensorService:GetLock(jet.id) ~= targetId then
+		-- Radar missiles need the radar locked on that target; no lock, no launch. Active radar missiles can
+		-- also go on a track-while-scan track (SNS-07): the radar sees it, no hard lock needed.
+		if targetId == 0 then
 			return false
 		end
-		local target = AircraftService:GetJetById(targetId)
-		if target and Teams.areFriends(jet.identity, target.identity) then
+		local targetJet = AircraftService:GetJetById(targetId)
+		if targetJet and Teams.areFriends(jet.identity, targetJet.identity) then
 			return false
+		end
+		if SensorService:GetLock(jet.id) ~= targetId then
+			if not (spec.Class == "ARH" and targetJet and SensorService:CanTWS(jet, targetJet)) then
+				return false
+			end
+			tws = true
 		end
 		target = targetId
 	end
@@ -255,7 +267,12 @@ local function launch(jet: Jet, targetId: number): boolean
 	loadout.nextHardpoint = loadout.nextHardpoint % math.max(#loadout.hardpoints, 1) + 1
 	local position = if hardpoint then hardpoint.WorldPosition else jet.root.Position
 	local velocity = Units.velocityFromStuds(jet.root.AssemblyLinearVelocity) - jet.root.CFrame.UpVector * EJECT_SPEED
-	spawnMissile(spec, slot.id, position, velocity, jet, target)
+	local missile = spawnMissile(spec, slot.id, position, velocity, jet, target)
+	if tws then
+		missile.tws = true
+		missile.twsSeen = true
+		missile.twsChecked = now
+	end
 	MissileService.MissileLaunched:Fire(jet, slot.id)
 	setAttributes(loadout)
 	return true
@@ -497,10 +514,18 @@ local function trackFor(missile: Missile, dt: number): (Vector3?, Vector3?)
 		if missile.lostTrack then
 			return nil, nil
 		end
+		local owner = missile.owner and AircraftService:GetJetById(missile.owner.id)
 		local linked = if missile.owner
-			then AircraftService:GetJetById(missile.owner.id) ~= nil
-				and SensorService:GetLock(missile.owner.id) == missile.targetId
+			then owner ~= nil and SensorService:GetLock(missile.owner.id) == missile.targetId
 			else missile.virtualRadar ~= nil
+		-- A TWS shot (SNS-07) stays linked while the launcher's radar still sees the target
+		if missile.tws and owner and target and not linked then
+			if os.clock() - (missile.twsChecked or 0) >= TWS_RECHECK then
+				missile.twsChecked = os.clock()
+				missile.twsSeen = SensorService:CanTWS(owner, target)
+			end
+			linked = missile.twsSeen == true
+		end
 		local position, velocity = Guidance.arhTrack(
 			arh,
 			missile.state,

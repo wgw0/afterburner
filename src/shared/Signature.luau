@@ -58,7 +58,21 @@ function Signature.radialSpeed(radarPosition: Vector3, targetPosition: Vector3, 
 	return targetVelocity:Dot(los.Unit)
 end
 
-export type RadarSpec = { Range: number, Cone: number, CanNotch: boolean }
+export type RadarSpec = { Range: number, Cone: number, CanNotch: boolean, CanTWS: boolean? }
+
+Signature.TWS_TIER = 4
+
+-- Track-while-scan (SNS-07): pulse-Doppler radars on Tier IV+ jets track what they see while scanning, so
+-- an active radar missile can be fired at any contact without a hard lock. A radar's CanTWS overrides.
+function Signature.hasTWS(tier: number, radar: RadarSpec?): boolean
+	if not radar then
+		return false
+	end
+	if radar.CanTWS ~= nil then
+		return radar.CanTWS
+	end
+	return radar.CanNotch and tier >= Signature.TWS_TIER
+end
 
 -- Can this radar see the target right now? Returns (detected, reason). Line-of-sight to terrain is
 -- checked separately by the caller (it needs raycasts).

@@ -925,6 +925,7 @@ sequenceDiagram
 - Tier I–II: fixed-depression sight with a lead pipper only when a target is within 1.2 km display range.
 - Tier III+: LCOS-style predictive pipper using target acceleration.
 - Tier V+: EEGS-style funnel drawn from simulated bullet stream points.
+- *As built (GUN-07, November 2026):* `Ballistics.sightFor(tier)`. **Simple** (Tier I–II): the lead pipper from the target's velocity, within 1.2 km. **LCOS** (Tier III–IV): the pipper also leads the target's turn, from its acceleration smoothed on the client (`leadDirection` takes `targetAccel`), within 1.6 km. **EEGS** (Tier V+): LCOS plus a funnel of dots: where rounds fired over the last 1.2 s are now (`Ballistics.positionAfter`, from a history of where the gun pointed), a wingspan (11 m) wide at each range, always shown. In a turn the funnel curves the way the stream does; put the target's wings across it and fire. Tests in `Gunsights.spec` (the LCOS lead misses a 6 G target by under 3 m, less than the plain lead). Each looks different (after Will couldn't tell them apart): Simple adds a fixed reflector-sight ring around the gun cross and keeps the small pipper; LCOS and EEGS use a larger pipper ring whose 12-dot range scale empties as you close (all lit at 1.6 km); the EEGS funnel is always on in Tier V+ jets, target or not; and the gun readout names the sight ("GUN 940 · LCOS").
 
 ### 11.4 Lag compensation (HistoryService)
 
@@ -982,6 +983,8 @@ CombatService.JetDamaged: Signal
 ```
 
 The server pushes the component state to the **pilot** (`DamageState` remote) so the client's flight model applies the effects and the HUD shows a damage diagram.
+
+*As built (DMG-05, November 2026):* `UI/DamageDiagram` draws a small top-down outline of the jet (wings, tail, fuselage, engine, cockpit) above the fuel readout, placed by `HUDController`. It appears once anything is damaged and stays until the next jet. Each part follows `DamageModel.condition`: faint in the HUD colour when fine (75%+), amber when damaged, red when critical (under 40%), a red outline once lost; FIRE shows beside it while the engine burns. Checked in play: an R-60 into an F-15E left the engine at 15% (red) and the rest fine.
 
 ### 12.4 Kill credit
 
@@ -1079,7 +1082,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
   - Pulse radars (`CanNotch = false`) looking down or at a low target are not blind: they see out to `Signature.CLUTTER_RANGE` (35%) of their range, where a return stands out of the clutter. Beyond that the reason is "clutter". (Fully blind pulse radars made the Super 530F and the early SARH missiles nearly unusable at dogfight heights.)
   - The HUD says why a lock failed or broke, for 3 s above the missile readout: NO LOCK / LOCK BROKEN / LOCK LOST with OUT OF RADAR RANGE, NOT IN RADAR CONE, GROUND CLUTTER, TARGET NOTCHING or TERRAIN IN THE WAY, and NO RADAR LOCK when a radar missile is fired unlocked (`SensorController.message`). The server doesn't send a reason with a lost lock; the client works it out against the target it had.
   - The left scope is a cone B-scope that zooms through 2.5–80 km to fit the lock or the nearest contact in the cone; the right is a situation display centred on your jet, heading up, zoomed to the nearest contact (`ScopesController`).
-  - TWS is not built.
+  - TWS (SNS-07, November 2026): pulse-Doppler radars on Tier IV+ jets track while scanning (`Signature.hasTWS`; a radar's `CanTWS` overrides, none do yet). With an active radar missile selected and no hard lock, the radar contact nearest the nose is the **TWS target**: the HUD boxes it with "TWS ·" before the name and a green range readout (red is a hard lock), and firing sends the missile at it. The server accepts the shot if the radar can see the target (`SensorService:CanTWS`); the missile flies on the data link while the launcher's radar still sees the target (re-checked 5× a second), then goes active as usual. The target gets no lock tone, and ARH launches already stay silent until the seeker goes active. Hard locks and SARH missiles work as before. Tested in `TWS.spec` (every Tier IV+ jet carrying an active radar missile has TWS) and in play (F-16C downed a drone with an unlocked AIM-120C; the Tier III F-14A's AIM-54 can't fire unlocked).
 
 ### 14.3 RWR
 
