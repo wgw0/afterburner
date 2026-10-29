@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 5 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 6 Content and polish for a soft launch | 6 / 43 | In progress: content done, launch plumbing not started (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -282,7 +282,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **LIV-03** Login streak rewards
 - [ ] **TUT-03** Lessons 4–6
 - [ ] **TUT-04** First-session flow and funnel analytics
-- [ ] **SET-02** Settings UI
+- [x] **SET-02** Settings UI
+  - A SETTINGS tab in the menu (`UI/Screens/Settings`): control scheme, mouse sensitivity, invert pitch, default view, field of view, HUD units, master and cockpit volume, Reduce flashing. Changes apply at once and save through `SettingsController`; − / + buttons around a bar work with mouse, touch and gamepad. Units now switches the HUD (km/h, metres, m/s) and Reduce flashing holds HUD warnings and RWR marks steady and dims explosions and muzzle flashes. Checked in play and by Will. *The menu only shows between flights; ReduceShake waits for a camera shake to reduce.*
 - [ ] **SET-03** Accessibility options
 - [ ] **ANL-02** Onboarding funnel
 - [ ] **ANL-04** Combat and balance events
