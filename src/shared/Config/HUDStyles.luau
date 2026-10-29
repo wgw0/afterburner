@@ -1,12 +1,13 @@
 --!strict
 -- HUD symbology by cockpit era (DEVELOPMENT.md §9.4, HUD-05). Each airframe's Era picks a style:
---   Analogue (Tiers I–II and early jets): a reflector-sight look. A smaller box, plain speed and altitude
---     numbers instead of tapes, a heading number instead of a tape, a simple pitch ladder (every 10°, no
+--   Analogue (Tiers I–II and early jets): a reflector-sight look. Plain speed and altitude numbers instead
+--     of tapes, a heading number instead of a tape, a simple pitch ladder (every 10°, no
 --     numbers), no flight path marker, and only G and throttle in the corners.
 --   EarlyGlass: the full HUD: tapes, numbered ladder every 5°, flight path marker, every readout.
 --   FullGlass: as EarlyGlass, plus a bank-angle scale and a speed trend (where your speed will be in 5 s).
 --   WAD (Tier VII–VIII: no HUD glass, a helmet display): FullGlass symbology fixed to your view instead of
 --     the nose, so it stays in sight while you look around; the gun cross still marks the nose.
+-- Every era keeps the same box size: the corner readouts need the room (a smaller analogue box overlapped them).
 -- Pure.
 
 export type Style = {
@@ -49,8 +50,6 @@ end
 
 HUDStyles.STYLES = table.freeze({
 	Analogue = with(EARLY_GLASS, {
-		boxWidth = 24,
-		boxHeight = 19,
 		tapes = false,
 		headingTape = false,
 		ladderStep = 10,

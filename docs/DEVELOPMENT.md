@@ -823,6 +823,18 @@ From `gStress` (FLT step 12):
 
 ---
 
+### 9.4 As built: HUD by cockpit era (HUD-05)
+
+Each airframe's `Era` picks a style from `Config/HUDStyles` (tested in `HUDStyles.spec`, which also checks every jet's Era has one); `HUDController` reads it every frame.
+- **Analogue** (F-5E, MiG-21, F-4E, MiG-23, Mirage F1, MiG-29A, F-14A, ...): a reflector-sight look. Speed and altitude as plain boxed numbers (no tapes), the heading as a number at the top, a pitch ladder every 10° with no numbers, no flight path marker, and only G and throttle in the corners (plus weapons and countermeasures).
+- **EarlyGlass**: the full HUD as before (tapes, numbered ladder every 5°, flight path marker, Mach / AoA / vertical speed).
+- **FullGlass**: EarlyGlass plus a bank scale (ticks to 45° on an arc under the centre, a caret at the jet's bank) and a speed trend: a line beside the speed box to where the speed will be in 5 s (smoothed acceleration).
+- **WAD** (F-22A, F-35A, Su-57, Tempest): FullGlass symbology on the helmet: the box stays at the centre of your view instead of following the nose, so it's readable while you look around; the gun cross, sights and IR seeker circle still mark the nose.
+- Every era keeps the same box size: a smaller analogue box made the corner readouts overlap.
+- Checked in play: F-5E (analogue) and Tempest (helmet, bank scale), no errors.
+
+---
+
 ## 10. Aircraft lifecycle (AIR)
 
 `AircraftService` (server) owns every jet in the world.
