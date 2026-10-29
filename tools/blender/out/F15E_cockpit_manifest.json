@@ -1,0 +1,348 @@
+{
+  "airframe": "F15E",
+  "units": "metres (Roblox axes: x right, y up, z aft), in the jet's Root space",
+  "studsPerMetre": 3.5714,
+  "triangles": 1648,
+  "eye": [
+    0.0,
+    1.52,
+    -6.6367
+  ],
+  "fit": {
+    "front": "Coaming",
+    "back": "Tub",
+    "left": "ConsoleL",
+    "right": "ConsoleR"
+  },
+  "parts": [
+    {
+      "name": "Tub",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.8091,
+          -6.8823
+        ],
+        "size": [
+          0.9133,
+          0.6901,
+          0.9871
+        ]
+      },
+      "triangles": 116
+    },
+    {
+      "name": "ConsoleL",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -0.328,
+          0.831,
+          -6.6717
+        ],
+        "size": [
+          0.12,
+          0.598,
+          0.77
+        ]
+      },
+      "triangles": 36
+    },
+    {
+      "name": "ConsoleR",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.328,
+          0.766,
+          -6.6717
+        ],
+        "size": [
+          0.12,
+          0.468,
+          0.77
+        ]
+      },
+      "triangles": 12
+    },
+    {
+      "name": "Stick",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.878,
+          -7.0079
+        ],
+        "size": [
+          0.12,
+          0.6939,
+          0.1225
+        ]
+      },
+      "triangles": 100
+    },
+    {
+      "name": "Panel",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.1169,
+          -7.2646
+        ],
+        "size": [
+          0.68,
+          0.4462,
+          0.1229
+        ]
+      },
+      "triangles": 876
+    },
+    {
+      "name": "Coaming",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.8922,
+          -7.4367
+        ],
+        "size": [
+          0.71,
+          0.9457,
+          0.36
+        ]
+      },
+      "triangles": 108
+    },
+    {
+      "name": "Gunsight",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.395,
+          -7.3467
+        ],
+        "size": [
+          0.16,
+          0.06,
+          0.14
+        ]
+      },
+      "triangles": 12
+    },
+    {
+      "name": "HUDGlass",
+      "set": "Glass",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.478,
+          -7.2785
+        ],
+        "size": [
+          0.15,
+          0.1088,
+          0.0616
+        ]
+      },
+      "triangles": 12
+    },
+    {
+      "name": "CanopyFrameInner",
+      "set": "Cockpit",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.416,
+          -6.7405
+        ],
+        "size": [
+          0.92,
+          0.8533,
+          1.9385
+        ]
+      },
+      "triangles": 376
+    }
+  ],
+  "faces": [
+    {
+      "name": "RadarScope",
+      "gauge": "Radar",
+      "style": "Dial",
+      "centre": [
+        -0.215,
+        1.223,
+        -7.2698
+      ],
+      "normal": [
+        0.0,
+        0.2079,
+        0.9781
+      ],
+      "up": [
+        -0.0,
+        0.9781,
+        -0.2079
+      ],
+      "size": [
+        0.12,
+        0.12
+      ]
+    },
+    {
+      "name": "Airspeed",
+      "gauge": "Speed",
+      "style": "Dial",
+      "centre": [
+        -0.25,
+        1.0959,
+        -7.2427
+      ],
+      "normal": [
+        0.0,
+        0.2079,
+        0.9781
+      ],
+      "up": [
+        -0.0,
+        0.9781,
+        -0.2079
+      ],
+      "size": [
+        0.05,
+        0.05
+      ]
+    },
+    {
+      "name": "Altimeter",
+      "gauge": "Altitude",
+      "style": "Dial",
+      "centre": [
+        -0.18,
+        1.0959,
+        -7.2427
+      ],
+      "normal": [
+        0.0,
+        0.2079,
+        0.9781
+      ],
+      "up": [
+        -0.0,
+        0.9781,
+        -0.2079
+      ],
+      "size": [
+        0.05,
+        0.05
+      ]
+    },
+    {
+      "name": "GMeter",
+      "gauge": "G",
+      "style": "Dial",
+      "centre": [
+        -0.11,
+        1.0568,
+        -7.2344
+      ],
+      "normal": [
+        0.0,
+        0.2079,
+        0.9781
+      ],
+      "up": [
+        -0.0,
+        0.9781,
+        -0.2079
+      ],
+      "size": [
+        0.04,
+        0.04
+      ]
+    },
+    {
+      "name": "RPM",
+      "gauge": "RPM",
+      "style": "Dial",
+      "centre": [
+        0.11,
+        1.0568,
+        -7.2344
+      ],
+      "normal": [
+        0.0,
+        0.2079,
+        0.9781
+      ],
+      "up": [
+        -0.0,
+        0.9781,
+        -0.2079
+      ],
+      "size": [
+        0.04,
+        0.04
+      ]
+    }
+  ]
+}
