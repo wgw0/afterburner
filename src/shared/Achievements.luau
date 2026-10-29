@@ -3,7 +3,7 @@
 -- Config/Badges. Pure: ChallengeService decides from match events which ones a player has just earned.
 -- Saved per player as data.Achievements = { [id] = { At = unix, Badge = true once the badge was awarded } }.
 
-export type Def = { id: string, name: string, text: string }
+export type Def = { id: string, name: string, text: string, secret: boolean? } -- secret: hidden until earned
 
 local Achievements = {}
 
@@ -28,6 +28,8 @@ Achievements.LIST = table.freeze({
 	{ id = "Centurion", name = "Centurion", text = "Shoot down 100 jets." },
 	{ id = "Collector", name = "Collector", text = "Own 10 jets." },
 	{ id = "HighFlyer", name = "High Flyer", text = "Reach pilot level 25." },
+	-- Secret: not shown in Career until earned
+	{ id = "ThreadTheNeedle", name = "Threading the Needle", text = "Fly under a bridge.", secret = true },
 } :: { Def })
 
 Achievements.ACE_KILLS = 5
@@ -52,7 +54,7 @@ end
 
 -- What happened, as ChallengeService sees it.
 export type Event = {
-	kind: string, -- Kill | Win | MissileDefeated | Capture | MatchFinished | Spawn | Career
+	kind: string, -- Kill | Win | MissileDefeated | Capture | MatchFinished | Spawn | Career | BridgeRun
 	weapon: string?, -- Gun | IR | Radar
 	missileClass: string?, -- Kill: SARH, ARH, IR_* (nil for guns)
 	lifeKills: number?, -- Kill: kills in this life, this one included
@@ -122,6 +124,8 @@ function Achievements.earned(event: Event): { string }
 		end
 	elseif kind == "Spawn" and event.airframe == "Tempest" then
 		table.insert(ids, "TestPilot")
+	elseif kind == "BridgeRun" then
+		table.insert(ids, "ThreadTheNeedle")
 	end
 	-- Lifetime totals: checked at the end of every match and on joining
 	if kind == "MatchFinished" or kind == "Career" then

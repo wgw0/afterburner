@@ -254,10 +254,19 @@ local function Career(props: any)
 	local earned = data.Achievements or {}
 	local kills = (stats.Kills or 0) + (stats.AIKills or 0)
 	local deaths = stats.Deaths or 0
-	local count = 0
-	for _ in earned do
-		count += 1
+	-- Secret achievements stay hidden until earned, and aren't in the total
+	local count, total, secrets = 0, 0, 0
+	for _, def in Achievements.LIST do
+		if not def.secret then
+			total += 1
+			if earned[def.id] then
+				count += 1
+			end
+		elseif earned[def.id] then
+			secrets += 1
+		end
 	end
+	local tally = `{count} / {total}{if secrets > 0 then ` + {secrets} secret` else ""}`
 
 	local cards: { [string]: any } = {
 		Grid = e("UIGridLayout", {
@@ -267,7 +276,9 @@ local function Career(props: any)
 		}),
 	}
 	for i, def in Achievements.LIST do
-		cards[def.id] = card(def, earned[def.id], i)
+		if not def.secret or earned[def.id] then
+			cards[def.id] = card(def, earned[def.id], i)
+		end
 	end
 
 	return e("ScrollingFrame", {
@@ -292,7 +303,7 @@ local function Career(props: any)
 			Players = stat("  of them players", tostring(stats.Kills or 0), 5),
 			Deaths = stat("Times shot down", tostring(deaths), 6),
 			Ratio = stat("Kills per death", string.format("%.2f", kills / math.max(deaths, 1)), 7),
-			Achievements = stat("Achievements", `{count} / {#Achievements.LIST}`, 8),
+			Achievements = stat("Achievements", `{count} / {total}`, 8),
 		}),
 		Level = e(LevelTrack, { Data = data, OnSetTitle = props.OnSetTitle }),
 		-- Sized to its cards
@@ -314,7 +325,7 @@ local function Career(props: any)
 			}),
 			Layout = C.List({ Gap = 12 }),
 			Title = e(C.Label, {
-				Text = `ACHIEVEMENTS  ·  {count} / {#Achievements.LIST}`,
+				Text = `ACHIEVEMENTS  ·  {tally}`,
 				Bold = true,
 				Color = Theme.Accent,
 				TextSize = 14,

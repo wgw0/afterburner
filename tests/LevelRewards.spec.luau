@@ -149,7 +149,14 @@ return function(ctx)
 			expect(#Achievements.earned({ kind = "Career", matches = 49, totalKills = 99, ownedJets = 9, level = 24 })).toBe(
 				0
 			)
-			expect(#Achievements.LIST).toBe(20)
+			local visible = 0
+			for _, def in Achievements.LIST do
+				if not def.secret then
+					visible += 1
+				end
+			end
+			expect(visible).toBe(20)
+			expect(table.find(Achievements.earned({ kind = "BridgeRun" }), "ThreadTheNeedle") ~= nil).toBe(true)
 		end)
 	end)
 end

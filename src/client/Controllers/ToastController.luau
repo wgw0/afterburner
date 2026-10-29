@@ -55,11 +55,19 @@ local function showNext()
 	showing = true
 	local notice = table.remove(queue, 1)
 	local achievement = notice.kind == "Achievement"
-	kindLabel.Text = if achievement then "ACHIEVEMENT UNLOCKED" else `{string.upper(notice.kind)} COMPLETE`
+	kindLabel.Text = if notice.heading
+		then notice.heading
+		elseif achievement then "ACHIEVEMENT UNLOCKED"
+		else `{string.upper(notice.kind)} COMPLETE`
 	textLabel.Text = notice.text
-	rewardLabel.Text = if achievement
-		then notice.detail or ""
-		else `+{formatNumber(notice.credits or 0)} Cr  ·  +{formatNumber(notice.xp or 0)} XP`
+	local rewards = {}
+	if (notice.credits or 0) > 0 then
+		table.insert(rewards, `+{formatNumber(notice.credits)} Cr`)
+	end
+	if (notice.xp or 0) > 0 then
+		table.insert(rewards, `+{formatNumber(notice.xp)} XP`)
+	end
+	rewardLabel.Text = if achievement then notice.detail or "" else table.concat(rewards, "  ·  ")
 	rewardLabel.TextColor3 = if achievement then Theme.Dim else Theme.Good
 	Sounds.play(if achievement then "LevelUp" else "UIConfirm")
 
