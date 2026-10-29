@@ -26,7 +26,14 @@ local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
 local SettingsController = require(script.Parent.SettingsController)
 
-local GREEN = Color3.fromRGB(110, 255, 150)
+local GREEN = Color3.fromRGB(110, 255, 150) -- the HUD colour: changes with the HUDColour setting
+-- HUDColour presets (SET-03): cyan and white stay clear of the red and amber warnings for red-green
+-- colour blindness
+local HUD_COLOURS = {
+	Green = Color3.fromRGB(110, 255, 150),
+	Cyan = Color3.fromRGB(90, 220, 255),
+	White = Color3.fromRGB(235, 240, 245),
+}
 local AMBER = Color3.fromRGB(255, 190, 80)
 local RED = Color3.fromRGB(255, 85, 70)
 local CONTACT = Color3.fromRGB(205, 215, 205) -- jets you can see but not lock
@@ -913,11 +920,36 @@ local function update()
 		.. "\nLMB guns · Space missile · R next missile · T lock/unlock · F flare · C chaff"
 end
 
+-- Swaps the HUD colour on everything already drawn, then for everything drawn from now on.
+local function setHudColour(name: string)
+	local colour = HUD_COLOURS[name] or HUD_COLOURS.Green
+	local hud = HUDController.gui
+	if colour == GREEN or not hud then
+		return
+	end
+	for _, d in hud:GetDescendants() do
+		if d:IsA("TextLabel") and d.TextColor3 == GREEN then
+			d.TextColor3 = colour
+		elseif d:IsA("Frame") and d.BackgroundColor3 == GREEN then
+			d.BackgroundColor3 = colour
+		elseif d:IsA("UIStroke") and d.Color == GREEN then
+			d.Color = colour
+		end
+	end
+	GREEN = colour
+end
+
 function HUDController:Start()
 	terrainParams = RaycastParams.new()
 	terrainParams.FilterType = Enum.RaycastFilterType.Exclude
 	terrainParams.FilterDescendantsInstances = { workspace:WaitForChild("Jets") }
 	self.gui = build()
+	setHudColour(SettingsController:Get("HUDColour"))
+	SettingsController.Changed:Connect(function(key: string, value: any)
+		if key == "HUDColour" then
+			setHudColour(value)
+		end
+	end)
 	Net.Client.on("HitConfirm", function()
 		hitUntil = os.clock() + 0.12
 	end)

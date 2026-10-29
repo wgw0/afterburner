@@ -178,6 +178,9 @@ local function blip(i: number): Frame
 		stroke.Color = AMBER
 		stroke.Thickness = 1.5
 		stroke.Parent = b
+		local corner = Instance.new("UICorner") -- round for teammates, square for enemies (shape, not just colour)
+		corner.CornerRadius = UDim.new(0, 0)
+		corner.Parent = b
 		b.Parent = radarPanel
 		blips[i] = b
 	end
@@ -191,8 +194,8 @@ local function tsdDot(i: number): Frame
 		d.AnchorPoint = Vector2.new(0.5, 0.5)
 		d.Size = UDim2.fromOffset(6, 6)
 		d.BorderSizePixel = 0
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0.5, 0)
+		local corner = Instance.new("UICorner") -- round for teammates, square for enemies
+		corner.CornerRadius = UDim.new(0, 0)
 		corner.Parent = d
 		d.Parent = rwrPanel
 		tsdDots[i] = d
@@ -352,6 +355,8 @@ local function update()
 						if locked then 12 elseif beyond then 5 else 7
 					)
 					b.BackgroundColor3 = if locked then RED elseif contact.friendly then BLUE else AMBER
+					local blipCorner = b:FindFirstChildOfClass("UICorner") :: UICorner
+					blipCorner.CornerRadius = UDim.new(if contact.friendly then 0.5 else 0, 0)
 					b.BackgroundTransparency = if locked then 0.6 elseif beyond then 0.5 else 0
 					(b:FindFirstChildOfClass("UIStroke") :: UIStroke).Enabled = locked
 					b.Visible = true
@@ -404,6 +409,8 @@ local function update()
 				elseif contact.friendly then BLUE
 				elseif SensorController.lockable[id] then GREEN
 				else AMBER
+			local dotCorner = d:FindFirstChildOfClass("UICorner") :: UICorner
+			dotCorner.CornerRadius = UDim.new(if contact.friendly then 0.5 else 0, 0)
 			d.Size = if locked
 				then UDim2.fromOffset(8, 8)
 				elseif beyond then UDim2.fromOffset(4, 4)

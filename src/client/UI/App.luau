@@ -177,12 +177,16 @@ local function App(props: any)
 			TrainingNote = props.TrainingNote,
 		})
 	end
+	-- Menu scale setting (SET-03): a UIScale grows everything; the frame shrinks by the same factor so the
+	-- scaled menu still fills the screen exactly
+	local scale = props.MenuScale or 1
 	return e("Frame", {
-		Size = UDim2.fromScale(1, 1),
+		Size = UDim2.fromScale(1 / scale, 1 / scale),
 		BackgroundColor3 = Theme.Background,
 		BackgroundTransparency = if screen == "Results" then 0.35 else 0.15,
 		BorderSizePixel = 0,
 	}, {
+		Scale = e("UIScale", { Scale = scale }),
 		Top = if screen ~= "Results"
 			then e(TopBar, { Data = data, Screen = screen, Navigate = props.Navigate })
 			else nil,

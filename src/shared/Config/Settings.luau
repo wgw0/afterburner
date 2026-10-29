@@ -19,6 +19,10 @@ local SPECS: { [string]: Spec } = {
 	CockpitVolume = { kind = "number", min = 0, max = 1, default = 1 },
 	ReduceShake = { kind = "boolean", default = false },
 	ReduceFlashing = { kind = "boolean", default = false },
+	-- SET-03 accessibility
+	Subtitles = { kind = "boolean", default = false }, -- voice lines and warning tones as text
+	HUDColour = { kind = "enum", values = { "Green", "Cyan", "White" }, default = "Green" },
+	MenuScale = { kind = "number", min = 0.8, max = 1.4, default = 1 }, -- menus, banner, scoreboard
 }
 
 local Settings = {}
