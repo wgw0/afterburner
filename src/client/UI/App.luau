@@ -80,25 +80,12 @@ local function TopBar(props: any)
 			Settings = tab("Settings", "SETTINGS", 3),
 		}),
 		Wallet = e("Frame", {
-			Size = UDim2.fromOffset(690, Theme.TopBar),
+			Size = UDim2.fromOffset(520, Theme.TopBar),
 			Position = UDim2.new(1, -20, 0, 0),
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundTransparency = 1,
 		}, {
 			Layout = C.List({ Horizontal = true, Gap = 22, Align = "Right", AlignY = "Center" }),
-			-- Training or a match → back to a lobby (MatchmakingService); in a lobby TRAINING sits by PLAY
-			Travel = if props.Role ~= "Training" and props.Role ~= "Match"
-				then nil
-				else e(C.Button, {
-					Text = if props.Role == "Training" then "MULTIPLAYER" else "LEAVE MATCH",
-					Style = "Ghost",
-					Size = UDim2.fromOffset(150, 40),
-					TextSize = 14,
-					LayoutOrder = 0,
-					OnClick = function()
-						props.OnTravel("Lobby")
-					end,
-				}),
 			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
 				Label = e(C.Label, {
 					Text = `PILOT LEVEL {data.PilotLevel}`,
@@ -176,6 +163,9 @@ local function App(props: any)
 	elseif props.Role == "Training" then
 		body = e(Training, {
 			Data = data,
+			OnMultiplayer = function()
+				props.OnTravel("Lobby")
+			end,
 			Selected = props.Selected,
 			OnSelect = props.OnSelect,
 			Status = props.Status,
@@ -196,11 +186,11 @@ local function App(props: any)
 			Status = props.Status,
 			CanPlay = props.CanPlay,
 			OnPlay = props.OnPlay,
-			OnTraining = if props.Role == "Lobby"
-				then function()
-					props.OnTravel("Training")
-				end
-				else nil,
+			-- Left of PLAY: TRAINING in a lobby, LEAVE MATCH on a match server (MatchmakingService)
+			SideText = if props.Role == "Lobby" then "TRAINING" elseif props.Role == "Match" then "LEAVE MATCH" else nil,
+			OnSide = function()
+				props.OnTravel(if props.Role == "Lobby" then "Training" else "Lobby")
+			end,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,
@@ -225,8 +215,6 @@ local function App(props: any)
 				Data = data,
 				Screen = screen,
 				Navigate = props.Navigate,
-				Role = props.Role,
-				OnTravel = props.OnTravel,
 			})
 			else nil,
 		Body = e("Frame", {
