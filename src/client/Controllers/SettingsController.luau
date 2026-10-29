@@ -4,7 +4,9 @@
 --   SettingsController:Get(key), SettingsController:Set(key, value) (validated, then saved by the
 --   server through SettingsUpdate), and SettingsController.Changed (key, value).
 -- Applied straight away: control scheme, mouse sensitivity and invert, field of view, default camera,
--- master and cockpit volume. Units and the accessibility options are read by the screens that use them.
+-- master and cockpit volume. Read where they're used: Units (HUD), ReduceFlashing (HUD warnings, RWR marks,
+-- explosions and muzzle flashes). ReduceShake has nothing to act on yet (there's no camera shake).
+-- The settings screen (UI/Screens/Settings) changes them through Set.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")

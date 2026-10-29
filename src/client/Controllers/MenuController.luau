@@ -22,6 +22,7 @@ local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local MatchController = require(script.Parent.MatchController)
 local PlayerDataController = require(script.Parent.PlayerDataController)
+local SettingsController = require(script.Parent.SettingsController)
 local TutorialController = require(script.Parent.TutorialController)
 
 local App = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("App"))
@@ -152,6 +153,10 @@ render = function()
 		OnLineup = function(ids)
 			return PlayerDataController:SetLineup(ids)
 		end,
+		Settings = SettingsController.values,
+		OnSetting = function(key, value)
+			SettingsController:Set(key, value)
+		end,
 		Lessons = lessons(),
 		OnLesson = function(lessonId)
 			local ok, why = TutorialController:Begin(lessonId, state.selected or "F5E")
@@ -267,6 +272,10 @@ function MenuController:Start()
 		elseif FlightController.jet == nil and not CameraController:InDeathCam() then
 			setVisible(true)
 		end
+	end)
+
+	SettingsController.Changed:Connect(function()
+		render()
 	end)
 
 	setVisible(FlightController.jet == nil and DriveController.vehicle == nil)

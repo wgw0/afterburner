@@ -24,6 +24,7 @@ local WeaponData = require(Shared.WeaponData)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
+local SettingsController = require(script.Parent.SettingsController)
 
 local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
@@ -309,8 +310,9 @@ local function update()
 	local airframe = Progression.airframeForModel(jet) :: any
 	local radar = airframe and airframe.Radar
 	local myCF = root.CFrame
-	local flash = os.clock() % 0.5 < 0.25
-	local fastFlash = os.clock() % 0.2 < 0.1
+	local steady = SettingsController:Get("ReduceFlashing") == true -- RWR marks stay lit
+	local flash = steady or os.clock() % 0.5 < 0.25
+	local fastFlash = steady or os.clock() % 0.2 < 0.1
 
 	-- Radar scope
 	radarPanel.Visible = radar ~= nil
