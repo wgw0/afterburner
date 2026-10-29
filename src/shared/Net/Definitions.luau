@@ -136,6 +136,9 @@ local definitions: { [string]: Definition } = {
 	QueueJoin = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- Report a pilot on this server for cheating (ReportService, CMP-03): targetUserId, reason id (Reports) ->
+	-- (ok, message). The server also allows one report per 30 s.
+	ReportPlayer = { direction = "Function", args = { "integer", "string" }, rate = { burst = 2, perSecond = 1 / 30 } },
 	-- Go to a training server ("Training") or back to a lobby ("Lobby") (MatchmakingService)
 	Travel = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.2 } },
 	-- On a training server: "FreeFlight", or a Vs AI match: mode id, AI difficulty, number of AI pilots

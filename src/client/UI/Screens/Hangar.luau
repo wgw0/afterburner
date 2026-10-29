@@ -3,7 +3,7 @@
 -- Play button with the match status. Training is on its own servers (TRAINING in the top bar).
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), SideText and OnSide() (the button left of
 --   PLAY: TRAINING in a lobby, LEAVE MATCH on a match server), OnDetails(id),
---   OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
+--   OnReport(userId?) (on a match server: the report-a-cheater window), OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
 --   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -261,6 +261,18 @@ local function Hangar(props: any)
 				Size = UDim2.fromOffset(130, 44),
 				Position = UDim2.new(0.5, -280, 1, -102),
 				OnClick = props.OnSide,
+			})
+			else nil,
+		Report = if props.OnReport
+			then e(C.Button, {
+				Text = "REPORT",
+				Style = "Ghost",
+				TextSize = 12,
+				Size = UDim2.fromOffset(130, 30),
+				Position = UDim2.new(0.5, -280, 1, -52),
+				OnClick = function()
+					props.OnReport(nil)
+				end,
 			})
 			else nil,
 		Details = e(C.Button, {

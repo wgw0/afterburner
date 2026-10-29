@@ -1908,6 +1908,13 @@ end
 | CMP-03 | Report-cheater flow | 6 |
 | CMP-04 | Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions) | 8 |
 
+### 32.1 As built: reporting a cheater (CMP-03)
+
+- **Where:** a REPORT button under LEAVE MATCH in the hangar on a match server, and REPORT on each other human pilot's row of the results scoreboard. Both open the report window (`UI/ReportDialog`): pick the pilot (everyone else on the server plus the last match's human pilots, who may have left) and a reason (`Shared/Reports.REASONS`: speed or teleporting, weapon or aim hacks, can't be shot down, other). The window points to Roblox's own report (Esc menu) for chat or behaviour. While it's open, a match's auto-launch waits, then launches once it closes.
+- **Rules (`Shared/Reports`, tested):** not yourself, not AI pilots, a known reason, one report per pilot per server, 30 s between reports. The `ReportPlayer` remote is also rate-limited (2 burst, then 1 per 30 s).
+- **What's stored (`ReportService`):** DataStore `Reports`, key `u<UserId>`: `{ count, reporters, entries }`, the newest 20 entries, each with the reporter's UserId, reason, time, server role, place and job, whether the target was still present, and the target's anti-cheat record on that server (`AntiCheatService:Snapshot`: strike and reset totals, whether kicked, the last 10 strikes with speeds and distance). The anti-cheat record survives 15 minutes after a pilot leaves. OrderedDataStore `ReportCounts` ranks pilots by reports. Only UserIds are stored. Telemetry `PlayerReported` (reason, flagged = had strikes).
+- **Review:** admin commands `reports.top { count? }` and `reports.show { userId }`. Nothing happens to a reported pilot automatically.
+
 ---
 
 ## 33. Testing strategy (TST)
