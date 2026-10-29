@@ -67,30 +67,65 @@ end
 
 -- Where to point the guns to hit a target (ignores drag; good enough for a sight).
 -- Returns (aim direction, time of flight) or nil if no solution within the round's lifetime.
+-- targetAccel (real m/s², optional): the LCOS sight (GUN-07) also leads a turning target's curve.
 function Ballistics.leadDirection(
 	shooterPosition: Vector3, -- studs
 	shooterVelocity: Vector3, -- real m/s
 	targetPosition: Vector3, -- studs
 	targetVelocity: Vector3, -- real m/s
 	muzzleVelocity: number,
-	lifetime: number
+	lifetime: number,
+	targetAccel: Vector3?
 ): (Vector3?, number?)
 	-- Work in real metres relative to the shooter. Rounds inherit the shooter's velocity, so the
 	-- target's motion relative to the shooter is what matters.
 	local relative = Units.velocityFromStuds(targetPosition - shooterPosition)
 	local relativeVelocity = targetVelocity - shooterVelocity
+	local accel = targetAccel or Vector3.zero
 	local t = relative.Magnitude / muzzleVelocity
 	for _ = 1, 4 do
-		local future = relative + relativeVelocity * t
+		local future = relative + relativeVelocity * t + accel * (0.5 * t * t)
 		t = future.Magnitude / muzzleVelocity
 	end
 	if t > lifetime or t ~= t then
 		return nil, nil
 	end
-	local future = relative + relativeVelocity * t
+	local future = relative + relativeVelocity * t + accel * (0.5 * t * t)
 	-- Aim above the target by the drop over the flight time.
 	local aim = future + Vector3.new(0, 0.5 * G * t * t, 0)
 	return aim.Unit, t
+end
+
+-- Gunsights by tier (DEVELOPMENT.md §11.3, GUN-07): "Simple" (Tier I–II: a lead pipper inside
+-- SIMPLE_RANGE), "LCOS" (Tier III–IV: the pipper also leads the target's turn, out to SIGHT_RANGE), "EEGS"
+-- (Tier V+: LCOS plus a funnel drawn from the simulated bullet stream).
+Ballistics.SIMPLE_RANGE = 1200 -- real metres
+Ballistics.SIGHT_RANGE = 1600
+Ballistics.FUNNEL_WINGSPAN = 11 -- real metres: the funnel is this wide at each range
+
+function Ballistics.sightFor(tier: number): string
+	if tier >= 5 then
+		return "EEGS"
+	elseif tier >= 3 then
+		return "LCOS"
+	end
+	return "Simple"
+end
+
+-- Where a round fired from `muzzle` (with the jet's velocity then) is after `t` seconds: gravity and drag,
+-- in steps. The EEGS funnel draws rounds fired over the last second from where the jet pointed then.
+function Ballistics.positionAfter(muzzle: CFrame, shooterVelocity: Vector3, gun: GunSpec, t: number): Vector3
+	local round: Round = {
+		position = muzzle.Position,
+		velocity = shooterVelocity + muzzle.LookVector * gun.MuzzleVelocity,
+		age = 0,
+		index = 0,
+	}
+	local steps = math.max(1, math.ceil(t / 0.05))
+	for _ = 1, steps do
+		round = Ballistics.step(round, t / steps, gun.Drag)
+	end
+	return round.position
 end
 
 -- Segment vs oriented box. Returns the fraction (0..1) along the segment where it enters the box,

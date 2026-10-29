@@ -246,6 +246,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
 - [ ] **HUD-05** Era variants (analogue vs glass symbology)
 - [ ] **GUN-07** LCOS and EEGS sights
+  - Built: Simple pipper (Tier I–II, 1.2 km), LCOS pipper leading the target's turn (Tier III–IV), and the EEGS bullet-stream funnel on top (Tier V+) (DEVELOPMENT.md §11.3). Checked in Studio: funnel on the F-15E, none on the F-5E.
 - [x] **DMG-05** Pilot damage diagram on the HUD
   - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio and by Will.
 - [ ] **MSL-08** Loft profile

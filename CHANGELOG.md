@@ -34,6 +34,8 @@ The soft-launch build: the first version published to the live experience.
 - Report a cheater: an in-game report with the pilot's anti-cheat data attached for review.
 - Analytics: onboarding funnel, progression, economy, combat and balance events.
 - The game's version in Settings.
+- Gunsights by tier: a lead-computing pipper that follows a turning target from Tier III, and the
+  bullet-stream funnel from Tier V.
 - A damage diagram on the HUD: which parts of your jet are hit, and how badly.
 - Track-while-scan radar on Tier IV+ jets: fire active radar missiles at a tracked contact without a lock,
   so the target gets no lock warning.
