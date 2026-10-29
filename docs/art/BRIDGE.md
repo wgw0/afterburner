@@ -118,3 +118,12 @@ near x = 1,589); the real coasts wobble by up to about 100 m, which is why `plan
   terrain there so the road meets the deck (or the end reads as an embankment).
 - Textures: the bridge's UVs run past 0..1 and rely on `SurfaceAppearance` maps repeating. Check in game that they
   tile. If they clamp instead, the meshes need splitting into tile-sized pieces with UVs inside 0..1.
+
+## Placement in the place (by hand, October 2026)
+
+`BridgeBuilder.place()` put the two bridges at its planned crossings. Will then lined them up by hand in Studio
+so both run east–west through the island (BridgeWest at x −1440, BridgeEast at x 1674, both near z 0). He raised
+BridgeWest 19 m so its mainland end meets the hillside there instead of running into it, so its towers stood
+13 m clear of the sea; they now stand on `TowerFootings` (a copy of `TowerPiers` stretched down to 6 m under the
+sea, same concrete). **Don't re-run `place()`**: it would move them back to the planned spots. Roads still don't
+reach the bridge ends.
