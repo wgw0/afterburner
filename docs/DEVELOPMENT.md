@@ -1959,6 +1959,13 @@ end
 - **What's stored (`ReportService`):** DataStore `Reports`, key `u<UserId>`: `{ count, reporters, entries }`, the newest 20 entries, each with the reporter's UserId, reason, time, server role, place and job, whether the target was still present, and the target's anti-cheat record on that server (`AntiCheatService:Snapshot`: strike and reset totals, whether kicked, the last 10 strikes with speeds and distance). The anti-cheat record survives 15 minutes after a pilot leaves. OrderedDataStore `ReportCounts` ranks pilots by reports. Only UserIds are stored. Telemetry `PlayerReported` (reason, flagged = had strikes).
 - **Review:** admin commands `reports.top { count? }` and `reports.show { userId }`. Nothing happens to a reported pilot automatically.
 
+### 32.2 As built: text filtering and callsigns (CMP-01)
+
+- **`TextFilterService:Filter(text, fromUserId)`:** Roblox's `FilterStringAsync`, read back for broadcast (one copy fit for everyone on the server), three tries; if the filter can't be reached it returns nil and the text is refused, never shown unfiltered. Use it for any future player-written text (squadron names).
+- **Callsigns** (Career screen, under the level track): typed text is cleaned by `Shared/Callsign` (3–16 characters, letters, numbers, spaces, - and _, at least one letter), filtered, and accepted only if the filter left it exactly as typed (no callsigns full of #s). Saved as `Callsign` in the player's data, shown through the player's `Callsign` attribute, and filtered again on every join (filters change; one now refused is cleared). `Callsign.nameOf` gives a pilot's shown name: the jet's `PilotName`, the scoreboard and the kill feed use it; report lists show "callsign (@username)". `SetCallsign` remote ("" = back to the username), 3 then 1 per 5 s.
+- **Free for now:** DESIGN prices a custom callsign as a game pass; SHP-03 gates `SetCallsign` behind it when the shop is built.
+- **Studio doesn't filter:** `FilterStringAsync` returns text unchanged in Studio, so a refusal can only be seen on a live server. The rule that refuses changed text is unit-tested (`Callsign.spec`).
+
 ---
 
 ## 33. Testing strategy (TST)

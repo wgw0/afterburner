@@ -303,6 +303,7 @@ function ProgressionService:Init()
 		end
 		local ok, err = DataService:Update(player, function(data)
 			data.Callsign = callsign
+			return true, nil
 		end)
 		if ok then
 			showCallsign(player, callsign)
