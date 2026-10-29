@@ -171,6 +171,31 @@ local function render(s: any)
 		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS`
 	elseif s.state == "Countdown" then
 		banner.Text = `{string.upper(s.modeName)}  ·  STARTS IN {s.timeLeft}`
+	elseif s.state == "InProgress" and s.teams and s.tickets and s.zones then
+		-- Air Superiority: tickets, then each zone's letter in its owner's colour
+		local parts = {}
+		for _, team in s.teams do
+			table.insert(parts, `{teamName(team)} {s.tickets[team] or 0}`)
+		end
+		local letters = {}
+		for _, zone in s.zones do
+			local colour = teamColour(zone.owner) or DIM
+			table.insert(
+				letters,
+				string.format(
+					'<font color="#%02X%02X%02X">%s</font>',
+					math.round(colour.R * 255),
+					math.round(colour.G * 255),
+					math.round(colour.B * 255),
+					zone.id
+				)
+			)
+		end
+		banner.Text =
+			`{string.upper(s.modeName)}  ·  {formatTime(s.timeLeft)}  ·  {table.concat(parts, " – ")}  ·  {table.concat(
+				letters,
+				" "
+			)}`
 	elseif s.state == "InProgress" and s.teams and s.teamScores then
 		-- Team modes: both teams' kills against the limit, and which team you're on
 		local parts = {}
@@ -207,6 +232,7 @@ function MatchController:Init()
 	banner.Position = UDim2.new(0.5, 0, 0, 6)
 	banner.Size = UDim2.fromOffset(560, 22)
 	banner.TextStrokeTransparency = 0.5
+	banner.RichText = true -- zone letters in their owners' colours
 
 	board = panel("Scoreboard", UDim2.fromOffset(520, 440))
 	local boardTitle = label(board, "SCOREBOARD", 20, ORANGE)
