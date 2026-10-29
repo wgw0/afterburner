@@ -137,7 +137,7 @@ local function App(props: any)
 	local screen = props.Screen
 	local body
 	if screen == "Results" and props.Match then
-		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data })
+		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data, OnReport = props.OnReport })
 	elseif screen == "Career" then
 		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle })
 	elseif screen == "Settings" then
@@ -203,6 +203,8 @@ local function App(props: any)
 			OnSide = function()
 				props.OnTravel(if props.Role == "Lobby" then "Training" else "Lobby")
 			end,
+			-- On a match server: report a cheater (CMP-03)
+			OnReport = if props.Role == "Match" then props.OnReport else nil,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,
