@@ -295,7 +295,7 @@ local function Hangar(props: any)
 			}, ownedChildren),
 		}),
 		Training = e(C.Panel, {
-			Size = UDim2.fromOffset(240, 250),
+			Size = UDim2.fromOffset(240, 84 + #props.Lessons * 52), -- grows with the lessons (44 px buttons + gap)
 			Position = UDim2.new(1, -20, 0, 20),
 			AnchorPoint = Vector2.new(1, 0),
 			Padding = 14,

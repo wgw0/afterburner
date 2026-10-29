@@ -44,6 +44,7 @@ export type Pilot = {
 	timers: { decide: number, target: number, ground: number, attributes: number, missile: number },
 	linear: LinearVelocity?,
 	angular: AngularVelocity?,
+	training: Player?, -- a training bout (lesson 6): fights only this player and isn't part of the match
 }
 
 local CALLSIGNS = {
@@ -91,6 +92,25 @@ local groundParams: RaycastParams
 
 function AIService:GetPilots(): { Pilot }
 	return pilots
+end
+
+-- The match's AI pilots: everyone except training-bout opponents (MatchService fills, spawns and scores
+-- only these).
+function AIService:GetMatchPilots(): { Pilot }
+	local list = {}
+	for _, pilot in pilots do
+		if not pilot.training then
+			table.insert(list, pilot)
+		end
+	end
+	return list
+end
+
+-- A training-bout opponent (TUT-03 lesson 6): an Easy pilot that fights only `trainee`.
+function AIService:CreateTrainingPilot(trainee: Player, airframeId: string): Pilot
+	local pilot = self:CreatePilot("Easy", airframeId)
+	pilot.training = trainee
+	return pilot
 end
 
 -- Creates a new AI pilot (not yet flying). Returns its record.
@@ -159,6 +179,9 @@ end
 
 local function chooseTarget(pilot: Pilot): Jet?
 	local me = pilot.jet :: Jet
+	if pilot.training then
+		return AircraftService:GetJet(pilot.training) -- a training opponent only fights its trainee
+	end
 	local best, bestCost = nil, math.huge
 	for id, other in AircraftService:GetJets() do
 		if

@@ -1,10 +1,13 @@
 --!strict
--- Training lessons 1–3 (DEVELOPMENT.md §28, TUT-01/02). Runs in Free Flight: pick a lesson from the spawn
+-- Training lessons 1–6 (DEVELOPMENT.md §28, TUT-01/02/03). Runs in Free Flight: pick a lesson from the spawn
 -- menu, the jet spawns and a prompt panel walks you through the steps. LessonRunner does the bookkeeping;
 -- this controller builds the lessons, the prompt panel and the world props (rings, drones).
 --   1 Basic flight: pitch, roll, afterburner, then fly through 6 rings.
 --   2 Energy: dive for speed, zoom climb (speed bleeds), hard turn (speed bleeds), recover.
 --   3 Guns: destroy 3 target drones with the gun.
+--   4 Missiles: select a heat-seeker, get the lock tone on a drone, hit 2 drones with heat-seekers.
+--   5 Defend: drop a flare, then beat 3 heat-seekers fired at you from behind (DebugLaunchAtMe).
+--   6 First fight: a head-on merge with an Easy AI pilot that fights only you (TrainingBout); win it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,15 +18,19 @@ local LessonRunner = require(Shared.LessonRunner)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Units = require(Shared.Units)
+local WeaponData = require(Shared.WeaponData)
 
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
+local SensorController = require(script.Parent.SensorController)
 
 local ORANGE = Color3.fromRGB(255, 138, 61)
 local NAVY = Color3.fromRGB(13, 26, 51)
 local RING_COUNT = 6
 local RING_RADIUS = 73 -- studs (about 73 m)
 local RING_SPACING = 7 -- seconds of flight between rings at the speed you start with
+local DEFEND_MISSILE = "AIM9P" -- a rear-aspect heat-seeker: beatable with flares and a hard break
+local DEFEND_GAP = 4 -- seconds of quiet between missiles
 
 export type Context = {
 	state: any, -- FlightState
@@ -48,7 +55,29 @@ local runner: LessonRunner.Runner? = nil
 local pendingLesson: string? = nil
 local props: Folder? = nil
 local kills = 0
+local irKills = 0 -- kills of yours with a heat-seeker (lesson 4)
 local myJetId: number? = nil
+local incoming: { [number]: boolean } = {} -- missiles fired at you by the lesson (lesson 5), still flying
+local survived = 0 -- of those, ones that ended without hitting you
+local IR_NAMES: { [string]: boolean } = {} -- heat-seekers' display names, as the kill feed gives them
+for _, weapon in WeaponData.getAll() do
+	if WeaponData.isIR(weapon) then
+		IR_NAMES[weapon.DisplayName] = true
+	end
+end
+
+local function flares(): number
+	local jet = FlightController.jet
+	return if jet then (jet:GetAttribute("Flares") :: number?) or 0 else 0
+end
+
+local function incomingCount(): number
+	local n = 0
+	for _ in incoming do
+		n += 1
+	end
+	return n
+end
 local doneUntil = 0
 
 local function knots(state: any): number
@@ -248,9 +277,104 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 			},
 		},
 	},
+	Missiles = {
+		id = "Missiles",
+		title = "LESSON 4 · MISSILES",
+		steps = {
+			{
+				text = "Select a heat-seeking missile.",
+				hint = "R cycles your missiles (D-pad up on a pad, WPN on touch). Watch the weapon readout.",
+				check = function()
+					local missile = SensorController:SelectedMissile()
+					return missile ~= nil and WeaponData.isIR(missile)
+				end,
+			},
+			{
+				text = "A drone is ahead. Keep it in front until the growl turns into a steady lock tone.",
+				hint = "The circle shows the seeker. Heat-seekers see the engine best from behind.",
+				enter = function()
+					Net.Client.fire("DebugSpawnDrone", "far")
+				end,
+				check = function()
+					return SensorController.irLocked
+				end,
+			},
+			{
+				text = "Locked. Fire! Hit 2 drones with heat-seekers.",
+				hint = "Space (X on a pad, MSL on touch). Out of missiles? Respawn from the menu to rearm.",
+				enter = function(_ctx: Context, memory)
+					memory.startIr = irKills
+					memory.spawned = kills
+				end,
+				check = function(_ctx: Context, memory)
+					local got = irKills - memory.startIr
+					-- A drone is gone (missile or gun): bring the next one in
+					if kills > memory.spawned and got < 2 then
+						memory.spawned = kills
+						Net.Client.fire("DebugSpawnDrone", "far")
+					end
+					return got >= 2
+				end,
+			},
+		},
+	},
+	Defend = {
+		id = "Defend",
+		title = "LESSON 5 · DEFEND",
+		steps = {
+			{
+				text = "First, drop a flare.",
+				hint = "F (B on a pad, FLR on touch). Flares decoy heat-seekers away from your engine.",
+				enter = function(_ctx: Context, memory)
+					memory.flares = flares()
+				end,
+				check = function(_ctx: Context, memory)
+					return flares() < memory.flares
+				end,
+			},
+			{
+				text = "Heat-seekers are coming from behind. Beat 3 of them.",
+				hint = "When MISSILE flashes: drop flares, then pull hard across its path (a break turn).",
+				enter = function(_ctx: Context, memory)
+					memory.startSurvived = survived
+					memory.nextAt = os.clock() + 1
+				end,
+				check = function(_ctx: Context, memory)
+					local beaten = survived - memory.startSurvived
+					-- One missile at a time, a few seconds apart
+					if beaten < 3 and incomingCount() == 0 then
+						if not memory.nextAt then
+							memory.nextAt = os.clock() + DEFEND_GAP
+						elseif os.clock() >= memory.nextAt then
+							memory.nextAt = nil
+							Net.Client.fire("DebugLaunchAtMe", DEFEND_MISSILE)
+						end
+					end
+					return beaten >= 3
+				end,
+			},
+		},
+	},
+	Fight = {
+		id = "Fight",
+		title = "LESSON 6 · FIRST FIGHT",
+		steps = {
+			{
+				text = "An enemy pilot is coming at you head-on. Shoot it down.",
+				hint = "Everything you've learned: keep your speed up, guns close in, missiles from behind, flares if it fires.",
+				enter = function(_ctx: Context, memory)
+					memory.startKills = kills
+					Net.Client.fire("TrainingBout", true)
+				end,
+				check = function(_ctx: Context, memory)
+					return kills > memory.startKills
+				end,
+			},
+		},
+	},
 }
 
-TutorialController.ORDER = { "Flight", "Energy", "Guns" }
+TutorialController.ORDER = { "Flight", "Energy", "Guns", "Missiles", "Defend", "Fight" }
 
 local function label(parent: Instance, size: number, colour: Color3, font: Enum.Font): TextLabel
 	local l = Instance.new("TextLabel")
@@ -299,8 +423,12 @@ local function build()
 end
 
 local function stop()
+	if TutorialController.active == "Fight" then
+		Net.Client.fire("TrainingBout", false) -- send the opponent home
+	end
 	runner = nil
 	TutorialController.active = nil
+	incoming = {}
 	clearProps()
 	if os.clock() > doneUntil then
 		gui.Enabled = false
@@ -402,6 +530,25 @@ function TutorialController:Start()
 	Net.Client.on("JetDestroyed", function(jetId: number, killerUserId: number)
 		if killerUserId == Players.LocalPlayer.UserId and jetId ~= myJetId then
 			kills += 1
+		end
+	end)
+	Net.Client.on("KillFeed", function(killer: string, _victim: string, weapon: string)
+		if killer == Players.LocalPlayer.Name and IR_NAMES[weapon] then
+			irKills += 1
+		end
+	end)
+	-- Lesson 5: the missiles it fires at you have no owner jet; one that ends without hitting you is beaten
+	Net.Client.on("MissileSpawned", function(id: number, _weaponId: string, ownerJetId: number)
+		if ownerJetId == 0 and self.active == "Defend" then
+			incoming[id] = true
+		end
+	end)
+	Net.Client.on("MissileDetonated", function(id: number, _position: Vector3, hitJetId: number)
+		if incoming[id] then
+			incoming[id] = nil
+			if hitJetId ~= myJetId then
+				survived += 1
+			end
 		end
 	end)
 	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(function()
