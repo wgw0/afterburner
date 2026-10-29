@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 8 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 6 Content and polish for a soft launch | 9 / 43 | In progress: content done, launch plumbing not started (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -160,7 +160,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | Done | **AI-03** Defend state (missile defence, flares, break turn) | `Dogfight.spec`: break, idle and flares against a heat-seeker after the reaction time; notch and chaff against a radar missile; pull up near the ground. |
 | Done | **MAP-02** "Strait" blockout: terrain shape, airbases, spawns | `tools/StraitBuilder`: west landmass with a mountain range (passes cut through), east landmass with lower hills, a north-south channel with the test range on a central island, open sea to the south, islets for masking, airbases west and east (runway, apron, hangars, tower), 12 tagged `SpawnPoint` parts. `Place.spec` checks the spawns are in bounds and clear of terrain. Rebuilt after sign-off as a proper height field (see below). |
 | Done | **TUT-01** Lesson framework (steps, prompts, highlights, conditions) | `LessonRunner` (pure, `MatchRules.spec`) plus `TutorialController`: prompt panel with step counter and hint, world props, completion message. Training row on the spawn menu. |
-| Done | **TUT-02** Lessons 1–3 | 1 Basic flight (pitch, roll, afterburner, 6 rings), 2 Energy (dive, zoom climb, hard turn, recover), 3 Guns (3 drones). Live: lesson 1 steps 1–3 passed and the rings were laid out; drones spawn in Free Flight. *Runs on Free Flight servers only (reserved training servers are TUT-04). Lessons 2–3 not yet played end to end.* |
+| Done | **TUT-02** Lessons 1–3 | 1 Basic flight (pitch, roll, afterburner, 6 rings), 2 Energy (dive, zoom climb, hard turn, recover), 3 Guns (3 drones). Live: lesson 1 steps 1–3 passed and the rings were laid out; drones spawn in Free Flight. *Lessons 2–3 not yet played end to end. Since Phase 6 all lessons run on training servers (TUT-03).* |
 | Done | **ANL-01** Telemetry wrapper | `Telemetry.event`: pcall'd, tagged with the environment, recent-event log; `MatchEnded`, `Death` and anti-cheat events seen firing in play. |
 | Done | **PRF-02** Full-match stress test (bots fill to 24 jets) | Debug "Stress" mode fills to 24 jets. Once the map had streamed in, the server held **60 Hz**; the services' Heartbeat work cost **1.1 ms average, 4.5 ms peak** per frame (new meter in `Main.server`). Dips to 40–53 Hz only while Studio streamed the new map (server, client and renderer share one process in Studio). |
 
@@ -207,7 +207,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | Done | **PRG-05** Anti-farming rules | AI kills pay half; after 3 kills on the same victim each further kill pays a quarter; no input for 60 s means no survival or win bonus. `Progression.spec`; live AI kill paid half. |
 | Done | **PRG-06** Economy simulation and pacing check | `tools/EconomySim` runs an average free player on the real code; `Economy.spec` checks the targets. After tuning: first new jet **24 min**, Tier II **2.2 h**, Tier III **8.2 h** (targets 20–30 min, 2–3 h, 8–10 h). |
 | Done | **UI-01** React setup, theme, router, base components | react-lua 17.2.1 via Wally (`jsdotlua/react`, `react-roblox`); `UI/Theme`, `UI/Components` (panel, label, button with pending state, bar, pill), `UI/App` with top bar and screen router; `MenuController` owns the state and sends intents. |
-| Done | **UI-02** Hangar with 3D preview and lineup | Jet on a turntable, lineup slots (locked until level 5 / 15 with the reason), your jets add / remove, Play with the match status, training lessons. Checked in play. *Phase 6: with every slot full, Add became Swap (a level 1 pilot with one slot could not change jets); the menu backdrop is a slow orbit of the map instead of a followed AI jet; the logo sits clear of Roblox's top-left buttons.* |
+| Done | **UI-02** Hangar with 3D preview and lineup | Jet on a turntable, lineup slots (locked until level 5 / 15 with the reason), your jets add / remove, Play with the match status. Checked in play. *Phase 6: with every slot full, Add became Swap (a level 1 pilot with one slot could not change jets); the menu backdrop is a slow orbit of the map instead of a followed AI jet; the logo sits clear of Roblox's top-left buttons; the training panel moved to the training servers (TUT-03), and a TRAINING / MULTIPLAYER button sits in the top bar.* |
 | Done | **UI-03** Tech tree screen | Branch columns by tier, node states, RP progress, costs; Research and Buy through the UI live (Mirage IIIE researched, then bought). |
 | Done | **UI-04** Aircraft detail: modules, loadout, camo | Stock vs upgraded performance bars, modules with costs or the exact reason they can't be fitted, loadout, camo, lineup. Checked in play. *Phase 6: modules can be unfitted and refitted for free (BUY / FIT / UNFIT), and camo became the skin picker (see ACD-07).* |
 | Done | **UI-06** Results screen with reward animations | Winner, reward lines counting up, pilot level bar, scoreboard; replaces the Phase 4 results panel. Checked in play. |
@@ -223,7 +223,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 
 In progress. A great deal of late-October work came from playtest feedback rather than the phase order: the whole 27-jet roster, the world-scale rework, the map, audio and radar fixes. Those are recorded on the tasks they belong to below, and work that belongs to no task is under *Done outside the plan* at the end of this phase. DEVELOPMENT.md §37 explains how it was built and the traps found.
 
-**State at 29 October 2026:** the content side of Phase 6 is largely done (every jet, every cockpit, the map). The soft-launch plumbing is not started: matchmaking across servers, team modes, the settings screen, onboarding lessons 4–6, retention features, mobile performance, analytics and the release process. Two exit checks carried over from Phases 4 and 5 still need a real multiplayer session: an 8-player match, and the two-servers-at-once save check. How to run them, and the mobile tests, is in [testing/MULTIPLAYER_AND_MOBILE.md](testing/MULTIPLAYER_AND_MOBILE.md).
+**State at 29 October 2026:** the content side of Phase 6 is largely done (every jet, every cockpit, the map). The soft-launch plumbing is not started: matchmaking across servers, team modes, the settings screen, retention features, mobile performance, analytics and the release process. Two exit checks carried over from Phases 4 and 5 still need a real multiplayer session: an 8-player match, and the two-servers-at-once save check. How to run them, and the mobile tests, is in [testing/MULTIPLAYER_AND_MOBILE.md](testing/MULTIPLAYER_AND_MOBILE.md).
 
 Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, CAM-02, MSL-04, UI-02, UI-04, OPS-02).
 
@@ -275,13 +275,16 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **UI-05** Mode select and queue UI
 - [ ] **UI-09** Gamepad and touch passes on every screen
 - [ ] **MMK-02** Lobby and battle place split, place-specific boot (server knows its role from a place attribute)
+  - Groundwork: a server knows whether it is a public multiplayer server or a private training server (`ServerRole`, set by `TrainingService` from the reserved-server check). One place still serves both.
 - [ ] **MMK-03** MemoryStore queues, lease-based matchmaker, match records
 - [ ] **MMK-04** Reserved server teleport flow and return to lobby, with retries
+  - Done for training: TRAINING reserves a private server and teleports you in; MULTIPLAYER teleports you back to a public server, and a failed teleport says so. Checked in Studio, where Travel switches the server's role in place (Studio can't teleport), and by Will. *Still to do: a check on the published test experience, retries, and the same flow for matches (MMK-03).*
 - [ ] **MMK-06** Matchmaking telemetry: wait times, match quality (BR spread)
 - [ ] **LIV-01** Daily/weekly challenges with rerolls
 - [ ] **LIV-02** Achievements and Roblox badges
 - [ ] **LIV-03** Login streak rewards
-- [ ] **TUT-03** Lessons 4–6
+- [x] **TUT-03** Lessons 4–6
+  - 4 Missiles (lock a far drone, hit two with heat-seekers), 5 Defend (survive missiles fired at you with flares and turns), 6 First fight (one AI opponent, head-on from 2.5 km). They run on **training servers**: TRAINING in the top bar takes you to a private server with all six lessons, Vs AI (free-for-all, teams or zones; Easy to Ace; 1–11 opponents), free flight and any jet, with no rewards. AI in Vs AI fly jets near the one you picked. Checked in play (any jet spawned, lesson 4 ran, a Hard Teams match with 3 AI started, results showed no rewards) and by Will. *Lessons 5–6 not yet played end to end.*
 - [ ] **TUT-04** First-session flow and funnel analytics
 - [x] **SET-02** Settings UI
   - A SETTINGS tab in the menu (`UI/Screens/Settings`): control scheme, mouse sensitivity, invert pitch, default view, field of view, HUD units, master and cockpit volume, Reduce flashing. Changes apply at once and save through `SettingsController`; − / + buttons around a bar work with mouse, touch and gamepad. Units now switches the HUD (km/h, metres, m/s) and Reduce flashing holds HUD warnings and RWR marks steady and dims explosions and muzzle flashes. Checked in play and by Will. *The menu only shows between flights; ReduceShake waits for a camera shake to reduce.*
@@ -308,6 +311,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - Two Severn Bridges to the island (§37.5). Placed and checked in play; roads to them still to do.
 - The Ground Roamer, a drivable 4x4 (§36). Driven in play; airbase spawn spots, other players' wheel spin and touch controls still to do.
 - Betty voice warnings and RWR recordings (AUD-04 above).
+- Back to the hangar from a flight or a drive: a navy and orange HANGAR button at the top right. Hold H or the button for 0.6 s; leaving straight after being hit still credits the attacker. Checked in play and by Will. *No gamepad button yet.*
 
 ## Phase 7: Monetisation
 
