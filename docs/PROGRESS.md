@@ -312,7 +312,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - Tech tree rows size to their tallest branch; the RP note sits below everything.
 - Missile and radar ranges cut for the map's size (about 29 km across): radar missiles and radars by 60%, heat-seekers by 40% (AIM-7F 10 km, AIM-9X 5.4 km, F-15C radar 24 km). Checked in play by Will.
 - Two Severn Bridges to the island (§37.5). Placed and checked in play; roads to them still to do.
-- The Ground Roamer, a drivable 4x4 (§36). Driven in play; airbase spawn spots, other players' wheel spin and touch controls still to do.
+- The Ground Roamer, a drivable 4x4 (§36). Driven in play. *Switched off in November 2026 (Will): DRIVE left the menu and TRAINING took its place; the model and code stay, behind `Config/GroundRoamer.Enabled`.*
 - Betty voice warnings and RWR recordings (AUD-04 above).
 - Back to the hangar from a flight or a drive: a navy and orange HANGAR button at the top right. Hold H or the button for 0.6 s; leaving straight after being hit still credits the attacker. Checked in play and by Will. *No gamepad button yet.*
 
