@@ -10,8 +10,9 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 0 / 43 | In progress (ACD-07 partly done, see below) |
-| 7–8 | 0 / 31 | Not started |
+| 6 Content and polish for a soft launch | 4 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 7 Monetisation | 0 / 11 | Not started |
+| 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
 ---
 
@@ -220,10 +221,16 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 
 ## Phase 6: Content and polish for a soft launch
 
-In progress. ACD-07 is the only task started so far; its progress is listed under it. Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, CAM-02, MSL-04, UI-02, UI-04, OPS-02).
+In progress. A great deal of late-October work came from playtest feedback rather than the phase order: the whole 27-jet roster, the world-scale rework, the map, audio and radar fixes. Those are recorded on the tasks they belong to below, and work that belongs to no task is under *Done outside the plan* at the end of this phase. DEVELOPMENT.md §37 explains how it was built and the traps found.
 
-- [ ] **ACD-06** Stat blocks for the 15 launch jets (balancing spreadsheet → data modules)
-- [ ] **ACD-07** Final art models for the 15 launch jets (Blender → MeshParts; see §19.4 pipeline)
+**State at 29 October 2026:** the content side of Phase 6 is largely done (every jet, every cockpit, the map). The soft-launch plumbing is not started: matchmaking across servers, team modes, the settings screen, onboarding lessons 4–6, retention features, mobile performance, analytics and the release process. Two exit checks carried over from Phases 4 and 5 still need a real multiplayer session: an 8-player match, and the two-servers-at-once save check. How to run them, and the mobile tests, is in [testing/MULTIPLAYER_AND_MOBILE.md](testing/MULTIPLAYER_AND_MOBILE.md).
+
+Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, CAM-02, MSL-04, UI-02, UI-04, OPS-02).
+
+- [x] **ACD-06** Stat blocks for the 15 launch jets (balancing spreadsheet → data modules)
+  - Done for all 27 jets, not 15 (`src/shared/AircraftData/`), with the weapons they need. Starting values from public figures, balanced by measuring each tier's corner speed, sustained turn and thrust-to-weight against the tier below rather than in a spreadsheet. Every jet spawned and flew in play; Tier III–VII loadouts, sizes and skins were checked in a play test per tier. Handling is marked *tune in playtests*.
+- [x] **ACD-07** Final art models for the 15 launch jets (Blender → MeshParts; see §19.4 pipeline)
+  - **Done for the whole roster (27 jets), October 2026.** Every jet has a model, four PBR skins and a cockpit, installed with `AircraftAssembler` and spawned in play (sizes within a metre or two of the real jets). The F-35A got tail booms after Will spotted its fins floating. The routine is in DEVELOPMENT.md §37.3. The notes below are the early history.
   - Pipeline built ([art pipeline](art/AIRCRAFT_PIPELINE.md)): a Blender generator measured from reference drawings, a check that overlays the model on the drawing, `AircraftAssembler`, a model contract that allows Motor6D hinges, and `ControlSurfaceController`.
   - 1 of 15 done. The F-5E model is in the game: 35 parts, 10.7k triangles, moving ailerons, stabilators, rudder and flaps. It passes the contract in Studio and CI. Flown hands-on, with the cockpit view and missile launches checked.
   - Four PBR skins painted by `tools/blender/f5e_paint.py`: Ghost Grey (the free default) and the Desert, Pacific and Lizard aggressor schemes at 5,000 Credits each.
@@ -231,15 +238,19 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - 2 of 15: the MiG-21bis, from `tools/blender/mig21_generate.py`. It is measured from the MiG-21PF three-view, scaled to the bis's 7.154 m span, with the bis's larger dorsal spine taken from photos. 29 parts, 10.4k triangles. Three skins from `tools/blender/mig21_paint.py`: Natural Metal (the free default), Interceptor Grey and Tactical Camouflage at 5,000 Credits. Checked in play: AI MiGs spawned in the skins, and their ailerons, flaps, stabilators and rudder moved.
   - Next: the Mirage IIIE, then the rest of the launch roster.
 - [ ] **FLT-08** Variable geometry (F-14)
+  - Not started. The F-14A and Tornado F3 fly with fixed mid-sweep figures and models posed at a fixed sweep.
 - [ ] **INP-05** Rebinding UI and persisted bindings
-- [ ] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
+- [x] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
+  - Went further than planned: every one of the 27 jets has its own modelled, textured cockpit with live instrument faces (`AircraftAssembler.installCockpit`, `CockpitController`), so the shared kits are only the fallback. Flown hands-on in several jets by Will (MiG-21, Mirage F1, Typhoon, the Tier IV jets).
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
 - [ ] **HUD-05** Era variants (analogue vs glass symbology)
 - [ ] **GUN-07** LCOS and EEGS sights
 - [ ] **DMG-05** Pilot damage diagram on the HUD
 - [ ] **MSL-08** Loft profile
 - [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
+  - Partly done: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) have wide seeker cones and gimbals and strong flare resistance. Helmet cueing (locking where the pilot looks) is not built.
 - [ ] **SNS-07** TWS
+  - Not started. Related radar work done: lock failure reasons on the HUD, pulse radars that see close targets in clutter, zooming cone and situation scopes (DEVELOPMENT.md §14.2).
 - [ ] **CMS-04** Auto-dispense programmes (Tier V+, for example "2 flares every 0.5 s")
 - [ ] **MCH-05** Team Deathmatch, team balancing
 - [ ] **MCH-06** Air Superiority with zones
@@ -251,10 +262,11 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
   - Grass from the air: `tools/blender/terrain_paint.py` paints a patchwork of fields with mowing stripes and hedgerows, used as MaterialVariants on Grass and LeafyGrass at 2,048 studs per tile. Terrain only draws variants with the Regular pattern. The grass decoration is off.
   - Signed off by Will ("happy with the sky").
 - [ ] **MAP-04** Streaming and fog tuning for mobile
-  - Streaming is now off: it unloaded the map on death and under memory pressure. The whole map loads at join and stays (60 fps in Studio). Mobile memory and join time still to check.
+  - Streaming was turned off for a while (it unloaded the map on death and under memory pressure), then back on after the world-scale rework: the map is a twentieth of its old size in cells, loads in about 10 s, PLAY waits for `MapReady`, and it stays loaded through deaths (60 fps in Studio). Still to do: mobile memory, join time and fog on a real phone.
 - [ ] **FX-05** Quality settings and pooling audit
 - [ ] **AUD-04** Warnings and radio barks with subtitles
   - Betty voice warnings from Will's recordings (`Assets.Audio`): PULL UP (cuts in, back to back), ENGINE FIRE, BINGO FUEL, ENGINE DAMAGE ("Caution"); the master warning chime for STALL, OVER-G, G-LIMIT and RETURN TO BATTLE AREA. RWR contact, lock and launch use his RWR recordings. Every missile guiding on you now warns, heat-seekers included, and a heat-seeker lock shows LOCKED like a radar lock.
+  - Still to do: radio barks and subtitles.
 - [ ] **AUD-05** Music and UI sounds, sound groups and mixer settings
 - [ ] **PRG-07** Aircraft mastery stars and rewards
 - [ ] **UI-05** Mode select and queue UI
@@ -280,6 +292,17 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
 - [ ] **REL-03** Version module, changelog, tagging process
 - [ ] **REL-04** Release checklist and rollback drill
 
+**Done outside the plan (October 2026).** Work Will asked for that belongs to no task; how it was built is in DEVELOPMENT.md §37.
+
+- World scale 1 stud = 1 m: terrain load from 133 s to about 10 s, 60 fps (§37.1). Checked in play.
+- Supercruise: stronger transonic drag and a per-airframe `WaveDrag` factor, so only the Typhoon, F-22A and Tempest stay supersonic on dry thrust; afterburner gains thrust above Mach 0.9 (§6.4). Tests in `FlightModel.spec`; checked in play by Will.
+- Radar: lock failure reasons on the HUD, pulse radars see close targets in clutter, stealth now shrinks detection range, zooming scopes (§14.2, §14.5). Locks checked in play by Will.
+- The island raised above the sea so it doesn't look flooded from afar (§37.5). Checked from the air.
+- Tech tree rows size to their tallest branch; the RP note sits below everything.
+- Two Severn Bridges to the island (§37.5). Placed and checked in play; roads to them still to do.
+- The Ground Roamer, a drivable 4x4 (§36). Driven in play; airbase spawn spots, other players' wheel spin and touch controls still to do.
+- Betty voice warnings and RWR recordings (AUD-04 above).
+
 ## Phase 7: Monetisation
 
 - [ ] **UI-07** Shop screen
@@ -296,10 +319,13 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
 
 ## Phase 8: Launch and live ops
 
-- [ ] **ACD-08** Remaining tiers (V–VIII) data and models
+- [x] **ACD-08** Remaining tiers (V–VIII) data and models
+  - Done early, with Phase 6's roster work: the F-16C, F-15E, Su-30SM, MiG-29SMT, Gripen C, F/A-18E, Su-35S, Typhoon, Rafale C, F-22A, F-35A, Su-57 and the Tempest-class concept, each spawned in play with its loadout and skin. Tech tree runs to Tier VIII.
 - [ ] **FLT-09** Thrust vectoring behaviour
+  - Partly done: `ThrustVectoring` jets (Su-30SM, Su-35S, F-22A, Su-57, Tempest) keep more control authority at low speed. Post-stall rotation and the faster energy bleed are not built.
 - [ ] **SNS-08** Data link
 - [ ] **SNS-09** Stealth RCS and weapon bay effect
+  - Partly done: the airframe `Stealth` factor shrinks radar detection range on both server and client (`Missiles.spec` checks it). Aspect-dependent RCS and the weapon-bay effect are not built.
 - [ ] **MCH-07** Strike Escort
 - [ ] **MCH-08** PvE wave missions
 - [ ] **MCH-09** Ranked Duels with Elo
@@ -311,6 +337,7 @@ In progress. ACD-07 is the only task started so far; its progress is listed unde
 - [ ] **LIV-05** Leaderboards
 - [ ] **LIV-06** Squadrons
 - [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
+  - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
 - [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
 - [ ] **OPS-03** Event flags (double XP etc.)
 - [ ] **OPS-04** Message of the day and announcements
