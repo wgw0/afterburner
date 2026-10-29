@@ -117,6 +117,8 @@ local definitions: { [string]: Definition } = {
 	DebugLaunchAtMe = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Spawn a target drone: mode "ahead" (in front of you, same heading) or "circle" (orbits the range)
 	DebugSpawnDrone = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
+	-- Leave the current flight for the hangar (HangarButtonController)
+	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Go to a training server ("Training") or back to a public one ("Multiplayer") (TrainingService)
 	Travel = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.2 } },
 	-- On a training server: "FreeFlight", or a Vs AI match: mode id, AI difficulty, number of AI pilots

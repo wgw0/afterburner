@@ -273,7 +273,13 @@ function MenuController:Start()
 	Net.Client.on(
 		"JetDestroyed",
 		function(jetId: number, killerUserId: number, cause: string, _: any, killerJetId: number?)
-			if jetId == myJetId and cause ~= "Despawn" then -- a despawn (new setup, travel) isn't a loss
+			if jetId ~= myJetId then
+				return
+			end
+			-- A despawn (back to the hangar, a new setup, travel) isn't a loss unless someone forced it
+			if cause == "Despawn" and killerUserId == 0 and (killerJetId or 0) == 0 then
+				state.status = ""
+			else
 				state.status = `{deathMessage(killerUserId, cause, killerJetId)}. Press PLAY or R to fly again.`
 			end
 		end

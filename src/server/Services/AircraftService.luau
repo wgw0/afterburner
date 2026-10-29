@@ -380,6 +380,15 @@ function AircraftService:Init()
 		end
 	end)
 
+	-- Back to the hangar. A quiet despawn, unless someone damaged the jet recently: then they get the kill
+	-- (DamageModel.resolveCredit), so leaving can't dodge one.
+	Net.Server.on("ReturnToHangar", function(player: Player)
+		local jet = jetByPlayer[player]
+		if jet then
+			self:Despawn(jet, "Despawn")
+		end
+	end)
+
 	Net.Server.on("FlightTelemetry", function(player: Player, throttle: number, afterburner: boolean, gLoad: number)
 		local jet = jetByPlayer[player]
 		if not jet or not Validate.inRange(throttle, 0, 1) or not Validate.inRange(gLoad, -20, 20) then
