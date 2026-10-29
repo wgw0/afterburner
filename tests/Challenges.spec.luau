@@ -145,11 +145,12 @@ return function(ctx)
 	end)
 
 	describe("achievements", function()
-		it("every achievement has a unique id", function()
+		it("every achievement has a unique id and a known rarity", function()
 			local seen = {}
 			for _, def in Achievements.LIST do
 				expect(seen[def.id]).toBe(nil)
 				seen[def.id] = true
+				expect(table.find(Achievements.RARITIES, def.rarity) ~= nil).toBe(true)
 			end
 		end)
 

@@ -32,7 +32,7 @@ Components.stroke = stroke
 function Components.Panel(props: any)
 	local children = table.clone(props.children or {})
 	children.Corner = corner(props.Radius)
-	children.Stroke = stroke(props.StrokeColor, props.StrokeThickness)
+	children.Stroke = stroke(props.StrokeColor, props.StrokeThickness, props.StrokeTransparency)
 	if props.Padding then
 		children.Padding = e("UIPadding", {
 			PaddingTop = UDim.new(0, props.Padding),

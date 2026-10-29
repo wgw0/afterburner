@@ -15,6 +15,14 @@ return table.freeze({
 	Text = Color3.fromRGB(240, 244, 250),
 	Dim = Color3.fromRGB(150, 162, 186),
 	Locked = Color3.fromRGB(90, 100, 120),
+	-- Achievement rarity (Achievements.RARITIES), loot-style
+	Rarity = table.freeze({
+		Common = Color3.fromRGB(176, 190, 210),
+		Uncommon = Color3.fromRGB(96, 200, 96),
+		Rare = Color3.fromRGB(70, 140, 255),
+		Epic = Color3.fromRGB(176, 90, 255),
+		Legendary = Color3.fromRGB(240, 185, 55),
+	}),
 
 	Font = Enum.Font.Gotham,
 	FontBold = Enum.Font.GothamBold,
