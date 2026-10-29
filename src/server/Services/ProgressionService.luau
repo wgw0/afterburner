@@ -24,6 +24,7 @@ local Progression = require(Shared.Progression)
 local ServerRole = require(Shared.ServerRole)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local LiveConfig = require(Shared.LiveConfig)
+local Mastery = require(Shared.Mastery)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
@@ -90,6 +91,26 @@ local function economyEvent(
 	Telemetry.event(`Economy{flow}`, amount, { kind = kind, item = sku }, player)
 end
 
+-- Logs mastery stars reached (PRG-07) and, if the player is staying, shows a toast for each.
+local function announceMastery(player: Player, data: { [string]: any }, gains: { Mastery.Gain }, toast: boolean)
+	for _, gain in gains do
+		Telemetry.event("MasteryStar", gain.Stars, { airframe = gain.Airframe }, player)
+		economyEvent(player, "Source", gain.Credits, data.Credits, "Mastery", gain.Airframe)
+		if toast then
+			local airframe = AircraftData.get(gain.Airframe) :: any
+			Net.Server.fire("ChallengeNotice", player, {
+				kind = "Mastery",
+				heading = `MASTERY  {Mastery.starText(gain.Stars)}`,
+				text = `{airframe and airframe.DisplayName or gain.Airframe}: {gain.Stars} star{if gain.Stars == 1
+					then ""
+					else "s"}`,
+				credits = gain.Credits,
+				detail = gain.Title and `Title: {LevelRewards.titleName(gain.Title)}` or nil,
+			})
+		end
+	end
+end
+
 -- Builds a match summary for a player and saves the rewards. Returns the reward payload (or nil).
 local function award(player: Player, data: { [string]: any }, won: boolean, push: boolean): { [string]: any }?
 	local tally = tallies[player]
@@ -112,8 +133,10 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
+	local mastery: { Mastery.Gain } = {}
 	local function apply(d: { [string]: any })
 		levels = Progression.applyRewards(d, rewards, summary)
+		mastery = Mastery.record(d, summary.Events) -- stars from this match's kills (PRG-07)
 	end
 	if push then
 		DataService:Update(player, apply)
@@ -123,6 +146,7 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 	tallies[player] = nil
 	economyEvent(player, "Source", rewards.Credits, data.Credits, "MatchReward", "Match")
 	Telemetry.event("MatchRewards", rewards.XP, { credits = rewards.Credits, afk = summary.Afk, won = won }, player)
+	announceMastery(player, data, mastery, push)
 	return {
 		XP = rewards.XP,
 		Credits = rewards.Credits,
@@ -133,7 +157,26 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 		LevelsGained = levels,
 		Level = data.PilotLevel,
 		Afk = summary.Afk,
+		Mastery = mastery,
 	}
+end
+
+-- Testing (admin mastery.add): counts `kills` kills in a jet as if from a match, paying any stars reached.
+-- Returns the stars gained.
+function ProgressionService:AddMastery(player: Player, airframeId: string, kills: number): { Mastery.Gain }
+	local events = {}
+	for i = 1, kills do
+		table.insert(events, { Kind = "Kill", Airframe = airframeId, Victim = `test{i}`, VictimAI = true })
+	end
+	local gains = {}
+	DataService:Update(player, function(data)
+		gains = Mastery.record(data, events)
+	end)
+	local data = DataService:GetData(player)
+	if data then
+		announceMastery(player, data, gains, true)
+	end
+	return gains
 end
 
 -- Can this player fly this jet right now? (owned and in the lineup)
@@ -223,7 +266,7 @@ function ProgressionService:Init()
 			return true, nil
 		end)
 		if ok then
-			player:SetAttribute("Title", LevelRewards.TITLES[titleId] or "")
+			player:SetAttribute("Title", LevelRewards.titleName(titleId) or "")
 		end
 		return ok == true, err
 	end)
@@ -236,7 +279,7 @@ function ProgressionService:Init()
 		local title = if LevelRewards.titleUnlocked(data.Title or "", data.PilotLevel, allUnlocked, data.Titles)
 			then data.Title
 			else ""
-		player:SetAttribute("Title", LevelRewards.TITLES[title] or "")
+		player:SetAttribute("Title", LevelRewards.titleName(title) or "")
 	end)
 	Net.Server.on("SettingsUpdate", function(player: Player, changes: { [any]: any })
 		DataService:Update(player, function(data)
@@ -282,6 +325,11 @@ function ProgressionService:Start()
 	AircraftService.skinFor = function(player: Player, airframeId: string): string?
 		local data = DataService:GetData(player)
 		return data and Progression.skinFor(data, airframeId)
+	end
+	AircraftService.masteryFor = function(player: Player, airframeId: string): number
+		local data = DataService:GetData(player)
+		local entry = data and data.Aircraft[airframeId]
+		return Mastery.stars(entry and entry.Mastery or 0)
 	end
 
 	-- Match events

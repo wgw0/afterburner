@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
+local Mastery = require(Shared.Mastery)
 local LiveConfig = require(Shared.LiveConfig)
 
 local UI = script.Parent.Parent
@@ -215,6 +216,7 @@ local function Hangar(props: any)
 			then e(JetPreview, {
 				AirframeId = selected,
 				Skin = Progression.skinFor(data, selected),
+				Mastery = Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0),
 				Size = UDim2.fromScale(0.5, 0.62),
 				Position = UDim2.fromScale(0.5, 0.36),
 				AnchorPoint = Vector2.new(0.5, 0.5),
@@ -231,7 +233,9 @@ local function Hangar(props: any)
 		}),
 		JetInfo = e(C.Label, {
 			Text = if airframe
-				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}`
+				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}  ·  {Mastery.starText(
+					Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0)
+				)}`
 				else "",
 			Position = UDim2.new(0.5, 0, 0.68, 42),
 			AnchorPoint = Vector2.new(0.5, 0),

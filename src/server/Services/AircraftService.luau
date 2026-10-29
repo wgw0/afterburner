@@ -15,6 +15,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
+local KillMarkers = require(Shared.KillMarkers)
 local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
@@ -63,6 +64,8 @@ local AircraftService = {
 	modulesFor = nil :: ((Player, string) -> string)?,
 	-- Set by ProgressionService: the skin a player's jet spawns in.
 	skinFor = nil :: ((Player, string) -> string?)?,
+	-- Set by ProgressionService: a player's mastery stars in a jet (its kill markers, PRG-07).
+	masteryFor = nil :: ((Player, string) -> number)?,
 }
 
 local jets: { [number]: Jet } = {}
@@ -208,6 +211,10 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	model:PivotTo(startCFrame)
 	root.AssemblyLinearVelocity = startVelocity
 	model.Parent = jetsFolder
+	-- Kill markers for the pilot's mastery in this jet (needs the model in the world to find its skin)
+	local stars = if pilot and self.masteryFor then self.masteryFor(pilot, airframeId) else 0
+	model:SetAttribute("Mastery", stars)
+	KillMarkers.apply(model, stars)
 	root:SetNetworkOwner(pilot)
 	if pilot then
 		pilot.ReplicationFocus = root

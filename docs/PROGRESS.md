@@ -274,6 +274,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **AUD-05** Music and UI sounds, sound groups and mixer settings
   - Licensed APM menu music that fades with the menu, victory and defeat stings on the results screen, a click on every button, chimes for purchases, level-ups and a found match (our own, from `tools/audio/ui_sounds.py`). Sound groups for engine, wind, weapons, cockpit, radio, music and UI, with Master, Cockpit, Music and Radio volume sliders (defaults 50 / 80 / 20 / 50%, Will's). Checked in play and by Will ("the music fits and all sounds good").
 - [ ] **PRG-07** Aircraft mastery stars and rewards
+  - Built: 1–5 stars per jet from kills in it (5 / 15 / 40 / 80 / 150), Credits at each star, kill markers under the canopy from 2 stars, a "<jet> Ace" title at 5; stars in the hangar, a MASTERY panel on the detail screen, toasts and results lines (`Mastery.luau`, `KillMarkers.luau`, DEVELOPMENT.md §23.8). Checked in Studio: stars, Credits, toasts, title, markers on a flying jet. *Mastery camo and cockpit trinket to come with art.*
 - [x] **UI-05** Mode select and queue UI
   - In a lobby, a mode picker over PLAY (ANY MODE, DOGFIGHT, TEAMS, ZONES; remembered), PLAY joins the queue and becomes CANCEL with a timer, a loading screen covers each teleport, and a match server launches you in your selected jet when the countdown ends (no second PLAY). Checked in Studio and by Will.
 - [x] **UI-09** Gamepad and touch passes on every screen

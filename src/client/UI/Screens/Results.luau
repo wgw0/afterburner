@@ -9,7 +9,10 @@ local RunService = game:GetService("RunService")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
+local LevelRewards = require(Shared.Config.LevelRewards)
+local Mastery = require(Shared.Mastery)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -151,13 +154,26 @@ local function Results(props: any)
 				}),
 			}
 		)
+		-- Mastery stars reached this match (PRG-07), paid on top of the total
+		for i, gain in rewards.Mastery or {} do
+			local airframe = AircraftData.get(gain.Airframe) :: any
+			rewardChildren[`M{i}`] = e(C.Label, {
+				Text = `{Mastery.starText(gain.Stars)}  {airframe and airframe.DisplayName or gain.Airframe} mastery  +{C.number(
+					gain.Credits
+				)} Cr{if gain.Title then `  ·  title "{LevelRewards.titleName(gain.Title)}"` else ""}`,
+				TextSize = 13,
+				Bold = true,
+				Color = Theme.Rarity.Legendary,
+				LayoutOrder = 102 + i,
+			})
+		end
 		if rewards.Afk then
 			rewardChildren.Afk = e(C.Label, {
 				Text = "No survival or win bonus: no controls touched for a minute.",
 				Color = Theme.Warn,
 				TextSize = 12,
 				Wrap = true,
-				LayoutOrder = 102,
+				LayoutOrder = 110,
 			})
 		end
 	else

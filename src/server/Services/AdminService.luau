@@ -15,7 +15,9 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Environment = require(Shared.Config.Environment)
+local Mastery = require(Shared.Mastery)
 local Net = require(Shared.Net)
 local PlayerData = require(Shared.PlayerData)
 local Progression = require(Shared.Progression)
@@ -27,6 +29,7 @@ local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local ConfigService = require(script.Parent.ConfigService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
+local ProgressionService = require(script.Parent.ProgressionService)
 local ReportService = require(script.Parent.ReportService)
 
 local ADMINS: { number } = {} -- extra admin user ids (live config later, §31.1)
@@ -250,6 +253,66 @@ local COMMANDS: { [string]: Command } = {
 				return true
 			end)
 			return ok == true, `+{n} Credits`
+		end,
+	},
+	["take.credits"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, n = target(admin, args), amount(args)
+			if not (who and n) then
+				return false, "Usage: take.credits { amount }"
+			end
+			local ok = DataService:Update(who, function(data)
+				data.Credits = math.max(data.Credits - n, 0)
+				return true
+			end)
+			return ok == true, `-{n} Credits`
+		end,
+	},
+	-- Mastery (PRG-07) testing: add kills in a jet as a match would (stars, Credits, title, toast)...
+	["mastery.add"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, n = target(admin, args), amount({ amount = args.kills })
+			local id = tostring(args.airframe)
+			if not (who and n and AircraftData.get(id)) then
+				return false, "Usage: mastery.add { airframe, kills }"
+			end
+			local gains = ProgressionService:AddMastery(who, id, n)
+			local credits = 0
+			for _, gain in gains do
+				credits += gain.Credits
+			end
+			return true, `+{n} kills in {id}: {#gains} star(s), +{credits} Credits`
+		end,
+	},
+	-- ...or set a jet's kill count directly (no Credits; the 5-star title goes if it drops below 5 stars)
+	["mastery.set"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who = target(admin, args)
+			local kills = tonumber(args.kills)
+			local id = tostring(args.airframe)
+			if not (who and kills and kills >= 0 and AircraftData.get(id)) then
+				return false, "Usage: mastery.set { airframe, kills }"
+			end
+			local ok = DataService:Update(who, function(data)
+				local entry = data.Aircraft[id]
+				if not entry then
+					return false
+				end
+				entry.Mastery = math.floor(kills)
+				if Mastery.stars(entry.Mastery) < #Mastery.STARS then
+					local title = Mastery.titleId(id)
+					data.Titles[title] = nil
+					if data.Title == title then
+						data.Title = ""
+						who:SetAttribute("Title", "")
+					end
+				end
+				return true
+			end)
+			return ok == true, if ok then `{id} mastery: {math.floor(kills)} kills` else "Jet not in the save"
 		end,
 	},
 	["give.xp"] = {
