@@ -10,6 +10,9 @@
 --   (Queue.form), reserves a battle server for each, writes its record, and tells each lobby server which of
 --   its players to send. Lobbies poll for that and teleport them, with retries; anyone who still can't get
 --   there goes back to the front of the queue.
+--   First session (TUT-04): a brand-new pilot (never onboarded, no matches, no lessons) joining a lobby goes
+--   straight to a training server, where lesson 1 starts. Going back to a lobby (MULTIPLAYER, or SKIP TO
+--   MULTIPLAYER on the welcome card) marks them onboarded, so it only happens once.
 --   Studio can't reserve servers or teleport, so there the queue is local and a formed match (or Travel)
 --   switches this server's role in place instead.
 
@@ -42,6 +45,7 @@ local ASSIGN_TTL = 120
 local RECORD_TRIES = 8 -- a reserved server reads its record this many times, 1.5 s apart
 local TELEPORT_TRIES = 3
 local STUDIO_FILL_AFTER = 4 -- a solo test in Studio shouldn't wait 30 s
+local FIRST_SESSION_DELAY = 2 -- a new pilot sees the lobby for a moment before training
 
 local MatchmakingService = {
 	Priority = 51, -- after MatchService
@@ -217,6 +221,28 @@ local function resolveRole()
 			becomeTraining()
 		end
 	end)
+end
+
+-- A new pilot has made their choice (multiplayer, or staying in training): no more first-session flow.
+local function markOnboarded(player: Player, how: string)
+	local fresh = false
+	DataService:Update(player, function(data)
+		if not data.Flags.Onboarded then
+			data.Flags.Onboarded = true
+			fresh = true
+		end
+	end)
+	if fresh then
+		local data = DataService:GetData(player)
+		local lessons = 0
+		for _ in (data and data.Lessons or {}) do
+			lessons += 1
+		end
+		Telemetry.event("Onboarded", lessons, { how = how }, player)
+	end
+end
+function MatchmakingService:MarkOnboarded(player: Player, how: string)
+	markOnboarded(player, how)
 end
 
 ------------------------------------------------------------------------------------------------ teleports
@@ -483,6 +509,12 @@ end
 
 ------------------------------------------------------------------------------------------------ lifecycle
 
+-- Testing (admin onboarding.restart): send a player into the first-session flow now.
+function MatchmakingService:StartFirstSession(player: Player)
+	leave(player, true)
+	sendToTraining(player)
+end
+
 function MatchmakingService:Init()
 	resolveRole()
 
@@ -495,7 +527,27 @@ function MatchmakingService:Init()
 			leave(player, true)
 			sendToTraining(player)
 		elseif target == "Lobby" and not ServerRole.isLobby() and not leaving[player] then
+			markOnboarded(player, "Multiplayer")
 			sendToLobby({ player })
+		end
+	end)
+	-- A brand-new pilot joining a lobby: straight to training for lesson 1
+	DataService.ProfileLoaded:Connect(function(player, data)
+		if data.Flags.Onboarded then
+			return
+		end
+		if data.Stats.Matches > 0 or next(data.Lessons) ~= nil then
+			-- Played before the first-session flow existed: they know their way round
+			DataService:Update(player, function(d)
+				d.Flags.Onboarded = true
+			end)
+		elseif ServerRole.isLobby() then
+			task.delay(FIRST_SESSION_DELAY, function()
+				if player.Parent and ServerRole.isLobby() and not queued[player] and not leaving[player] then
+					Telemetry.event("FirstSessionTraining", 1, {}, player)
+					sendToTraining(player)
+				end
+			end)
 		end
 	end)
 	-- After a match's results, everyone goes back to a lobby

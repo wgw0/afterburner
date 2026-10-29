@@ -12,7 +12,8 @@
 --     MissileFired   class, weapon                     fire rate per missile
 --     MissileResult  class, weapon; value 1 hit / 0    hit rate per missile (Pk)
 --   (Also elsewhere: MatchEnded, Death, QueueMatched, MatchFormed, AntiCheatStrike, Economy*.)
---   LessonCompleted(lessonId) from the client marks a lesson done (data.Lessons) on a training server.
+--   LessonCompleted(lessonId) from the client marks a lesson done (data.Lessons) on a training server; the
+--   first time lessons 1–3 are all done, it pays TUTORIAL_CREDITS and sets Flags.TutorialComplete (TUT-04).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,6 +36,7 @@ local ProgressionService = require(script.Parent.ProgressionService)
 local ONBOARDING = { "Joined", "Lesson1", "Lesson3", "FirstMatch", "FirstKill", "FirstResearch" }
 local LESSONS = { Flight = true, Energy = true, Guns = true, Missiles = true, Defend = true, Fight = true }
 local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
+local TUTORIAL_CREDITS = 2000 -- for finishing lessons 1–3 (once)
 
 local TelemetryService = {
 	Priority = 78, -- after ProgressionService and ChallengeService
@@ -114,6 +116,25 @@ function TelemetryService:Init()
 			onboarding(player, "Lesson1")
 		elseif lessonId == "Guns" then
 			onboarding(player, "Lesson3")
+		end
+		-- Lessons 1–3 all done, the first time: the training reward (TUT-04)
+		local rewarded = false
+		DataService:Update(player, function(data)
+			local done = data.Lessons
+			if done.Flight and done.Energy and done.Guns and not data.Flags.TutorialComplete then
+				data.Flags.TutorialComplete = true
+				data.Credits += TUTORIAL_CREDITS
+				rewarded = true
+			end
+		end)
+		if rewarded then
+			Telemetry.event("TutorialComplete", TUTORIAL_CREDITS, {}, player)
+			Net.Server.fire("ChallengeNotice", player, {
+				kind = "Bonus",
+				heading = "TRAINING COMPLETE",
+				text = "Lessons 1–3 done. Welcome aboard!",
+				credits = TUTORIAL_CREDITS,
+			})
 		end
 	end)
 

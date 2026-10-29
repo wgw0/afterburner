@@ -15,6 +15,7 @@ local ServerRole = require(Shared.ServerRole)
 
 local AircraftService = require(script.Parent.AircraftService)
 local MatchService = require(script.Parent.MatchService)
+local MatchmakingService = require(script.Parent.MatchmakingService)
 
 local MAX_AI = 11
 local VS_AI_MODES = { Dogfight = true, TeamDeathmatch = true, AirSuperiority = true }
@@ -38,6 +39,12 @@ function TrainingService:Init()
 			if jet.pilot == player then
 				AircraftService:Despawn(jet, "Despawn")
 			end
+		end
+	end)
+	-- A new pilot chose KEEP TRAINING on the welcome card (TUT-04)
+	Net.Server.on("FinishOnboarding", function(player: Player)
+		if ServerRole.isTraining() then
+			MatchmakingService:MarkOnboarded(player, "Training")
 		end
 	end)
 	-- A training server is one player's: when they leave, nobody else is coming

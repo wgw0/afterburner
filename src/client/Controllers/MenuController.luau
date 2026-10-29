@@ -282,6 +282,10 @@ render = function()
 		OnSetting = function(key, value)
 			SettingsController:Set(key, value)
 		end,
+		FirstSession = TutorialController:FirstSession(),
+		OnFinishOnboarding = function()
+			Net.Client.fire("FinishOnboarding")
+		end,
 		OnSetTitle = function(titleId: string): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "SetTitle", titleId)
 			if not ok then

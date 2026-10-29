@@ -35,6 +35,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Challenges",
 	"Achievements",
 	"Title",
+	"Lessons",
 })
 
 local function deepCopy<T>(value: T): T

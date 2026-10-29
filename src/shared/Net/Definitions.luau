@@ -121,6 +121,8 @@ local definitions: { [string]: Definition } = {
 	-- toast when a challenge or achievement completes: { kind, text, detail?, credits?, xp? }
 	RerollChallenge = { direction = "Function", args = { "integer" }, rate = { burst = 3, perSecond = 0.5 } },
 	ChallengeNotice = { direction = "ServerToClient", args = { "table" } },
+	-- A new pilot chose to stay in training after the welcome card (TUT-04): no more first-session flow
+	FinishOnboarding = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.2 } },
 	-- A tutorial lesson finished (TutorialController → TelemetryService, ANL-02)
 	LessonCompleted = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Pick the title shown next to your name (a Config/LevelRewards title id, or "" for none)

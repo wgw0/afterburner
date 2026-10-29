@@ -1786,6 +1786,7 @@ end
 - Runs in **Free Flight** on a private, isolated area (or a separate reserved server).
 - Rewards on completion: Credits and a small cosmetic. Sets `Flags.TutorialComplete`.
 - New players go straight into lesson 1 on their first join. They can skip it after lesson 1.
+- **As built (TUT-04, November 2026):** a brand-new pilot (not `Flags.Onboarded`, no matches, no lessons) joining a lobby is sent to a training server after two seconds (`MatchmakingService`); there lesson 1 starts by itself once the map is ready (`TutorialController`). Every lesson panel shows "HOLD H TO QUIT" (the hangar key's binding), which ends the lesson and opens the menu. On a first visit the training screen shows a **welcome card** in place of the jet turntable: lessons 1–3 ticked off, START the next one, or SKIP TO MULTIPLAYER; in the first session a finished lesson brings you back to it after four seconds. Lessons 1–3 all done pay 2,000 Credits once (`Flags.TutorialComplete`); the card then offers PLAY MULTIPLAYER or KEEP TRAINING. Going to a lobby, or KEEP TRAINING (`FinishOnboarding`), sets `Flags.Onboarded`, so it happens once. Players from before this (with matches or lessons) are marked onboarded quietly. Telemetry: `FirstSessionTraining`, `Onboarded` (value: lessons done; how: Multiplayer / Training), `TutorialComplete`, plus the onboarding funnel (§30.3). Test-only admin command `onboarding.restart` replays it on your own account (the 2,000 isn't paid twice).
 
 | ID | Task | Phase |
 |---|---|---|
