@@ -8,6 +8,8 @@
 --                AI fills each side to even numbers, teams spawn over their own coast, the first team
 --                to the kill limit (or ahead at the time limit) wins. Teammates can't hurt each other
 --                (Lib/Teams, checked by the combat, missile, sensor and AI services).
+-- Rotation: after each match's results the server moves on to the next mode in MatchRules.ROTATION
+-- (Dogfight, then Team Deathmatch, then Dogfight…). Free Flight and the stress test aren't in it.
 -- The mode comes from the GameMode attribute on ReplicatedStorage (default Dogfight); in the test
 -- environment it can be switched live from the tuning panel.
 
@@ -348,6 +350,13 @@ local function tick(dt: number)
 		end
 	elseif state == "Results" then
 		if elapsed >= mode.ResultsSeconds then
+			-- The next match is the next mode in the rotation
+			local nextId = MatchRules.nextMode(mode.Id)
+			if nextId ~= mode.Id then
+				mode = (MatchRules.MODES :: any)[nextId]
+				ReplicatedStorage:SetAttribute("GameMode", nextId)
+				Teams.clear()
+			end
 			setState(if #humans() > 0 then "Countdown" else "Waiting")
 		end
 	end

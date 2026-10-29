@@ -85,6 +85,16 @@ MatchRules.MODES = table.freeze({
 	} :: ModeConfig),
 })
 
+-- Public servers take turns between these modes, one match each, until a mode-select screen exists (UI-05).
+-- A server set to a mode outside the list (Free Flight, the stress test) stays on it.
+MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch" })
+
+-- The mode after this one in the rotation, or the same mode if it isn't in the rotation.
+function MatchRules.nextMode(modeId: string): string
+	local index = table.find(MatchRules.ROTATION, modeId)
+	return if index then MatchRules.ROTATION[index % #MatchRules.ROTATION + 1] else modeId
+end
+
 function MatchRules.newScore(name: string, isAI: boolean, userId: number): Score
 	return { name = name, isAI = isAI, userId = userId, kills = 0, assists = 0, deaths = 0, score = 0 }
 end
