@@ -52,6 +52,7 @@
 - [34. Performance budgets (PRF)](#34-performance-budgets-prf)
 - [35. Release process (REL)](#35-release-process-rel)
 - [36. The Ground Roamer (VEH)](#36-the-ground-roamer-veh)
+- [37. Implementation notes: work done outside the plan](#37-implementation-notes-work-done-outside-the-plan)
 - [Appendix A: Remote catalogue](#appendix-a-remote-catalogue)
 - [Appendix B: Attributes and tags](#appendix-b-attributes-and-tags)
 - [Appendix C: Phase-by-phase task index](#appendix-c-phase-by-phase-task-index)
@@ -598,6 +599,9 @@ Using constraints, rather than setting the CFrame directly, keeps the movement p
 - Variable geometry (F-14): the sweep angle follows a speed schedule. Interpolate `CLMax`, `CD0` and `InducedK` between "wings forward" and "wings back" values. Drive the visual wing pivots from the same value.
 - Thrust vectoring: keeps pitch and yaw authority at low `q`, and allows post-stall rotation, but the airspeed bleeds very quickly.
 - Supercruise: emerges naturally if the dry thrust beats the transonic drag. Validate it in tests for the Typhoon and F-22.
+  - *As built:* `FlightModel.waveDrag` peaks at 0.05 at Mach 1 and settles to 0.03, strong enough that a typical jet tops out at Mach 0.9–1.0 on dry thrust. The optional airframe field `WaveDrag` (default 1) scales it: the Typhoon, F-22A and Tempest (0.5–0.55) supercruise at Mach 1.28 / 1.45 / 1.33 at 10 km. Thin Mach 2 deltas and area-ruled jets (MiG-21, the Mirages, F-5E, Gripen) also have a factor below 1 so afterburner still takes them through Mach 1, but lack the dry thrust to supercruise; the F-35A has 1.15. Afterburning thrust rises above Mach 0.9 (`Flight.AFTERBURNER_RAM_GAIN`, ram pressure), which brings reheat top speeds near the real ones and changes nothing in a dogfight. `FlightModel.spec` checks the Typhoon supercruises and the F-15C and Rafale don't. Measure changes with a level-flight loop (pitch holding 10 km for 2–3 minutes): a one-minute run only catches jets still slowing down.
+- Thrust vectoring (as built): `ThrustVectoring = true` raises the minimum control authority at low dynamic pressure (`Flight.THRUST_VECTORING_MIN_AUTHORITY`). Post-stall manoeuvres (FLT-09) are not built.
+- Variable geometry (as built): not yet. The F-14A and Tornado F3 models are posed at a fixed sweep and their data uses mid-sweep values (FLT-08).
 
 ### 6.5 Debug tuning panel (test environment only)
 
@@ -1066,6 +1070,11 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 - Contacts appear on the radar MFD and as HUD boxes.
 - Lock: press lock on a contact. The client shows the lock building. It sends `RadarLockRequest(targetId)` and the server validates the same rules (range, cone, notch, LOS with a server raycast) and starts tracking the **lock state**. The server re-checks the lock 5 times a second. If any rule fails, the lock is broken and both pilots are told.
 - TWS (track-while-scan, Tier IV+): track several targets and fire ARH at them without a hard lock (the targets don't get a lock warning until the missile goes active).
+- *As built (October 2026):*
+  - Pulse radars (`CanNotch = false`) looking down or at a low target are not blind: they see out to `Signature.CLUTTER_RANGE` (35%) of their range, where a return stands out of the clutter. Beyond that the reason is "clutter". (Fully blind pulse radars made the Super 530F and the early SARH missiles nearly unusable at dogfight heights.)
+  - The HUD says why a lock failed or broke, for 3 s above the missile readout: NO LOCK / LOCK BROKEN / LOCK LOST with OUT OF RADAR RANGE, NOT IN RADAR CONE, GROUND CLUTTER, TARGET NOTCHING or TERRAIN IN THE WAY, and NO RADAR LOCK when a radar missile is fired unlocked (`SensorController.message`). The server doesn't send a reason with a lost lock; the client works it out against the target it had.
+  - The left scope is a cone B-scope that zooms through 2.5–80 km to fit the lock or the nearest contact in the cone; the right is a situation display centred on your jet, heading up, zoomed to the nearest contact (`ScopesController`).
+  - TWS is not built.
 
 ### 14.3 RWR
 
@@ -1082,6 +1091,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 - IR signature: base heat × throttle factor (afterburner ×3) × aspect factor (rear 1.0, side 0.5, front 0.25 for rear-aspect seekers) × altitude/background factor.
 - RCS: base × airframe `Stealth` × aspect (front smaller for stealth jets) × weapon bay state (opening bays raises it briefly).
+  - *As built:* `Signature.radarDetects` takes the target's `Stealth` and shrinks the detection range by `Stealth^0.25` (F-22A 0.002 → about a fifth, F-35A 0.003, Su-57 0.05 → about half, Tempest 0.001). `SensorService:CanTrack` and `SensorController` both pass it (until October 2026 neither did, so stealth jets showed at full range). Aspect and weapon-bay effects are not modelled (SNS-09).
 
 ### 14.6 Tasks
 
@@ -1315,7 +1325,7 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 
 ### 19.3 World settings
 
-- `Workspace.StreamingEnabled = true`, with a streaming target radius tuned so terrain is visible far enough *(tune; test on mobile)*. **Current: streaming is off** (`Workspace.StreamingEnabled = false`). Streaming kept unloading the map: on every death (the focus jumps back to the runway) and whenever Roblox judged memory short, which a Studio session near 10 GB always is; warming it up made the frame rate crawl while the terrain was built. With it off the whole map loads once behind the loading screen and stays, at 60 fps. The cost is a longer join and more memory, to revisit for mobile (MAP-04, PRF-03). `StreamingService` and the underlay stay in place for if streaming comes back. `Terrain.Decoration` (grass blades) is off: it only draws within a few dozen studs, which a jet never sees.
+- `Workspace.StreamingEnabled = true`, with a streaming target radius tuned so terrain is visible far enough *(tune; test on mobile)*. **Current (October 2026): streaming is on**, with a 32,768-stud target radius. It was switched off for a while because it unloaded the map on every death and under memory pressure; the world-scale rework (§37.1) cut the terrain to a twentieth of its cells, the whole map now fits in that radius, loads in about 10 s and stays loaded through deaths. `StreamingService` warms the spawn areas and sets the player's `MapReady` attribute, which gates the PLAY button. `Terrain.Decoration` (grass blades) is off: it only draws within a few dozen studs, which a jet never sees. Mobile memory is still to be checked (MAP-04, PRF-03).
 - With no characters, streaming centres on each player's `ReplicationFocus`: the jet's Root while flying, the runway while on the menu (`AircraftService`).
 - Keep terrain data lean: nothing below the surface layer on land and a shallow sea. `tools/StraitBuilder` writes the height field straight into voxels with only a thin shell under the surface (thick enough to close steep slopes), so the Strait map is 14.8 million cells for an 11.5 km (30 km real) square with mountains up to ~470 studs. At the old scale (1 stud = 0.28 m) the same map was 294 million cells and the client took 133 s to build it, at 12-15 fps; at 1 stud = 1 m PLAY unlocks in about 8 s and the terrain is complete by 10 s, at 60 fps. (`tools/TerrainBuilder.trim()` did the same job for the old placeholder.) Buried voxels still have to be downloaded. Trimming took the Phase 1 terrain from 1.42 billion to 429 million cells, and with streaming the client is ready in about 1 s (it was 43 s with streaming off).
 - `Workspace.Gravity` stays at the default. The flight model includes gravity in its own maths, and the `LinearVelocity` constraint (with a high `MaxForce`) sets the velocity outright each step, so Roblox's gravity has no extra effect on a live jet. When a jet dies, its constraints are removed and normal gravity takes over for the wreck.
@@ -1970,6 +1980,80 @@ Known limits: other players see the vehicle move, but its wheels don't turn or s
 are local); touch controls aren't wired yet.
 
 ---
+
+## 37. Implementation notes: work done outside the plan
+
+Late October 2026 brought a lot of work driven by playtest feedback rather than the phase order. This section
+records what was built, why, and the traps found, so later work starts from the real state. PROGRESS.md lists the
+same work against the task IDs.
+
+### 37.1 World scale: 1 stud = 1 m
+
+- **What:** `Config/Scale.STUDS_PER_METRE` went from 1 / 0.28 (the Roblox convention) to 1. Every hard-coded length
+  in studs across `src`, `tools` and `tests` was scaled by 0.28; values tied to the 4-stud voxel or the 2,048-stud
+  part limit stayed. Speeds, altitudes and HUD numbers are unchanged (`SPEED_SCALE` stays 0.38), and the real-world
+  size of the Strait (about 30 km across) is the same.
+- **Why:** voxel terrain costs scale with area in studs. At the old scale the map was 294 million cells, the
+  client took 133 s to build it at 12–15 fps, and merging scenery barely helped. Now it is 14.8 million cells:
+  PLAY unlocks in about 8 s and the terrain is complete by 10 s, at 60 fps.
+- **Watch out:** jet models built before the change are still at the old scale in their FBX files.
+  `AircraftAssembler` fits every part to its manifest (which is in metres), so it corrects them on install
+  ("scale x0.280" in its report).
+
+### 37.2 The whole roster, Tiers I–VIII
+
+- All 27 jets of DESIGN §6.2, from the F-5E to the Tempest-class concept, have flight data, weapons, a model, four
+  PBR skins and a modelled cockpit (ACD-06, ACD-07, ACD-08, CAM-07). Flight data comes from public figures and was
+  balanced by measuring each tier's corner speed, sustained turn and thrust-to-weight against the tier below
+  (`FlightModel.cornerSpeed`, `maxSustainedTurnRate`), not from a spreadsheet. All of it is marked *tune in
+  playtests*.
+- New weapons along the way: AIM-54A, AIM-9M/9X, AIM-120C/D, R-27ER, R-74M, R-77-1, R-77M, Magic II, Super 530D,
+  Skyflash, ASRAAM, IRIS-T, MICA IR, Meteor, and the DEFA 554, BK-27, GIAT 30M791 and GAU-22 guns. High off-boresight
+  heat-seekers are the `IR_Adv` class with wide seeker cones and gimbals; there's no helmet-cueing logic (MSL-09).
+- The Tempest's figures are invented, as DESIGN says. It is researched from any one Tier VII jet; the two-jet rule
+  and the Test Pilot chain are LIV-07.
+- Tier V+ jets carry a missile approach warner (`RWR.LaunchWarning = true`).
+
+### 37.3 Installing art in Studio (the routine that works)
+
+1. The art lives in a Blender worktree's `tools/blender/out/` (not in git). Copy the FBX files Will is to import
+   to the main checkout's `tools/blender/out/` (also ignored) and give him that path; hidden `.claude` folders are
+   awkward to browse to.
+2. Will imports with Merge Meshes off, Anchored on, Meter, Upload on.
+3. Textures: serve the PNGs from a scratch folder with `python -m http.server 8765` and upload them with the Studio
+   MCP `upload_image` tool in batches of 24. A small temporary ModuleScript in ServerStorage can record the returned
+   ids by filename and write `Assets.Skins.<Jet>.<Skin>.<Set>` SurfaceAppearances; delete it afterwards (Place.spec
+   fails on stray scripts).
+4. `AircraftAssembler.install(id, ServerStorage.Imports.<Id>_base)` and `installCockpit(id, ..._cockpit, maps)`.
+5. An airframe with flight data but no model stops the server booting (AircraftService checks every model), so
+   flight data and the saved place have to reach master together.
+
+### 37.4 Studio's require cache
+
+The command bar keeps modules it has required and doesn't reload them when Rojo syncs new source. After the scale
+change, `require(ReplicatedStorage.Shared.WorldEdge)` from the command bar still returned the old-scale values (sea
+at -6, map half-width 20,480) and `StraitBuilder.island()` briefly rewrote the island with them. Always run tools
+from clones; when a tool requires a shared module by path, clone that module too and patch the require to the
+clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Tempest skin list.
+
+### 37.5 Map additions
+
+- The island's runway flat sits 8 studs above the sea (`StraitBuilder.ISLAND_HEIGHT`); at 0.84 the distant,
+  coarser terrain sank under the water and the runway looked flooded. `StraitBuilder.island()` rewrites only the
+  island. The test-range runway moved up with it.
+- Two Severn Bridges (1,890 m, 136 m towers, 47 m under the deck) cross from each landmass to the island
+  (`tools/BridgeBuilder.luau`, docs/art/BRIDGE.md). Roads don't reach their ends yet.
+
+### 37.6 Other playtest-driven systems
+
+- **Voice warnings:** "Betty" lines from Will's recordings (PULL UP, ENGINE FIRE, BINGO FUEL, Caution) and his RWR
+  tones (`ToneController`). Every guiding missile warns, heat-seekers included, and an IR seeker lock shows LOCKED.
+- **Supercruise and afterburner ram effect:** §6.4.
+- **Radar lock feedback, pulse-radar look-down, stealth:** §14.2 and §14.5.
+- **The Ground Roamer:** §36.
+- **Spawn tests in Studio:** a spawn that replaces a live jet counts as losing it, so the match's respawn delay
+  applies and quick back-to-back `RequestSpawn`s are silently ignored (the menu shows a timer to players). Wait a
+  few seconds between spawns in tests.
 
 ## Appendix A: Remote catalogue
 
