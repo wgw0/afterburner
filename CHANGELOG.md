@@ -23,6 +23,8 @@ The soft-launch build: the first version published to the live experience.
 - Daily and weekly challenges with rerolls, 21 achievements by rarity, a career screen with the level track,
   and titles.
 - A daily login streak with weekly rewards.
+- Aircraft mastery: 1–5 stars per jet from kills in it, with Credits, kill markers under the canopy and a
+  "<jet> Ace" title at 5 stars.
 - Settings: controls, key and gamepad rebinding, display, audio levels, and accessibility (subtitles, HUD
   colours, menu size, reduce flashing, shapes on the scopes).
 - Radio calls and warnings with subtitles, music, and menu sounds.

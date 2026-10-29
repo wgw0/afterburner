@@ -1538,6 +1538,15 @@ A script simulates a player's progression with average match results, so the pla
 
 **Acceptance:** a new account follows the expected path: first new jet in 20–30 minutes of real play (tested with a few players). Nothing can be researched or bought out of order, even with a modified client.
 
+### 23.8 As built: aircraft mastery (PRG-07, November 2026)
+
+- **Stars** (`Shared/Mastery`, tested in `Mastery.spec`): kills made in a jet in scored matches count in `data.Aircraft[id].Mastery`; 1–5 stars at 5, 15, 40, 80 and 150 kills. The same victim counts only as often as it pays full rewards (`Economy.SAME_VICTIM_FULL_KILLS`), so farming one pilot earns nothing. AI kills count.
+- **Rewards:** Credits on reaching each star (2,000 / 4,000 / 8,000 / 12,000 / 20,000: 46,000 per jet in all), kill markers from 2 stars, and at 5 stars the jet's title ("Tomcat Ace", id `Mastery:<jet>`, kept in `data.Titles`, worn from the Career title picker; `LevelRewards.titleName` names every title). Recorded with the match rewards in `ProgressionService`; each star gets a toast, a line on the results screen, `MasteryStar` telemetry and an economy source event.
+- **Kill markers** (`Shared/KillMarkers`): a row of stencilled stars, one per star, on both sides under the canopy. Each fuselage is a different shape, so the spot is found by casting a ray in from each side onto the visible skin (whose parts take queries only for that cast) below `CockpitEye`, and a thin invisible plate holding a SurfaceGui is laid on it and welded to the root. The server marks spawned jets (`AircraftService.masteryFor`; the jet's `Mastery` attribute holds the stars); the client marks its menu previews.
+- **Shown:** the stars next to the jet in the hangar, a MASTERY panel on the aircraft detail screen (stars, kills, the next star and its Credits, what stars give), and the preview carries its markers.
+- **Testing:** test-environment admin commands `mastery.add { airframe, kills }` (as a match would: stars, Credits, title, toasts) and `mastery.set { airframe, kills }` (no Credits; drops the title under 5 stars); `take.credits { amount }` undoes test Credits.
+- **Later, with art:** a mastery camo and a cockpit trinket (Will's call, November 2026: code now, art in a later pass). The economy simulation doesn't include mastery Credits yet.
+
 ---
 
 ## 24. Tech tree, hangar and menus (UI)

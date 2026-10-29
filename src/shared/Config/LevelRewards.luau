@@ -8,6 +8,7 @@
 --   HUDColour          an extra HUD colour preset in Settings
 
 local Economy = require(script.Parent.Economy)
+local Mastery = require(script.Parent.Parent.Mastery)
 
 export type Milestone = {
 	Level: number,
@@ -126,15 +127,20 @@ function LevelRewards.describe(milestone: Milestone): string
 	return kind
 end
 
+-- A title's name: a level or streak title, or a jet's mastery title ("Tomcat Ace", Mastery). Nil if unknown.
+function LevelRewards.titleName(titleId: string): string?
+	return LevelRewards.TITLES[titleId] or Mastery.titleName(titleId)
+end
+
 -- Whether a title can be worn: "" (none) always; a level title from its level; any title unlocked some other
--- way (`owned`: data.Titles, e.g. the login streak).
+-- way (`owned`: data.Titles, e.g. the login streak or 5-star mastery).
 function LevelRewards.titleUnlocked(
 	titleId: string,
 	level: number,
 	allUnlocked: boolean?,
 	owned: { [string]: boolean }?
 ): boolean
-	if titleId == "" or (owned ~= nil and owned[titleId] == true and LevelRewards.TITLES[titleId] ~= nil) then
+	if titleId == "" or (owned ~= nil and owned[titleId] == true and LevelRewards.titleName(titleId) ~= nil) then
 		return true
 	end
 	local needed = LevelRewards.levelFor("Title", titleId)

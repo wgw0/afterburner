@@ -1,12 +1,14 @@
 --!strict
 -- A jet on a slow turntable (UI-02): a copy of the aircraft model in a ViewportFrame.
--- props: AirframeId, Skin (optional), Size, Position, AnchorPoint.
+-- props: AirframeId, Skin (optional), Mastery (stars, for kill markers; optional), Size, Position, AnchorPoint.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
-local Skins = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Skins"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local KillMarkers = require(Shared:WaitForChild("KillMarkers"))
+local Skins = require(Shared:WaitForChild("Skins"))
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
@@ -34,6 +36,8 @@ local function JetPreview(props: any)
 		model:PivotTo(CFrame.new())
 		model.Parent = world
 		world.Parent = viewport
+		-- Once the world is in the game (rays don't work in a detached one): they're cast onto the skin
+		KillMarkers.apply(model, props.Mastery or 0)
 		local _, size = model:GetBoundingBox()
 		local distance = math.max(size.X, size.Z) * 1.45 + 2.8
 		local camera = Instance.new("Camera")
@@ -51,7 +55,7 @@ local function JetPreview(props: any)
 			world:Destroy()
 			camera:Destroy()
 		end
-	end, { props.AirframeId, props.Skin })
+	end, { props.AirframeId, props.Skin, props.Mastery })
 
 	return e("ViewportFrame", {
 		ref = viewportRef,

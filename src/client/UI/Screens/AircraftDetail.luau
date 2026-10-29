@@ -11,6 +11,8 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
+local LevelRewards = require(Shared.Config.LevelRewards)
+local Mastery = require(Shared.Mastery)
 local Progression = require(Shared.Progression)
 local Skins = require(Shared.Skins)
 local WeaponData = require(Shared.WeaponData)
@@ -299,6 +301,46 @@ local function AircraftDetail(props: any)
 		})
 	end
 
+	-- Mastery (PRG-07): stars from kills in this jet, the next one, and what stars give
+	local kills = entry and entry.Mastery or 0
+	local stars = Mastery.stars(kills)
+	local into, needed = Mastery.progress(kills)
+	local nextText = if into and needed
+		then `{C.number(kills)} kills  ·  next star at {Mastery.STARS[stars + 1]} (+{C.number(
+			Mastery.CREDITS[stars + 1]
+		)} Credits)`
+		else `{C.number(kills)} kills  ·  fully mastered`
+	local masteryChildren = {
+		Title = e(C.Label, {
+			Text = `MASTERY   {Mastery.starText(stars)}`,
+			Size = UDim2.new(1, 0, 0, 18),
+			Bold = true,
+			Color = Theme.Accent,
+			TextSize = 14,
+		}),
+		Progress = e(C.Bar, {
+			Value = if into and needed then into / needed else 1,
+			Size = UDim2.new(1, 0, 0, 8),
+			Position = UDim2.fromOffset(0, 24),
+			Color = Theme.Rarity.Legendary,
+		}),
+		Next = e(C.Label, {
+			Text = nextText,
+			Size = UDim2.new(1, 0, 0, 16),
+			Position = UDim2.fromOffset(0, 38),
+			TextSize = 13,
+		}),
+		Rewards = e(C.Label, {
+			Text = `Credits at every star  ·  kill markers from {Mastery.MARKERS_FROM}★  ·  "{LevelRewards.titleName(
+				Mastery.titleId(id)
+			)}" title at {#Mastery.STARS}★`,
+			Size = UDim2.new(1, 0, 0, 16),
+			Position = UDim2.fromOffset(0, 58),
+			TextSize = 12,
+			Color = Theme.Dim,
+		}),
+	}
+
 	local inLineup = table.find(data.Lineup, id)
 	local slots = Progression.slotsFor(data)
 
@@ -328,14 +370,22 @@ local function AircraftDetail(props: any)
 		Preview = e(JetPreview, {
 			AirframeId = id,
 			Skin = Progression.skinFor(data, id),
-			Size = UDim2.fromScale(0.36, 0.5),
+			Mastery = stars,
+			Size = UDim2.fromScale(0.36, 0.4),
 			Position = UDim2.fromOffset(20, 90),
 		}),
 		Stats = e(C.Panel, {
-			Size = UDim2.new(0.36, 0, 0, 260),
-			Position = UDim2.new(0, 20, 0.5, 100),
+			Size = UDim2.new(0.36, 0, 0, 290),
+			Position = UDim2.new(0, 20, 0.4, 95),
 			Padding = 14,
 		}, statChildren),
+		Mastery = if entry and entry.Owned
+			then e(C.Panel, {
+				Size = UDim2.new(0.36, 0, 0, 100),
+				Position = UDim2.new(0, 20, 0.4, 395),
+				Padding = 12,
+			}, masteryChildren)
+			else nil,
 		Loadout = e(C.Panel, {
 			Size = UDim2.new(0.24, 0, 0, 230),
 			Position = UDim2.new(0.38, 20, 0, 90),

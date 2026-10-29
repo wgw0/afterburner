@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Achievements = require(Shared.Achievements)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
+local Mastery = require(Shared.Mastery)
 
 local C = require(script.Parent.Parent.Components)
 local Theme = require(script.Parent.Parent.Theme)
@@ -130,11 +131,24 @@ local function LevelTrack(props: any)
 			end
 		end
 	end
-	-- Titles from elsewhere (the login streak) only show once you have them
+	-- Titles from elsewhere (the login streak, then 5-star mastery) only show once you have them
 	for _, id in LevelRewards.OTHER_TITLES do
 		if data.Titles and data.Titles[id] then
 			table.insert(options, { id, LevelRewards.TITLES[id] })
 		end
+	end
+	local mastery = {}
+	for id in data.Titles or {} do
+		local name = Mastery.titleName(id)
+		if name then
+			table.insert(mastery, { id, name })
+		end
+	end
+	table.sort(mastery, function(a, b)
+		return a[2] < b[2]
+	end)
+	for _, option in mastery do
+		table.insert(options, option)
 	end
 	local locked = 0
 	for i, option in options do
