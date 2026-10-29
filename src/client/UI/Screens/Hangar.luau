@@ -1,8 +1,8 @@
 --!strict
--- Hangar, the home screen (UI-02): the selected jet on a turntable, your lineup, your other jets, the
--- Play button with the match status, and training.
+-- Hangar, the home screen (UI-02): the selected jet on a turntable, your lineup, your other jets and the
+-- Play button with the match status. Training is on its own servers (TRAINING in the top bar).
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnDrive() (the Ground Roamer), OnDetails(id),
---   OnLineup(ids) -> (ok, err), OnLesson(lessonId), Lessons ({ {id, name} }), TrainingNote.
+--   OnLineup(ids) -> (ok, err).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -176,29 +176,6 @@ local function Hangar(props: any)
 		then e(C.Label, { Text = lineupError, Color = Theme.Bad, TextSize = 13, LayoutOrder = 999, Wrap = true })
 		else nil
 
-	-- Training column
-	local trainingChildren: { [string]: any } = { Layout = C.List({ Gap = 8 }) }
-	trainingChildren.Title =
-		e(C.Label, { Text = "TRAINING", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
-	for i, lesson in props.Lessons do
-		trainingChildren[lesson.id] = e(C.Button, {
-			Text = `{i}. {lesson.name}`,
-			LayoutOrder = i,
-			TextSize = 14,
-			OnClick = function()
-				props.OnLesson(lesson.id)
-			end,
-		})
-	end
-	trainingChildren.Note = e(C.Label, {
-		Text = props.TrainingNote or "",
-		Color = Theme.Dim,
-		TextSize = 12,
-		Wrap = true,
-		AutoHeight = true,
-		LayoutOrder = 99,
-	})
-
 	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
 		Preview = if airframe
 			then e(JetPreview, {
@@ -294,12 +271,6 @@ local function Hangar(props: any)
 				LayoutOrder = 2,
 			}, ownedChildren),
 		}),
-		Training = e(C.Panel, {
-			Size = UDim2.fromOffset(240, 84 + #props.Lessons * 52), -- grows with the lessons (44 px buttons + gap)
-			Position = UDim2.new(1, -20, 0, 20),
-			AnchorPoint = Vector2.new(1, 0),
-			Padding = 14,
-		}, trainingChildren),
 	})
 end
 

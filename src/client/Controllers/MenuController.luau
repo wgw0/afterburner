@@ -14,6 +14,8 @@ local Packages = ReplicatedStorage:WaitForChild("Packages")
 local React = require(Packages:WaitForChild("React")) :: any
 local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
+local ServerRole = require(Shared.ServerRole)
 local Net = require(Shared.Net)
 
 local CameraController = require(script.Parent.CameraController)
@@ -91,10 +93,13 @@ local function navigate(screen: string, id: string?)
 	render()
 end
 
--- Keep the selected jet valid: something in the lineup.
+-- Keep the selected jet valid: something in the lineup (on a training server, any jet will do).
 local function fixSelection()
 	local data = PlayerDataController.data
 	if not data then
+		return
+	end
+	if ServerRole.isTraining() and state.selected and AircraftData.get(state.selected) then
 		return
 	end
 	if not (state.selected and table.find(data.Lineup, state.selected)) then
@@ -160,6 +165,23 @@ render = function()
 		OnLineup = function(ids)
 			return PlayerDataController:SetLineup(ids)
 		end,
+		Role = ServerRole.get(),
+		OnTravel = function(target: string)
+			setStatus(
+				if target == "Training" then "Heading to a training server…" else "Heading back to multiplayer…"
+			)
+			Net.Client.fire("Travel", target)
+		end,
+		VsAIRunning = ServerRole.isTraining() and ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight",
+		ModeName = match and match.modeName,
+		OnVsAI = function(modeId: string, difficulty: string, count: number)
+			setStatus("Starting Vs AI…")
+			Net.Client.fire("TrainingSetup", modeId, difficulty, count)
+		end,
+		OnFreeFlight = function()
+			setStatus("")
+			Net.Client.fire("TrainingSetup", "FreeFlight", "Normal", 0)
+		end,
 		Settings = SettingsController.values,
 		MenuScale = SettingsController:Get("MenuScale"),
 		OnSetting = function(key, value)
@@ -170,9 +192,6 @@ render = function()
 			local ok, why = TutorialController:Begin(lessonId, state.selected or "F5E")
 			setStatus(if ok then "Starting training…" else why)
 		end,
-		TrainingNote = if ReplicatedStorage:GetAttribute("GameMode") == "FreeFlight"
-			then "Pick a lesson to start."
-			else "Training runs on Free Flight servers.",
 	}))
 end
 
@@ -254,7 +273,7 @@ function MenuController:Start()
 	Net.Client.on(
 		"JetDestroyed",
 		function(jetId: number, killerUserId: number, cause: string, _: any, killerJetId: number?)
-			if jetId == myJetId then
+			if jetId == myJetId and cause ~= "Despawn" then -- a despawn (new setup, travel) isn't a loss
 				state.status = `{deathMessage(killerUserId, cause, killerJetId)}. Press PLAY or R to fly again.`
 			end
 		end
@@ -285,6 +304,12 @@ function MenuController:Start()
 	SettingsController.Changed:Connect(function()
 		render()
 	end)
+	-- The server's role and mode change the menu (in Studio, Travel switches the role in place)
+	ReplicatedStorage:GetAttributeChangedSignal("ServerRole"):Connect(function()
+		state.status = ""
+		render()
+	end)
+	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(render)
 
 	setVisible(FlightController.jet == nil and DriveController.vehicle == nil)
 	render()

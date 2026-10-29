@@ -31,6 +31,7 @@ local MatchRules = require(Shared.MatchRules)
 local Matchmaking = require(Shared.Matchmaking)
 local Net = require(Shared.Net)
 local Scale = require(Shared.Config.Scale)
+local ServerRole = require(Shared.ServerRole)
 local Signal = require(Shared.Util.Signal)
 
 local Teams = require(ServerScriptService.Server.Lib.Teams)
@@ -53,6 +54,7 @@ local MatchService = {
 
 local mode: MatchRules.ModeConfig = MatchRules.MODES.Dogfight
 local band: Matchmaking.Band = Matchmaking.band({}) -- BR band of the current match (MMK-01)
+local flying: { [Player]: string } = {} -- training servers: the jet each player last took up (any jet goes there)
 local state = "Waiting"
 local stateSince = 0
 local scores: { [any]: MatchRules.Score } = {}
@@ -159,11 +161,17 @@ local function canSpawn(identity: any): (boolean, number, number?)
 	return MatchRules.canSpawn(mode, pilot, os.clock())
 end
 
-local function spawnGate(player: Player, _airframeId: string): (boolean, CFrame?, string?)
+local refreshBand: () -> ()
+
+local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?, string?)
 	ensureScore(player, player.Name, false, player.UserId)
 	local allowed = canSpawn(player)
 	if not allowed then
 		return false, nil
+	end
+	if ServerRole.isTraining() and flying[player] ~= airframeId then
+		flying[player] = airframeId
+		refreshBand()
 	end
 	-- No BR cap on spawning (Will: let any lineup jet fly). The band still picks the AI's jets; proper
 	-- BR matching comes with separate match servers (MMK-02–04).
@@ -178,11 +186,13 @@ local function clearJets()
 end
 
 -- The match's BR band from the lineups of the players here (MMK-01), and AI jets to match it.
-local function refreshBand()
+refreshBand = function()
 	local lineups = {}
 	for _, player in humans() do
 		local data = DataService:GetData(player)
-		if data then
+		if ServerRole.isTraining() and flying[player] then
+			table.insert(lineups, { flying[player] }) -- Vs AI matches the jet they're trying out
+		elseif data then
 			table.insert(lineups, data.Lineup)
 		end
 	end
@@ -223,7 +233,8 @@ local function syncAIFill()
 	end
 	while #AIService:GetMatchPilots() < wanted do
 		local choices = Matchmaking.aiAirframes(band)
-		local pilot = AIService:CreatePilot("Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
+		local pilot =
+			AIService:CreatePilot(mode.AIDifficulty or "Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
 	end
 end
@@ -443,8 +454,8 @@ local function tick(dt: number)
 		end
 	elseif state == "Results" then
 		if elapsed >= mode.ResultsSeconds then
-			-- The next match is the next mode in the rotation
-			local nextId = MatchRules.nextMode(mode.Id)
+			-- The next match is the next mode in the rotation (not on training servers: a Vs AI match repeats)
+			local nextId = if ServerRole.isTraining() then mode.Id else MatchRules.nextMode(mode.Id)
 			if nextId ~= mode.Id then
 				mode = (MatchRules.MODES :: any)[nextId]
 				ReplicatedStorage:SetAttribute("GameMode", nextId)
@@ -465,11 +476,8 @@ local function tick(dt: number)
 	end
 end
 
-function MatchService:SetMode(modeId: string)
-	local config = (MatchRules.MODES :: any)[modeId]
-	if not config then
-		return
-	end
+local function applyMode(config: MatchRules.ModeConfig)
+	local modeId = config.Id
 	mode = config
 	ReplicatedStorage:SetAttribute("GameMode", modeId)
 	clearJets()
@@ -480,6 +488,26 @@ function MatchService:SetMode(modeId: string)
 	zoneState = nil
 	AIService:RemoveAll()
 	setState(if modeId == "FreeFlight" then "InProgress" else "Waiting")
+end
+
+function MatchService:SetMode(modeId: string)
+	local config = (MatchRules.MODES :: any)[modeId]
+	if config then
+		applyMode(config)
+	end
+end
+
+-- Training servers: a match of `modeId` against `count` AI pilots of one difficulty (no rewards there).
+function MatchService:StartVsAI(modeId: string, difficulty: string, count: number)
+	local base = (MatchRules.MODES :: any)[modeId]
+	if not base then
+		return
+	end
+	local config = table.clone(base)
+	config.AIFill = count + 1 -- AI fill counts the player
+	config.AIDifficulty = difficulty
+	config.DisplayName = `{base.DisplayName} vs AI`
+	applyMode(config)
 end
 
 function MatchService:GetMode(): MatchRules.ModeConfig
@@ -505,6 +533,7 @@ function MatchService:Init()
 		broadcastTimer = BROADCAST_INTERVAL
 	end)
 	Players.PlayerRemoving:Connect(function(player)
+		flying[player] = nil
 		scores[player] = nil
 		pilotStates[player] = nil
 		Teams.set(player, nil)
