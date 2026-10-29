@@ -25,6 +25,7 @@ local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local ConfigService = require(script.Parent.ConfigService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
+local ReportService = require(script.Parent.ReportService)
 
 local ADMINS: { number } = {} -- extra admin user ids (live config later, §31.1)
 local MAX_GRANT = 1e7
@@ -127,6 +128,29 @@ local COMMANDS: { [string]: Command } = {
 				end
 			end
 			return true, HttpService:JSONEncode({ table.unpack(list, math.max(#list - count + 1, 1), #list) })
+		end,
+	},
+	-- The most-reported pilots (CMP-03): { count? = 10 } -> [{ userId, count }], most first.
+	["reports.top"] = {
+		testOnly = false,
+		run = function(_admin, args)
+			local count = math.clamp(tonumber(args.count) or 10, 1, 100)
+			return true, HttpService:JSONEncode(ReportService:Top(count))
+		end,
+	},
+	-- One pilot's reports with the anti-cheat data attached to each: { userId }.
+	["reports.show"] = {
+		testOnly = false,
+		run = function(_admin, args)
+			local userId = tonumber(args.userId)
+			if not userId then
+				return false, "Give a userId"
+			end
+			local record = ReportService:Get(userId)
+			if not record then
+				return true, "No reports for that pilot"
+			end
+			return true, HttpService:JSONEncode(record)
 		end,
 	},
 	-- Resets a save to a fresh account.
