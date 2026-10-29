@@ -1020,7 +1020,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 
 - Motor: thrust acceleration for `MotorBurnTime`, then coast. Drag `∝ ρ v² × DragCoef`. Gravity on.
 - Guidance: proportional navigation: `a_cmd = N × Vc × LOS_rate`, with `N = NavConstant` (3–4). Limit `|a_cmd|` to `MaxG × g × (currentSpeed / launchSpeed)²` clamped to `[0.2, 1]` of max (so slow missiles turn badly).
-- Loft (ARH/SARH at long range): aim above the target for the first part of the flight to save energy *(Tier IV+)*.
+- Loft (ARH/SARH at long range): aim above the target for the first part of the flight to save energy *(Tier IV+)*. As built (MSL-08): missiles with `Loft = true` (AIM-120A/C/D, R-27ER, Skyflash, R-77, R-77-1, R-77M, Meteor: the radar missiles of Tier IV+ jets) loft on shots of 8 km or more. They steer at a point 30° above the target as seen from the missile (at most 6 km above it), fully while more than 70% of the launch range is left, easing onto the target itself by 40% (`Guidance.loftAim`; the seeker still has to see the real target). In simulation this arrives sooner and faster (AIM-120C at 17 km: 521 instead of 440 m/s) and stretches reach most at low altitude (AIM-120C at 12 km against a target at 1 km: a 715 m miss becomes a hit). Tests in `Loft.spec`. The HUD's launch zone doesn't count loft yet, so it reads a little short for lofting missiles.
 - Seeker: each tick, check the target is within `GimbalLimitDeg` of the missile's nose. If not, guidance is lost (the missile flies ballistic).
 - Guidance type:
   - `IR_*`: tracks the strongest heat source in the seeker cone (target or flares, §15).

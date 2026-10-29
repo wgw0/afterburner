@@ -34,6 +34,8 @@ The soft-launch build: the first version published to the live experience.
 - Report a cheater: an in-game report with the pilot's anti-cheat data attached for review.
 - Analytics: onboarding funnel, progression, economy, combat and balance events.
 - The game's version in Settings.
+- Long-range radar missiles (Tier IV+) loft: they climb on long shots and dive onto the target, reaching
+  further.
 - Flare programmes on Tier V+ jets: one press fires a short burst, and an optional automatic burst as a
   heat-seeker closes in.
 - Graphics settings: effects quality (Auto / Low / Medium / High), contrails and wingtip vapour on or off.

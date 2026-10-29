@@ -13,6 +13,7 @@ return {
 	MaxG = 30,
 	MinSpeed = 300,
 	MaxRange = 24000,
+	Loft = true, -- climbs on long shots (MSL-08)
 	MinRange = 1500,
 	SeekerCone = 30,
 	Gimbal = 50,
