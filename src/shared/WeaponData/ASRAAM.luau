@@ -22,4 +22,6 @@ return {
 	ProximityFuse = 7,
 	Damage = 140,
 	Lifetime = 24,
+	Model = "TailIR",
+	Length = 2.9,
 }

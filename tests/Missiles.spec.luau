@@ -58,6 +58,23 @@ return function(ctx)
 			bad2.MaxG = 500
 			expect(#WeaponData.validate("AIM9P", bad2)).toBe(1)
 		end)
+		it("every missile names a model family, and each family's model is drawable", function()
+			local bad = table.clone(WeaponData.getMissile("AIM9P") :: any)
+			bad.Model = "Sparrow"
+			expect(#WeaponData.validate("AIM9P", bad)).toBe(1)
+			local assets = game:GetService("ReplicatedStorage"):FindFirstChild("Assets")
+			local folder = assets and assets:FindFirstChild("Missiles")
+			expect(folder ~= nil).toBe(true)
+			for _, family in WeaponData.MISSILE_MODELS do
+				local model = (folder :: Instance):FindFirstChild(family) :: any
+				if not (model and model:IsA("Model") and model.PrimaryPart and model.PrimaryPart.Anchored) then
+					error(`Assets.Missiles.{family} needs an anchored PrimaryPart`, 0)
+				end
+				if not (model.PrimaryPart:FindFirstChild("Tail") and model:GetAttribute("Length")) then
+					error(`Assets.Missiles.{family} needs a Tail attachment and a Length attribute`, 0)
+				end
+			end
+		end)
 	end)
 
 	describe("Pack", function()

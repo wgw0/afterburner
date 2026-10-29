@@ -22,4 +22,6 @@ return {
 	ProximityFuse = 7,
 	Damage = 130,
 	Lifetime = 22,
+	Model = "CanardIR",
+	Length = 2.9,
 }

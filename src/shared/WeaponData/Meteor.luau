@@ -23,5 +23,7 @@ return {
 	ProximityFuse = 10,
 	Damage = 180,
 	Lifetime = 100,
+	Model = "MediumRadar",
+	Length = 3.65,
 	ActiveRange = 4800,
 }

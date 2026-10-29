@@ -23,5 +23,7 @@ return {
 	ProximityFuse = 14,
 	Damage = 220,
 	Lifetime = 80,
+	Model = "Phoenix",
+	Length = 3.96,
 	ActiveRange = 4800,
 }

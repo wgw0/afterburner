@@ -22,4 +22,6 @@ return {
 	ProximityFuse = 11,
 	Damage = 200,
 	Lifetime = 60,
+	Model = "LargeRadar",
+	Length = 4.78,
 }
