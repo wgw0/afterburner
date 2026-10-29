@@ -17,10 +17,10 @@ local SPECS: { [string]: Spec } = {
 	DefaultCamera = { kind = "enum", values = { "Cockpit", "Chase" }, default = "Cockpit" },
 	FieldOfView = { kind = "number", min = 55, max = 90, default = 70 },
 	Units = { kind = "enum", values = { "Imperial", "Metric" }, default = "Imperial" },
-	MasterVolume = { kind = "number", min = 0, max = 1, default = 1 },
-	CockpitVolume = { kind = "number", min = 0, max = 1, default = 1 },
-	MusicVolume = { kind = "number", min = 0, max = 1, default = 0.6 }, -- AUD-05
-	RadioVolume = { kind = "number", min = 0, max = 1, default = 1 }, -- radio calls (AUD-04)
+	MasterVolume = { kind = "number", min = 0, max = 1, default = 0.5 }, -- defaults set by Will (Nov 2026)
+	CockpitVolume = { kind = "number", min = 0, max = 1, default = 0.8 },
+	MusicVolume = { kind = "number", min = 0, max = 1, default = 0.2 }, -- AUD-05
+	RadioVolume = { kind = "number", min = 0, max = 1, default = 0.5 }, -- radio calls (AUD-04)
 	ReduceShake = { kind = "boolean", default = false },
 	ReduceFlashing = { kind = "boolean", default = false },
 	-- SET-03 accessibility
