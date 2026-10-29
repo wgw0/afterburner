@@ -19,6 +19,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mig21_generate as mig  # noqa: E402  (sets the shared generator module to the MiG-21bis)
 import f5e_paint as paint  # noqa: E402
+import livery_paint  # noqa: E402
 
 kit = mig.kit
 Y = kit.Y
@@ -168,6 +169,8 @@ def paint_airframe(P, N, part, ids, ao, scheme):
         mig.Y(569) - (ix - 0.60) * math.tan(mig.WING_SWEEP_LE) - mig.WING_TE_Y)
     r2, w2 = star_mask(np.abs(x) - ix, y - y0, wr)
     red, white = np.maximum(red, np.where(wing, r2, 0)), np.maximum(white, np.where(wing, w2, 0))
+    if scheme.get("markings") == "none":
+        red, white = red * 0, white * 0
     colour = colour * (1 - white[..., None]) + WHITE * white[..., None]
     colour = colour * (1 - red[..., None]) + RED * red[..., None]
 
@@ -181,6 +184,7 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     grime = fbm(P, 2.2, 4, seed=21, stretch=(3.0, 0.3, 3.0))
     grime = np.clip((grime - 0.52) * 2.0, 0, 1) * (0.05 + 0.05 * down)
     colour *= (1 - grime - 0.3 * line)[..., None]
+    colour = livery_paint.lines(scheme, colour, line)
     import cockpit_kit  # the cockpit well, seen through the canopy: cockpit-dark
 
     well = fus & cockpit_kit.well_mask(P)
@@ -188,8 +192,9 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     colour *= (0.55 + 0.45 * np.power(np.clip(ao, 0, 1), 0.8))[..., None]
 
     metal_paint = bool(scheme.get("metal"))
-    rough = (0.38 if metal_paint else 0.56) + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
-    metal = np.full(shape, 0.75 if metal_paint else 0.0, np.float32)
+    rough0, metal0 = livery_paint.base(scheme, metal_paint)
+    rough = rough0 + 0.08 * (fbm(P, 4.0, 3, seed=41) - 0.5) + 0.12 * grime + 0.12 * line
+    metal = np.full(shape, metal0, np.float32)
     painted_marks = (red + white) > 0.5
     metal = np.where(painted_marks | cone | antiglare | duct, 0.0, metal)
     rough = np.where(painted_marks, 0.5, rough)
@@ -197,6 +202,10 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     metal = np.where(lip | hot, 0.85, metal)
     rough = np.where(hot, 0.45, rough)
     rough = np.maximum(rough, soot * 0.85)
+    keep = cone | antiglare | lip | duct | hot | well
+    colour, rough, metal = livery_paint.trim(scheme, P, N, ao, line, colour, rough, metal, fus, wing, fw * chord,
+                                             [on("StabilatorL"), on("StabilatorR")], fin | rudder, keep,
+                                             Y(300), Y(1290) + 0.2)
     height = -line - 0.35 * rivet
     return colour, np.clip(rough, 0.05, 1), metal, height
 
@@ -249,7 +258,7 @@ def main():
     parser.add_argument("--preview", action="store_true")
     args = parser.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
-    scheme = SCHEMES[args.skin]
+    scheme = livery_paint.with_liveries(SCHEMES)[args.skin]
 
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
