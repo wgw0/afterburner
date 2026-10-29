@@ -5,7 +5,8 @@
 -- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again. DRIVE takes out the Ground
 -- Roamer (§36); the menu stays hidden while you drive.
 -- In a lobby (MMK-03) PLAY joins the matchmaking queue for the mode picked over it (it becomes CANCEL while
--- searching); on a match or training server it flies the selected jet.
+-- searching); on a match server you launch in the selected jet as the match starts (you already chose to
+-- play), and PLAY flies again after that; on a training server PLAY flies.
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
@@ -67,6 +68,7 @@ local state = {
 	-- The matchmaking queue (lobby only), from QueueState
 	queue = { state = "Idle", mode = "Any", startedAt = 0, message = nil :: string? },
 	teleportScreen = false,
+	autoLaunch = false, -- a match server: launch in the selected jet when the match starts
 }
 local myJetId: number? = nil
 
@@ -158,7 +160,9 @@ local function fixSelection()
 		return
 	end
 	if not (state.selected and table.find(data.Lineup, state.selected)) then
-		state.selected = data.Lineup[1]
+		-- The jet picked last time (maybe on another server), if it's still in the lineup
+		local saved = SettingsController:Get("SelectedJet")
+		state.selected = if saved and table.find(data.Lineup, saved) then saved else data.Lineup[1]
 	end
 end
 
@@ -172,6 +176,19 @@ render = function()
 	local allowed, reason = MatchController:SpawnStatus()
 	local status = state.status
 	local lobby = ServerRole.isLobby()
+	-- A match server: straight into the air as the match starts, in the jet picked
+	if state.autoLaunch and match and ServerRole.isMatch() and not FlightController.jet then
+		local airframe = state.selected and AircraftData.get(state.selected) :: any
+		if match.state == "InProgress" and allowed and airframe then
+			state.autoLaunch = false
+			spawn(state.selected)
+			return
+		elseif airframe and (match.state == "Countdown" or match.state == "Waiting") and status == "" then
+			status = if match.state == "Countdown"
+				then `Launching in the {airframe.DisplayName} in {match.timeLeft}s`
+				else `{reason}. You'll launch in the {airframe.DisplayName}.`
+		end
+	end
 	local queue = state.queue
 	if lobby then
 		allowed = PlayerDataController.data ~= nil and queue.state ~= "Found"
@@ -192,6 +209,7 @@ render = function()
 		Selected = state.selected,
 		OnSelect = function(id)
 			state.selected = id
+			SettingsController:Set("SelectedJet", id)
 			render()
 		end,
 		Status = status,
@@ -387,6 +405,7 @@ function MenuController:Start()
 		local index = table.find({ Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three }, input.KeyCode)
 		if index and data and data.Lineup[index] then
 			state.selected = data.Lineup[index]
+			SettingsController:Set("SelectedJet", state.selected)
 			spawn(state.selected)
 		elseif input.KeyCode == Enum.KeyCode.R and state.lastAirframe then
 			spawn(state.lastAirframe)
@@ -406,6 +425,7 @@ function MenuController:Start()
 	end)
 	-- The server's role and mode change the menu (in Studio, Travel switches the role in place)
 	ReplicatedStorage:GetAttributeChangedSignal("ServerRole"):Connect(function()
+		state.autoLaunch = ServerRole.isMatch()
 		state.status = ""
 		state.queue.state = "Idle"
 		state.queue.message = nil
@@ -414,6 +434,7 @@ function MenuController:Start()
 	end)
 	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(render)
 
+	state.autoLaunch = ServerRole.isMatch()
 	setVisible(FlightController.jet == nil and DriveController.vehicle == nil)
 	render()
 	-- The match status line counts down; refresh it twice a second while the menu is up

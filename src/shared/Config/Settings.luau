@@ -3,6 +3,8 @@
 -- Saved in the profile; the client changes them through SettingsUpdate and the server keeps only
 -- known keys with valid values (sanitize), so a modified client can't store anything else.
 
+local AircraftData = require(script.Parent.Parent.AircraftData)
+
 export type Spec =
 	{ kind: "enum", values: { string }, default: string }
 	| { kind: "number", min: number, max: number, default: number }
@@ -23,6 +25,15 @@ local SPECS: { [string]: Spec } = {
 	Subtitles = { kind = "boolean", default = false }, -- voice lines and warning tones as text
 	HUDColour = { kind = "enum", values = { "Green", "Cyan", "White" }, default = "Green" },
 	MenuScale = { kind = "number", min = 0.8, max = 1.4, default = 1 }, -- menus, banner, scoreboard
+	-- The jet picked in the hangar, so a match server launches you in it (it follows you between servers)
+	SelectedJet = (function(): Spec
+		local ids = {}
+		for id in AircraftData.getAll() do
+			table.insert(ids, id)
+		end
+		table.sort(ids)
+		return { kind = "enum", values = ids, default = "F5E" }
+	end)(),
 	-- The mode PLAY queues for (MMK-03, UI-05)
 	QueueMode = {
 		kind = "enum",
