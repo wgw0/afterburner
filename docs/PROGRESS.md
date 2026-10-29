@@ -253,6 +253,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **SNS-07** TWS
   - Not started. Related radar work done: lock failure reasons on the HUD, pulse radars that see close targets in clutter, zooming cone and situation scopes (DEVELOPMENT.md §14.2).
 - [ ] **CMS-04** Auto-dispense programmes (Tier V+, for example "2 flares every 0.5 s")
+  - Built: Tier V+ jets fire a 4-flare programme per press (2 × 2, 0.5 s apart), and with Automatic flares on (default) once per heat-seeker about 2 s before it arrives (DEVELOPMENT.md §15.4). Checked in Studio.
 - [x] **MCH-05** Team Deathmatch, team balancing
   - West v East, 30 team kills or 10 minutes. Players join the side with fewer players, AI evens the numbers (and leaves the bigger side when a player joins), teams spawn over their own coast. No friendly fire: guns, missile blasts and fuses, seekers, radar locks, the RWR and AI targeting all skip teammates (`Lib/Teams`). Teammates are blue on the HUD and scopes; banner, scoreboard and results show the teams; the winning team gets the win reward. `MatchRules.spec` covers the rules. Checked in play (4v4 with AI: every kill cross-team, scores matched deaths) and by Will. *Two humans on one team still to see in a multiplayer test.*
   - Servers alternate Dogfight and Team Deathmatch each match (`MatchRules.ROTATION`) until mode select (UI-05). Checked in play and by Will.

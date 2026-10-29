@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Progression = require(Shared.Progression)
 local Countermeasures = require(Shared.Countermeasures)
 local Environment = require(Shared.Config.Environment)
@@ -26,6 +27,7 @@ local WeaponData = require(Shared.WeaponData)
 
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
+local DataService = require(script.Parent.DataService)
 local SensorService = require(script.Parent.SensorService)
 local Teams = require(ServerScriptService.Server.Lib.Teams)
 
@@ -67,6 +69,7 @@ type Missile = {
 	virtualRadar: { position: Vector3, velocity: Vector3 }?,
 	lostTrack: boolean,
 	arh: Guidance.ARHState?, -- active radar missiles (MSL-07)
+	autoFlared: boolean?, -- its target's automatic flare programme has fired for it (CMS-04)
 }
 
 local MissileService = {
@@ -338,9 +341,74 @@ function MissileService:DeployCountermeasure(jet: Jet, kind: string)
 	setAttributes(loadout)
 end
 
+-- Flare programmes (CMS-04): jets running one, so presses during it don't stack another
+local programmes: { [number]: boolean } = {}
+
+local function hasProgramme(jet: Jet): boolean
+	local airframe = AircraftData.get(jet.airframeId) :: any
+	return airframe ~= nil and Countermeasures.hasProgramme(airframe.Tier)
+end
+
+-- Fires a jet's flare programme: salvos of flares a short interval apart (Countermeasures.PROGRAMME).
+local function runProgramme(jet: Jet)
+	if programmes[jet.id] then
+		return
+	end
+	programmes[jet.id] = true
+	task.spawn(function()
+		local programme = Countermeasures.PROGRAMME
+		for salvo = 1, programme.salvos do
+			if not AircraftService:GetJetById(jet.id) then
+				break
+			end
+			for _ = 1, programme.perSalvo do
+				MissileService:DeployCountermeasure(jet, "Flare")
+			end
+			if salvo < programme.salvos then
+				task.wait(programme.interval)
+			end
+		end
+		programmes[jet.id] = nil
+	end)
+end
+
+-- Whether a jet's pilot has automatic flares on (players only; AI pilots dispense for themselves).
+local function autoFlaresOn(jet: Jet): boolean
+	local data = jet.pilot and DataService:GetData(jet.pilot)
+	return data ~= nil and data.Settings ~= nil and data.Settings.AutoFlares ~= false
+end
+
+-- A heat-seeker guiding on a Tier V+ jet with auto flares on fires its programme once, about
+-- Countermeasures.AUTO_TIME before it would arrive.
+local function checkAutoFlares(missile: Missile)
+	if missile.autoFlared or missile.lostTrack or not missile.guiding or not WeaponData.isIR(missile.spec) then
+		return
+	end
+	local target = missile.targetId and AircraftService:GetJetById(missile.targetId)
+	if not (target and target.pilot and hasProgramme(target)) then
+		return
+	end
+	local offset = target.root.Position - missile.state.position
+	local distance = Units.toMetres(offset.Magnitude)
+	local closing = (missile.state.velocity - Units.velocityFromStuds(target.root.AssemblyLinearVelocity)):Dot(
+		offset.Unit
+	)
+	if Countermeasures.autoDue(distance, closing) then
+		missile.autoFlared = true
+		if autoFlaresOn(target) then
+			runProgramme(target)
+		end
+	end
+end
+
 local function onCountermeasure(player: Player, kind: string)
 	local jet = AircraftService:GetJet(player)
-	if jet then
+	if not jet then
+		return
+	end
+	if kind == "Flare" and hasProgramme(jet) then
+		runProgramme(jet)
+	else
 		MissileService:DeployCountermeasure(jet, kind)
 	end
 end
@@ -542,6 +610,7 @@ local function stepMissiles(dt: number)
 			continue
 		end
 		missile.state = nextState
+		checkAutoFlares(missile)
 		local spent = nextState.age > missile.spec.MotorBurnTime
 			and nextState.velocity.Magnitude < missile.spec.MinSpeed * 0.6
 		if nextState.age >= missile.spec.Lifetime or spent then
