@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 15 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
+| 6 Content and polish for a soft launch | 17 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -298,8 +298,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - A SETTINGS tab in the menu (`UI/Screens/Settings`): control scheme, mouse sensitivity, invert pitch, default view, field of view, HUD units, master and cockpit volume, Reduce flashing. Changes apply at once and save through `SettingsController`; − / + buttons around a bar work with mouse, touch and gamepad. Units now switches the HUD (km/h, metres, m/s) and Reduce flashing holds HUD warnings and RWR marks steady and dims explosions and muzzle flashes. Checked in play and by Will. *The menu only shows between flights; ReduceShake waits for a camera shake to reduce.*
 - [x] **SET-03** Accessibility options
   - Subtitles for Betty's lines and the RWR warnings, HUD colour presets (green, cyan, white: cyan and white stay clear of the red and amber warnings), menu size 80–140% (menus, banner, scoreboard), Reduce flashing (SET-02), and shapes as well as colours on the scopes (teammates round, enemies square). Checked in play and by Will. *Reduce shake waits for a camera shake to reduce.*
-- [ ] **ANL-02** Onboarding funnel
-- [ ] **ANL-04** Combat and balance events
+- [x] **ANL-02** Onboarding funnel
+  - Once per player: joined, lesson 1, lesson 3, first match, first kill, first research (`TelemetryService`, DEVELOPMENT.md §30.3); lessons report themselves to the server. Tier progression logged too. Checked in play (via `telemetry.recent`) and by Will. *The Creator Dashboard fills in on the published game.*
+- [x] **ANL-04** Combat and balance events
+  - Scored matches: Spawn, Kill (killer and victim jets), ShotDown (jet, cause), AirframeResult (win rate per jet), MissileFired / MissileResult (hit rate per missile), MatchEnded (duration, mode, BR band). Checked in play and by Will.
 - [ ] **OPS-01** ConfigService with live overrides
 - [ ] **CMP-01** Text filtering service for callsigns and squadron names
 - [ ] **CMP-03** Report-cheater flow
