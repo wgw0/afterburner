@@ -1643,7 +1643,10 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **Hand-off**: the matchmaker appends `{code, place, mode, entries}` to `lobby:{JobId}`; each lobby with queued players takes its list every 2 s and teleports its players (3 tries, then `TeleportInitFailed` retries); anyone who can't get there goes back in at their original join time.
 - **Match server**: waits for everyone sent (or 30 s), runs one match with the matchmaker's BR band, then `MatchOver` sends everyone to a public lobby server. LEAVE MATCH in the top bar does the same for one player.
 - **Studio** can't reserve servers or teleport: the queue is in plain tables and a formed match, Travel or the trip home switch this server's role in place.
-- **Telemetry** (MMK-06): `QueueJoined`, `QueueLeft` and `QueueMatched` (wait time), `MatchFormed` (longest wait, players, BR spread).
+- **Telemetry** (MMK-06; rules in `MatchmakingStats`, tested):
+  - Lobby: `QueueJoined`, `QueueLeft` and `QueueMatched` (value: the wait in s; mode). `MatchFormed` (value: the longest wait; mode, BR spread; players and AI seats in the log). `TeleportFailed` (a teleport that never started after 3 tries, or `TeleportInitFailed` after its retries).
+  - Match server: `MatchArrived` when it stops waiting (value: % of the pilots sent who made it; mode, how many were sent). `MatchQuality` at the end (value: closeness 0–100, (second + 1) / (first + 1) of the two teams' kills, the tickets left in Air Superiority, or the top two pilots' kills: 100 is level, 1–0 is 50, 10–0 is 9; mode, humans).
+  - Admin `matchmaking.stats` on a lobby: wait times (median, 90th percentile, longest) of the last 500 players matched and of those who gave up, who's queued now, and the matches formed while it held the matchmaker lease (average players and spread, AI seats, by mode). The Creator Dashboard has the same events across all servers.
 - **Scale**: one sorted map is read 200 at a time up to 2,000 queued players. Past that, shard the queue by BR bucket (§25.2).
 
 ---
@@ -1841,7 +1844,7 @@ end
 
 - **Wrapper** (`Lib/Telemetry`): `event(name, value, fields, player, primary)` sends two custom fields plus the environment; `primary` picks which two (else the first two alphabetically). Every event is also kept in memory; the admin command `telemetry.recent { count, name }` shows the latest (works in test and live). `onboarding(player, step, name)` and `progression(player, path, level)` wrap the matching AnalyticsService calls.
 - **Onboarding funnel** (ANL-02, `TelemetryService`, each step once per player, saved in `data.Onboarding`): 1 Joined, 2 Lesson1 (Basic flight done), 3 Lesson3 (Guns done), 4 FirstMatch, 5 FirstKill, 6 FirstResearch. Lessons report themselves (`LessonCompleted`, training servers only; saved in `data.Lessons`). Progression path "Tier": the highest tier owned (`data.TopTier`).
-- **Balance events** (ANL-04, scored matches only), value 1 unless said: `Spawn` (airframe, mode), `Kill` (airframe, victim airframe), `ShotDown` (airframe, cause), `AirframeResult` (airframe, mode; 1 won / 0 lost: the mean is the win rate), `MissileFired` and `MissileResult` (class, weapon; 1 hit / 0: the mean is the hit rate). Plus `MatchEnded` (value: duration in s; mode, BR band top), `Death` (cause, mode), `QueueMatched` / `MatchFormed` (waits, BR spread), `AntiCheatStrike`, economy events.
+- **Balance events** (ANL-04, scored matches only), value 1 unless said: `Spawn` (airframe, mode), `Kill` (airframe, victim airframe), `ShotDown` (airframe, cause), `AirframeResult` (airframe, mode; 1 won / 0 lost: the mean is the win rate), `MissileFired` and `MissileResult` (class, weapon; 1 hit / 0: the mean is the hit rate). Plus `MatchEnded` (value: duration in s; mode, BR band top), `Death` (cause, mode), `QueueMatched` / `MatchFormed` / `MatchArrived` / `MatchQuality` (waits, BR spread, arrivals, closeness; §25.6), `AntiCheatStrike`, economy events.
 - A per-jet K/D is `Kill` ÷ `ShotDown` by airframe; the weekly balance report (ANL-05) reads these in the Creator Dashboard.
 
 | ID | Task | Phase |
