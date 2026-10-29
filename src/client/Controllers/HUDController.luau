@@ -48,8 +48,8 @@ local FRIENDLY = Color3.fromRGB(90, 165, 255) -- teammates (team modes)
 local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
-local BOX_WIDTH_DEG = 28
-local BOX_HEIGHT_DEG = 22
+local BOX_WIDTH_DEG = 29.5 -- about 5% roomier than 28 × 22 (Will), so the readouts sit further apart
+local BOX_HEIGHT_DEG = 23.2
 local LADDER_STEP = 5 -- degrees between pitch rungs
 
 local HUDController = {
