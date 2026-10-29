@@ -123,6 +123,35 @@ local function TopBar(props: any)
 	})
 end
 
+-- The live event and message of the day (LiveConfig event / motd, OPS-01), at the top of the hangar.
+local function NewsBanner(props: any)
+	local event, motd = props.Event or "", props.Motd or ""
+	if event == "" and motd == "" then
+		return nil
+	end
+	local text = if event ~= "" and motd ~= ""
+		then `{string.upper(event)}  ·  {motd}`
+		elseif event ~= "" then string.upper(event)
+		else motd
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(math.min(80 + #text * 8, 900), 34),
+		Position = UDim2.new(0.5, 0, 0, 14),
+		AnchorPoint = Vector2.new(0.5, 0),
+		StrokeColor = Theme.Accent,
+		StrokeThickness = 1.5,
+		Padding = 6,
+	}, {
+		Text = e(C.Label, {
+			Text = text,
+			Size = UDim2.fromScale(1, 1),
+			Align = "Center",
+			Bold = true,
+			TextSize = 14,
+			Color = if event ~= "" then Theme.Accent else Theme.Text,
+		}),
+	})
+end
+
 local function App(props: any)
 	local data = props.Data
 	if not data then
@@ -234,7 +263,10 @@ local function App(props: any)
 			Size = UDim2.new(1, 0, 1, if screen == "Results" then 0 else -Theme.TopBar),
 			Position = UDim2.fromOffset(0, if screen == "Results" then 0 else Theme.TopBar),
 			BackgroundTransparency = 1,
-		}, { Screen = body }),
+		}, {
+			Screen = body,
+			News = if screen == "Hangar" then e(NewsBanner, { Event = props.Event, Motd = props.Motd }) else nil,
+		}),
 	})
 end
 

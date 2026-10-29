@@ -19,6 +19,7 @@ local React = require(Packages:WaitForChild("React")) :: any
 local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local LiveConfig = require(Shared.LiveConfig)
 local ServerRole = require(Shared.ServerRole)
 local Streak = require(Shared.Streak)
 local Net = require(Shared.Net)
@@ -332,6 +333,8 @@ render = function()
 			SettingsController:Set(key, value)
 		end,
 		FirstSession = TutorialController:FirstSession(),
+		Event = LiveConfig.get("event"),
+		Motd = LiveConfig.get("motd"),
 		OnFinishOnboarding = function()
 			Net.Client.fire("FinishOnboarding")
 		end,
@@ -590,6 +593,12 @@ function MenuController:Start()
 		render()
 	end)
 	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(render)
+	-- Live config changes (an event, the message of the day, a jet's BR) show at once
+	ReplicatedStorage.AttributeChanged:Connect(function(name)
+		if name:sub(1, 3) == "LC_" then
+			render()
+		end
+	end)
 
 	state.autoLaunch = ServerRole.isMatch()
 	setVisible(FlightController.jet == nil and DriveController.vehicle == nil)

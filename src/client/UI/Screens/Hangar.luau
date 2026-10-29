@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
+local LiveConfig = require(Shared.LiveConfig)
 
 local UI = script.Parent.Parent
 local ChallengesPanel = require(UI.ChallengesPanel)
@@ -100,7 +101,7 @@ local function slotCard(props: any)
 			TextSize = 17,
 		}),
 		Info = e(C.Label, {
-			Text = `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {airframe.BattleRating}  ·  {props.RP} RP`,
+			Text = `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(props.Id)}  ·  {props.RP} RP`,
 			Size = UDim2.new(1, -50, 0, 18),
 			Position = UDim2.fromOffset(42, 34),
 			Color = Theme.Dim,
@@ -150,7 +151,7 @@ local function Hangar(props: any)
 	end
 	table.sort(owned, function(a, b)
 		local aa, bb = AircraftData.get(a) :: any, AircraftData.get(b) :: any
-		return (aa and aa.BattleRating or 0) < (bb and bb.BattleRating or 0)
+		return (aa and LiveConfig.battleRating(a) or 0) < (bb and LiveConfig.battleRating(b) or 0)
 	end)
 	local function setLineup(ids)
 		setPending(true)
@@ -176,7 +177,7 @@ local function Hangar(props: any)
 			LayoutOrder = i,
 		}, {
 			Name = e(C.Label, {
-				Text = `{info and info.DisplayName or id}  ·  BR {info and info.BattleRating or "?"}`,
+				Text = `{info and info.DisplayName or id}  ·  BR {info and LiveConfig.battleRating(id) or "?"}`,
 				Size = UDim2.new(1, -96, 1, 0),
 				TextSize = 14,
 				Color = if index then Theme.Text else Theme.Dim,
@@ -230,7 +231,7 @@ local function Hangar(props: any)
 		}),
 		JetInfo = e(C.Label, {
 			Text = if airframe
-				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {airframe.BattleRating}  ·  {airframe.Branch}`
+				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}`
 				else "",
 			Position = UDim2.new(0.5, 0, 0.68, 42),
 			AnchorPoint = Vector2.new(0.5, 0),

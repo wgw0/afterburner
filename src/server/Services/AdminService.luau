@@ -2,7 +2,8 @@
 -- Admin commands (DEVELOPMENT.md §31.2, OPS-02; data commands DAT-05). Called through AdminCommand
 -- (command, args) -> (ok, message). Every call is checked here; the client's debug panel is only a UI.
 --   Admins: the place's creator (or group owner), anyone listed in ADMINS, and everyone in Studio.
---   Data-changing commands only run in the test environment; inspection and kicks work everywhere.
+--   Data-changing commands only run in the test environment; inspection, kicks and live config (config.*,
+--   which exists to change live servers) work everywhere.
 --   Owners (the creator, group owner or ADMINS; not everyone in Studio) also get full access to every
 --   jet, module, skin and lineup slot, in test and live (Progression.unlockEverything).
 -- Every command is logged to analytics.
@@ -21,6 +22,7 @@ local Progression = require(Shared.Progression)
 local TechTree = require(Shared.TechTree)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
+local ConfigService = require(script.Parent.ConfigService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 
@@ -82,6 +84,35 @@ local COMMANDS: { [string]: Command } = {
 			view.Version = data.Version
 			view.LastWinDay = data.LastWinDay
 			return true, HttpService:JSONEncode(view)
+		end,
+	},
+	-- Live config (OPS-01): change a value on every server of this experience, no update needed.
+	-- config.set { key, value }, e.g. { key = "economy.xp", value = 2 } or { key = "br.F16A", value = 5 }
+	["config.set"] = {
+		testOnly = false,
+		run = function(admin, args)
+			if type(args.key) ~= "string" or args.value == nil then
+				return false,
+					"Usage: config.set { key, value } (keys: economy.xp / .credits / .rp, event, motd, br.<Jet>)"
+			end
+			return ConfigService:Set(admin, args.key, args.value)
+		end,
+	},
+	["config.clear"] = {
+		testOnly = false,
+		run = function(admin, args)
+			if type(args.key) ~= "string" then
+				return false, "Usage: config.clear { key }"
+			end
+			return ConfigService:Clear(admin, args.key)
+		end,
+	},
+	-- The overrides in force and the last changes (who, when, what)
+	["config.show"] = {
+		testOnly = false,
+		run = function()
+			return true,
+				HttpService:JSONEncode({ overrides = ConfigService:Overrides(), recent = ConfigService:Audit(10) })
 		end,
 	},
 	-- The latest analytics events this server sent (ANL-04), newest last: { count? = 30, name? = filter }.

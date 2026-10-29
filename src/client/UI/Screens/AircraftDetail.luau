@@ -14,6 +14,7 @@ local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
 local Skins = require(Shared.Skins)
 local WeaponData = require(Shared.WeaponData)
+local LiveConfig = require(Shared.LiveConfig)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -318,7 +319,7 @@ local function AircraftDetail(props: any)
 			TextSize = 30,
 		}),
 		Info = e(C.Label, {
-			Text = `Tier {airframe.Tier}  ·  BR {airframe.BattleRating}  ·  {airframe.Branch}`,
+			Text = `Tier {airframe.Tier}  ·  BR {LiveConfig.battleRating(id)}  ·  {airframe.Branch}`,
 			Size = UDim2.fromOffset(600, 20),
 			Position = UDim2.fromOffset(152, 58),
 			Color = Theme.Dim,
