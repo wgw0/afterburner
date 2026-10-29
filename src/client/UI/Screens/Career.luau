@@ -288,9 +288,11 @@ local function Career(props: any)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}
+	-- In rarity order (Common first, Legendary last), then in list order within a rarity
 	for i, def in Achievements.LIST do
 		if not def.secret or earned[def.id] then
-			cards[def.id] = card(def, earned[def.id], i)
+			local rank = table.find(Achievements.RARITIES, def.rarity) or #Achievements.RARITIES
+			cards[def.id] = card(def, earned[def.id], rank * 100 + i)
 		end
 	end
 
