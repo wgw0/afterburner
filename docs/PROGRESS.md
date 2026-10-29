@@ -179,6 +179,8 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 - Later playtest feedback (Will): the Super 530F and other radar missiles wouldn't lock and nothing said why.
   - The HUD says why a lock failed or broke, for 3 s above the missile: NO LOCK / LOCK BROKEN / LOCK LOST with OUT OF RADAR RANGE, NOT IN RADAR CONE, GROUND CLUTTER, TARGET NOTCHING or TERRAIN IN THE WAY; NO RADAR LOCK when firing a radar missile unlocked.
   - Pulse radars looking down into clutter now see targets within 35% of their range (`Signature.CLUTTER_RANGE`) instead of nothing. Checked in play by Will: locks work much better.
+- Supercruise (Will): every jet could hover around Mach 1 on dry thrust, so the Typhoon wasn't special.
+  - Stronger transonic drag plus a per-airframe `WaveDrag` factor: only the Typhoon, F-22A and Tempest stay supersonic without afterburner (Mach 1.28 / 1.45 / 1.33 at 10 km); afterburner gains thrust above Mach 0.9. Tests in `FlightModel.spec`. Checked in play by Will.
 
 **Also done in Phase 4:** AI difficulty profiles (Easy/Normal/Hard/Ace) and the Extend state, early parts of AI-04/05; debug panel buttons for mode switching, the stress mode, ending a match and forcing the touch UI; server step-cost meter (`ServerStepMs`, `ServerStepPeakMs`, `ServerHz` attributes). Tests: 202 → 269.
 
