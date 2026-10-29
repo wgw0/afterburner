@@ -983,6 +983,8 @@ CombatService.JetDamaged: Signal
 
 The server pushes the component state to the **pilot** (`DamageState` remote) so the client's flight model applies the effects and the HUD shows a damage diagram.
 
+*As built (DMG-05, November 2026):* `UI/DamageDiagram` draws a small top-down outline of the jet (wings, tail, fuselage, engine, cockpit) above the fuel readout, placed by `HUDController`. It appears once anything is damaged and stays until the next jet. Each part follows `DamageModel.condition`: faint in the HUD colour when fine (75%+), amber when damaged, red when critical (under 40%), a red outline once lost; FIRE shows beside it while the engine burns. Checked in play: an R-60 into an F-15E left the engine at 15% (red) and the rest fine.
+
 ### 12.4 Kill credit
 
 - The killer is the last player to damage the jet within 15 s *(tune)*. If none, and the death was a crash, the last damager within 30 s gets a "forced crash" kill.
