@@ -3,8 +3,11 @@
 --   Loadout: each jet carries its airframe's missiles, flares and chaff; the pilot picks a missile type.
 --   IR lock: the server tracks what each IR missile's seeker would see from the shooter and how long
 --     it's been held (LockTime). Radar missiles need the shooter's radar lock (SensorService).
+--     Helmet cueing (MSL-09): with an advanced heat-seeker selected, the jet the pilot is looking at (sent
+--     by the client) is the target if the missile could lock it anywhere in its gimbal.
 --   Flight: every missile is simulated here with Guidance. IR seekers can be decoyed by flares (one
---     roll per flare); radar missiles go dumb if the lock is lost, or can be decoyed by chaff.
+--     roll per flare; imaging seekers one roll per burst); radar missiles go dumb if the lock is lost, or
+--     can be decoyed by chaff.
 --   Detonation: proximity fuse or ground impact. Damage falls off with distance.
 --   Clients get spawn/detonate events reliably and positions ~15 Hz, packed, unreliable.
 
@@ -50,6 +53,7 @@ type Loadout = {
 	chaff: number,
 	irTarget: number?,
 	irSince: number,
+	cueId: number, -- the jet the pilot is looking at (helmet cueing), 0 = none
 	lastLaunch: number,
 	nextHardpoint: number,
 	hardpoints: { Attachment },
@@ -133,6 +137,7 @@ local function onJetSpawned(jet: Jet)
 		chaff = cm.Chaff,
 		irTarget = nil,
 		irSince = 0,
+		cueId = 0,
 		lastLaunch = 0,
 		nextHardpoint = 1,
 		hardpoints = hardpoints,
@@ -145,8 +150,16 @@ local function throttleOf(jet: Jet): (number, boolean)
 	return (jet.model:GetAttribute("Throttle") :: number?) or 0.85, jet.model:GetAttribute("Afterburner") == true
 end
 
--- Best IR target for a shooter's selected IR missile (closest to the nose), or nil.
-local function bestIRTarget(shooter: Jet, spec: WeaponData.Missile): number?
+-- Best IR target for a shooter's selected IR missile: the jet the pilot is looking at if the missile is
+-- helmet-cued and could lock it, else the one closest to the nose; or nil.
+local function bestIRTarget(shooter: Jet, spec: WeaponData.Missile, cueId: number): number?
+	local cued = cueId ~= 0 and AircraftService:GetJetById(cueId)
+	if cued and cued.id ~= shooter.id and not Teams.areFriends(shooter.identity, cued.identity) then
+		local throttle, afterburner = throttleOf(cued)
+		if Guidance.irCueLockable(spec, shooter.root.CFrame, cued.root.CFrame, throttle, afterburner) then
+			return cued.id
+		end
+	end
 	local bestId, bestDot = nil, -2
 	for id, other in AircraftService:GetJets() do
 		if id ~= shooter.id and not Teams.areFriends(shooter.identity, other.identity) then
@@ -166,7 +179,9 @@ local function updateIRTracking()
 	local now = os.clock()
 	for _, loadout in loadouts do
 		local slot = loadout.slots[loadout.selected]
-		local target = if slot and WeaponData.isIR(slot.weapon) then bestIRTarget(loadout.jet, slot.weapon) else nil
+		local target = if slot and WeaponData.isIR(slot.weapon)
+			then bestIRTarget(loadout.jet, slot.weapon, loadout.cueId)
+			else nil
 		if target ~= loadout.irTarget then
 			loadout.irTarget = target
 			loadout.irSince = now
@@ -740,6 +755,13 @@ function MissileService:Init()
 		if loadout and loadout.slots[index] then
 			loadout.selected = index
 			setAttributes(loadout)
+		end
+	end)
+	Net.Server.on("IRCue", function(player: Player, targetId: number)
+		local jet = AircraftService:GetJet(player)
+		local loadout = jet and loadouts[jet.id]
+		if loadout then
+			loadout.cueId = targetId
 		end
 	end)
 	Net.Server.on("MissileFire", onMissileFire)

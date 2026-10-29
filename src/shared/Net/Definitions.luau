@@ -63,6 +63,8 @@ local definitions: { [string]: Definition } = {
 	SelectWeapon = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 6, perSecond = 4 } },
 	-- Lock a radar contact (0 = unlock)
 	RadarLockRequest = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 6, perSecond = 4 } },
+	-- The jet the pilot is looking at, for a helmet-cued heat-seeker (MSL-09; 0 = none)
+	IRCue = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 8, perSecond = 6 } },
 	-- Your radar lock changed: targetJetId (0 = none), state "Locked" | "Lost" | "None"
 	LockState = { direction = "ServerToClient", args = { "integer", "string" } },
 	-- Who's painting you: { { id = jetId, kind = "Search"|"Lock"|"Launch", position = Vector3 } }

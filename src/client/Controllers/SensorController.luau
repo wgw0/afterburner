@@ -10,6 +10,9 @@
 --     tone and the HUD). The server keeps its own copy and decides what can actually be fired.
 --     The lock key cages the seeker (off, silent) and uncages it again. With none of the selected
 --     missile left, the seeker is off and nothing is shown as lockable.
+--   Helmet cueing (MSL-09): an advanced heat-seeker locks the jet you're looking at (within CUE_CONE of the
+--     camera's view) anywhere inside its gimbal, before falling back to the one nearest the nose. The cued
+--     jet is sent to the server, which makes the same check.
 --   TWS (SNS-07): with an active radar missile selected, no hard lock and a track-while-scan radar (Tier IV+
 --     pulse-Doppler), the radar contact nearest the nose is the TWS target: the missile can go at it unlocked.
 --   RWR: threats the server says are painting you.
@@ -36,6 +39,7 @@ local RADAR_LOCK_ON = 1.0 -- seconds a radar contact is held before the lock req
 local VISUAL_RANGE = 3000 -- real metres
 local CONTRAIL_VISUAL_RANGE = 5000
 local MESSAGE_TIME = 3 -- seconds a lock message stays on the HUD
+local CUE_CONE = math.rad(10) -- how close to where you look a jet must be to cue a helmet-sighted seeker
 
 -- Why the radar can't see a target, in HUD words (Signature.radarDetects reasons, plus terrain)
 local REASONS = {
@@ -71,6 +75,7 @@ local SensorController = {
 	irTargetId = 0, -- what the selected heat-seeker sees, 0 = nothing
 	irHeldFor = 0, -- seconds the seeker has held irTargetId
 	irLocked = false, -- held for the missile's LockTime
+	irCued = false, -- the IR target came from the helmet cue (MSL-09)
 	seekerCaged = false, -- the pilot switched the heat-seeker off (lock key)
 	threats = {} :: { Threat },
 	message = "", -- why a lock failed or broke, shown on the HUD until messageUntil
@@ -80,6 +85,7 @@ local SensorController = {
 
 local losParams: RaycastParams
 local lastMissileId = ""
+local sentCueId = 0
 
 local function clearLineOfSight(from: Vector3, to: Vector3): boolean
 	return workspace:Raycast(from, to - from, losParams) == nil
@@ -309,6 +315,34 @@ local function update()
 			Net.Client.fire("RadarLockRequest", self.acquiringId)
 		end
 	end
+	-- Helmet cue: the jet nearest where you're looking, if the missile could lock it in its gimbal
+	local cueId = 0
+	if missile and Guidance.isImaging(missile) and not self.seekerCaged then
+		local camera = workspace.CurrentCamera
+		local look = if camera then camera.CFrame.LookVector else myCF.LookVector
+		local bestCue = math.cos(CUE_CONE)
+		for id, contact in self.contacts do
+			local otherRoot = contact.model.PrimaryPart
+			if contact.friendly or not otherRoot then
+				continue
+			end
+			local dot = look:Dot((otherRoot.Position - myCF.Position).Unit)
+			if dot > bestCue then
+				local throttle = (contact.model:GetAttribute("Throttle") :: number?) or 0.85
+				local afterburner = contact.model:GetAttribute("Afterburner") == true
+				if Guidance.irCueLockable(missile, myCF, otherRoot.CFrame, throttle, afterburner) then
+					cueId, bestCue = id, dot
+				end
+			end
+		end
+	end
+	if cueId ~= sentCueId then
+		sentCueId = cueId
+		Net.Client.fire("IRCue", cueId)
+	end
+	if cueId ~= 0 then
+		self.lockable[cueId] = true
+	end
 	if missile and WeaponData.isIR(missile) and not self.seekerCaged then
 		for id, contact in self.contacts do
 			if contact.friendly then
@@ -325,6 +359,10 @@ local function update()
 				end
 			end
 		end
+	end
+	self.irCued = cueId ~= 0
+	if cueId ~= 0 then
+		bestId = cueId
 	end
 	if bestId ~= self.irTargetId then
 		self.irTargetId, self.irHeldFor = bestId, 0

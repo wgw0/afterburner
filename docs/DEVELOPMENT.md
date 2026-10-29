@@ -1152,6 +1152,13 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 - **Automatic** (Will's call: press plus auto): with the `AutoFlares` setting on (the default; Settings → Controls → Automatic flares), a heat-seeker guiding on a player's Tier V+ jet fires the programme once, when it's `AUTO_TIME` (2 s) from arriving. Flares burn out in 3 s and lose most of their heat in the first, so one fired at launch from range would be cold by the time the missile arrives. Once per missile, so it can't drain the jet. AI pilots keep dispensing for themselves.
 - Server-side in `MissileService` (`runProgramme`, `checkAutoFlares` each missile step). Checked in Studio: F-5E one press, one flare; F-16C a press (and a second during it) 4 flares; an AIM-9L fired at the F-16C set the programme off 2.6 s after launch; with the setting off, nothing fired.
 
+### 15.5 As built: advanced heat-seekers (MSL-09)
+
+The `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) have imaging seekers and helmet cueing (`Guidance.isImaging`).
+- **Helmet cueing:** the seeker locks the jet you're looking at (within 10° of the camera's view: free look, padlock, or the Mouse Aim view) anywhere inside the missile's gimbal (`Guidance.irCueLockable`), before falling back to the jet nearest the nose. The client sends the cued jet (`IRCue` remote); the server makes the same check in `bestIRTarget`, so a lie gets nothing the missile couldn't lock anyway. The HUD shows an "HMD" circle at the centre of your view once you look more than 4° off the nose with no target yet.
+- **Flares:** an imaging seeker ignores single flares. Three flares appearing in its view within 1 s (a burst: one CMS-04 programme) get one roll: `(1 − FlareResistance) × (0.12 + 2.2 × beam)`, where beam is how far the target is crossing the missile's view (0 flying straight, 1 at right angles). Then the count starts again. Constants `BURST_*` in `Countermeasures`.
+- **Simulated** (`Engagement.spec`, AIM-9X at an F-5E from 1.8 km behind): single flares with a break 0% defeated; bursts flying straight 22%; bursts with a hard break 53% (older seekers: 85% with idle, break and flares).
+
 ---
 
 ## 16. Anti-cheat and validation (SEC)
@@ -2112,7 +2119,7 @@ same work against the task IDs.
   playtests*.
 - New weapons along the way: AIM-54A, AIM-9M/9X, AIM-120C/D, R-27ER, R-74M, R-77-1, R-77M, Magic II, Super 530D,
   Skyflash, ASRAAM, IRIS-T, MICA IR, Meteor, and the DEFA 554, BK-27, GIAT 30M791 and GAU-22 guns. High off-boresight
-  heat-seekers are the `IR_Adv` class with wide seeker cones and gimbals; there's no helmet-cueing logic (MSL-09).
+  heat-seekers are the `IR_Adv` class with wide seeker cones and gimbals, helmet cueing and imaging seekers (MSL-09, §15.5).
 - The Tempest's figures are invented, as DESIGN says. It is researched from any one Tier VII jet; the two-jet rule
   and the Test Pilot chain are LIV-07.
 - Tier V+ jets carry a missile approach warner (`RWR.LaunchWarning = true`).
