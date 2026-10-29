@@ -167,8 +167,13 @@ end
 local function render(s: any)
 	local menu = localPlayer.PlayerGui:FindFirstChild("AfterburnerMenu")
 	banner.Visible = not (menu and (menu :: ScreenGui).Enabled)
+		and s.state ~= "Lobby"
+		and s.state ~= "Pending"
+		and s.state ~= "Closing"
 	if s.mode == "FreeFlight" then
 		banner.Text = "FREE FLIGHT"
+	elseif s.state == "Waiting" and s.expected then
+		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS {s.arrived}/{s.expected}  ·  {s.timeLeft}`
 	elseif s.state == "Waiting" then
 		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS`
 	elseif s.state == "Countdown" then
@@ -304,15 +309,24 @@ function MatchController:SpawnStatus(): (boolean, string)
 	if not localPlayer:GetAttribute("MapReady") then
 		return false, "Loading the map…"
 	end
+	if s.state == "Lobby" then
+		return false, "Press PLAY to find a match"
+	elseif s.state == "Pending" then
+		return false, "Joining…"
+	elseif s.state == "Closing" then
+		return false, "Heading back to the lobby…"
+	end
 	if s.mode == "FreeFlight" then
 		return true, ""
 	end
-	if s.state == "Waiting" then
+	if s.state == "Waiting" and s.expected then
+		return false, `Waiting for pilots ({s.arrived}/{s.expected})`
+	elseif s.state == "Waiting" then
 		return false, "Waiting for the match to start"
 	elseif s.state == "Countdown" then
 		return false, `Match starts in {s.timeLeft}s`
 	elseif s.state == "Results" then
-		return false, "Match over. Next match soon."
+		return false, if s.expected then "Match over. Back to the lobby soon." else "Match over. Next match soon."
 	end
 	local wait = localPlayer:GetAttribute("RespawnIn") :: number?
 	local lives = localPlayer:GetAttribute("LivesLeft") :: number?

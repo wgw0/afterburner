@@ -1622,6 +1622,17 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 
 **Acceptance:** in the test universe, 6 testers queueing for TDM end up in the same reserved server within 60 s, with AI filling the rest. Killing the matchmaker's server mid-queue causes another lobby to take over within 10 s.
 
+### 25.6 As built (October 2026)
+
+- **One codebase, roles per server** (`ServerRole`): a public server is a **Lobby** (hangar and queue, no flying; the Ground Roamer still works). A reserved server reads its record from the MemoryStore hash map `Matchmaking` under `match:{PrivateServerId}` and becomes a **Match** or **Training** server (no record means training). `ReserveServer` returns the PrivateServerId, so the lobby writes the record before anyone teleports, and teleport data is never read. `Pending` covers the second or two before the record is read.
+- **Places** (`Config/Places`): matches and training go to `Places.battle()`, which is the lobby place itself until a Battle place id is added to `BATTLE`. Both work the same; the separate place only lets the lobby drop the map later.
+- **Queue and matchmaker** (`MatchmakingService`, rules in `Queue.luau`, tests in `Queue.spec`): entries in the sorted map `MatchQueue` (lineup BR, mode, join time, lobby JobId) expire after 60 s unless their lobby refreshes them every 15 s, and a refresh only rewrites an entry that still exists, so a matched player is never re-added. The lease holder (`lease` key, 8 s) runs every 2 s. Matches are **6 pilots** (Will); a full group forms at once, a short one after 30 s (4 s in Studio) with AI in the empty seats. The BR spread widens from 1.0 to 1.7 over a minute. Mode is the player's choice or Any; Any groups follow the most-asked mode, else rotate.
+- **Hand-off**: the matchmaker appends `{code, place, mode, entries}` to `lobby:{JobId}`; each lobby with queued players takes its list every 2 s and teleports its players (3 tries, then `TeleportInitFailed` retries); anyone who can't get there goes back in at their original join time.
+- **Match server**: waits for everyone sent (or 30 s), runs one match with the matchmaker's BR band, then `MatchOver` sends everyone to a public lobby server. LEAVE MATCH in the top bar does the same for one player.
+- **Studio** can't reserve servers or teleport: the queue is in plain tables and a formed match, Travel or the trip home switch this server's role in place.
+- **Telemetry** (MMK-06): `QueueJoined`, `QueueLeft` and `QueueMatched` (wait time), `MatchFormed` (longest wait, players, BR spread).
+- **Scale**: one sorted map is read 200 at a time up to 2,000 queued players. Past that, shard the queue by BR bucket (§25.2).
+
 ---
 
 ## 26. Challenges, achievements, seasons, squadrons (LIV)

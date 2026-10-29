@@ -4,10 +4,13 @@
 -- match's results are up. Owns the menu state and turns screen actions into intents for the server.
 -- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again. DRIVE takes out the Ground
 -- Roamer (§36); the menu stays hidden while you drive.
+-- In a lobby (MMK-03) PLAY joins the matchmaking queue for the mode picked over it (it becomes CANCEL while
+-- searching); on a match or training server it flies the selected jet.
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage:WaitForChild("Packages")
@@ -27,7 +30,16 @@ local PlayerDataController = require(script.Parent.PlayerDataController)
 local SettingsController = require(script.Parent.SettingsController)
 local TutorialController = require(script.Parent.TutorialController)
 
-local App = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("App"))
+local UI = script.Parent.Parent:WaitForChild("UI")
+local App = require(UI:WaitForChild("App"))
+local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
+
+local MODE_NAMES = {
+	Any = "",
+	Dogfight = " Dogfight",
+	TeamDeathmatch = " Team Deathmatch",
+	AirSuperiority = " Air Superiority",
+}
 
 local LESSON_NAMES = {
 	Flight = "Basic flight",
@@ -52,6 +64,9 @@ local state = {
 	selected = nil :: string?,
 	status = "",
 	lastAirframe = nil :: string?,
+	-- The matchmaking queue (lobby only), from QueueState
+	queue = { state = "Idle", mode = "Any", startedAt = 0, message = nil :: string? },
+	teleportScreen = false,
 }
 local myJetId: number? = nil
 
@@ -82,6 +97,46 @@ local function spawn(airframeId: string?)
 	end
 	setStatus("Spawning…")
 	Net.Client.fire("RequestSpawn", airframeId)
+end
+
+-- Keep a loading screen up through a teleport (set once per trip).
+local function showTeleportScreen(text: string)
+	if state.teleportScreen then
+		return
+	end
+	state.teleportScreen = true
+	pcall(function()
+		TeleportService:SetTeleportGui(LoadingScreen.build(text))
+	end)
+end
+
+-- PLAY: in a lobby, join or leave the queue; elsewhere, fly.
+local function play(airframeId: string?)
+	if not ServerRole.isLobby() then
+		spawn(airframeId)
+		return
+	end
+	local queue = state.queue
+	if queue.state == "Searching" then
+		Net.Client.fire("QueueLeave")
+	elseif queue.state == "Idle" then
+		queue.message = nil
+		Net.Client.fire("QueueJoin", SettingsController:Get("QueueMode") or "Any")
+	end
+end
+
+-- What the status line under PLAY says in a lobby.
+local function queueStatus(): string?
+	local queue = state.queue
+	if queue.state == "Searching" then
+		local waited = math.floor(os.clock() - queue.startedAt)
+		local line =
+			`Finding a{MODE_NAMES[queue.mode] or ""} match…  {waited // 60}:{string.format("%02d", waited % 60)}`
+		return if queue.message then `{queue.message}  {line}` else line
+	elseif queue.state == "Found" then
+		return "Match found! Joining…"
+	end
+	return queue.message
 end
 
 local function navigate(screen: string, id: string?)
@@ -116,7 +171,12 @@ render = function()
 	local resultsUp = match ~= nil and match.state == "Results"
 	local allowed, reason = MatchController:SpawnStatus()
 	local status = state.status
-	if status == "" then
+	local lobby = ServerRole.isLobby()
+	local queue = state.queue
+	if lobby then
+		allowed = PlayerDataController.data ~= nil and queue.state ~= "Found"
+		status = queueStatus() or (if status == "" then "Ready" else status)
+	elseif status == "" then
 		status = if allowed then "Ready" else reason
 	elseif not allowed and status == "Spawning…" then
 		status = reason
@@ -136,7 +196,19 @@ render = function()
 		end,
 		Status = status,
 		CanPlay = allowed,
-		OnPlay = spawn,
+		OnPlay = play,
+		PlayText = if not lobby
+			then nil
+			elseif queue.state == "Searching" then "CANCEL"
+			elseif queue.state == "Found" then "JOINING…"
+			else "PLAY",
+		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Any" else nil,
+		OnQueueMode = function(mode: string)
+			SettingsController:Set("QueueMode", mode)
+			if state.queue.state == "Searching" then
+				Net.Client.fire("QueueJoin", mode) -- keeps your place, changes the mode
+			end
+		end,
 		OnDrive = function()
 			setStatus("Fetching the Ground Roamer…")
 			task.spawn(function()
@@ -167,9 +239,11 @@ render = function()
 		end,
 		Role = ServerRole.get(),
 		OnTravel = function(target: string)
-			setStatus(
-				if target == "Training" then "Heading to a training server…" else "Heading back to multiplayer…"
-			)
+			local text = if target == "Training"
+				then "Heading to a training server…"
+				else "Heading back to the lobby…"
+			setStatus(text)
+			showTeleportScreen(text)
 			Net.Client.fire("Travel", target)
 		end,
 		VsAIRunning = ServerRole.isTraining() and ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight",
@@ -250,9 +324,29 @@ function MenuController:Start()
 
 	PlayerDataController.Changed:Connect(render)
 	PlayerDataController.Rewards:Connect(render)
-	MatchController.Changed:Connect(render)
+	MatchController.Changed:Connect(function()
+		local match = MatchController.state
+		if match and match.state == "Closing" then
+			showTeleportScreen("Heading back to the lobby…")
+		end
+		render()
+	end)
 	Net.Client.on("SpawnRefused", function(reason: string)
+		state.teleportScreen = false -- a failed trip; the next one sets its own
 		setStatus(reason)
+	end)
+	Net.Client.on("QueueState", function(payload: any)
+		local queue = state.queue
+		queue.state = payload.state
+		queue.mode = payload.mode or queue.mode
+		queue.message = payload.message
+		queue.startedAt = os.clock() - (payload.waited or 0)
+		if payload.state == "Found" then
+			showTeleportScreen("Joining your match…")
+		else
+			state.teleportScreen = false
+		end
+		render()
 	end)
 
 	FlightController.JetChanged:Connect(function(jet)
@@ -313,6 +407,9 @@ function MenuController:Start()
 	-- The server's role and mode change the menu (in Studio, Travel switches the role in place)
 	ReplicatedStorage:GetAttributeChangedSignal("ServerRole"):Connect(function()
 		state.status = ""
+		state.queue.state = "Idle"
+		state.queue.message = nil
+		state.teleportScreen = false
 		render()
 	end)
 	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(render)

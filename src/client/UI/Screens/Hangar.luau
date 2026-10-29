@@ -2,7 +2,8 @@
 -- Hangar, the home screen (UI-02): the selected jet on a turntable, your lineup, your other jets and the
 -- Play button with the match status. Training is on its own servers (TRAINING in the top bar).
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnDrive() (the Ground Roamer), OnDetails(id),
---   OnLineup(ids) -> (ok, err).
+--   OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
+--   lobby: the mode picker over PLAY).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,6 +20,36 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
+local QUEUE_MODES = {
+	{ "Any", "ANY MODE" },
+	{ "Dogfight", "DOGFIGHT" },
+	{ "TeamDeathmatch", "TEAMS" },
+	{ "AirSuperiority", "ZONES" },
+}
+
+-- The mode PLAY queues for: Any (the fastest match) or one mode.
+local function modePicker(props: any)
+	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 6, Align = "Center" }) }
+	for i, item in QUEUE_MODES do
+		local id, label = item[1], item[2]
+		buttons[id] = e(C.Button, {
+			Text = label,
+			Style = if props.Value == id then "Primary" else "Ghost",
+			Size = UDim2.fromOffset(if id == "Any" then 118 else 104, 32),
+			TextSize = 12,
+			LayoutOrder = i,
+			OnClick = function()
+				props.OnPick(id)
+			end,
+		})
+	end
+	return e("Frame", {
+		Size = UDim2.fromOffset(460, 32),
+		Position = UDim2.new(0.5, 0, 1, -156),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 1,
+	}, buttons)
+end
 
 local function slotCard(props: any)
 	local airframe = props.Id and AircraftData.get(props.Id) :: any
@@ -206,8 +237,9 @@ local function Hangar(props: any)
 			Color = Theme.Dim,
 			TextSize = 16,
 		}),
+		Modes = if props.QueueMode then e(modePicker, { Value = props.QueueMode, OnPick = props.OnQueueMode }) else nil,
 		Play = e(C.Button, {
-			Text = "PLAY",
+			Text = props.PlayText or "PLAY",
 			Style = "Primary",
 			TextSize = 26,
 			Size = UDim2.fromOffset(260, 60),

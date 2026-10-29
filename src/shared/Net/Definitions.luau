@@ -119,7 +119,12 @@ local definitions: { [string]: Definition } = {
 	DebugSpawnDrone = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
 	-- Leave the current flight for the hangar (HangarButtonController)
 	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
-	-- Go to a training server ("Training") or back to a public one ("Multiplayer") (TrainingService)
+	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id), leave it, and its state
+	-- back to the player: { state = "Idle" | "Searching" | "Found", mode, waited, message }
+	QueueJoin = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
+	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- Go to a training server ("Training") or back to a lobby ("Lobby") (MatchmakingService)
 	Travel = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.2 } },
 	-- On a training server: "FreeFlight", or a Vs AI match: mode id, AI difficulty, number of AI pilots
 	TrainingSetup = {

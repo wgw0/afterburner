@@ -86,17 +86,22 @@ local function TopBar(props: any)
 			BackgroundTransparency = 1,
 		}, {
 			Layout = C.List({ Horizontal = true, Gap = 22, Align = "Right", AlignY = "Center" }),
-			-- To a private training server and back (TrainingService)
-			Travel = e(C.Button, {
-				Text = if props.Role == "Training" then "MULTIPLAYER" else "TRAINING",
-				Style = "Ghost",
-				Size = UDim2.fromOffset(150, 40),
-				TextSize = 14,
-				LayoutOrder = 0,
-				OnClick = function()
-					props.OnTravel(if props.Role == "Training" then "Multiplayer" else "Training")
-				end,
-			}),
+			-- Lobby → training; training or a match → back to a lobby (MatchmakingService)
+			Travel = if props.Role == "Pending"
+				then nil
+				else e(C.Button, {
+					Text = if props.Role == "Training"
+						then "MULTIPLAYER"
+						elseif props.Role == "Match" then "LEAVE MATCH"
+						else "TRAINING",
+					Style = "Ghost",
+					Size = UDim2.fromOffset(150, 40),
+					TextSize = 14,
+					LayoutOrder = 0,
+					OnClick = function()
+						props.OnTravel(if props.Role == "Lobby" then "Training" else "Lobby")
+					end,
+				}),
 			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
 				Label = e(C.Label, {
 					Text = `PILOT LEVEL {data.PilotLevel}`,
@@ -199,6 +204,9 @@ local function App(props: any)
 				props.Navigate("Detail", id)
 			end,
 			OnLineup = props.OnLineup,
+			PlayText = props.PlayText,
+			QueueMode = props.QueueMode,
+			OnQueueMode = props.OnQueueMode,
 		})
 	end
 	-- Menu scale setting (SET-03): a UIScale grows everything; the frame shrinks by the same factor so the
