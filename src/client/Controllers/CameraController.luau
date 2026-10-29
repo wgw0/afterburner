@@ -28,6 +28,7 @@ local Signal = require(Shared.Util.Signal)
 local Spring = require(Shared.Util.Spring)
 local Units = require(Shared.Units)
 
+local BindingsController = require(script.Parent.BindingsController)
 local DriveController = require(script.Parent.DriveController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
@@ -96,9 +97,8 @@ end
 
 -- Head angles (yaw, pitch) that keep the padlock target in view, or nil when not padlocking.
 local function padlockView(jetCF: CFrame): Vector2?
-	local held = UserInputService:IsKeyDown(Enum.KeyCode.X)
+	local held = BindingsController:IsDown("Padlock")
 		or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
-		or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonR3)
 	local target = if held then SensorController:PadlockTarget() else nil
 	local targetRoot = target and target.PrimaryPart
 	InputController.padlocked = targetRoot ~= nil
@@ -132,7 +132,7 @@ local function safeLookAt(position: Vector3, direction: Vector3, up: Vector3): C
 end
 
 local function targetFov(): number
-	if UserInputService:IsKeyDown(Enum.KeyCode.Z) then
+	if BindingsController:IsDown("Zoom") then
 		return ZOOM_FOV
 	end
 	local state = FlightController.state
@@ -301,7 +301,7 @@ function CameraController:Init()
 		if processed then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.V or input.KeyCode == Enum.KeyCode.ButtonSelect then
+		if BindingsController:Matches(input, "Camera") then
 			self:SetMode(if self.mode == "Cockpit" then "Chase" else "Cockpit")
 		end
 	end)

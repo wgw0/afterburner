@@ -1,7 +1,8 @@
 --!strict
 -- Settings screen (DEVELOPMENT.md §29, SET-02). Every row changes one setting at once through
 -- SettingsController (applied straight away and saved to your profile).
--- props: Values (the current settings), OnSet(key, value).
+-- props: Values (the current settings), OnSet(key, value), OnCapture(device, callback) (waits for the next key or
+-- button: BindingsController:Capture).
 -- Numbers use − / + buttons around a bar rather than a drag slider, so they work the same with a mouse,
 -- touch and a gamepad.
 
@@ -9,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared.Config.Bindings)
 local Settings = require(Shared.Config.Settings)
 
 local C = require(script.Parent.Parent.Components)
@@ -230,6 +232,152 @@ local function Row(props: any)
 	})
 end
 
+-- Key bindings (INP-05): each action's key and gamepad button. Click one, then press the new key or button
+-- (Esc cancels); one already used by another action swaps with it.
+local BIND_ROW_H = 40
+
+local function KeyBindings(props: any)
+	local capturing, setCapturing = React.useState(nil :: string?) -- "<action>:<device>"
+	local note, setNote = React.useState(nil :: string?)
+	local overrides = props.Values.Bindings or {}
+
+	local function startCapture(id: string, device: string)
+		local started = props.OnCapture(device, function(name: string?)
+			setCapturing(nil)
+			if not name then
+				setNote(nil)
+				return
+			end
+			local result, swapped = Bindings.assign(overrides, id, device, name)
+			local other = swapped and Bindings.get(swapped)
+			setNote(
+				if other then `Swapped: {other.label} is now on the key {(Bindings.get(id) :: any).label} had.` else nil
+			)
+			props.OnSet("Bindings", result)
+		end)
+		if started then
+			setCapturing(`{id}:{device}`)
+			setNote(
+				if device == "keyboard"
+					then "Press a key or mouse button (Esc cancels)."
+					else "Press a gamepad button (Esc cancels)."
+			)
+		end
+	end
+
+	local function cell(action: any, device: string, order: number)
+		local fixed = device == "gamepad" and action.padAxis
+		local waiting = capturing == `{action.id}:{device}`
+		local name = Bindings.resolve(overrides, action.id, device)
+		return e(C.Button, {
+			Text = if waiting then "…" elseif fixed then fixed else Bindings.label(name),
+			Style = if waiting then "Primary" else "Ghost",
+			Disabled = fixed ~= nil and fixed ~= false,
+			Size = UDim2.fromOffset(150, 34),
+			TextSize = 13,
+			LayoutOrder = order,
+			OnClick = function()
+				startCapture(action.id, device)
+			end,
+		})
+	end
+
+	local rows: { [string]: any } = {
+		Layout = C.List({ Gap = 2 }),
+		Title = e(
+			C.Label,
+			{ Text = "KEY BINDINGS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 }
+		),
+		Head = e("Frame", { Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, LayoutOrder = 1 }, {
+			Keyboard = e(C.Label, {
+				Text = "KEYBOARD / MOUSE",
+				Size = UDim2.fromOffset(150, 22),
+				Position = UDim2.new(1, -310, 0, 0),
+				TextSize = 11,
+				Color = Theme.Dim,
+				Align = "Center",
+			}),
+			Gamepad = e(C.Label, {
+				Text = "GAMEPAD",
+				Size = UDim2.fromOffset(150, 22),
+				Position = UDim2.new(1, -150, 0, 0),
+				TextSize = 11,
+				Color = Theme.Dim,
+				Align = "Center",
+			}),
+		}),
+	}
+	local order = 2
+	local count = 0
+	for _, group in Bindings.GROUPS do
+		rows[`Group{group}`] = e(C.Label, {
+			Text = group,
+			Size = UDim2.new(1, 0, 0, 20),
+			TextSize = 11,
+			Bold = true,
+			Color = Theme.Dim,
+			LayoutOrder = order,
+		})
+		order += 1
+		for _, action in Bindings.ACTIONS do
+			if action.group == group then
+				count += 1
+				rows[action.id] = e("Frame", {
+					Size = UDim2.new(1, 0, 0, BIND_ROW_H),
+					BackgroundTransparency = 1,
+					LayoutOrder = order,
+				}, {
+					Label = e(C.Label, {
+						Text = action.label,
+						Size = UDim2.new(1, -330, 1, 0),
+						Bold = true,
+						TextSize = 15,
+					}),
+					Cells = e("Frame", {
+						Size = UDim2.fromOffset(310, 34),
+						Position = UDim2.fromScale(1, 0.5),
+						AnchorPoint = Vector2.new(1, 0.5),
+						BackgroundTransparency = 1,
+					}, {
+						Layout = C.List({ Horizontal = true, Gap = 10, Align = "Right" }),
+						Keyboard = cell(action, "keyboard", 1),
+						Gamepad = cell(action, "gamepad", 2),
+					}),
+				})
+				order += 1
+			end
+		end
+	end
+	rows.Footer = e("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1, LayoutOrder = order }, {
+		Note = e(C.Label, {
+			Text = note or "Sticks, triggers, the mouse and the arrow keys stay as they are.",
+			Size = UDim2.new(1, -200, 1, 0),
+			TextSize = 12,
+			Color = if note then Theme.Warn else Theme.Dim,
+			Wrap = true,
+		}),
+		Reset = e(C.Button, {
+			Text = "RESET TO DEFAULTS",
+			Style = "Ghost",
+			Size = UDim2.fromOffset(180, 34),
+			Position = UDim2.fromScale(1, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			TextSize = 12,
+			Disabled = next(overrides) == nil,
+			OnClick = function()
+				setNote(nil)
+				props.OnSet("Bindings", {})
+			end,
+		}),
+	})
+	local height = 24 + 24 + #Bindings.GROUPS * 22 + count * (BIND_ROW_H + 2) + 50 + 28
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(760, height),
+		Padding = 14,
+		LayoutOrder = props.Order,
+	}, rows)
+end
+
 local function SettingsScreen(props: any)
 	local sections: { [string]: any } = {
 		Layout = C.List({ Gap = 14, Align = "Center" }),
@@ -253,16 +401,22 @@ local function SettingsScreen(props: any)
 		sections[section.title] = e(C.Panel, {
 			Size = UDim2.fromOffset(760, height),
 			Padding = 14,
-			LayoutOrder = i,
+			LayoutOrder = i * 10,
 		}, rows)
 	end
+	sections.KeyBindings = e(KeyBindings, {
+		Values = props.Values,
+		OnSet = props.OnSet,
+		OnCapture = props.OnCapture,
+		Order = 15, -- right after CONTROLS
+	})
 	sections.Note = e(C.Label, {
 		Text = "Changes apply straight away and are saved with your pilot.",
 		Size = UDim2.fromOffset(760, 20),
 		TextSize = 13,
 		Color = Theme.Dim,
 		Align = "Center",
-		LayoutOrder = #SECTIONS + 1,
+		LayoutOrder = #SECTIONS * 10 + 10,
 	})
 	return e("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),

@@ -22,6 +22,7 @@ local AircraftData = require(Shared.AircraftData)
 local ServerRole = require(Shared.ServerRole)
 local Net = require(Shared.Net)
 
+local BindingsController = require(script.Parent.BindingsController)
 local CameraController = require(script.Parent.CameraController)
 local DriveController = require(script.Parent.DriveController)
 local FlightController = require(script.Parent.FlightController)
@@ -281,12 +282,37 @@ render = function()
 		OnSetting = function(key, value)
 			SettingsController:Set(key, value)
 		end,
+		OnCapture = function(device: string, callback: (string?) -> ()): boolean
+			return BindingsController:Capture(device, callback)
+		end,
 		Lessons = lessons(),
 		OnLesson = function(lessonId)
 			local ok, why = TutorialController:Begin(lessonId, state.selected or "F5E")
 			setStatus(if ok then "Starting training…" else why)
 		end,
 	}))
+end
+
+-- Gamepad (UI-09): keep a button selected while the menu is up: PLAY (or FLY), else the first one. Run after
+-- renders and device changes, since a screen change can remove the selected button.
+local TABS = { "Hangar", "TechTree", "Settings" }
+
+local function gamepadSelect()
+	if not (MenuController.visible and InputController.device == "Gamepad") then
+		return
+	end
+	local selected = GuiService.SelectedObject
+	if selected and selected:IsDescendantOf(gui) and selected.Visible then
+		return
+	end
+	local body = gui:FindFirstChild("Body", true)
+	local screen = body and body:FindFirstChild("Screen")
+	local main = screen and (screen:FindFirstChild("Play") or screen:FindFirstChild("Fly"))
+	if main and main:IsA("GuiButton") then
+		GuiService.SelectedObject = main
+	else
+		GuiService:Select(gui)
+	end
 end
 
 local function setVisible(visible: boolean)
@@ -300,11 +326,7 @@ local function setVisible(visible: boolean)
 			state.screen = "Hangar"
 		end
 		render()
-		if InputController.device == "Gamepad" then
-			task.defer(function()
-				GuiService:Select(gui) -- gamepad: start on the first button
-			end)
-		end
+		task.delay(0.1, gamepadSelect) -- gamepad: start on PLAY
 	elseif GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(gui) then
 		GuiService.SelectedObject = nil
 	end
@@ -341,6 +363,20 @@ function MenuController:Start()
 	gui.Enabled = false
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	root = ReactRoblox.createRoot(gui)
+	-- The gamepad selection outline, in the menu's orange (UI-09)
+	local outline = Instance.new("Frame")
+	outline.Name = "AfterburnerSelection"
+	outline.BackgroundTransparency = 1
+	outline.Size = UDim2.new(1, 8, 1, 8)
+	outline.Position = UDim2.fromOffset(-4, -4)
+	local outlineCorner = Instance.new("UICorner")
+	outlineCorner.CornerRadius = UDim.new(0, 10)
+	outlineCorner.Parent = outline
+	local outlineStroke = Instance.new("UIStroke")
+	outlineStroke.Color = Color3.fromRGB(255, 138, 61)
+	outlineStroke.Thickness = 3
+	outlineStroke.Parent = outline
+	Players.LocalPlayer.PlayerGui.SelectionImageObject = outline
 
 	PlayerDataController.Changed:Connect(render)
 	PlayerDataController.Rewards:Connect(function(payload: any)
@@ -405,8 +441,34 @@ function MenuController:Start()
 		end
 	)
 
+	-- Gamepad in the menu (UI-09): LB / RB switch tabs, B goes back
+	UserInputService.InputBegan:Connect(function(input)
+		if not self.visible or FlightController.jet or BindingsController.capturing then
+			return
+		end
+		if input.UserInputType ~= Enum.UserInputType.Gamepad1 or state.screen == "Results" then
+			return
+		end
+		local key = input.KeyCode
+		if key == Enum.KeyCode.ButtonL1 or key == Enum.KeyCode.ButtonR1 then
+			local index = table.find(TABS, state.screen) or 1
+			local step = if key == Enum.KeyCode.ButtonR1 then 1 else -1
+			navigate(TABS[(index - 1 + step) % #TABS + 1])
+			task.delay(0.1, function()
+				GuiService.SelectedObject = nil
+				gamepadSelect()
+			end)
+		elseif key == Enum.KeyCode.ButtonB and state.screen ~= "Hangar" then
+			navigate(if state.screen == "Detail" then state.backTo or "Hangar" else "Hangar")
+			task.delay(0.1, gamepadSelect)
+		end
+	end)
+	InputController.DeviceChanged:Connect(function()
+		task.defer(gamepadSelect)
+	end)
+
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed or FlightController.jet or not self.visible then
+		if processed or FlightController.jet or not self.visible or BindingsController.capturing then
 			return
 		end
 		local data = PlayerDataController.data
@@ -415,7 +477,7 @@ function MenuController:Start()
 			state.selected = data.Lineup[index]
 			SettingsController:Set("SelectedJet", state.selected)
 			spawn(state.selected)
-		elseif input.KeyCode == Enum.KeyCode.R and state.lastAirframe then
+		elseif BindingsController:Matches(input, "FlyAgain") and state.lastAirframe then
 			spawn(state.lastAirframe)
 		end
 	end)
@@ -451,6 +513,7 @@ function MenuController:Start()
 			task.wait(0.5)
 			if self.visible then
 				render()
+				task.defer(gamepadSelect)
 			end
 		end
 	end)

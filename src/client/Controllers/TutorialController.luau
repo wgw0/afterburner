@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared.Config.Bindings)
 local LessonRunner = require(Shared.LessonRunner)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
@@ -21,6 +22,7 @@ local ServerRole = require(Shared.ServerRole)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
 
+local BindingsController = require(script.Parent.BindingsController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
@@ -40,6 +42,16 @@ export type Context = {
 	kills: number,
 	dt: number,
 }
+
+-- Fills {Action} with the key bound to it and {Action:pad} with its gamepad button (INP-05).
+local function withKeys(text: string): string
+	return (
+		text:gsub("{(%w+)(:?p?a?d?)}", function(id: string, pad: string)
+			local name = BindingsController:Name(id, if pad == ":pad" then "gamepad" else "keyboard")
+			return Bindings.label(name)
+		end)
+	)
+end
 
 local TutorialController = {
 	Priority = 87,
@@ -177,14 +189,14 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 			},
 			{
 				text = "Level off, then roll to a 60° bank.",
-				hint = "Q / E roll · on a pad or touch, push the stick sideways",
+				hint = "{RollLeft} / {RollRight} roll · on a pad or touch, push the stick sideways",
 				check = function(ctx: Context)
 					return math.abs(bank(ctx.root.CFrame)) > 60
 				end,
 			},
 			{
 				text = "Light the afterburner.",
-				hint = "Hold W at 100% throttle (RT on a pad, top of the slider on touch)",
+				hint = "Hold {ThrottleUp} at 100% throttle (RT on a pad, top of the slider on touch)",
 				check = function(ctx: Context)
 					return ctx.afterburner
 				end,
@@ -260,7 +272,7 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 		steps = {
 			{
 				text = "A target drone is ahead. Destroy 3 drones with the gun.",
-				hint = "Put the pipper (the gun sight) on the drone and hold fire (LMB / A / FIRE).",
+				hint = "Put the pipper (the gun sight) on the drone and hold fire ({FireGun} / {FireGun:pad} / FIRE).",
 				enter = function(_ctx: Context, memory)
 					memory.startKills = kills
 					memory.spawned = kills
@@ -284,7 +296,7 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 		steps = {
 			{
 				text = "Select a heat-seeking missile.",
-				hint = "R cycles your missiles (D-pad up on a pad, WPN on touch). Watch the weapon readout.",
+				hint = "{NextWeapon} cycles your missiles ({NextWeapon:pad} on a pad, WPN on touch). Watch the weapon readout.",
 				check = function()
 					local missile = SensorController:SelectedMissile()
 					return missile ~= nil and WeaponData.isIR(missile)
@@ -302,7 +314,7 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 			},
 			{
 				text = "Locked. Fire! Hit 2 drones with heat-seekers.",
-				hint = "Space (X on a pad, MSL on touch). Out of missiles? Respawn from the menu to rearm.",
+				hint = "{FireMissile} ({FireMissile:pad} on a pad, MSL on touch). Out of missiles? Respawn from the menu to rearm.",
 				enter = function(_ctx: Context, memory)
 					memory.startIr = irKills
 					memory.spawned = kills
@@ -325,7 +337,7 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 		steps = {
 			{
 				text = "First, drop a flare.",
-				hint = "F (B on a pad, FLR on touch). Flares decoy heat-seekers away from your engine.",
+				hint = "{Flares} ({Flares:pad} on a pad, FLR on touch). Flares decoy heat-seekers away from your engine.",
 				enter = function(_ctx: Context, memory)
 					memory.flares = flares()
 				end,
@@ -446,7 +458,7 @@ local function render()
 	titleLabel.Text = `{r.lesson.title}  ·  STEP {index}/{total}`
 	if step then
 		stepLabel.Text = step.text
-		hintLabel.Text = step.hint or ""
+		hintLabel.Text = withKeys(step.hint or "")
 	end
 end
 

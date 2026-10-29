@@ -22,6 +22,7 @@ local Signal = require(Shared.Util.Signal)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
 
+local BindingsController = require(script.Parent.BindingsController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
@@ -283,34 +284,32 @@ function WeaponController:Init()
 	worldParams.FilterType = Enum.RaycastFilterType.Exclude
 	worldParams.FilterDescendantsInstances = { workspace:WaitForChild("Jets"), tracerFolder }
 
+	-- Weapon keys and buttons as bound (INP-05; defaults LMB / A guns (hold), Space / X missile, R / D-pad up
+	-- next missile, T / Y lock, F / B flares, C / D-pad down chaff).
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 and not processed and not InputController.uiOpen then
-			setTrigger(true)
-		end
-	end)
-	-- Keyboard and gamepad (INP-03): A gun (hold), X missile, Y lock, B flare, D-pad down chaff,
-	-- D-pad up cycle missile.
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed or InputController.uiOpen or not FlightController.jet then
+		if processed or InputController.uiOpen then
 			return
 		end
-		local key = input.KeyCode
-		if key == Enum.KeyCode.ButtonA then
+		if BindingsController:Matches(input, "FireGun") then
 			setTrigger(true)
-		elseif key == Enum.KeyCode.R or key == Enum.KeyCode.DPadUp then
+		end
+		if not FlightController.jet then
+			return
+		end
+		if BindingsController:Matches(input, "NextWeapon") then
 			cycleMissile()
-		elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.ButtonX then
+		elseif BindingsController:Matches(input, "FireMissile") then
 			fireMissile()
-		elseif key == Enum.KeyCode.T or key == Enum.KeyCode.ButtonY then
+		elseif BindingsController:Matches(input, "RadarLock") then
 			toggleLock()
-		elseif key == Enum.KeyCode.F or key == Enum.KeyCode.ButtonB then
+		elseif BindingsController:Matches(input, "Flares") then
 			Net.Client.fire("CountermeasureDeploy", "Flare")
-		elseif key == Enum.KeyCode.C or key == Enum.KeyCode.DPadDown then
+		elseif BindingsController:Matches(input, "Chaff") then
 			Net.Client.fire("CountermeasureDeploy", "Chaff")
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonA then
+		if BindingsController:Matches(input, "FireGun") then
 			setTrigger(false)
 		end
 	end)

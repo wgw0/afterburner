@@ -1,6 +1,6 @@
 --!strict
 -- Back to the hangar from a flight or a drive: a button in the top bar's row at the top right, in the menu's
--- navy and orange. Hold H, or press and hold the button, for HOLD seconds so a stray press mid-fight doesn't
+-- navy and orange. Hold H (or its binding, D-pad left on a gamepad), or press and hold the button, for HOLD seconds so a stray press mid-fight doesn't
 -- end the sortie. Leaving straight after taking damage still credits the attacker (DamageModel.CRASH_WINDOW).
 
 local GuiService = game:GetService("GuiService")
@@ -10,15 +10,16 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared.Config.Bindings)
 local Net = require(Shared.Net)
 
 local Theme = require(script.Parent.Parent.UI.Theme)
+local BindingsController = require(script.Parent.BindingsController)
 local DriveController = require(script.Parent.DriveController)
 local FlightController = require(script.Parent.FlightController)
 
 local HOLD = 0.6 -- seconds
 local WIDTH, HEIGHT = 190, 44
-local KEY = Enum.KeyCode.H
 
 local HangarButtonController = {
 	Priority = 91, -- after MenuController
@@ -30,6 +31,7 @@ local fill: Frame
 local keycap: Frame
 local title: TextLabel
 local subtitle: TextLabel
+local keyLabel: TextLabel
 local stroke: UIStroke
 local holdingKey = false
 local holdingButton = false
@@ -122,7 +124,7 @@ local function build()
 	keyStroke.Color = Theme.Accent
 	keyStroke.Thickness = 1
 	keyStroke.Parent = keycap
-	local keyLabel = text(keycap, "H", 15, Theme.FontHeavy, Theme.Accent)
+	keyLabel = text(keycap, "H", 15, Theme.FontHeavy, Theme.Accent)
 	keyLabel.Size = UDim2.fromScale(1, 1)
 	keyLabel.TextXAlignment = Enum.TextXAlignment.Center
 	keyLabel.ZIndex = 3
@@ -174,12 +176,12 @@ function HangarButtonController:Start()
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(place)
 
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if not processed and input.KeyCode == KEY then
+		if not processed and BindingsController:Matches(input, "Hangar") then
 			holdingKey = true
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.KeyCode == KEY then
+		if BindingsController:Matches(input, "Hangar") then
 			holdingKey = false
 		end
 	end)
@@ -193,9 +195,14 @@ function HangarButtonController:Start()
 		if not active then
 			return
 		end
-		-- No keyboard (a phone): the key hint would mean nothing
-		keycap.Visible = UserInputService.KeyboardEnabled
-		local textX = if keycap.Visible then 46 else 14
+		-- The bound key on the keycap; on a gamepad the button goes in the subtitle; on a phone, no hint
+		local gamepad = UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1
+		local key = BindingsController:Name("Hangar", "keyboard")
+		keycap.Visible = UserInputService.KeyboardEnabled and not gamepad and key ~= nil
+		keyLabel.Text = Bindings.label(key)
+		local capWidth = math.max(28, keyLabel.TextBounds.X + 12)
+		keycap.Size = UDim2.fromOffset(capWidth, 28)
+		local textX = if keycap.Visible then capWidth + 18 else 14
 		title.Position = UDim2.fromOffset(textX, 5)
 		subtitle.Position = UDim2.fromOffset(textX, 24)
 		if (holdingKey or holdingButton) and not sent then
@@ -207,7 +214,8 @@ function HangarButtonController:Start()
 			held = math.max(held - dt * 3, 0)
 		end
 		fill.Size = UDim2.fromScale(held / HOLD, 1)
-		subtitle.Text = if sent then "leaving…" elseif held > 0 then "keep holding" else "hold to leave"
+		local idle = if gamepad then `hold {BindingsController:Label("Hangar")}` else "hold to leave"
+		subtitle.Text = if sent then "leaving…" elseif held > 0 then "keep holding" else idle
 	end)
 end
 

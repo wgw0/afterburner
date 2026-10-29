@@ -4,14 +4,15 @@
 --   Keyboard + mouse:
 --     Mouse Aim (default): the mouse moves an aim direction; the Instructor flies the jet to it.
 --     Direct: the mouse is a self-centring stick for pitch and roll.
---     Keys: W/S throttle (hold W at 100% for afterburner), Q/E roll, A/D rudder, arrows pitch/roll,
---     RMB free look, LeftShift override G/AoA limits, M switch scheme.
---   Gamepad: left stick pitch/roll, LB/RB rudder, RT/LT throttle (hold RT at 100% for afterburner),
---     right stick look. Buttons are handled by WeaponController / CameraController.
+--     Keys (rebindable, BindingsController; defaults): W/S throttle (hold W at 100% for afterburner), Q/E
+--     roll, A/D rudder, LeftShift override G/AoA limits, M switch scheme. Fixed: arrows pitch/roll, RMB
+--     free look.
+--   Gamepad: left stick pitch/roll, RT/LT throttle (hold RT at 100% for afterburner), right stick look;
+--     buttons as bound (LB/RB rudder, L3 override by default). Weapon and view buttons are handled by
+--     WeaponController / CameraController.
 --   Touch: the TouchController's virtual stick and throttle slider write into padStick / throttle,
 --     with optional gun aim-assist blended in.
 
-local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -20,6 +21,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Instructor = require(Shared.Instructor)
 local Signal = require(Shared.Util.Signal)
 local Types = require(Shared.Types)
+
+local BindingsController = require(script.Parent.BindingsController)
 
 type ControlInput = Types.ControlInput
 type FlightState = Types.FlightState
@@ -52,7 +55,6 @@ local InputController = {
 	padlocked = false, -- the camera is padlocked on a target: mouse aim holds still
 	device = "KeyboardMouse" :: Device,
 	padStick = Vector2.zero, -- gamepad / touch stick: x = roll right, y = pitch up (after expo)
-	padYaw = 0,
 	padLook = Vector2.zero, -- gamepad right stick (free look)
 	triggerUp = 0, -- RT
 	triggerDown = 0, -- LT
@@ -65,6 +67,12 @@ local InputController = {
 
 local stick = Vector2.zero -- Direct mode: x = roll, y = pitch
 local abHold = 0
+
+-- +1 / −1 / 0 from two bound actions (their keys or gamepad buttons, INP-05).
+local function actionAxis(positive: string, negative: string): number
+	return (if BindingsController:IsDown(positive) then 1 else 0)
+		- (if BindingsController:IsDown(negative) then 1 else 0)
+end
 
 local function keyAxis(positive: Enum.KeyCode, negative: Enum.KeyCode): number
 	local value = 0
@@ -134,9 +142,9 @@ end
 function InputController:GetControlInput(state: FlightState, airframe: any): ControlInput
 	-- Arrows fly the jet unless Left Alt is held (then they're snap views, see CameraController).
 	local arrows = not UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt)
-	local keyRoll = keyAxis(Enum.KeyCode.E, Enum.KeyCode.Q)
+	local keyRoll = actionAxis("RollRight", "RollLeft")
 		+ (if arrows then keyAxis(Enum.KeyCode.Right, Enum.KeyCode.Left) else 0)
-	local keyYaw = keyAxis(Enum.KeyCode.D, Enum.KeyCode.A)
+	local keyYaw = actionAxis("YawRight", "YawLeft") -- includes the gamepad bumpers (by default)
 	local keyPitch = if arrows then keyAxis(Enum.KeyCode.Down, Enum.KeyCode.Up) else 0 -- pull back = nose up
 
 	local result: ControlInput
@@ -144,7 +152,7 @@ function InputController:GetControlInput(state: FlightState, airframe: any): Con
 		result = {
 			pitch = math.clamp(self.padStick.Y + keyPitch, -1, 1),
 			roll = math.clamp(self.padStick.X + keyRoll, -1, 1),
-			yaw = math.clamp(self.padYaw + keyYaw, -1, 1),
+			yaw = keyYaw,
 			throttle = self.throttle,
 			afterburner = self.afterburner,
 			protections = true,
@@ -193,7 +201,7 @@ local function update(dt: number)
 	end
 
 	-- Throttle and afterburner (keys, or the gamepad triggers)
-	local throttleAxis = keyAxis(Enum.KeyCode.W, Enum.KeyCode.S)
+	local throttleAxis = actionAxis("ThrottleUp", "ThrottleDown")
 	if self.device == "Gamepad" then
 		throttleAxis += (if self.triggerUp > 0.1 then self.triggerUp else 0) - (if self.triggerDown > 0.1
 			then self.triggerDown
@@ -213,7 +221,7 @@ local function update(dt: number)
 		abHold = 0
 	end
 
-	self.override = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+	self.override = BindingsController:IsDown("Override")
 	self.freeLook = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
 	if self.device == "Gamepad" then
 		-- Right stick looks around directly (springs back when released).
@@ -291,25 +299,11 @@ function InputController:Init()
 			self.triggerDown = input.Position.Z
 		end
 	end)
-	local function bumpers()
-		local yaw = 0
-		if UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonR1) then
-			yaw += 1
-		end
-		if UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonL1) then
-			yaw -= 1
-		end
-		self.padYaw = yaw
-	end
-	UserInputService.InputBegan:Connect(bumpers)
-	UserInputService.InputEnded:Connect(bumpers)
-
-	ContextActionService:BindAction("AfterburnerSwitchScheme", function(_, inputState)
-		if inputState == Enum.UserInputState.Begin then
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and BindingsController:Matches(input, "SwitchScheme") then
 			self:SetScheme(if self.scheme == "MouseAim" then "Direct" else "MouseAim")
 		end
-		return Enum.ContextActionResult.Sink
-	end, false, Enum.KeyCode.M)
+	end)
 end
 
 function InputController:Start()

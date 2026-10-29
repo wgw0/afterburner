@@ -13,6 +13,7 @@ local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local TeamConfig = require(Shared.Config.Teams)
 
+local BindingsController = require(script.Parent.BindingsController)
 local SettingsController = require(script.Parent.SettingsController)
 
 local NAVY = Color3.fromRGB(10, 18, 34)
@@ -284,16 +285,14 @@ function MatchController:Init()
 	pcall(function()
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	end)
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed and input.KeyCode ~= Enum.KeyCode.Tab then
-			return
-		end
-		if input.KeyCode == Enum.KeyCode.Tab or input.KeyCode == Enum.KeyCode.ButtonStart then
+	-- Held (Tab / Start by default, INP-05). Roblox can mark Tab processed, so that isn't checked.
+	UserInputService.InputBegan:Connect(function(input)
+		if BindingsController:Matches(input, "Scoreboard") then
 			setBoard(true)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.Tab or input.KeyCode == Enum.KeyCode.ButtonStart then
+		if BindingsController:Matches(input, "Scoreboard") then
 			setBoard(false)
 		end
 	end)
