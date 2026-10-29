@@ -154,6 +154,7 @@ render = function()
 			return PlayerDataController:SetLineup(ids)
 		end,
 		Settings = SettingsController.values,
+		MenuScale = SettingsController:Get("MenuScale"),
 		OnSetting = function(key, value)
 			SettingsController:Set(key, value)
 		end,

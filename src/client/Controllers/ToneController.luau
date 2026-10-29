@@ -12,7 +12,9 @@
 --     time; PULL UP cuts in at once and repeats back to back. Warnings without a recording get the
 --     master warning chime once when they come up.
 --   Missile launch: a whoosh (yours non-positional, others 3D). Detonations: CombatFxController.
+--   Subtitles (SET-03 setting): the voice lines and the RWR warnings as text near the bottom of the screen.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
@@ -21,6 +23,7 @@ local FlightController = require(script.Parent.FlightController)
 local HUDController = require(script.Parent.HUDController)
 local MissileViewController = require(script.Parent.MissileViewController)
 local SensorController = require(script.Parent.SensorController)
+local SettingsController = require(script.Parent.SettingsController)
 
 local FALLBACK = "rbxasset://sounds/electronicpingshort.wav"
 local RAMP = 60 -- volume units per second: ~15 ms fades, so gating the tone doesn't click
@@ -35,6 +38,14 @@ local CALLOUTS = {
 	{ warning = "ENGINE FIRE", clip = "EngineFire", every = 6 },
 	{ warning = "BINGO FUEL", clip = "Bingo", every = 15 },
 	{ warning = "ENGINE DAMAGE", clip = "Caution", every = 12 },
+}
+-- What each recording says, for subtitles
+local SUBTITLES = {
+	PullUp = "PULL UP, PULL UP",
+	EngineFire = "ENGINE FIRE",
+	Bingo = "BINGO FUEL",
+	Caution = "CAUTION",
+	MasterWarning = "[master warning]",
 }
 -- HUD warnings with no recording: the master warning chime when they come up
 local CHIMED = { "STALL", "OVER-G", "G-LIMIT", "RETURN TO BATTLE AREA" }
@@ -59,6 +70,29 @@ local voiceFreeAt = 0
 local lastSaid: { [string]: number } = {}
 local wasUp: { [string]: boolean } = {}
 local rwrNextAt = 0 -- when the looping RWR warning plays again
+local subtitleLabel: TextLabel
+local subtitles: { [string]: number } = {} -- line → shown until (os.clock)
+
+-- Shows a subtitle line for `seconds` (if the Subtitles setting is on); a line already showing is extended.
+local function subtitle(text: string, seconds: number)
+	if SettingsController:Get("Subtitles") then
+		subtitles[text] = math.max(subtitles[text] or 0, os.clock() + seconds)
+	end
+end
+
+local function drawSubtitles(now: number)
+	local lines = {}
+	for text, untilTime in subtitles do
+		if now >= untilTime then
+			subtitles[text] = nil
+		else
+			table.insert(lines, text)
+		end
+	end
+	table.sort(lines)
+	subtitleLabel.Text = table.concat(lines, "\n")
+	subtitleLabel.Visible = #lines > 0
+end
 
 local function clipOf(name: string): Sound?
 	local audio = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Audio")
@@ -136,6 +170,7 @@ local function say(clip: string, now: number)
 	end
 	speaking = playAsset(clip, nil, ALERT_VOLUME)
 	speakingClip = clip
+	subtitle(`"{SUBTITLES[clip] or clip}"`, clipLength(clip) + 0.5)
 	voiceFreeAt = now + clipLength(clip) + VOICE_GAP
 	lastSaid[clip] = now
 end
@@ -151,6 +186,7 @@ local function updateVoice(flying: boolean, now: number)
 	for _, name in CHIMED do
 		if up[name] and not wasUp[name] then
 			playAsset("MasterWarning", nil, 0.7 * ALERT_VOLUME)
+			subtitle(SUBTITLES.MasterWarning, 2)
 		end
 	end
 	for _, callout in CALLOUTS do
@@ -216,6 +252,14 @@ local function update(dt: number)
 		end
 	end
 	knownSearch = search
+	if hasLaunch then
+		subtitle("[missile launch warning]", 0.5)
+	elseif hasLock then
+		subtitle("[radar lock warning]", 0.5)
+	end
+	if newSearch then
+		subtitle("[new radar contact]", 2)
+	end
 	local loop = if hasLaunch then "RwrLaunch" elseif hasLock then "RwrLock" else nil
 	if loop and clipOf(loop) then
 		-- Will's recordings: the launch or lock warning, over and over while it lasts
@@ -244,6 +288,7 @@ local function update(dt: number)
 	end
 
 	updateVoice(flying, now)
+	drawSubtitles(now)
 end
 
 function ToneController:Init()
@@ -253,6 +298,28 @@ function ToneController:Init()
 	group.Parent = SoundService
 	seeker = voice()
 	warn = voice()
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "AfterburnerSubtitles"
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 30
+	subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.AnchorPoint = Vector2.new(0.5, 1)
+	subtitleLabel.Position = UDim2.new(0.5, 0, 1, -215) -- above the radar scopes
+	subtitleLabel.Size = UDim2.fromOffset(600, 60)
+	subtitleLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+	subtitleLabel.BackgroundTransparency = 0.45
+	subtitleLabel.Font = Enum.Font.GothamBold
+	subtitleLabel.TextSize = 18
+	subtitleLabel.TextColor3 = Color3.new(1, 1, 1)
+	subtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+	subtitleLabel.AutomaticSize = Enum.AutomaticSize.Y
+	subtitleLabel.Visible = false
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = subtitleLabel
+	subtitleLabel.Parent = gui
+	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
 function ToneController:Start()

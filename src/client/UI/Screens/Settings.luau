@@ -54,6 +54,12 @@ local SECTIONS = {
 				hint = "Speed, altitude and climb on the HUD.",
 				choices = { { "Imperial", "KNOTS · FEET" }, { "Metric", "KM/H · METRES" } },
 			},
+			{
+				key = "HUDColour",
+				label = "HUD colour",
+				hint = "Cyan and white stay clear of the red and amber warnings.",
+				choices = { { "Green", "GREEN" }, { "Cyan", "CYAN" }, { "White", "WHITE" } },
+			},
 		},
 	},
 	{
@@ -77,6 +83,19 @@ local SECTIONS = {
 				key = "ReduceFlashing",
 				label = "Reduce flashing",
 				hint = "Dimmer explosions; warnings stay lit instead of blinking.",
+			},
+			{
+				key = "Subtitles",
+				label = "Subtitles",
+				hint = "Voice warnings and radar warning tones as text.",
+			},
+			{
+				key = "MenuScale",
+				label = "Menu size",
+				hint = "Menus, banner and scoreboard.",
+				step = 0.1,
+				format = "%d%%",
+				percent = true,
 			},
 		},
 	},
@@ -113,11 +132,13 @@ local function Row(props: any)
 		})
 	elseif spec.kind == "enum" then
 		local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, Align = "Right" }) }
+		-- Two choices are 150 wide; more share the same 320 px
+		local width = math.min(150, math.floor((320 - 8 * (#row.choices - 1)) / #row.choices))
 		for i, choice in row.choices do
 			buttons[choice[1]] = e(C.Button, {
 				Text = choice[2],
 				Style = if value == choice[1] then "Primary" else "Ghost",
-				Size = UDim2.fromOffset(150, 44),
+				Size = UDim2.fromOffset(width, 44),
 				TextSize = 13,
 				LayoutOrder = i,
 				OnClick = function()

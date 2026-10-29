@@ -13,6 +13,8 @@ local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local TeamConfig = require(Shared.Config.Teams)
 
+local SettingsController = require(script.Parent.SettingsController)
+
 local NAVY = Color3.fromRGB(10, 18, 34)
 local ORANGE = Color3.fromRGB(255, 138, 61)
 local WHITE = Color3.new(1, 1, 1)
@@ -241,6 +243,25 @@ function MatchController:Init()
 	boardRows = rowsFrame(board, 44)
 
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+	-- Menu scale setting (SET-03) applies to the banner and scoreboard too
+	local scales = {}
+	for _, target in { banner, board } do
+		local scale = Instance.new("UIScale")
+		scale.Parent = target
+		table.insert(scales, scale)
+	end
+	local function applyScale()
+		for _, scale in scales do
+			scale.Scale = SettingsController:Get("MenuScale") or 1
+		end
+	end
+	applyScale()
+	SettingsController.Changed:Connect(function(key)
+		if key == "MenuScale" then
+			applyScale()
+		end
+	end)
 
 	Net.Client.on("MatchState", function(s: any)
 		self.state = s
