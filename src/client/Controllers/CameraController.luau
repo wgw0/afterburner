@@ -264,7 +264,7 @@ local function update(dt: number)
 			end
 		end
 		table.sort(jets, function(a, b)
-			return (a:GetAttribute("JetId") :: number) < (b:GetAttribute("JetId") :: number)
+			return ((a:GetAttribute("JetId") :: number?) or 0) < ((b:GetAttribute("JetId") :: number?) or 0)
 		end)
 		if #jets > 0 then
 			spectateIndex = (spectateIndex - 1) % #jets + 1

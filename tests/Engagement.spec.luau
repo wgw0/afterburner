@@ -21,6 +21,7 @@ return function(ctx)
 		afterburner: boolean,
 		breakTurn: boolean,
 		flareInterval: number?, -- seconds between flares (nil = none)
+		perFlare: number?, -- flares released each time (2 = a programme salvo; default 1)
 		reaction: number, -- seconds after launch before the target reacts
 	}
 
@@ -51,15 +52,17 @@ return function(ctx)
 				flareTimer -= DT
 				if flareTimer <= 0 then
 					flareTimer = scenario.flareInterval
-					nextFlareId += 1
-					table.insert(
-						flares,
-						Countermeasures.newFlare(
-							nextFlareId,
-							target.cframe * CFrame.new(0, -0.56, 4.2),
-							target.velocity
+					for _ = 1, scenario.perFlare or 1 do
+						nextFlareId += 1
+						table.insert(
+							flares,
+							Countermeasures.newFlare(
+								nextFlareId,
+								target.cframe * CFrame.new(0, -0.56, 4.2),
+								target.velocity
+							)
 						)
-					)
+					end
 				end
 			end
 			for i, flare in flares do
@@ -143,6 +146,48 @@ return function(ctx)
 			local defeated = 1 - rate
 			print(`[Engagement] idle + break + flares: {math.round(defeated * 100)}% defeated`)
 			expect(defeated >= 0.65 and defeated <= 0.92).toBe(true)
+		end)
+	end)
+
+	-- MSL-09: an imaging seeker (AIM-9X) shrugs off single flares; programme bursts (2 flares every 0.5 s,
+	-- as CMS-04 fires them) plus a hard break beat it some of the time, flying straight almost never.
+	describe("AIM-9X (imaging seeker) vs a defending F-5E from 1.8 km behind", function()
+		it("single flares with a break turn rarely work", function()
+			local rate = hitRate(
+				"AIM9X",
+				{ throttle = 0, afterburner = false, breakTurn = true, flareInterval = 0.8, reaction = 0.5 },
+				RUNS,
+				1800
+			)
+			print(`[Engagement] 9X single flares + break: {math.round((1 - rate) * 100)}% defeated`)
+			expect(1 - rate <= 0.2).toBe(true)
+		end)
+
+		it("flare bursts flying straight rarely work", function()
+			local rate = hitRate("AIM9X", {
+				throttle = 0,
+				afterburner = false,
+				breakTurn = false,
+				flareInterval = 0.5,
+				perFlare = 2,
+				reaction = 0.5,
+			}, RUNS, 1800)
+			print(`[Engagement] 9X bursts straight: {math.round((1 - rate) * 100)}% defeated`)
+			expect(1 - rate <= 0.3).toBe(true)
+		end)
+
+		it("flare bursts plus a hard break beat it some of the time (target 35-65%)", function()
+			local rate = hitRate("AIM9X", {
+				throttle = 0,
+				afterburner = false,
+				breakTurn = true,
+				flareInterval = 0.5,
+				perFlare = 2,
+				reaction = 0.5,
+			}, RUNS, 1800)
+			local defeated = 1 - rate
+			print(`[Engagement] 9X bursts + break: {math.round(defeated * 100)}% defeated`)
+			expect(defeated >= 0.35 and defeated <= 0.65).toBe(true)
 		end)
 	end)
 end

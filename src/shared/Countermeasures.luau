@@ -82,6 +82,22 @@ function Countermeasures.flareDecoyChance(
 	return math.clamp((1 - resistance) * share * Countermeasures.DECOY_FACTOR * (0.3 + 0.7 * nearness), 0, 1)
 end
 
+-- Imaging seekers (IR_Adv, MSL-09) see the jet's shape, not just a hot spot, so a single flare never fools
+-- them. A burst does: BURST_FLARES flares appearing in the seeker's view within BURST_WINDOW seconds get one
+-- roll, much better while the target is beaming the missile (breaking hard across its view) than flying
+-- straight away from it. Then the count starts again: each burst rolls once.
+Countermeasures.BURST_FLARES = 3
+Countermeasures.BURST_WINDOW = 1.0 -- seconds
+Countermeasures.BURST_BASE = 0.12 -- per-burst decoy strength flying straight (times 1 - resistance)
+Countermeasures.BURST_BEAM = 2.2 -- extra strength with the target fully on the beam
+
+-- Chance one flare burst decoys an imaging seeker. beam: 0 (target flying straight at or away from the
+-- missile) to 1 (crossing its view at right angles).
+function Countermeasures.burstDecoyChance(resistance: number, beam: number): number
+	local strength = Countermeasures.BURST_BASE + Countermeasures.BURST_BEAM * math.clamp(beam, 0, 1)
+	return math.clamp((1 - resistance) * strength, 0, 1)
+end
+
 -- Chance a radar missile loses its target to a chaff bundle. Much better while notching.
 function Countermeasures.chaffDecoyChance(resistance: number, notching: boolean): number
 	return math.clamp((1 - resistance) * (if notching then 0.8 else 0.08), 0, 1) -- spamming chaff without notching rarely works

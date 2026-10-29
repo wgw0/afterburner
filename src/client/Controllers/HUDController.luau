@@ -100,6 +100,7 @@ local LCOS_TICKS = 12
 local markerLayer: Frame
 -- HUD-03: missiles
 local seekerCircle: Frame
+local helmetSight: Frame -- MSL-09: where your head is pointing, with a helmet-cued heat-seeker selected
 local lockLabel: TextLabel
 local zoneBar: Frame
 local zoneMarks: { [string]: Frame } = {}
@@ -322,6 +323,13 @@ local function build(): ScreenGui
 	-- IR seeker circle: sits on the boresight while searching, jumps onto the target, solid when locked.
 	seekerCircle = circle(box, 46, 1.5, GREEN)
 	seekerCircle.Visible = false
+	helmetSight = circle(gui, 30, 1.5, GREEN)
+	helmetSight.Position = UDim2.fromScale(0.5, 0.5)
+	helmetSight.Visible = false
+	local hmd = text(helmetSight, 12)
+	hmd.Text = "HMD"
+	hmd.AnchorPoint = Vector2.new(0.5, 0)
+	hmd.Position = UDim2.new(0.5, 0, 1, 4)
 
 	-- Launch zone: a vertical scale left of the altitude tape. Caret = target range.
 	zoneBar = line(box, 2, 100)
@@ -941,6 +949,15 @@ local function update()
 	-- target's own marker (green square, then red) takes over.
 	seekerCircle.Visible = isIR and SensorController.irTargetId == 0
 	seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	-- Helmet sight: shown once your head is off the nose, so you can see where the seeker will be cued
+	local offNose = jetModel ~= nil
+		and jetModel.PrimaryPart ~= nil
+		and camera.CFrame.LookVector:Dot(jetModel.PrimaryPart.CFrame.LookVector) < math.cos(math.rad(4))
+	helmetSight.Visible = missileSpec ~= nil
+		and Guidance.isImaging(missileSpec)
+		and not SensorController.seekerCaged
+		and SensorController.irTargetId == 0
+		and offNose
 
 	local ready = if isIR
 		then SensorController.irLocked

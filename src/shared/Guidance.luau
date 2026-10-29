@@ -189,10 +189,27 @@ export type IRSeeker = {
 	trackId: any?, -- what it's following now (target jet id or a flare id)
 	rolled: { [any]: boolean }, -- flares already considered (each rolled once)
 	seed: number,
+	burst: { number }, -- imaging seekers: missile ages when recent flares appeared (MSL-09)
+	bursts: number, -- imaging seekers: bursts rolled so far
 }
 
 function Guidance.newIRSeeker(targetId: any?, seed: number): IRSeeker
-	return { trackId = targetId, rolled = {}, seed = seed }
+	return { trackId = targetId, rolled = {}, seed = seed, burst = {}, bursts = 0 }
+end
+
+-- Advanced heat-seekers (IR_Adv) have imaging seekers and are cued by the pilot's helmet (MSL-09).
+function Guidance.isImaging(spec: { Class: string }): boolean
+	return spec.Class == "IR_Adv"
+end
+
+-- How far the target is crossing the missile's view: 0 flying straight at or away from it, 1 at right angles.
+local function beamFactor(missilePosition: Vector3, target: HeatSource): number
+	local los = target.position - missilePosition
+	local speed = target.velocity.Magnitude
+	if los.Magnitude < 1e-3 or speed < 1 then
+		return 0
+	end
+	return math.sqrt(math.max(1 - (target.velocity:Dot(los.Unit) / speed) ^ 2, 0))
 end
 
 -- Updates what the seeker is tracking. sources includes the original target (if still alive) and every
@@ -200,7 +217,7 @@ end
 function Guidance.updateIRSeeker(
 	seeker: IRSeeker,
 	missile: MissileState,
-	spec: Spec & { FlareResistance: number },
+	spec: Spec & { FlareResistance: number, Class: string },
 	sources: { HeatSource }
 ): HeatSource?
 	local tracked: HeatSource? = nil
@@ -214,13 +231,36 @@ function Guidance.updateIRSeeker(
 		return nil
 	end
 
-	-- Any new flare appearing near the tracked target in the seeker's view gets one roll.
+	-- Any new flare appearing near the tracked target in the seeker's view gets one roll. An imaging seeker
+	-- ignores single flares: only a burst of them gets a roll (Countermeasures.burstDecoyChance).
 	local trackLos = (tracked.position - missile.position).Unit
+	local imaging = Guidance.isImaging(spec)
 	for _, source in sources do
 		if type(source.id) == "string" and not seeker.rolled[source.id] and source.heat > 0 then
 			local los = (source.position - missile.position).Unit
 			local separation = math.acos(math.clamp(los:Dot(trackLos), -1, 1))
-			if separation <= Countermeasures.SEEKER_FOV then
+			if separation <= Countermeasures.SEEKER_FOV and imaging then
+				seeker.rolled[source.id] = true
+				local now = missile.age
+				local recent = {}
+				for _, seen in seeker.burst do
+					if now - seen <= Countermeasures.BURST_WINDOW then
+						table.insert(recent, seen)
+					end
+				end
+				table.insert(recent, now)
+				seeker.burst = recent
+				if #recent >= Countermeasures.BURST_FLARES then
+					seeker.burst = {}
+					seeker.bursts += 1
+					local chance =
+						Countermeasures.burstDecoyChance(spec.FlareResistance, beamFactor(missile.position, tracked))
+					if Countermeasures.roll(seeker.seed, seeker.bursts * 7919) < chance then
+						seeker.trackId = source.id
+						return source
+					end
+				end
+			elseif separation <= Countermeasures.SEEKER_FOV then
 				seeker.rolled[source.id] = true
 				local chance =
 					Countermeasures.flareDecoyChance(spec.FlareResistance, source.heat, tracked.heat, separation)
@@ -256,6 +296,22 @@ function Guidance.irLockable(
 	end
 	local reach = spec.MaxRange * math.sqrt(math.clamp(heat, 0.25, 2))
 	return Units.toMetres(los.Magnitude) <= reach
+end
+
+-- Helmet cueing (MSL-09): an imaging heat-seeker can lock where the pilot is looking, anywhere inside its
+-- gimbal, not just inside its seeker cone around the nose.
+function Guidance.irCueLockable(
+	spec: { SeekerCone: number, Gimbal: number, MaxRange: number, Class: string },
+	shooterCF: CFrame,
+	targetCF: CFrame,
+	throttle: number,
+	afterburner: boolean
+): boolean
+	if not Guidance.isImaging(spec) then
+		return false
+	end
+	local wide = { SeekerCone = math.max(spec.Gimbal, spec.SeekerCone), MaxRange = spec.MaxRange, Class = spec.Class }
+	return Guidance.irLockable(wide, shooterCF, targetCF, throttle, afterburner)
 end
 
 ---------------------------------------------------------------------------
