@@ -18,6 +18,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Callsign = require(Shared.Callsign)
 local Economy = require(Shared.Config.Economy)
 local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
@@ -34,6 +35,7 @@ local CombatService = require(script.Parent.CombatService)
 local DataService = require(script.Parent.DataService)
 local MatchService = require(script.Parent.MatchService)
 local MissileService = require(script.Parent.MissileService)
+local TextFilterService = require(script.Parent.TextFilterService)
 
 local ProgressionService = {
 	Priority = 70, -- after MatchService, so the spawn gate can wrap its own
@@ -219,6 +221,16 @@ local function handleIntent(
 	return ok == true, err
 end
 
+-- Shows a callsign (already filtered) as the player's name, on their jet too if they're flying ("" = username).
+local function showCallsign(player: Player, callsign: string)
+	player:SetAttribute("Callsign", callsign)
+	local jet = AircraftService:GetJet(player)
+	if jet then
+		jet.name = Callsign.nameOf(player)
+		jet.model:SetAttribute("PilotName", jet.name)
+	end
+end
+
 function ProgressionService:Init()
 	Net.Server.handle("ResearchAircraft", function(player: Player, id: string)
 		return handleIntent(player, "Research", function(data)
@@ -270,8 +282,49 @@ function ProgressionService:Init()
 		end
 		return ok == true, err
 	end)
+	-- Your custom callsign (CMP-01): cleaned, then shown only if Roblox's filter leaves it untouched
+	Net.Server.handle("SetCallsign", function(player: Player, text: string)
+		if text == "" then
+			DataService:Update(player, function(data)
+				data.Callsign = ""
+			end)
+			showCallsign(player, "")
+			return true, nil
+		end
+		local callsign, why = Callsign.clean(text)
+		if not callsign then
+			return false, why
+		end
+		local filtered = TextFilterService:Filter(callsign, player.UserId)
+		if filtered == nil then
+			return false, "Couldn't check that callsign just now. Try again in a moment."
+		elseif not Callsign.accepted(callsign, filtered) then
+			return false, "That callsign isn't allowed"
+		end
+		local ok, err = DataService:Update(player, function(data)
+			data.Callsign = callsign
+		end)
+		if ok then
+			showCallsign(player, callsign)
+		end
+		return ok == true, err
+	end)
 	-- On joining: levels reached before their milestones existed still pay, and the title shows
 	DataService.ProfileLoaded:Connect(function(player, data)
+		-- The saved callsign goes through the filter again (Roblox's filter changes over time)
+		local saved = data.Callsign
+		if type(saved) == "string" and saved ~= "" then
+			task.spawn(function()
+				local filtered = TextFilterService:Filter(saved, player.UserId)
+				if player.Parent and Callsign.accepted(saved, filtered) then
+					showCallsign(player, saved)
+				elseif player.Parent and filtered ~= nil then
+					DataService:Update(player, function(d)
+						d.Callsign = "" -- no longer allowed
+					end)
+				end
+			end)
+		end
 		DataService:Update(player, function(d)
 			Progression.claimLevelRewards(d)
 		end)

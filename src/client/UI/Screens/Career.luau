@@ -1,14 +1,17 @@
 --!strict
 -- Career (PRG-03, LIV-02). Top: your lifetime stats, and the level track: your level and XP, then every
 -- milestone (Config/LevelRewards) in a row, the ones reached lit, the next one marked, later ones dimmed,
--- with your title picker under it. Bottom: the achievements, earned ones lit with the date.
--- props: Data, OnSetTitle(titleId) -> (ok, err).
+-- with your callsign (CMP-01) and title picker under it. Bottom: the achievements, earned ones lit with the date.
+-- props: Data, OnSetTitle(titleId) -> (ok, err), OnSetCallsign(text) -> (ok, err).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Players = game:GetService("Players")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Achievements = require(Shared.Achievements)
+local Callsign = require(Shared.Callsign)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
@@ -19,7 +22,7 @@ local Theme = require(script.Parent.Parent.Theme)
 local e = React.createElement
 local CARD_W, CARD_H = 250, 96
 local STEP_W, STEP_H = 168, 128
-local TOP_H = 300
+local TOP_H = 340
 
 local function stat(label: string, value: string, order: number)
 	return e("Frame", { Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, LayoutOrder = order }, {
@@ -79,6 +82,101 @@ local function step(group: any, level: number, isNext: boolean, order: number)
 			Position = UDim2.fromOffset(0, 24),
 			BackgroundTransparency = 1,
 		}, lines),
+	})
+end
+
+-- Your callsign: what other pilots see instead of your username, checked by Roblox's filter when you set it.
+local function CallsignBox(props: { Data: any, OnSetCallsign: (string) -> (boolean, string?) })
+	local saved = props.Data.Callsign or ""
+	local text, setText = React.useState(saved)
+	local pending, setPending = React.useState(false)
+	local message, setMessage = React.useState(nil :: { text: string, bad: boolean }?)
+	local function submit(value: string)
+		setPending(true)
+		task.spawn(function()
+			local ok, err = props.OnSetCallsign(value)
+			setPending(false)
+			if ok then
+				setText(value)
+				setMessage({ text = if value == "" then "Using your username" else "Saved", bad = false })
+			else
+				setMessage({ text = err or "Couldn't save that", bad = true })
+			end
+		end)
+	end
+	return e("Frame", {
+		Size = UDim2.new(1, 0, 0, 30),
+		Position = UDim2.new(0, 0, 1, -68),
+		BackgroundTransparency = 1,
+	}, {
+		Layout = C.List({ Horizontal = true, Gap = 6, AlignY = "Center" }),
+		Label = e(C.Label, {
+			Text = "CALLSIGN",
+			Size = UDim2.fromOffset(78, 30),
+			Bold = true,
+			TextSize = 12,
+			Color = Theme.Accent,
+			LayoutOrder = 0,
+		}),
+		Box = e("TextBox", {
+			Text = text,
+			PlaceholderText = Players.LocalPlayer.Name,
+			PlaceholderColor3 = Theme.Dim,
+			ClearTextOnFocus = false,
+			Font = Theme.FontBold,
+			TextSize = 14,
+			TextColor3 = Theme.Text,
+			BackgroundColor3 = Theme.Background,
+			Size = UDim2.fromOffset(180, 30),
+			LayoutOrder = 1,
+			[React.Change.Text] = function(box: TextBox)
+				if #box.Text > Callsign.MAX then
+					box.Text = string.sub(box.Text, 1, Callsign.MAX)
+				end
+				setText(box.Text)
+			end,
+			[React.Event.FocusLost] = function(_box: TextBox, enter: boolean)
+				if enter and text ~= saved and text ~= "" then
+					submit(text)
+				end
+			end,
+		}, {
+			Corner = C.corner(),
+			Stroke = C.stroke(),
+			Padding = e("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+		}),
+		Set = e(C.Button, {
+			Text = "SET",
+			Style = "Primary",
+			Size = UDim2.fromOffset(56, 30),
+			TextSize = 12,
+			Pending = pending,
+			Disabled = text == saved or text == "",
+			LayoutOrder = 2,
+			OnClick = function()
+				submit(text)
+			end,
+		}),
+		Clear = if saved ~= ""
+			then e(C.Button, {
+				Text = "USE USERNAME",
+				Style = "Ghost",
+				Size = UDim2.fromOffset(120, 30),
+				TextSize = 12,
+				Pending = pending,
+				LayoutOrder = 3,
+				OnClick = function()
+					submit("")
+				end,
+			})
+			else nil,
+		Message = e(C.Label, {
+			Text = if message then message.text else "Shown to everyone instead of your username",
+			Size = UDim2.fromOffset(300, 30),
+			TextSize = 12,
+			Color = if message and message.bad then Theme.Bad else Theme.Dim,
+			LayoutOrder = 4,
+		}),
 	})
 end
 
@@ -224,6 +322,7 @@ local function LevelTrack(props: any)
 			AutomaticCanvasSize = Enum.AutomaticSize.X,
 			ref = scroller,
 		}, steps),
+		Callsign = e(CallsignBox, { Data = data, OnSetCallsign = props.OnSetCallsign }),
 		Titles = e("Frame", {
 			Size = UDim2.new(1, 0, 0, 30),
 			Position = UDim2.new(0, 0, 1, -32),
@@ -340,7 +439,7 @@ local function Career(props: any)
 			Ratio = stat("Kills per death", string.format("%.2f", kills / math.max(deaths, 1)), 7),
 			Achievements = stat("Achievements", `{count} / {total}`, 8),
 		}),
-		Level = e(LevelTrack, { Data = data, OnSetTitle = props.OnSetTitle }),
+		Level = e(LevelTrack, { Data = data, OnSetTitle = props.OnSetTitle, OnSetCallsign = props.OnSetCallsign }),
 		-- Sized to its cards
 		Achievements = e("Frame", {
 			Size = UDim2.new(1, -40, 0, 0),

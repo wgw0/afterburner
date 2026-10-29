@@ -13,6 +13,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Callsign = require(Shared.Callsign)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
 local KillMarkers = require(Shared.KillMarkers)
@@ -146,7 +147,7 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	local startCFrame = cframe or spawnCFrame(id)
 	local speed = (options and options.speed) or Flight.SPAWN_SPEED
 	local startVelocity = startCFrame.LookVector * Units.velocityToStuds(speed)
-	local name = if pilot then pilot.Name else (options and options.name) or `AI-{id}`
+	local name = if pilot then Callsign.nameOf(pilot) else (options and options.name) or `AI-{id}`
 
 	local model = template:Clone()
 	model.Name = `{airframeId}_{name}`

@@ -36,6 +36,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Challenges",
 	"Achievements",
 	"Title",
+	"Callsign",
 	"Lessons",
 	"Streak",
 	"Titles",
@@ -81,6 +82,7 @@ function PlayerData.template(): { [string]: any }
 		Challenges = Challenges.newState(),
 		Achievements = {},
 		Title = "", -- the title shown on the scoreboard (Config/LevelRewards), "" for none
+		Callsign = "", -- your custom callsign as typed and cleaned (CMP-01), "" for your username; re-filtered on join
 		LevelRewardsClaimed = 0, -- the level whose Credits / Free RP milestones have been paid up to
 		Lessons = {}, -- [lessonId] = true once finished (TelemetryService)
 		Streak = Streak.newState(), -- the daily login streak (LIV-03)

@@ -29,6 +29,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
 local AirSuperiority = require(Shared.AirSuperiority)
+local Callsign = require(Shared.Callsign)
 local MatchRules = require(Shared.MatchRules)
 local MatchmakingStats = require(Shared.MatchmakingStats)
 local Matchmaking = require(Shared.Matchmaking)
@@ -91,6 +92,8 @@ local function ensureScore(identity: any, name: string, isAI: boolean, userId: n
 		score.team = MatchRules.pickTeam(mode, scores, not isAI)
 		scores[identity] = score
 		Teams.set(identity, score.team)
+	elseif not isAI then
+		scores[identity].name = name -- a callsign set since (CMP-01)
 	end
 	if not pilotStates[identity] then
 		pilotStates[identity] = { diedAt = nil, livesUsed = 0 }
@@ -178,7 +181,7 @@ local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?,
 	if state == "Lobby" then
 		return false, nil, "Press PLAY to find a match"
 	end
-	ensureScore(player, player.Name, false, player.UserId)
+	ensureScore(player, Callsign.nameOf(player), false, player.UserId)
 	local allowed = canSpawn(player)
 	if not allowed then
 		return false, nil
@@ -272,7 +275,7 @@ local function startMatch()
 	clearJets()
 	refreshBand()
 	for _, player in humans() do
-		ensureScore(player, player.Name, false, player.UserId)
+		ensureScore(player, Callsign.nameOf(player), false, player.UserId)
 	end
 	for _, pilot in AIService:GetMatchPilots() do
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
@@ -655,7 +658,7 @@ function MatchService:Init()
 	CombatService.Kill:Connect(onKill)
 
 	Players.PlayerAdded:Connect(function(player)
-		ensureScore(player, player.Name, false, player.UserId)
+		ensureScore(player, Callsign.nameOf(player), false, player.UserId)
 		broadcastTimer = BROADCAST_INTERVAL
 	end)
 	Players.PlayerRemoving:Connect(function(player)
