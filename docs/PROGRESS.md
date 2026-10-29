@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 6 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 6 Content and polish for a soft launch | 7 / 43 | In progress: content done, launch plumbing not started (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -255,7 +255,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **MCH-05** Team Deathmatch, team balancing
   - West v East, 30 team kills or 10 minutes. Players join the side with fewer players, AI evens the numbers (and leaves the bigger side when a player joins), teams spawn over their own coast. No friendly fire: guns, missile blasts and fuses, seekers, radar locks, the RWR and AI targeting all skip teammates (`Lib/Teams`). Teammates are blue on the HUD and scopes; banner, scoreboard and results show the teams; the winning team gets the win reward. `MatchRules.spec` covers the rules. Checked in play (4v4 with AI: every kill cross-team, scores matched deaths) and by Will. *Two humans on one team still to see in a multiplayer test.*
   - Servers alternate Dogfight and Team Deathmatch each match (`MatchRules.ROTATION`) until mode select (UI-05). Checked in play and by Will.
-- [ ] **MCH-06** Air Superiority with zones
+- [x] **MCH-06** Air Superiority with zones
+  - Zones A, B, C on the centre line (`AirSuperiority.luau`): capture by presence, 400 tickets a side, 5 per jet lost, 1/s per zone of advantage, 12 minutes. Captures score 150; AI pilots go for zones (`AIBrain` Objective state). Force-field columns in the owner's colour, a capture line inside a zone, tickets and zone letters on the banner. Third in the mode rotation. `AirSuperiority.spec` covers the rules. Checked in play (AI raced for the zones, captures and bleed worked, the match ended on tickets) and by Will.
 - [x] **MAP-03** "Strait" final: materials, props, lighting, horizon skirt
   - Props done. A low-poly kit from Blender (`scenery_generate.py`: three trees, house, barn, flats, shop, warehouse, church, hangar, shelter, tower, ops block, fuel tank; 32–264 triangles each) is placed by `tools/SceneryBuilder`. It lays 12 towns on street grids, farms along the roads, about 15,000 trees in 760 woods, and roads between the towns and airbases on each coast. The roads are routed round the sea and the steep ground and textured with one repeating 128×256 image. The airbases get arched hangars facing the runway, a tower with a glass cab, an ops block, shelters and fuel tanks in place of the old boxes. Towns and woods are StreamingMesh models; flying over them holds 60 fps in Studio once streamed in.
   - Horizon skirt done. Past the terrain the world carries on as a flat plain to the haze: eight client-side slabs (`WorldEdgeController`) whose SpecialMeshes are scaled out to ±150 km, grass where the coasts run on and sea elsewhere. The outer 2,500 studs of terrain ease down to the plain's height (`WorldEdge`, `StraitBuilder.edges`), so the mountains on the north and west edges slope away instead of ending in cliffs. Roads and towns keep back from that band.
