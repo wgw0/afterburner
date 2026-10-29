@@ -246,8 +246,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
 - [ ] **HUD-05** Era variants (analogue vs glass symbology)
 - [ ] **GUN-07** LCOS and EEGS sights
-- [ ] **DMG-05** Pilot damage diagram on the HUD
-  - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio.
+- [x] **DMG-05** Pilot damage diagram on the HUD
+  - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio and by Will.
 - [ ] **MSL-08** Loft profile
   - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude.
 - [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
