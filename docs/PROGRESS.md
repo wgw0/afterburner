@@ -248,6 +248,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **GUN-07** LCOS and EEGS sights
 - [ ] **DMG-05** Pilot damage diagram on the HUD
 - [ ] **MSL-08** Loft profile
+  - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude.
 - [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
   - Partly done: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) have wide seeker cones and gimbals and strong flare resistance. Helmet cueing (locking where the pilot looks) is not built.
 - [ ] **SNS-07** TWS
