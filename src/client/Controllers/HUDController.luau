@@ -54,8 +54,8 @@ local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
 local LADDER_STEP = 5 -- degrees between the pitch rungs built (an era's style may show fewer)
-local BANK_MARKS = { -60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60 } -- bank scale ticks (degrees)
-local BANK_RADIUS = 90 -- px
+local BANK_MARKS = { -45, -30, -20, -10, 0, 10, 20, 30, 45 } -- bank scale ticks (degrees)
+local BANK_RADIUS = 60 -- px: small enough to sit between the corner readouts
 local TREND_SECONDS = 5 -- the speed trend shows where your speed will be this long from now
 
 local HUDController = {
@@ -664,7 +664,7 @@ local function update(dt: number)
 	if style.bankScale then
 		bankScale.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 		local jetBank = math.deg(math.atan2(-jetCF.RightVector.Y, jetCF.UpVector.Y))
-		local shown = math.rad(math.clamp(jetBank, -65, 65))
+		local shown = math.rad(math.clamp(jetBank, -50, 50))
 		local r = BANK_RADIUS - 2
 		bankCaret.Position = UDim2.fromOffset(-math.sin(shown) * r, math.cos(shown) * r)
 		bankCaret.Rotation = math.deg(shown)

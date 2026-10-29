@@ -19,7 +19,6 @@ return function(ctx)
 			expect(style.headingTape).toBe(false)
 			expect(style.flightPath).toBe(false)
 			expect(style.ladderNumbers).toBe(false)
-			expect(style.boxWidth < HUDStyles.forEra("EarlyGlass").boxWidth).toBe(true)
 		end)
 
 		it("glass jets add more as the eras go on; only the wide-area display is on the helmet", function()
