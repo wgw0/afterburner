@@ -22,6 +22,7 @@ return {
 
 	WingArea = 34.85,
 	CD0 = 0.016,
+	WaveDrag = 0.45, -- a thin delta built for Mach 2 (too little dry thrust to supercruise)
 	InducedK = 0.2, -- delta: big induced drag in hard turns
 	CLAlpha = 2.9,
 	CLMax = 1.3,

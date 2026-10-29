@@ -23,6 +23,7 @@ return {
 
 	WingArea = 42.7,
 	CD0 = 0.022,
+	WaveDrag = 1.15, -- bulky around the internal bays: it can't supercruise
 	InducedK = 0.11,
 	CLAlpha = 4.5,
 	CLMax = 1.7,

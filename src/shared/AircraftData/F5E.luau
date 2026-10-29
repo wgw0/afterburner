@@ -21,6 +21,7 @@ return {
 
 	WingArea = 17.3,
 	CD0 = 0.021,
+	WaveDrag = 0.7, -- area-ruled fuselage
 	InducedK = 0.11,
 	CLAlpha = 4.2,
 	CLMax = 1.4,

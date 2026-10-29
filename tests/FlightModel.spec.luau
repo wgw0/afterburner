@@ -145,6 +145,25 @@ return function(ctx)
 			local s = fly(levelState(MiG, 9000, 260), MiG, input({ throttle = 1, afterburner = true }), 90, 1 / 30)
 			expect(s.mach).toBeGreaterThan(1.05)
 		end)
+		-- Supercruise: level at 10 km on dry thrust (altitude held by a simple pitch loop)
+		local function cruiseMach(airframe: any, startMach: number, afterburner: boolean, seconds: number): number
+			local s = levelState(airframe, 10000, startMach * 299.5)
+			local inp = input({ throttle = 1, afterburner = afterburner })
+			for _ = 1, seconds * 20 do
+				inp.pitch = math.clamp((10000 - s.altitude) * 0.004 - s.velocity.Y * 0.04, -1, 1)
+				s = FlightModel.step(s, inp, airframe, 1 / 20)
+				s.fuel = airframe.Fuel
+			end
+			return s.mach
+		end
+		it("the Typhoon supercruises; the F-15C and Rafale slow below Mach 1 without afterburner", function()
+			expect(cruiseMach(AircraftData.get("Typhoon"), 1.3, false, 150)).toBeGreaterThan(1.15)
+			expect(cruiseMach(AircraftData.get("F15C"), 1.3, false, 150)).toBeLessThan(1)
+			expect(cruiseMach(AircraftData.get("RafaleC"), 1.3, false, 150)).toBeLessThan(1)
+		end)
+		it("afterburner still takes the F-15C well past Mach 1.5 at 10 km", function()
+			expect(cruiseMach(AircraftData.get("F15C"), 0.9, true, 150)).toBeGreaterThan(1.5)
+		end)
 		it("wave drag peaks around Mach 1", function()
 			expect(FlightModel.waveDrag(0.7)).toBe(0)
 			expect(FlightModel.waveDrag(1.05)).toBeGreaterThan(FlightModel.waveDrag(0.9))

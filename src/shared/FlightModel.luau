@@ -45,14 +45,21 @@ local function smoothstep(x: number): number
 	return x * x * (3 - 2 * x)
 end
 
--- Extra drag through the transonic region (peaks just past Mach 1).
+-- Extra drag through the transonic region: it peaks at Mach 1, then eases to a supersonic plateau. Strong
+-- enough that a typical jet can't stay supersonic on dry thrust; an airframe's WaveDrag factor (default 1)
+-- scales it, so area-ruled designs with plenty of dry thrust supercruise (Typhoon, F-22A, Tempest).
 function FlightModel.waveDrag(mach: number): number
 	if mach < 0.8 then
 		return 0
-	elseif mach < 1.05 then
-		return 0.035 * smoothstep((mach - 0.8) / 0.25)
+	elseif mach < 1 then
+		return 0.05 * smoothstep((mach - 0.8) / 0.2)
 	end
-	return 0.02 + 0.015 * math.exp(-(mach - 1.05) / 0.3)
+	return 0.03 + 0.02 * math.exp(-(mach - 1) / 0.3)
+end
+
+-- Afterburner thrust multiplier from ram pressure at this Mach number.
+local function ramGain(mach: number): number
+	return 1 + Flight.AFTERBURNER_RAM_GAIN * math.max(mach - 0.9, 0)
 end
 
 -- Lift coefficient with a smooth post-stall drop to ~40% of CLMax.
@@ -114,14 +121,14 @@ function FlightModel.computeForces(
 	local sinAoa = math.sin(aoa)
 	local cd = airframe.CD0
 		+ airframe.InducedK * cl * cl
-		+ FlightModel.waveDrag(mach)
+		+ FlightModel.waveDrag(mach) * (airframe.WaveDrag or 1)
 		+ (if stalled then 1.0 * sinAoa * sinAoa else 0)
 		+ 0.5 * math.sin(sideslip) ^ 2
 	local drag = -vhat * (q * S * cd)
 
 	local thrustMagnitude = 0
 	if state.fuel > 0 then
-		local ab = if input.afterburner then airframe.AfterburnerMult else 1
+		local ab = if input.afterburner then airframe.AfterburnerMult * ramGain(mach) else 1
 		local lapse = (density / Atmosphere.SEA_LEVEL_DENSITY) ^ 0.7
 		thrustMagnitude = airframe.MaxThrust * math.clamp(input.throttle, 0, 1) * ab * lapse
 		thrustMagnitude *= (mods and mods.thrust) or 1
@@ -317,8 +324,11 @@ function FlightModel.maxSustainedTurnRate(airframe: Airframe, speed: number, alt
 	local q = 0.5 * density * speed * speed
 	local S = airframe.WingArea
 	local mach = speed / Atmosphere.speedOfSound(altitude)
-	local thrust = airframe.MaxThrust * airframe.AfterburnerMult * (density / Atmosphere.SEA_LEVEL_DENSITY) ^ 0.7
-	local cd0 = airframe.CD0 + FlightModel.waveDrag(mach)
+	local thrust = airframe.MaxThrust
+		* airframe.AfterburnerMult
+		* ramGain(mach)
+		* (density / Atmosphere.SEA_LEVEL_DENSITY) ^ 0.7
+	local cd0 = airframe.CD0 + FlightModel.waveDrag(mach) * (airframe.WaveDrag or 1)
 	local excess = thrust - q * S * cd0
 	if excess <= 0 then
 		return 0
