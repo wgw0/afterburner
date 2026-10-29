@@ -188,14 +188,14 @@ local function refreshBand()
 	end
 	band = Matchmaking.band(lineups)
 	local choices = Matchmaking.aiAirframes(band)
-	for i, pilot in AIService:GetPilots() do
+	for i, pilot in AIService:GetMatchPilots() do
 		AIService:SetAirframe(pilot, choices[(i - 1) % #choices + 1])
 	end
 end
 
 local function syncAIFill()
 	local wanted = if mode.AIFill > 0 and state ~= "Waiting" then math.max(mode.AIFill - #humans(), 0) else 0
-	local current = AIService:GetPilots()
+	local current = AIService:GetMatchPilots()
 	while #current > wanted do
 		-- In team modes, take the AI pilot from the bigger team, so a player joining keeps the sides even
 		local pilot = current[#current]
@@ -219,11 +219,11 @@ local function syncAIFill()
 		pilotStates[pilot.identity] = nil
 		Teams.set(pilot.identity, nil)
 		AIService:RemovePilot(pilot)
-		current = AIService:GetPilots()
+		current = AIService:GetMatchPilots()
 	end
-	while #AIService:GetPilots() < wanted do
+	while #AIService:GetMatchPilots() < wanted do
 		local choices = Matchmaking.aiAirframes(band)
-		local pilot = AIService:CreatePilot("Normal", choices[#AIService:GetPilots() % #choices + 1])
+		local pilot = AIService:CreatePilot("Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
 	end
 end
@@ -239,7 +239,7 @@ local function startMatch()
 	for _, player in humans() do
 		ensureScore(player, player.Name, false, player.UserId)
 	end
-	for _, pilot in AIService:GetPilots() do
+	for _, pilot in AIService:GetMatchPilots() do
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
 	end
 	setState("InProgress")
@@ -286,7 +286,7 @@ local function respawnAI()
 	if state ~= "InProgress" and mode.Id ~= "FreeFlight" then
 		return
 	end
-	for _, pilot in AIService:GetPilots() do
+	for _, pilot in AIService:GetMatchPilots() do
 		if not pilot.jet then
 			ensureScore(pilot.identity, pilot.identity.Name, true, 0)
 			local allowed = canSpawn(pilot.identity)
@@ -350,7 +350,7 @@ local function objectiveFor(pilot: any): { position: Vector3, radius: number }?
 		end
 	end
 	if not best then
-		local index = table.find(AIService:GetPilots(), pilot) or 1
+		local index = table.find(AIService:GetMatchPilots(), pilot) or 1
 		best = zones.zones[index % #zones.zones + 1]
 	end
 	return { position = best.position, radius = best.radius }

@@ -588,7 +588,11 @@ local function launchThreats(): { [number]: { SensorService.Threat } }
 	return out
 end
 
+-- A missile fired at you from behind: test servers, and Free Flight anywhere (the Defend lesson uses it).
 local function onDebugLaunch(player: Player, weaponId: string)
+	if not (Environment.isTest() or ReplicatedStorage:GetAttribute("GameMode") == "FreeFlight") then
+		return
+	end
 	local jet = AircraftService:GetJet(player)
 	local spec = WeaponData.getMissile(weaponId)
 	if not (jet and spec) then
@@ -627,9 +631,7 @@ function MissileService:Init()
 	end)
 	Net.Server.on("MissileFire", onMissileFire)
 	Net.Server.on("CountermeasureDeploy", onCountermeasure)
-	if Environment.isTest() then
-		Net.Server.on("DebugLaunchAtMe", onDebugLaunch)
-	end
+	Net.Server.on("DebugLaunchAtMe", onDebugLaunch)
 end
 
 function MissileService:Start()

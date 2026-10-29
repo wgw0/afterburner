@@ -27,7 +27,14 @@ local TutorialController = require(script.Parent.TutorialController)
 
 local App = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("App"))
 
-local LESSON_NAMES = { Flight = "Basic flight", Energy = "Energy", Guns = "Guns" }
+local LESSON_NAMES = {
+	Flight = "Basic flight",
+	Energy = "Energy",
+	Guns = "Guns",
+	Missiles = "Missiles",
+	Defend = "Defend",
+	Fight = "First fight",
+}
 
 local MenuController = {
 	Priority = 90,

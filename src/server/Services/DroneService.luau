@@ -3,8 +3,12 @@
 -- FlightModel and Instructor as players, so they move like real aircraft and fly worse as they're
 -- damaged. The foundation for the AI pilots in Phase 4 (AI-01).
 --   "ahead":  appears 200 studs ahead along your nose (in your gunsight), same heading, slightly slower
+--   "far":    the same, 600 studs ahead (past heat-seekers' minimum range, for the missile lesson)
 --   "circle": orbits the test range at a steady bank
+-- Training bouts (TrainingBout, lesson 6): an Easy AI pilot (AIService:CreateTrainingPilot) that turns to
+-- fight only you, in Free Flight. It goes when it or you are shot down, or you leave.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -17,6 +21,7 @@ local Instructor = require(Shared.Instructor)
 local Net = require(Shared.Net)
 local Units = require(Shared.Units)
 
+local AIService = require(script.Parent.AIService)
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
 
@@ -48,6 +53,8 @@ local function count(): number
 	return n
 end
 
+local bouts: { [Player]: any } = {} -- training bouts: player → their AI opponent
+
 local function spawnDrone(mode: string, near: AircraftService.Jet?)
 	if count() >= MAX_DRONES then
 		return
@@ -55,10 +62,10 @@ local function spawnDrone(mode: string, near: AircraftService.Jet?)
 	local airframeId = "MiG21bis"
 	local cframe: CFrame
 	local speed = 200
-	if mode == "ahead" and near then
+	if (mode == "ahead" or mode == "far") and near then
 		local flat = Vector3.new(near.root.CFrame.LookVector.X, 0, near.root.CFrame.LookVector.Z)
 		flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
-		local position = near.root.Position + near.root.CFrame.LookVector * 200
+		local position = near.root.Position + near.root.CFrame.LookVector * (if mode == "far" then 600 else 200)
 		cframe = CFrame.lookAt(position, position + flat)
 		speed = math.max(Units.velocityFromStuds(near.root.AssemblyLinearVelocity.Magnitude) - 15, 150)
 	else
@@ -118,11 +125,45 @@ function DroneService:Init()
 	-- Target drones: always in the test environment, and in Free Flight anywhere (the tutorial uses them).
 	Net.Server.on("DebugSpawnDrone", function(player: Player, mode: string)
 		local freeFlight = ReplicatedStorage:GetAttribute("GameMode") == "FreeFlight"
-		if not (Environment.isTest() or freeFlight) or (mode ~= "ahead" and mode ~= "circle") then
+		if not (Environment.isTest() or freeFlight) or (mode ~= "ahead" and mode ~= "far" and mode ~= "circle") then
 			return
 		end
 		spawnDrone(mode, AircraftService:GetJet(player))
 	end)
+
+	-- Training bouts: one Easy opponent per player, Free Flight only
+	local function endBout(player: Player)
+		local pilot = bouts[player]
+		bouts[player] = nil
+		if pilot then
+			AIService:RemovePilot(pilot)
+		end
+	end
+	Net.Server.on("TrainingBout", function(player: Player, start: boolean)
+		endBout(player)
+		local jet = AircraftService:GetJet(player)
+		if not start or not jet or ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight" then
+			return
+		end
+		-- Head-on, 2,500 studs ahead at your height: a merge, then a fight
+		local pilot = AIService:CreateTrainingPilot(player, jet.airframeId)
+		bouts[player] = pilot
+		local flat = Vector3.new(jet.root.CFrame.LookVector.X, 0, jet.root.CFrame.LookVector.Z)
+		flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
+		local position = jet.root.Position + flat * 2500
+		AIService:SpawnPilot(
+			pilot,
+			CFrame.lookAt(position, Vector3.new(jet.root.Position.X, position.Y, jet.root.Position.Z))
+		)
+	end)
+	AircraftService.JetDestroyed:Connect(function(jet)
+		for player, pilot in bouts do
+			if pilot.jet == jet or jet.pilot == player then
+				task.defer(endBout, player)
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(endBout)
 end
 
 function DroneService:Start()
