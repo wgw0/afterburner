@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 13,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "AIM9X", Count = 2 }, { Weapon = "AIM120C", Count = 6 } },
-	Radar = { Range = 80000, Cone = 30, CanNotch = true }, -- AN/APG-79: AESA
+	Radar = { Range = 32000, Cone = 30, CanNotch = true }, -- AN/APG-79: AESA
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "M61A1",

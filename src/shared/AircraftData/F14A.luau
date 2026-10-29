@@ -38,7 +38,7 @@ return {
 		{ Weapon = "AIM7F", Count = 2 },
 		{ Weapon = "AIM54A", Count = 4 },
 	},
-	Radar = { Range = 60000, Cone = 30, CanNotch = true }, -- AN/AWG-9: pulse-Doppler, huge reach
+	Radar = { Range = 24000, Cone = 30, CanNotch = true }, -- AN/AWG-9: pulse-Doppler, huge reach
 	RWR = { LaunchWarning = false, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "M61A1",

@@ -36,7 +36,7 @@ return {
 	MaxYawRate = 15,
 	-- Weapons and sensors (carried internally)
 	Missiles = { { Weapon = "R74M", Count = 2 }, { Weapon = "R77M", Count = 4 } },
-	Radar = { Range = 110000, Cone = 30, CanNotch = true }, -- N036 Byelka: AESA
+	Radar = { Range = 44000, Cone = 30, CanNotch = true }, -- N036 Byelka: AESA
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GSh301",

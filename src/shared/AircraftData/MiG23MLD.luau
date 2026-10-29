@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 9,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R60", Count = 4 }, { Weapon = "R24R", Count = 2 } },
-	Radar = { Range = 45000, Cone = 30, CanNotch = true }, -- Sapfir-23ML: look-down capable
+	Radar = { Range = 18000, Cone = 30, CanNotch = true }, -- Sapfir-23ML: look-down capable
 	RWR = { LaunchWarning = false, Resolution = "Coarse" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GSh23L",

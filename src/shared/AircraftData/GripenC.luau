@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 13,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "IRIST", Count = 2 }, { Weapon = "AIM120C", Count = 4 } },
-	Radar = { Range = 60000, Cone = 30, CanNotch = true }, -- PS-05/A: pulse-Doppler
+	Radar = { Range = 24000, Cone = 30, CanNotch = true }, -- PS-05/A: pulse-Doppler
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "BK27",

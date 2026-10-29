@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 12,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R73", Count = 4 }, { Weapon = "R27ER", Count = 4 } },
-	Radar = { Range = 60000, Cone = 30, CanNotch = true }, -- N001: pulse-Doppler
+	Radar = { Range = 24000, Cone = 30, CanNotch = true }, -- N001: pulse-Doppler
 	RWR = { LaunchWarning = false, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GSh301",

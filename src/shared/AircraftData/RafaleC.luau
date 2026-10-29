@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 13,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "MICAIR", Count = 2 }, { Weapon = "Meteor", Count = 4 } },
-	Radar = { Range = 75000, Cone = 30, CanNotch = true }, -- RBE2: electronically scanned
+	Radar = { Range = 30000, Cone = 30, CanNotch = true }, -- RBE2: electronically scanned
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GIAT30M791",

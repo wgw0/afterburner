@@ -11,7 +11,7 @@ return {
 	Drag = 0.00018,
 	MaxG = 20,
 	MinSpeed = 250,
-	MaxRange = 5500,
+	MaxRange = 3300,
 	MinRange = 500,
 	SeekerCone = 11,
 	Gimbal = 22,

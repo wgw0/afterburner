@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 15,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R74M", Count = 4 }, { Weapon = "R77_1", Count = 6 } },
-	Radar = { Range = 100000, Cone = 30, CanNotch = true }, -- N035 Irbis-E: electronically scanned
+	Radar = { Range = 40000, Cone = 30, CanNotch = true }, -- N035 Irbis-E: electronically scanned
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GSh301",

@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 9,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R550Magic", Count = 2 }, { Weapon = "Super530F", Count = 2 } },
-	Radar = { Range = 42000, Cone = 30, CanNotch = false }, -- Cyrano IV: pulse radar
+	Radar = { Range = 16800, Cone = 30, CanNotch = false }, -- Cyrano IV: pulse radar
 	RWR = { LaunchWarning = false, Resolution = "Coarse" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "DEFA552_Twin",
