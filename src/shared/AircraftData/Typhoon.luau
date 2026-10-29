@@ -22,6 +22,7 @@ return {
 
 	WingArea = 51.2,
 	CD0 = 0.017, -- very clean: it supercruises
+	WaveDrag = 0.5, -- area-ruled and very clean: it supercruises
 	InducedK = 0.1,
 	CLAlpha = 4.4,
 	CLMax = 1.75,

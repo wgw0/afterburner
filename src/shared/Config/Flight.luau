@@ -10,6 +10,9 @@ return table.freeze({
 	MIN_AUTHORITY = 0.15,
 	THRUST_VECTORING_MIN_AUTHORITY = 0.6,
 
+	-- Afterburning thrust rises with speed (ram pressure): +this share of wet thrust per Mach above 0.9
+	AFTERBURNER_RAM_GAIN = 1.0,
+
 	-- Control law responsiveness
 	AOA_TRACKING_GAIN = 6, -- 1/s: how fast AoA follows the commanded AoA
 	PITCH_RATE_RESPONSE = 10, -- 1/s

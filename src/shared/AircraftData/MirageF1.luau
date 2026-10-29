@@ -22,6 +22,7 @@ return {
 
 	WingArea = 25,
 	CD0 = 0.019,
+	WaveDrag = 0.8, -- a thin wing built for Mach 2
 	InducedK = 0.11,
 	CLAlpha = 4.0,
 	CLMax = 1.35,

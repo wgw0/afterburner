@@ -24,6 +24,7 @@ return {
 
 	WingArea = 78,
 	CD0 = 0.018,
+	WaveDrag = 0.5, -- shaped for supercruise
 	InducedK = 0.09,
 	CLAlpha = 4.7,
 	CLMax = 1.9,

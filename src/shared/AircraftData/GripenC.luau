@@ -22,6 +22,7 @@ return {
 
 	WingArea = 30, -- a close-coupled canard delta
 	CD0 = 0.018,
+	WaveDrag = 0.7, -- a slim canard delta
 	InducedK = 0.11,
 	CLAlpha = 4.2,
 	CLMax = 1.7,

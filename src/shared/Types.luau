@@ -74,6 +74,7 @@ export type Airframe = {
 	Countermeasures: { Flares: number, Chaff: number }?,
 	ThrustVectoring: boolean?,
 	Stealth: number?,
+	WaveDrag: number?,
 }
 
 return {}

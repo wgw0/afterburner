@@ -61,6 +61,7 @@ local REQUIRED: { [string]: Rule } = {
 local OPTIONAL: { [string]: Rule } = {
 	ThrustVectoring = BOOLEAN,
 	Stealth = num(0, 1),
+	WaveDrag = num(0.2, 1.5), -- scales the transonic drag rise (FlightModel.waveDrag)
 	ComponentHealth = TABLE,
 	Missiles = TABLE, -- { { Weapon = id, Count = n } } (cross-checked in Weapons.spec)
 	Radar = TABLE, -- { Range = metres, Cone = degrees half-angle, CanNotch = boolean }
