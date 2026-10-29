@@ -7,12 +7,31 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local LevelRewards = require(script.Parent.Config.LevelRewards)
 local SkinConfig = require(script.Parent.Config.Skins)
 
 local Skins = {}
 
+local function folderFor(airframeId: string, skinId: string): Instance?
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local skins = assets and assets:FindFirstChild("Skins")
+	local airframe = skins and skins:FindFirstChild(airframeId)
+	return airframe and airframe:FindFirstChild(skinId)
+end
+
+-- A jet's skins: its own, then the level skins whose paint for it is installed.
 function Skins.list(airframeId: string): { SkinConfig.Skin }
-	return SkinConfig[airframeId] or {}
+	local own = SkinConfig[airframeId]
+	if not own then
+		return {}
+	end
+	local list = table.clone(own)
+	for _, skin in LevelRewards.SKINS do
+		if folderFor(airframeId, skin.Id) then
+			table.insert(list, { Id = skin.Id, DisplayName = skin.DisplayName, Level = skin.Level })
+		end
+	end
+	return list
 end
 
 function Skins.get(airframeId: string, skinId: string): SkinConfig.Skin?
@@ -32,13 +51,6 @@ function Skins.default(airframeId: string): string
 		end
 	end
 	return "Default"
-end
-
-local function folderFor(airframeId: string, skinId: string): Instance?
-	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	local skins = assets and assets:FindFirstChild("Skins")
-	local airframe = skins and skins:FindFirstChild(airframeId)
-	return airframe and airframe:FindFirstChild(skinId)
 end
 
 -- Paints a jet model. Returns whether the skin's textures were found.

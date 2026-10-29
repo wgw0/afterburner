@@ -27,7 +27,8 @@ local SPECS: { [string]: Spec } = {
 	ReduceFlashing = { kind = "boolean", default = false },
 	-- SET-03 accessibility
 	Subtitles = { kind = "boolean", default = false }, -- voice lines and warning tones as text
-	HUDColour = { kind = "enum", values = { "Green", "Cyan", "White" }, default = "Green" },
+	-- Pink, Blue and Violet unlock (none of them near the red and amber warnings) with pilot level (Config/LevelRewards); the server checks that
+	HUDColour = { kind = "enum", values = { "Green", "Cyan", "White", "Pink", "Blue", "Violet" }, default = "Green" },
 	MenuScale = { kind = "number", min = 0.8, max = 1.4, default = 1 }, -- menus, banner, scoreboard
 	-- The jet picked in the hangar, so a match server launches you in it (it follows you between servers)
 	SelectedJet = (function(): Spec

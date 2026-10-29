@@ -38,8 +38,19 @@ local ChallengeService = {
 	Priority = 75, -- after ProgressionService
 }
 
--- This match, per player: the jet flown now, kills this life, deaths, whether they were hit, whether they flew
-type Session = { airframe: string?, lifeKills: number, deaths: number, hit: boolean, flew: boolean }
+-- This match, per player: the jet flown now, kills and missiles defeated this life, the last kill's time,
+-- kills, assists and deaths this match, whether they were hit, whether they flew
+type Session = {
+	airframe: string?,
+	lifeKills: number,
+	lifeDefeats: number,
+	lastKillAt: number?,
+	kills: number,
+	assists: number,
+	deaths: number,
+	hit: boolean,
+	flew: boolean,
+}
 local sessions: { [Player]: Session } = {}
 
 local function now(): number
@@ -49,7 +60,17 @@ end
 local function sessionOf(player: Player): Session
 	local session = sessions[player]
 	if not session then
-		session = { airframe = nil, lifeKills = 0, deaths = 0, hit = false, flew = false }
+		session = {
+			airframe = nil,
+			lifeKills = 0,
+			lifeDefeats = 0,
+			lastKillAt = nil,
+			kills = 0,
+			assists = 0,
+			deaths = 0,
+			hit = false,
+			flew = false,
+		}
 		sessions[player] = session
 	end
 	return session
@@ -68,6 +89,28 @@ end
 local function tierOf(airframeId: string?): number?
 	local airframe = airframeId and AircraftData.get(airframeId) :: any
 	return airframe and airframe.Tier
+end
+
+-- Lifetime totals for the career achievements (Veteran, Centurion, Collector, High Flyer).
+local function careerEvent(data: { [string]: any }): Achievements.Event
+	local owned = 0
+	for _, entry in data.Aircraft do
+		if entry.Owned then
+			owned += 1
+		end
+	end
+	return {
+		kind = "Career",
+		matches = data.Stats.Matches,
+		totalKills = data.Stats.Kills + data.Stats.AIKills,
+		ownedJets = owned,
+		level = data.PilotLevel,
+	}
+end
+
+local function missileClass(weaponId: string?): string?
+	local missile = weaponId and WeaponData.getMissile(weaponId) :: any
+	return missile and missile.Class
 end
 
 local function weaponClass(weaponId: string?): string
@@ -160,6 +203,7 @@ function ChallengeService:Init()
 		local session = sessionOf(player)
 		session.airframe = jet.airframeId
 		session.lifeKills = 0
+		session.lifeDefeats = 0
 		if counting() then
 			session.flew = true
 			record(player, {}, { { kind = "Spawn", airframe = jet.airframeId } })
@@ -182,15 +226,26 @@ function ChallengeService:Init()
 		if typeof(killer) == "Instance" and killer:IsA("Player") and killer ~= victim then
 			local session = sessionOf(killer)
 			session.lifeKills += 1
+			session.kills += 1
+			local sinceLastKill = if session.lastKillAt then os.clock() - session.lastKillAt else nil
+			session.lastKillAt = os.clock()
 			local weapon = weaponClass(credit.weapon)
 			local tier = tierOf(session.airframe)
 			record(killer, { { kind = "Kill", weapon = weapon, tier = tier, mode = MatchService:GetMode().Id } }, {
-				{ kind = "Kill", weapon = weapon, lifeKills = session.lifeKills },
+				{
+					kind = "Kill",
+					weapon = weapon,
+					missileClass = missileClass(credit.weapon),
+					lifeKills = session.lifeKills,
+					sinceLastKill = sinceLastKill,
+				},
 			})
 		end
 		for _, helper in credit.assists or {} do
 			if typeof(helper) == "Instance" and helper:IsA("Player") then
-				record(helper, { { kind = "Assist", tier = tierOf(sessionOf(helper).airframe) } }, {})
+				local session = sessionOf(helper)
+				session.assists += 1
+				record(helper, { { kind = "Assist", tier = tierOf(session.airframe) } }, {})
 			end
 		end
 		if victim and not (QUIET_CAUSES[cause] and killer == nil) then
@@ -202,10 +257,12 @@ function ChallengeService:Init()
 		local player = targetJet.pilot
 		if player and live() then
 			local weapon = weaponClass(weaponId)
+			local session = sessionOf(player)
+			session.lifeDefeats += 1
 			record(
 				player,
 				{ { kind = "MissileDefeated", weapon = weapon } },
-				{ { kind = "MissileDefeated", weapon = weapon } }
+				{ { kind = "MissileDefeated", weapon = weapon, lifeDefeats = session.lifeDefeats } }
 			)
 		end
 	end)
@@ -219,6 +276,7 @@ function ChallengeService:Init()
 	MatchService.MatchStarted:Connect(function()
 		for _, session in sessions do
 			session.deaths, session.hit, session.flew, session.lifeKills = 0, false, false, 0
+			session.kills, session.assists, session.lifeDefeats, session.lastKillAt = 0, 0, 0, nil
 		end
 		for _, player in Players:GetPlayers() do
 			-- Already in the air as the match starts (a training repeat): they're flying it
@@ -242,11 +300,20 @@ function ChallengeService:Init()
 					else winner ~= nil and not winner.isAI and winner.userId == player.UserId
 				-- Lifetime stats are counted with the match rewards (Progression.applyRewards)
 				local data = DataService:GetData(player)
-				local matches = if data then data.Stats.Matches else 0
 				local tier = tierOf(session.airframe)
+				local survived = session.deaths == 0
 				local events: { Challenges.Event } =
-					{ { kind = "MatchFinished", survived = session.deaths == 0, mode = mode, tier = tier } }
-				local earned: { Achievements.Event } = { { kind = "MatchFinished", matches = matches } }
+					{ { kind = "MatchFinished", survived = survived, mode = mode, tier = tier } }
+				local finished: Achievements.Event = if data then careerEvent(data) else { kind = "MatchFinished" }
+				finished.kind = "MatchFinished"
+				finished.survived = survived
+				finished.matchKills = session.kills
+				finished.matchAssists = session.assists
+				finished.firstFreeForAll = mode == "Dogfight"
+					and winner ~= nil
+					and not winner.isAI
+					and winner.userId == player.UserId
+				local earned: { Achievements.Event } = { finished }
 				if won then
 					table.insert(events, { kind = "Win", mode = mode, tier = tier })
 					table.insert(earned, { kind = "Win", hitThisMatch = session.hit })
@@ -263,7 +330,7 @@ function ChallengeService:Init()
 			Challenges.refresh(d.Challenges, now())
 		end)
 		local stats = data.Stats
-		local past: { Achievements.Event } = { { kind = "MatchFinished", matches = stats.Matches } }
+		local past: { Achievements.Event } = { careerEvent(data) }
 		if stats.Kills + stats.AIKills > 0 then
 			table.insert(past, { kind = "Kill", lifeKills = 1 })
 		end

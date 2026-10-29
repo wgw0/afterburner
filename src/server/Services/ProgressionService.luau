@@ -22,6 +22,7 @@ local Economy = require(Shared.Config.Economy)
 local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
 local ServerRole = require(Shared.ServerRole)
+local LevelRewards = require(Shared.Config.LevelRewards)
 local Settings = require(Shared.Config.Settings)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
@@ -201,12 +202,43 @@ function ProgressionService:Init()
 			return Progression.setLineup(data, ids)
 		end, false, "Lineup")
 	end)
+	-- The title next to your name (Config/LevelRewards); "" for none
+	Net.Server.handle("SetTitle", function(player: Player, titleId: string)
+		local ok, err = DataService:Update(player, function(data)
+			local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
+			if not LevelRewards.titleUnlocked(titleId, data.PilotLevel, allUnlocked) then
+				return false, "That title isn't unlocked yet"
+			end
+			data.Title = titleId
+			return true, nil
+		end)
+		if ok then
+			player:SetAttribute("Title", LevelRewards.TITLES[titleId] or "")
+		end
+		return ok == true, err
+	end)
+	-- On joining: levels reached before their milestones existed still pay, and the title shows
+	DataService.ProfileLoaded:Connect(function(player, data)
+		DataService:Update(player, function(d)
+			Progression.claimLevelRewards(d)
+		end)
+		local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
+		local title = if LevelRewards.titleUnlocked(data.Title or "", data.PilotLevel, allUnlocked)
+			then data.Title
+			else ""
+		player:SetAttribute("Title", LevelRewards.TITLES[title] or "")
+	end)
 	Net.Server.on("SettingsUpdate", function(player: Player, changes: { [any]: any })
 		DataService:Update(player, function(data)
 			local merged = table.clone(data.Settings)
 			for key, value in changes do
 				if type(key) == "string" and Settings.valid(key, value) then
-					merged[key] = value
+					-- Some HUD colours unlock with pilot level (Config/LevelRewards)
+					local needed = key == "HUDColour" and LevelRewards.HUD_COLOURS[value]
+					local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
+					if not needed or allUnlocked or data.PilotLevel >= needed then
+						merged[key] = value
+					end
 				end
 			end
 			data.Settings = Settings.sanitize(merged)

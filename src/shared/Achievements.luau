@@ -17,10 +17,29 @@ Achievements.LIST = table.freeze({
 	{ id = "ZoneHunter", name = "Zone Hunter", text = "Capture a zone in Air Superiority." },
 	{ id = "Veteran", name = "Veteran", text = "Finish 50 matches." },
 	{ id = "TestPilot", name = "Test Pilot", text = "Fly the Tempest in a match." },
+	{ id = "FoxOne", name = "Fox One", text = "Shoot a jet down with a semi-active radar missile." },
+	{ id = "FoxThree", name = "Fox Three", text = "Shoot a jet down with an active radar missile." },
+	{ id = "DoubleTrouble", name = "Double Trouble", text = "Get 2 kills within 10 seconds." },
+	{ id = "HatTrick", name = "Hat Trick", text = "Get 3 kills in one life." },
+	{ id = "Flawless", name = "Flawless", text = "Get 3 kills in a match without being shot down." },
+	{ id = "TeamPlayer", name = "Team Player", text = "Get 3 assists in one match." },
+	{ id = "EscapeArtist", name = "Escape Artist", text = "Defeat 3 missiles in one life." },
+	{ id = "TopOfTheTable", name = "Top of the Table", text = "Finish first in a free-for-all Dogfight." },
+	{ id = "Centurion", name = "Centurion", text = "Shoot down 100 jets." },
+	{ id = "Collector", name = "Collector", text = "Own 10 jets." },
+	{ id = "HighFlyer", name = "High Flyer", text = "Reach pilot level 25." },
 } :: { Def })
 
 Achievements.ACE_KILLS = 5
+Achievements.HAT_TRICK_KILLS = 3
+Achievements.DOUBLE_KILL_SECONDS = 10
+Achievements.FLAWLESS_KILLS = 3
+Achievements.TEAM_PLAYER_ASSISTS = 3
+Achievements.ESCAPE_DEFEATS = 3
 Achievements.VETERAN_MATCHES = 50
+Achievements.CENTURION_KILLS = 100
+Achievements.COLLECTOR_JETS = 10
+Achievements.HIGH_FLYER_LEVEL = 25
 
 local BY_ID: { [string]: Def } = {}
 for _, def in Achievements.LIST do
@@ -33,11 +52,21 @@ end
 
 -- What happened, as ChallengeService sees it.
 export type Event = {
-	kind: string, -- Kill | Win | MissileDefeated | Capture | MatchFinished | Spawn
+	kind: string, -- Kill | Win | MissileDefeated | Capture | MatchFinished | Spawn | Career
 	weapon: string?, -- Gun | IR | Radar
+	missileClass: string?, -- Kill: SARH, ARH, IR_* (nil for guns)
 	lifeKills: number?, -- Kill: kills in this life, this one included
+	sinceLastKill: number?, -- Kill: seconds since your previous kill
 	hitThisMatch: boolean?, -- Win: whether you took any damage
-	matches: number?, -- MatchFinished: lifetime matches, this one included
+	matches: number?, -- MatchFinished / Career: lifetime matches
+	matchKills: number?, -- MatchFinished: kills this match
+	matchAssists: number?, -- MatchFinished: assists this match
+	survived: boolean?, -- MatchFinished: not shot down
+	firstFreeForAll: boolean?, -- MatchFinished: top of the ranking in a free-for-all
+	lifeDefeats: number?, -- MissileDefeated: missiles defeated this life, this one included
+	totalKills: number?, -- Career: lifetime kills (players and AI)
+	ownedJets: number?, -- Career
+	level: number?, -- Career: pilot level
 	airframe: string?, -- Spawn
 }
 
@@ -50,22 +79,64 @@ function Achievements.earned(event: Event): { string }
 		if event.weapon == "Gun" then
 			table.insert(ids, "GunsOnly")
 		end
+		if event.missileClass == "SARH" then
+			table.insert(ids, "FoxOne")
+		elseif event.missileClass == "ARH" then
+			table.insert(ids, "FoxThree")
+		end
+		if (event.lifeKills or 0) >= Achievements.HAT_TRICK_KILLS then
+			table.insert(ids, "HatTrick")
+		end
 		if (event.lifeKills or 0) >= Achievements.ACE_KILLS then
 			table.insert(ids, "AceInADay")
+		end
+		if event.sinceLastKill and event.sinceLastKill <= Achievements.DOUBLE_KILL_SECONDS then
+			table.insert(ids, "DoubleTrouble")
 		end
 	elseif kind == "Win" then
 		table.insert(ids, "Victor")
 		if event.hitThisMatch == false then
 			table.insert(ids, "Untouchable")
 		end
-	elseif kind == "MissileDefeated" and event.weapon == "Radar" then
-		table.insert(ids, "Notched")
+	elseif kind == "MissileDefeated" then
+		if event.weapon == "Radar" then
+			table.insert(ids, "Notched")
+		end
+		if (event.lifeDefeats or 0) >= Achievements.ESCAPE_DEFEATS then
+			table.insert(ids, "EscapeArtist")
+		end
 	elseif kind == "Capture" then
 		table.insert(ids, "ZoneHunter")
-	elseif kind == "MatchFinished" and (event.matches or 0) >= Achievements.VETERAN_MATCHES then
-		table.insert(ids, "Veteran")
+	elseif kind == "MatchFinished" then
+		if (event.matches or 0) >= Achievements.VETERAN_MATCHES then
+			table.insert(ids, "Veteran")
+		end
+		if event.survived and (event.matchKills or 0) >= Achievements.FLAWLESS_KILLS then
+			table.insert(ids, "Flawless")
+		end
+		if (event.matchAssists or 0) >= Achievements.TEAM_PLAYER_ASSISTS then
+			table.insert(ids, "TeamPlayer")
+		end
+		if event.firstFreeForAll then
+			table.insert(ids, "TopOfTheTable")
+		end
 	elseif kind == "Spawn" and event.airframe == "Tempest" then
 		table.insert(ids, "TestPilot")
+	end
+	-- Lifetime totals: checked at the end of every match and on joining
+	if kind == "MatchFinished" or kind == "Career" then
+		if (event.matches or 0) >= Achievements.VETERAN_MATCHES and kind == "Career" then
+			table.insert(ids, "Veteran")
+		end
+		if (event.totalKills or 0) >= Achievements.CENTURION_KILLS then
+			table.insert(ids, "Centurion")
+		end
+		if (event.ownedJets or 0) >= Achievements.COLLECTOR_JETS then
+			table.insert(ids, "Collector")
+		end
+		if (event.level or 0) >= Achievements.HIGH_FLYER_LEVEL then
+			table.insert(ids, "HighFlyer")
+		end
 	end
 	return ids
 end

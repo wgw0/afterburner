@@ -1,18 +1,24 @@
 --!strict
--- Career (LIV-02): your lifetime stats and the achievements, earned ones lit with the date, the rest dimmed
--- with what they ask for. props: Data.
+-- Career (PRG-03, LIV-02). Top: your lifetime stats, and the level track: your level and XP, then every
+-- milestone (Config/LevelRewards) in a row, the ones reached lit, the next one marked, later ones dimmed,
+-- with your title picker under it. Bottom: the achievements, earned ones lit with the date.
+-- props: Data, OnSetTitle(titleId) -> (ok, err).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Achievements = require(Shared.Achievements)
+local Economy = require(Shared.Config.Economy)
+local LevelRewards = require(Shared.Config.LevelRewards)
 
 local C = require(script.Parent.Parent.Components)
 local Theme = require(script.Parent.Parent.Theme)
 
 local e = React.createElement
 local CARD_W, CARD_H = 250, 96
+local STEP_W, STEP_H = 168, 128
+local TOP_H = 300
 
 local function stat(label: string, value: string, order: number)
 	return e("Frame", { Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, LayoutOrder = order }, {
@@ -25,6 +31,184 @@ local function stat(label: string, value: string, order: number)
 			Bold = true,
 			Align = "Right",
 		}),
+	})
+end
+
+-- One level on the track: its rewards, and whether it's reached, next, or still to come.
+local function step(group: any, level: number, isNext: boolean, order: number)
+	local reached = level >= group.Level
+	local lines: { [string]: any } = { Layout = C.List({ Gap = 2 }) }
+	for i, milestone in group.Rewards do
+		lines[`R{i}`] = e(C.Label, {
+			Text = LevelRewards.describe(milestone),
+			Size = UDim2.new(1, 0, 0, 30),
+			TextSize = 12,
+			Bold = milestone.Kind == "Skin",
+			Wrap = true,
+			Color = if reached then Theme.Text elseif milestone.Kind == "Skin" then Theme.Warn else Theme.Dim,
+			LayoutOrder = i,
+		})
+	end
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(STEP_W, STEP_H),
+		Color = if reached then Theme.PanelLight else Theme.Background,
+		Transparency = if reached or isNext then 0 else 0.3,
+		StrokeColor = if reached then Theme.Accent elseif isNext then Theme.Warn else nil,
+		StrokeThickness = if reached or isNext then 1.5 else nil,
+		Padding = 10,
+		LayoutOrder = order,
+	}, {
+		Level = e(C.Label, {
+			Text = `LEVEL {group.Level}`,
+			Size = UDim2.new(1, 0, 0, 18),
+			Bold = true,
+			TextSize = 14,
+			Color = if reached then Theme.Accent elseif isNext then Theme.Warn else Theme.Dim,
+		}),
+		State = e(C.Label, {
+			Text = if reached then "✓" elseif isNext then `{group.Level - level} TO GO` else "",
+			Size = UDim2.new(1, 0, 0, 18),
+			TextSize = 11,
+			Bold = true,
+			Align = "Right",
+			Color = if reached then Theme.Good else Theme.Warn,
+		}),
+		Rewards = e("Frame", {
+			Size = UDim2.new(1, 0, 1, -24),
+			Position = UDim2.fromOffset(0, 24),
+			BackgroundTransparency = 1,
+		}, lines),
+	})
+end
+
+local function LevelTrack(props: any)
+	local data = props.Data
+	local level = data.PilotLevel or 1
+	local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
+	local scroller = React.useRef(nil)
+	local pending, setPending = React.useState(false)
+	local groups = LevelRewards.byLevel()
+	local nextIndex = #groups + 1
+	for i, group in groups do
+		if group.Level > level then
+			nextIndex = i
+			break
+		end
+	end
+
+	-- Start the track with the last level reached in view, the next one beside it
+	React.useEffect(function()
+		local frame = scroller.current
+		if frame then
+			frame.CanvasPosition = Vector2.new(math.max(nextIndex - 2, 0) * (STEP_W + 10), 0)
+		end
+	end, {})
+
+	local steps: { [string]: any } = {
+		Layout = C.List({ Horizontal = true, Gap = 10 }),
+		Padding = e("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2) }),
+	}
+	for i, group in groups do
+		steps[`L{group.Level}`] = step(group, level, i == nextIndex, i)
+	end
+
+	-- Titles you can show on the scoreboard
+	local titles: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 6, AlignY = "Center" }) }
+	titles.Label = e(C.Label, {
+		Text = "TITLE",
+		Size = UDim2.fromOffset(46, 30),
+		Bold = true,
+		TextSize = 12,
+		Color = Theme.Accent,
+		LayoutOrder = 0,
+	})
+	local options = { { "", "None" } }
+	for _, group in groups do
+		for _, milestone in group.Rewards do
+			if milestone.Kind == "Title" then
+				table.insert(options, { milestone.Id :: string, LevelRewards.TITLES[milestone.Id :: string] })
+			end
+		end
+	end
+	local locked = 0
+	for i, option in options do
+		local id, name = option[1], option[2]
+		if LevelRewards.titleUnlocked(id, level, allUnlocked) then
+			titles[`T{i}`] = e(C.Button, {
+				Text = name,
+				Style = if (data.Title or "") == id then "Primary" else "Ghost",
+				Size = UDim2.fromOffset(math.max(70, #name * 8 + 20), 30),
+				TextSize = 12,
+				Pending = pending,
+				LayoutOrder = i,
+				OnClick = function()
+					setPending(true)
+					task.spawn(function()
+						props.OnSetTitle(id)
+						setPending(false)
+					end)
+				end,
+			})
+		else
+			locked += 1
+		end
+	end
+	titles.More = if locked > 0
+		then e(C.Label, {
+			Text = `{locked} more with level`,
+			Size = UDim2.fromOffset(140, 30),
+			TextSize = 12,
+			Color = Theme.Dim,
+			LayoutOrder = 99,
+		})
+		else nil
+
+	local need = Economy.xpToNext(level)
+	return e(C.Panel, {
+		Size = UDim2.new(1, -360, 0, TOP_H),
+		Position = UDim2.fromOffset(340, 20),
+		Padding = 16,
+	}, {
+		Title = e(C.Label, {
+			Text = `PILOT LEVEL {level}`,
+			Size = UDim2.new(0.5, 0, 0, 24),
+			Heavy = true,
+			TextSize = 22,
+			Color = Theme.Accent,
+		}),
+		Every = e(C.Label, {
+			Text = `+{Economy.LEVEL_CREDITS} Credits every level`,
+			Size = UDim2.new(0.5, 0, 0, 24),
+			Position = UDim2.fromScale(0.5, 0),
+			TextSize = 12,
+			Color = Theme.Dim,
+			Align = "Right",
+		}),
+		Xp = e(C.Bar, {
+			Value = if level >= Economy.MAX_LEVEL then 1 else math.clamp((data.PilotXP or 0) / need, 0, 1),
+			Size = UDim2.new(1, 0, 0, 16),
+			Position = UDim2.fromOffset(0, 32),
+			Color = Theme.Accent,
+			Text = if level >= Economy.MAX_LEVEL
+				then "MAX LEVEL"
+				else `{C.number(data.PilotXP or 0)} / {C.number(need)} XP to level {level + 1}`,
+		}),
+		Track = e("ScrollingFrame", {
+			Size = UDim2.new(1, 0, 0, STEP_H + 18),
+			Position = UDim2.fromOffset(0, 62),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 6,
+			ScrollingDirection = Enum.ScrollingDirection.X,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.X,
+			ref = scroller,
+		}, steps),
+		Titles = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 30),
+			Position = UDim2.new(0, 0, 1, -32),
+			BackgroundTransparency = 1,
+		}, titles),
 	})
 end
 
@@ -86,42 +270,62 @@ local function Career(props: any)
 		cards[def.id] = card(def, earned[def.id], i)
 	end
 
-	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
+	return e("ScrollingFrame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	}, {
+		Padding = e("UIPadding", { PaddingBottom = UDim.new(0, 20) }),
 		Stats = e(C.Panel, {
-			Size = UDim2.fromOffset(300, 330),
+			Size = UDim2.fromOffset(300, TOP_H),
 			Position = UDim2.fromOffset(20, 20),
 			Padding = 16,
 		}, {
 			Layout = C.List({ Gap = 4 }),
 			Title = e(C.Label, { Text = "CAREER", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 }),
-			Level = stat("Pilot level", tostring(data.PilotLevel or 1), 1),
 			Matches = stat("Matches", tostring(stats.Matches or 0), 2),
 			Wins = stat("Wins", tostring(stats.Wins or 0), 3),
 			Kills = stat("Kills", tostring(kills), 4),
 			Players = stat("  of them players", tostring(stats.Kills or 0), 5),
 			Deaths = stat("Times shot down", tostring(deaths), 6),
 			Ratio = stat("Kills per death", string.format("%.2f", kills / math.max(deaths, 1)), 7),
+			Achievements = stat("Achievements", `{count} / {#Achievements.LIST}`, 8),
 		}),
-		Achievements = e(C.Panel, {
-			Size = UDim2.new(1, -380, 1, -40),
-			Position = UDim2.fromOffset(340, 20),
-			Padding = 16,
+		Level = e(LevelTrack, { Data = data, OnSetTitle = props.OnSetTitle }),
+		-- Sized to its cards
+		Achievements = e("Frame", {
+			Size = UDim2.new(1, -40, 0, 0),
+			Position = UDim2.fromOffset(20, TOP_H + 40),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundColor3 = Theme.Panel,
+			BackgroundTransparency = 0.05,
+			BorderSizePixel = 0,
 		}, {
+			Corner = C.corner(),
+			Stroke = C.stroke(),
+			Padding = e("UIPadding", {
+				PaddingTop = UDim.new(0, 16),
+				PaddingBottom = UDim.new(0, 16),
+				PaddingLeft = UDim.new(0, 16),
+				PaddingRight = UDim.new(0, 16),
+			}),
+			Layout = C.List({ Gap = 12 }),
 			Title = e(C.Label, {
 				Text = `ACHIEVEMENTS  ·  {count} / {#Achievements.LIST}`,
 				Bold = true,
 				Color = Theme.Accent,
 				TextSize = 14,
 				Size = UDim2.new(1, 0, 0, 20),
+				LayoutOrder = 0,
 			}),
-			Cards = e("ScrollingFrame", {
-				Size = UDim2.new(1, 0, 1, -32),
-				Position = UDim2.fromOffset(0, 32),
+			Cards = e("Frame", {
+				Size = UDim2.fromScale(1, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
-				BorderSizePixel = 0,
-				ScrollBarThickness = 4,
-				CanvasSize = UDim2.new(),
-				AutomaticCanvasSize = Enum.AutomaticSize.Y,
+				LayoutOrder = 1,
 			}, cards),
 		}),
 	})

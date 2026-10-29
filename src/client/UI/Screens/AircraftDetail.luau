@@ -170,7 +170,7 @@ local function SkinRow(props: any)
 			Color = if message then Theme.Warn elseif inUse then Theme.Good else Theme.Dim,
 		}),
 		Action = e(C.Button, {
-			Text = if inUse then "IN USE" elseif owned then "USE" else "BUY",
+			Text = if inUse then "IN USE" elseif owned then "USE" elseif skin.Level then `LV {skin.Level}` else "BUY",
 			Style = if owned then "Ghost" else "Primary",
 			Size = UDim2.fromOffset(88, 36),
 			Position = UDim2.new(1, -88, 0, 4),

@@ -34,6 +34,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Flags",
 	"Challenges",
 	"Achievements",
+	"Title",
 })
 
 local function deepCopy<T>(value: T): T
@@ -75,6 +76,8 @@ function PlayerData.template(): { [string]: any }
 		Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },
 		Challenges = Challenges.newState(),
 		Achievements = {},
+		Title = "", -- the title shown on the scoreboard (Config/LevelRewards), "" for none
+		LevelRewardsClaimed = 0, -- the level whose Credits / Free RP milestones have been paid up to
 		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
 		Flags = {},
 		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)

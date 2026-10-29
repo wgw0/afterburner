@@ -282,6 +282,13 @@ render = function()
 		OnSetting = function(key, value)
 			SettingsController:Set(key, value)
 		end,
+		OnSetTitle = function(titleId: string): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "SetTitle", titleId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
 		OnReroll = function(index: number): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "RerollChallenge", index)
 			if not ok then
