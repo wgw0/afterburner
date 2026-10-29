@@ -252,6 +252,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **MSL-09** Advanced IR (high off-boresight, flare resistance)
   - Partly done: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) have wide seeker cones and gimbals and strong flare resistance. Helmet cueing (locking where the pilot looks) is not built.
 - [ ] **SNS-07** TWS
+  - Built: Tier IV+ pulse-Doppler radars track while scanning; an active radar missile can be fired unlocked at the "TWS ·" target (the contact nearest the nose), guided while the radar still sees it, with no lock warning for the target (DEVELOPMENT.md §14.2). Checked in Studio.
   - Not started. Related radar work done: lock failure reasons on the HUD, pulse radars that see close targets in clutter, zooming cone and situation scopes (DEVELOPMENT.md §14.2).
 - [x] **CMS-04** Auto-dispense programmes (Tier V+, for example "2 flares every 0.5 s")
   - Built: Tier V+ jets fire a 4-flare programme per press (2 × 2, 0.5 s apart), and with Automatic flares on (default) once per heat-seeker about 2 s before it arrives (DEVELOPMENT.md §15.4). Checked in Studio and by Will.
