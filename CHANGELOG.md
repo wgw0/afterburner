@@ -34,6 +34,7 @@ The soft-launch build: the first version published to the live experience.
 - Report a cheater: an in-game report with the pilot's anti-cheat data attached for review.
 - Analytics: onboarding funnel, progression, economy, combat and balance events.
 - The game's version in Settings.
+- Graphics settings: effects quality (Auto / Low / Medium / High), contrails and wingtip vapour on or off.
 
 ## 0.1.0 – 0.5.0 - Internal builds
 

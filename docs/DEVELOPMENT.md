@@ -1390,6 +1390,22 @@ The F-5E is the first jet through this pipeline. The other airframes still use t
 | FX-04 | Damage smoke and fire | 3 |
 | FX-05 | Quality settings and pooling audit | 6 |
 
+### 20.1 As built: effects quality and pooling (FX-05, November 2026)
+
+- **Settings → GRAPHICS:** Effects quality (Auto / Low / Medium / High), Contrails and Wingtip vapour on/off. Auto (the default) is Low on touch-only devices or when Roblox's graphics level is 1–3, Medium at 4–6, High otherwise (Automatic counts as High on a desktop); it follows Roblox's slider live. Roblox's own level still sets the world's detail; this only scales our effects.
+- **Profiles** (`Config/Graphics`, tested in `Graphics.spec`; read through `GraphicsController`):
+
+| | Low | Medium | High |
+|---|---|---|---|
+| Particles (damage smoke and fire rates, explosion / spark / chaff bursts, flare smoke) | 30% | 60% | 100% |
+| Jet lights (afterburner, muzzle flash, missile motor) | off | on | on |
+| Flare lights | off | off | on |
+| Flare smoke | off | on | on |
+| Impact dust and spray | off | on | on |
+
+  Explosion flashes always light (Reduce flashing dims them).
+- **Pooling audit:** combat anchors and tracers were already pooled. Missiles, flares and chaff are now pooled in `MissileViewController` (a trail is cleared on reuse), and each jet's muzzle flash, light and gun loop are made once and kept between bursts (they were rebuilt for every burst). Jet effects (flames, contrails, vapour, damage emitters) are made once per jet. Checked in Studio: 13 flares, chaff bundles and missiles in a row used 5 parts.
+
 ---
 
 ## 21. Audio (AUD)

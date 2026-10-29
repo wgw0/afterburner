@@ -75,6 +75,19 @@ local SECTIONS = {
 		},
 	},
 	{
+		title = "GRAPHICS",
+		rows = {
+			{
+				key = "EffectsQuality",
+				label = "Effects quality",
+				hint = "Smoke, sparks, lights and flares. Auto suits your device; lower helps phones.",
+				choices = { { "Auto", "AUTO" }, { "Low", "LOW" }, { "Medium", "MEDIUM" }, { "High", "HIGH" } },
+			},
+			{ key = "Contrails", label = "Contrails", hint = "White trails from the wingtips at high altitude." },
+			{ key = "Vapour", label = "Wingtip vapour", hint = "Short trails from the wingtips in hard turns." },
+		},
+	},
+	{
 		title = "AUDIO",
 		rows = {
 			{ key = "MasterVolume", label = "Master volume", step = 0.05, format = "%d%%", percent = true },

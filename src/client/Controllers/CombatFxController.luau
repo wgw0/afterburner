@@ -4,7 +4,9 @@
 --   Sparks where rounds hit a jet (HitFx), dust where tracers hit the ground.
 --   Explosion (fire, smoke, sparks, flash, sound) where a jet is destroyed.
 --   A hit "tink" for your hits, and a thud when you're hit.
--- Effects are pooled anchors with ParticleEmitters fired with :Emit(), using built-in textures.
+-- Effects are pooled anchors with ParticleEmitters fired with :Emit(), using built-in textures. Burst sizes,
+-- impact dust and the muzzle light follow the effects quality (GraphicsController, FX-05); each jet's muzzle
+-- flash is made once and reused for every burst.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -15,6 +17,7 @@ local Net = require(Shared.Net)
 local Pool = require(Shared.Util.Pool)
 
 local FlightController = require(script.Parent.FlightController)
+local GraphicsController = require(script.Parent.GraphicsController)
 local MissileViewController = require(script.Parent.MissileViewController)
 local SettingsController = require(script.Parent.SettingsController)
 local WeaponController = require(script.Parent.WeaponController)
@@ -115,20 +118,20 @@ local function explosion(position: Vector3)
 		a.fire.Speed = NumberRange.new(5.6, 17)
 		a.fire.SpreadAngle = Vector2.new(180, 180)
 		a.fire.Transparency = NumberSequence.new(0.1, 1)
-		a.fire:Emit(40)
+		a.fire:Emit(GraphicsController:Count(40))
 		a.smoke.Color = ColorSequence.new(Color3.fromRGB(70, 70, 70), Color3.fromRGB(30, 30, 30))
 		a.smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 5.6), NumberSequenceKeypoint.new(1, 20) })
 		a.smoke.Lifetime = NumberRange.new(2.5, 4.5)
 		a.smoke.Speed = NumberRange.new(2.2, 7)
 		a.smoke.SpreadAngle = Vector2.new(180, 180)
 		a.smoke.Transparency = NumberSequence.new(0.3, 1)
-		a.smoke:Emit(25)
+		a.smoke:Emit(GraphicsController:Count(25))
 		a.sparks.Size = NumberSequence.new(0.42, 0)
 		a.sparks.Lifetime = NumberRange.new(0.6, 1.4)
 		a.sparks.Speed = NumberRange.new(17, 45)
 		a.sparks.SpreadAngle = Vector2.new(180, 180)
 		a.sparks.Acceleration = Vector3.new(0, -17, 0)
-		a.sparks:Emit(50)
+		a.sparks:Emit(GraphicsController:Count(50))
 		a.light.Range = 34
 		a.light.Brightness = if SettingsController:Get("ReduceFlashing") then 1.5 else 8
 		task.delay(0.35, function()
@@ -145,11 +148,14 @@ local function sparks(position: Vector3, count: number)
 		a.sparks.Speed = NumberRange.new(8.4, 22)
 		a.sparks.SpreadAngle = Vector2.new(70, 70)
 		a.sparks.Acceleration = Vector3.zero
-		a.sparks:Emit(count)
+		a.sparks:Emit(GraphicsController:Count(count))
 	end)
 end
 
 local function dust(position: Vector3, material: Enum.Material)
+	if not GraphicsController:Profile().impactDust then
+		return
+	end
 	withAnchor(position, 2.5, function(a)
 		local water = material == Enum.Material.Water
 		a.smoke.Color = if water
@@ -164,9 +170,23 @@ local function dust(position: Vector3, material: Enum.Material)
 	end)
 end
 
--- Muzzle flash + gun sound for every firing jet.
+local function dropMuzzle(model: Model)
+	local fx = muzzleFx[model]
+	if fx then
+		fx.light:Destroy()
+		fx.flash:Destroy()
+		if fx.sound then
+			fx.sound:Destroy()
+		end
+		muzzleFx[model] = nil
+	end
+end
+
+-- Muzzle flash + gun sound for every firing jet. Made the first time a jet fires and kept (hidden and
+-- silent between bursts) until the jet goes.
 local function updateMuzzles()
 	local me = FlightController.jet
+	local lights = GraphicsController:Profile().jetLights
 	for _, model in workspace.Jets:GetChildren() do
 		if not model:IsA("Model") then
 			continue
@@ -208,21 +228,24 @@ local function updateMuzzles()
 					gunSound.RollOffMaxDistance = 700
 					gunSound.Parent = root
 				end
-				gunSound:Play()
 				sound = gunSound
 			end
 			fx = { light = light, flash = flash, sound = sound }
 			muzzleFx[model] = fx
-		elseif not firing and fx then
-			fx.light:Destroy()
-			fx.flash:Destroy()
-			if fx.sound then
-				fx.sound:Destroy()
-			end
-			muzzleFx[model] = nil
-			fx = nil
 		end
-		if fx then
+		if not fx then
+			continue
+		end
+		if fx.sound and firing ~= fx.sound.IsPlaying then
+			if firing then
+				fx.sound:Play()
+			else
+				fx.sound:Stop()
+			end
+		end
+		fx.light.Enabled = firing and lights
+		fx.flash.Parent = if firing then fxFolder else nil
+		if firing then
 			local muzzle = fx.light.Parent :: Attachment
 			-- Reduce flashing: a steady, dim muzzle light instead of a flicker
 			local flicker = if SettingsController:Get("ReduceFlashing") then 0.3 else math.random()
@@ -232,14 +255,9 @@ local function updateMuzzles()
 			fx.flash.Transparency = if flicker > 0.4 then 0.1 else 0.7
 		end
 	end
-	for model, fx in muzzleFx do
+	for model in muzzleFx do
 		if not model:IsDescendantOf(workspace) then
-			fx.light:Destroy()
-			fx.flash:Destroy()
-			if fx.sound then
-				fx.sound:Destroy()
-			end
-			muzzleFx[model] = nil
+			dropMuzzle(model)
 		end
 	end
 end
