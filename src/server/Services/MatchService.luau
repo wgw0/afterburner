@@ -30,6 +30,7 @@ local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
 local AirSuperiority = require(Shared.AirSuperiority)
 local MatchRules = require(Shared.MatchRules)
+local MatchmakingStats = require(Shared.MatchmakingStats)
 local Matchmaking = require(Shared.Matchmaking)
 local Net = require(Shared.Net)
 local Scale = require(Shared.Config.Scale)
@@ -298,6 +299,34 @@ local function endMatch(reason: string)
 		reason = reason,
 		pilots = #ranking,
 	}, nil, { "mode", "band" })
+	-- How close it finished (MMK-06): 100 level, towards 0 a walkover (MatchmakingStats.closeness), from the
+	-- two teams' kills (tickets left in Air Superiority) or the top two pilots' kills. Sent: the mode and
+	-- how many humans flew.
+	local points = {}
+	if zoneState then
+		for _, tickets in zoneState.tickets do
+			table.insert(points, tickets)
+		end
+	elseif mode.Teams then
+		for _, kills in MatchRules.teamScores(mode, scores) do
+			table.insert(points, kills)
+		end
+	else
+		for _, score in ranking do
+			table.insert(points, score.kills)
+		end
+	end
+	local humanCount = 0
+	for _, score in ranking do
+		if not score.isAI then
+			humanCount += 1
+		end
+	end
+	Telemetry.event("MatchQuality", math.round(MatchmakingStats.closeness(points) * 100), {
+		mode = mode.Id,
+		humans = humanCount,
+		ai = #ranking - humanCount,
+	}, nil, { "mode", "humans" })
 end
 
 local function onKill(jet: Jet, credit: any, cause: string)
@@ -485,6 +514,14 @@ local function tick(dt: number)
 		-- Everyone the matchmaker sent, or whoever made it in time
 		local arrived, expected = arrivals()
 		if #humans() > 0 and (arrived >= expected or elapsed >= ARRIVAL_TIMEOUT) then
+			-- Value: the share of the pilots sent who made it (%). Sent: mode and how many were sent (MMK-06)
+			Telemetry.event(
+				"MatchArrived",
+				math.round(arrived / math.max(expected, 1) * 100),
+				{ mode = mode.Id, expected = expected, arrived = arrived, waited = math.round(elapsed) },
+				nil,
+				{ "mode", "expected" }
+			)
 			refreshBand()
 			setState("Countdown")
 		end

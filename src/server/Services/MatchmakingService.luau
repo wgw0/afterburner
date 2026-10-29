@@ -26,6 +26,7 @@ local TeleportService = game:GetService("TeleportService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local MatchRules = require(Shared.MatchRules)
 local Matchmaking = require(Shared.Matchmaking)
+local MatchmakingStats = require(Shared.MatchmakingStats)
 local Net = require(Shared.Net)
 local Places = require(Shared.Config.Places)
 local Queue = require(Shared.Queue)
@@ -36,6 +37,7 @@ local AircraftService = require(script.Parent.AircraftService)
 local DataService = require(script.Parent.DataService)
 local MatchService = require(script.Parent.MatchService)
 
+local STATS_KEPT = 500 -- recent waits and matches kept for matchmaking.stats (MMK-06)
 local POLL = 2 -- seconds between matchmaker passes, and between a lobby's checks for players to send
 local REFRESH = 15 -- a queued player's entry is re-written this often...
 local ENTRY_TTL = 60 -- ...and expires after this, if its lobby server has gone
@@ -151,6 +153,9 @@ local queued: { [Player]: Queued } = {}
 local leaving: { [Player]: boolean } = {} -- a teleport is under way
 local teleportFails: { [Player]: number } = {}
 local modeTurn = 0
+-- What this lobby saw lately (MMK-06): waits of players matched and of players who gave up, and the matches
+-- formed while this server held the matchmaker lease
+local stats = { matched = {} :: { number }, gaveUp = {} :: { number }, formed = {} :: { any } }
 
 local function now(): number
 	return DateTime.now().UnixTimestampMillis / 1000
@@ -259,6 +264,7 @@ local function teleport(placeId: number, players: { Player }, options: TeleportO
 		warn(`[Matchmaking] teleport attempt {attempt} failed: {err}`)
 		task.wait(attempt * 2)
 	end
+	Telemetry.event("TeleportFailed", #players, { stage = "start", target = ServerRole.get() }, players[1])
 	return false
 end
 
@@ -335,6 +341,7 @@ local function leave(player: Player, quiet: boolean?)
 	queued[player] = nil
 	pcall(store.queueRemove, keyOf(player.UserId))
 	Telemetry.event("QueueLeft", now() - q.joinedAt, { mode = q.mode }, player)
+	MatchmakingStats.push(stats.gaveUp, now() - q.joinedAt, STATS_KEPT)
 	if not quiet then
 		sendState(player, { state = "Idle" })
 	end
@@ -379,6 +386,7 @@ local function sendGroup(assignment: any)
 		leaving[player] = true
 		sendState(player, { state = "Found", mode = assignment.mode })
 		Telemetry.event("QueueMatched", now() - q.joinedAt, { mode = assignment.mode }, player)
+		MatchmakingStats.push(stats.matched, now() - q.joinedAt, STATS_KEPT)
 	end
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = assignment.code
@@ -442,12 +450,19 @@ local function makeMatch(match: Queue.Match)
 		pcall(store.queueRemove, keyOf(entry.userId))
 	end
 	local record = { role = "Match", mode = match.mode, players = users, band = match.band, formed = now() }
+	-- Value: the longest wait in it (s). Sent: the mode and the BR spread; AI seats in the log (MMK-06)
+	local spread = math.round(match.spread * 10) / 10
 	Telemetry.event(
 		"MatchFormed",
 		match.longestWait,
-		{ mode = match.mode, players = #users, spread = math.round(match.spread * 10) / 10 },
+		{ mode = match.mode, players = #users, ai = Queue.MATCH_SIZE - #users, spread = spread },
 		nil,
 		{ "mode", "spread" }
+	)
+	MatchmakingStats.push(
+		stats.formed,
+		{ mode = match.mode, players = #users, spread = spread, longestWait = match.longestWait },
+		STATS_KEPT
 	)
 
 	if studio then
@@ -509,6 +524,35 @@ end
 
 ------------------------------------------------------------------------------------------------ lifecycle
 
+-- What this lobby saw lately, for the admin command matchmaking.stats (MMK-06): wait times of matched
+-- players and of those who gave up, still queued here, and the matches formed while it ran the matchmaker.
+function MatchmakingService:Stats(): any
+	local queuedHere, modes = 0, {}
+	for _, q in queued do
+		queuedHere += 1
+		modes[q.mode] = (modes[q.mode] or 0) + 1
+	end
+	local formed = { count = #stats.formed, players = 0, aiSeats = 0, spread = 0, byMode = {} }
+	for _, match in stats.formed do
+		formed.players += match.players
+		formed.aiSeats += Queue.MATCH_SIZE - match.players
+		formed.spread += match.spread
+		formed.byMode[match.mode] = (formed.byMode[match.mode] or 0) + 1
+	end
+	if formed.count > 0 then
+		formed.players = math.round(formed.players / formed.count * 10) / 10
+		formed.spread = math.round(formed.spread / formed.count * 100) / 100
+	end
+	return {
+		role = ServerRole.get(),
+		queuedNow = queuedHere,
+		queuedModes = modes,
+		matchedWaits = MatchmakingStats.waits(stats.matched),
+		gaveUpWaits = MatchmakingStats.waits(stats.gaveUp),
+		matchesFormed = formed, -- players and spread are averages; aiSeats a total
+	}
+end
+
 -- Testing (admin onboarding.restart): send a player into the first-session flow now.
 function MatchmakingService:StartFirstSession(player: Player)
 	leave(player, true)
@@ -569,6 +613,7 @@ function MatchmakingService:Init()
 			end
 			teleportFails[player] = nil
 			leaving[player] = nil
+			Telemetry.event("TeleportFailed", 1, { stage = "init", result = result.Name }, player)
 			sendState(player, { state = "Idle", message = "Couldn't join. Press PLAY to try again." })
 		end
 	)

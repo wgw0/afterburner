@@ -151,6 +151,14 @@ local COMMANDS: { [string]: Command } = {
 				})
 		end,
 	},
+	-- What this lobby's queue saw lately (MMK-06): wait times (median, 90th percentile, longest) of players
+	-- matched and of those who gave up, and the matches formed while it ran the matchmaker.
+	["matchmaking.stats"] = {
+		testOnly = false,
+		run = function(_admin, _args)
+			return true, HttpService:JSONEncode(MatchmakingService:Stats())
+		end,
+	},
 	-- The most-reported pilots (CMP-03): { count? = 10 } -> [{ userId, count }], most first.
 	["reports.top"] = {
 		testOnly = false,
