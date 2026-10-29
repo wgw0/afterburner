@@ -5,8 +5,8 @@
 --   Your kill:                     "Splash one", "Splash two", "Splash three", then "Splash" (counted per life)
 --   A missile is fired at you:     "Missile, missile, missile!" (once per missile)
 -- Each call is a squelch (RadioIn), the voice line (Assets.Audio.Radio_<Call>), then the squelch tail
--- (RadioOut). With no recording yet the call is text only: it shows in the subtitle area whatever the
--- Subtitles setting (that's all there is of it); with a recording it shows when Subtitles are on.
+-- (RadioOut). The words show in the subtitle area when the Subtitles setting is on; with no recording yet
+-- the call is just the squelch (and the words, with Subtitles on).
 -- One call at a time; a new one waits for the last, and a call more than QUEUE_LIFE old is dropped.
 
 local Players = game:GetService("Players")
@@ -76,8 +76,8 @@ local function say(call: string)
 	local text = `Radio: "{CALLS[call]}"`
 	local voice = clip(`Radio_{call}`)
 	if not voice then
-		-- Not recorded yet: the squelch and the words on screen
-		ToneController:Subtitle(text, TEXT_SECONDS, true)
+		-- Not recorded yet: the squelch, and the words if Subtitles are on
+		ToneController:Subtitle(text, TEXT_SECONDS)
 		busyUntil = os.clock() + play("RadioIn") + 0.6 + GAP
 		return
 	end
