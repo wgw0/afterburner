@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 9 / 43 | In progress: content done, launch plumbing not started (see below) |
+| 6 Content and polish for a soft launch | 10 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -223,7 +223,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 
 In progress. A great deal of late-October work came from playtest feedback rather than the phase order: the whole 27-jet roster, the world-scale rework, the map, audio and radar fixes. Those are recorded on the tasks they belong to below, and work that belongs to no task is under *Done outside the plan* at the end of this phase. DEVELOPMENT.md §37 explains how it was built and the traps found.
 
-**State at 29 October 2026:** the content side of Phase 6 is largely done (every jet, every cockpit, the map). The soft-launch plumbing is not started: matchmaking across servers, team modes, the settings screen, retention features, mobile performance, analytics and the release process. Two exit checks carried over from Phases 4 and 5 still need a real multiplayer session: an 8-player match, and the two-servers-at-once save check. How to run them, and the mobile tests, is in [testing/MULTIPLAYER_AND_MOBILE.md](testing/MULTIPLAYER_AND_MOBILE.md).
+**State at 29 October 2026:** the content side of Phase 6 is largely done (every jet, every cockpit, the map). Since then: team modes, the settings and accessibility screens, lessons 4–6 on training servers, and matchmaking across servers (lobby, queue, 6-pilot match servers; built and checked in Studio, the live test still to run). Still to come: retention features, mobile performance, analytics and the release process. Two exit checks carried over from Phases 4 and 5 still need a real multiplayer session: an 8-player match, and the two-servers-at-once save check. How to run them, and the mobile tests, is in [testing/MULTIPLAYER_AND_MOBILE.md](testing/MULTIPLAYER_AND_MOBILE.md).
 
 Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, CAM-02, MSL-04, UI-02, UI-04, OPS-02).
 
@@ -272,14 +272,17 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Still to do: radio barks and subtitles.
 - [ ] **AUD-05** Music and UI sounds, sound groups and mixer settings
 - [ ] **PRG-07** Aircraft mastery stars and rewards
-- [ ] **UI-05** Mode select and queue UI
+- [x] **UI-05** Mode select and queue UI
+  - In a lobby, a mode picker over PLAY (ANY MODE, DOGFIGHT, TEAMS, ZONES; remembered), PLAY joins the queue and becomes CANCEL with a timer, a loading screen covers each teleport, and a match server launches you in your selected jet when the countdown ends (no second PLAY). Checked in Studio and by Will.
 - [ ] **UI-09** Gamepad and touch passes on every screen
 - [ ] **MMK-02** Lobby and battle place split, place-specific boot (server knows its role from a place attribute)
-  - Groundwork: a server knows whether it is a public multiplayer server or a private training server (`ServerRole`, set by `TrainingService` from the reserved-server check). One place still serves both.
+  - Built: every server works out its role (Lobby, Match, Training) from whether it's reserved and the record the lobby wrote for it (`MatchmakingService`, DEVELOPMENT.md §25.6). Matches use reserved servers of the lobby place until a Battle place id goes in `Config/Places`; a separate place is optional. Checked in Studio and by Will. *To tick after the live test on the test experience.*
 - [ ] **MMK-03** MemoryStore queues, lease-based matchmaker, match records
+  - Built: a MemoryStore queue with expiring entries, one matchmaker at a time on a lease, 6-pilot matches grouped by mode and BR (spread 1.0 widening to 1.7), AI fill after 30 s, match records keyed by the reserved server's id (`Queue.luau`, 17 tests in `Queue.spec`). The full loop (lobby, queue, match, results, back to the lobby) checked in Studio, where the queue is local and matches switch the server in place, and by Will. *To tick after the live test with several players.*
 - [ ] **MMK-04** Reserved server teleport flow and return to lobby, with retries
-  - Done for training: TRAINING reserves a private server and teleports you in; MULTIPLAYER teleports you back to a public server, and a failed teleport says so. Checked in Studio, where Travel switches the server's role in place (Studio can't teleport), and by Will. *Still to do: a check on the published test experience, retries, and the same flow for matches (MMK-03).*
+  - Built for training and matches: teleports retry three times (and again on `TeleportInitFailed`), players who can't reach a match go back to the front of the queue, and after the results everyone is sent to a lobby (LEAVE MATCH does it for one player). Checked in Studio and by Will. *To tick after the live test on the test experience.*
 - [ ] **MMK-06** Matchmaking telemetry: wait times, match quality (BR spread)
+  - Built: `QueueJoined`, `QueueLeft`, `QueueMatched` (wait), `MatchFormed` (longest wait, players, BR spread). *To check in the live test's analytics.*
 - [ ] **LIV-01** Daily/weekly challenges with rerolls
 - [ ] **LIV-02** Achievements and Roblox badges
 - [ ] **LIV-03** Login streak rewards
