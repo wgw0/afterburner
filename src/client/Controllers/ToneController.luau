@@ -25,6 +25,8 @@ local SensorController = require(script.Parent.SensorController)
 local FALLBACK = "rbxasset://sounds/electronicpingshort.wav"
 local RAMP = 60 -- volume units per second: ~15 ms fades, so gating the tone doesn't click
 local VOICE_GAP = 0.35 -- seconds of quiet between voice lines
+-- Warnings (Betty, the master chime, RWR) are scaled by this: at full volume they drowned everything else
+local ALERT_VOLUME = 0.15
 
 -- HUD warnings Betty calls out, most urgent first: the recording, and seconds between repeats while the
 -- warning stays up (0 = back to back)
@@ -132,7 +134,7 @@ local function say(clip: string, now: number)
 	if speaking and speaking.Parent then
 		speaking:Destroy()
 	end
-	speaking = playAsset(clip, nil, 1)
+	speaking = playAsset(clip, nil, ALERT_VOLUME)
 	speakingClip = clip
 	voiceFreeAt = now + clipLength(clip) + VOICE_GAP
 	lastSaid[clip] = now
@@ -148,7 +150,7 @@ local function updateVoice(flying: boolean, now: number)
 	end
 	for _, name in CHIMED do
 		if up[name] and not wasUp[name] then
-			playAsset("MasterWarning", nil, 0.7)
+			playAsset("MasterWarning", nil, 0.7 * ALERT_VOLUME)
 		end
 	end
 	for _, callout in CALLOUTS do
@@ -219,23 +221,23 @@ local function update(dt: number)
 		-- Will's recordings: the launch or lock warning, over and over while it lasts
 		drive(warn, 0, 1, dt)
 		if now >= rwrNextAt then
-			playAsset(loop, nil, 0.8)
+			playAsset(loop, nil, 0.8 * ALERT_VOLUME)
 			rwrNextAt = now + clipLength(loop)
 		end
 	else
 		if not loop then
 			rwrNextAt = 0
 		end
-		if newSearch and not playAsset("RwrContact", nil, 0.6) then
+		if newSearch and not playAsset("RwrContact", nil, 0.6 * ALERT_VOLUME) then
 			searchBeepUntil = now + 0.14 -- no recording: a short beep instead
 		end
 		if hasLaunch then
-			drive(warn, 0.6, if pulse(0.24, 0.12) then 1.6 else 1.2, dt)
+			drive(warn, 0.6 * ALERT_VOLUME, if pulse(0.24, 0.12) then 1.6 else 1.2, dt)
 		elseif hasLock then
 			local beeping = clock % 0.8 < 0.1 or (clock % 0.8 > 0.18 and clock % 0.8 < 0.28)
-			drive(warn, if beeping then 0.5 else 0, 1.15, dt)
+			drive(warn, if beeping then 0.5 * ALERT_VOLUME else 0, 1.15, dt)
 		elseif now < searchBeepUntil then
-			drive(warn, 0.4, 0.9, dt)
+			drive(warn, 0.4 * ALERT_VOLUME, 0.9, dt)
 		else
 			drive(warn, 0, 1, dt)
 		end
