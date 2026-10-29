@@ -20,6 +20,13 @@ return function(ctx)
 			}
 		end
 
+		it("the rotation alternates Dogfight and Team Deathmatch; other modes stay put", function()
+			expect(MatchRules.nextMode("Dogfight")).toBe("TeamDeathmatch")
+			expect(MatchRules.nextMode("TeamDeathmatch")).toBe("Dogfight")
+			expect(MatchRules.nextMode("FreeFlight")).toBe("FreeFlight")
+			expect(MatchRules.nextMode("Stress")).toBe("Stress")
+		end)
+
 		describe("Team Deathmatch (MCH-05)", function()
 			local tdm = MatchRules.MODES.TeamDeathmatch
 			local function teamScores()
