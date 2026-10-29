@@ -17,6 +17,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Environment = require(Shared.Config.Environment)
+local Passes = require(Shared.Config.Passes)
 local Mastery = require(Shared.Mastery)
 local Net = require(Shared.Net)
 local PlayerData = require(Shared.PlayerData)
@@ -29,6 +30,7 @@ local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local ConfigService = require(script.Parent.ConfigService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
+local PassService = require(script.Parent.PassService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local ReportService = require(script.Parent.ReportService)
 
@@ -253,6 +255,29 @@ local COMMANDS: { [string]: Command } = {
 				return true
 			end)
 			return ok == true, `+{n} Credits`
+		end,
+	},
+	-- Game passes (test servers): own a pass for this session without buying it, or lose it again
+	["give.pass"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, name = target(admin, args), args.name
+			if not (who and type(name) == "string" and Passes.LIST[name]) then
+				return false, 'Usage: give.pass { name = "CustomCallsign" }'
+			end
+			PassService:Grant(who, name, true)
+			return true, `{who.Name} owns {name} this session`
+		end,
+	},
+	["take.pass"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, name = target(admin, args), args.name
+			if not (who and type(name) == "string" and Passes.LIST[name]) then
+				return false, 'Usage: take.pass { name = "CustomCallsign" }'
+			end
+			PassService:Grant(who, name, false)
+			return true, `{who.Name} no longer owns {name} this session`
 		end,
 	},
 	["take.credits"] = {

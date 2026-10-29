@@ -6,6 +6,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
@@ -15,6 +16,7 @@ local Callsign = require(Shared.Callsign)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
+local Passes = require(Shared.Config.Passes)
 
 local C = require(script.Parent.Parent.Components)
 local Theme = require(script.Parent.Parent.Theme)
@@ -86,8 +88,19 @@ local function step(group: any, level: number, isNext: boolean, order: number)
 end
 
 -- Your callsign: what other pilots see instead of your username, checked by Roblox's filter when you set it.
+-- Needs the Custom Callsign pass; without it the row offers the pass.
 local function CallsignBox(props: { Data: any, OnSetCallsign: (string) -> (boolean, string?) })
 	local saved = props.Data.Callsign or ""
+	local passAttribute = Passes.attribute("CustomCallsign")
+	local owned, setOwned = React.useState(Players.LocalPlayer:GetAttribute(passAttribute) == true)
+	React.useEffect(function()
+		local connection = Players.LocalPlayer:GetAttributeChangedSignal(passAttribute):Connect(function()
+			setOwned(Players.LocalPlayer:GetAttribute(passAttribute) == true)
+		end)
+		return function()
+			connection:Disconnect()
+		end
+	end, {})
 	local text, setText = React.useState(saved)
 	local pending, setPending = React.useState(false)
 	local message, setMessage = React.useState(nil :: { text: string, bad: boolean }?)
@@ -104,20 +117,52 @@ local function CallsignBox(props: { Data: any, OnSetCallsign: (string) -> (boole
 			end
 		end)
 	end
+	local label = e(C.Label, {
+		Text = "CALLSIGN",
+		Size = UDim2.fromOffset(78, 30),
+		Bold = true,
+		TextSize = 12,
+		Color = Theme.Accent,
+		LayoutOrder = 0,
+	})
+	if not owned then
+		local pass = Passes.LIST.CustomCallsign
+		local passId = Passes.idFor("CustomCallsign")
+		return e("Frame", {
+			Size = UDim2.new(1, 0, 0, 30),
+			Position = UDim2.new(0, 0, 1, -68),
+			BackgroundTransparency = 1,
+		}, {
+			Layout = C.List({ Horizontal = true, Gap = 6, AlignY = "Center" }),
+			Label = label,
+			Get = if passId
+				then e(C.Button, {
+					Text = `GET {string.upper(pass.DisplayName)}  ·  R$ {pass.Price}`,
+					Style = "Primary",
+					Size = UDim2.fromOffset(250, 30),
+					TextSize = 12,
+					LayoutOrder = 1,
+					OnClick = function()
+						MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, passId)
+					end,
+				})
+				else nil,
+			Message = e(C.Label, {
+				Text = if passId then pass.Description else "Custom callsigns come with a game pass, coming soon",
+				Size = UDim2.fromOffset(420, 30),
+				TextSize = 12,
+				Color = Theme.Dim,
+				LayoutOrder = 2,
+			}),
+		})
+	end
 	return e("Frame", {
 		Size = UDim2.new(1, 0, 0, 30),
 		Position = UDim2.new(0, 0, 1, -68),
 		BackgroundTransparency = 1,
 	}, {
 		Layout = C.List({ Horizontal = true, Gap = 6, AlignY = "Center" }),
-		Label = e(C.Label, {
-			Text = "CALLSIGN",
-			Size = UDim2.fromOffset(78, 30),
-			Bold = true,
-			TextSize = 12,
-			Color = Theme.Accent,
-			LayoutOrder = 0,
-		}),
+		Label = label,
 		Box = e("TextBox", {
 			Text = text,
 			PlaceholderText = Players.LocalPlayer.Name,

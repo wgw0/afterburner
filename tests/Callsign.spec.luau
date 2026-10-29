@@ -51,4 +51,20 @@ return function(ctx)
 			expect(table.find(PlayerData.REPLICATED, "Callsign") ~= nil).toBe(true)
 		end)
 	end)
+
+	describe("the Custom Callsign pass", function()
+		local Passes = require(ctx.Shared.Config.Passes)
+
+		it("is listed with a price and description", function()
+			local pass = Passes.LIST.CustomCallsign
+			expect(pass ~= nil).toBe(true)
+			expect(pass.Price > 0).toBe(true)
+			expect(#pass.Description > 0).toBe(true)
+		end)
+
+		it("an unknown pass has no id, and each pass has its own attribute", function()
+			expect(Passes.idFor("NoSuchPass")).toBe(nil)
+			expect(Passes.attribute("CustomCallsign")).toBe("Pass_CustomCallsign")
+		end)
+	end)
 end
