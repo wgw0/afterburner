@@ -9,6 +9,10 @@
 -- Inside the box: heading tape (top), speed tape (left), altitude tape (right), pitch ladder, horizon,
 -- flight path marker, gun cross, G / Mach / AoA (bottom left), vertical speed and throttle (bottom
 -- right), warnings. Outside the box: the Mouse Aim reticle, fuel and the key help line.
+--
+-- Era variants (HUD-05, Config/HUDStyles): the jet's Era picks the box size, tapes or plain numbers, ladder
+-- detail, flight path marker, readouts, a bank scale and speed trend, and whether the symbology sits on the
+-- HUD glass (fixed to the nose) or on the helmet (fixed to your view, Tier VII-VIII).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,6 +21,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared.Config.Bindings)
 local Ballistics = require(Shared.Ballistics)
+local HUDStyles = require(Shared.Config.HUDStyles)
 local Net = require(Shared.Net)
 local Units = require(Shared.Units)
 local Guidance = require(Shared.Guidance)
@@ -48,9 +53,10 @@ local FRIENDLY = Color3.fromRGB(90, 165, 255) -- teammates (team modes)
 local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
-local BOX_WIDTH_DEG = 29.5 -- about 5% roomier than 28 × 22 (Will), so the readouts sit further apart
-local BOX_HEIGHT_DEG = 23.2
-local LADDER_STEP = 5 -- degrees between pitch rungs
+local LADDER_STEP = 5 -- degrees between the pitch rungs built (an era's style may show fewer)
+local BANK_MARKS = { -60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60 } -- bank scale ticks (degrees)
+local BANK_RADIUS = 90 -- px
+local TREND_SECONDS = 5 -- the speed trend shows where your speed will be this long from now
 
 local HUDController = {
 	Priority = 60,
@@ -60,7 +66,7 @@ local HUDController = {
 }
 
 type Tape = { frame: Frame, labels: { TextLabel }, ticks: { Frame }, valueBox: TextLabel }
-type Rung = { holder: Frame, pitch: number }
+type Rung = { holder: Frame, pitch: number, labels: { TextLabel } }
 
 local box: CanvasGroup
 local rungs: { Rung } = {}
@@ -70,6 +76,11 @@ local gunCross: TextLabel
 local speedTape: Tape
 local altTape: Tape
 local headingTape: Tape
+local bankScale: Frame -- FullGlass / WAD: ticks on an arc under the box centre, and a caret for the bank
+local bankCaret: TextLabel
+local speedTrend: Frame -- FullGlass / WAD: a line from the speed box to where the speed will be
+local lastSpeed: number? = nil
+local smoothedAccel = 0
 local readouts: { [string]: TextLabel } = {}
 local warningLabel: TextLabel
 local cautionLabel: TextLabel
@@ -192,7 +203,7 @@ local function makeTape(parent: Instance, vertical: boolean, count: number): Tap
 	return { frame = frame, labels = labels, ticks = ticks, valueBox = valueBox }
 end
 
-local function makeRung(pitch: number): Frame
+local function makeRung(pitch: number): (Frame, { TextLabel })
 	local holder = Instance.new("Frame")
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.BackgroundTransparency = 1
@@ -216,14 +227,16 @@ local function makeRung(pitch: number): Frame
 		tick.AnchorPoint = Vector2.new(0.5, if pitch > 0 then 0 else 1)
 		tick.Position = UDim2.new(0.5, side * 110, 0.5, 0)
 	end
+	local labels = {}
 	for _, side in { -1, 1 } do
 		local label = text(holder, 13, if side < 0 then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left)
 		label.AnchorPoint = Vector2.new(if side < 0 then 1 else 0, 0.5)
 		label.Size = UDim2.fromOffset(28, 14)
 		label.Position = if side < 0 then UDim2.new(0, -6, 0.5, 0) else UDim2.new(1, 6, 0.5, 0)
 		label.Text = tostring(math.abs(pitch))
+		table.insert(labels, label)
 	end
-	return holder
+	return holder, labels
 end
 
 ---------------------------------------------------------------------------
@@ -245,7 +258,8 @@ local function build(): ScreenGui
 
 	for pitch = -85, 85, LADDER_STEP do
 		if pitch ~= 0 then
-			table.insert(rungs, { holder = makeRung(pitch), pitch = pitch })
+			local holder, labels = makeRung(pitch)
+			table.insert(rungs, { holder = holder, pitch = pitch, labels = labels })
 		end
 	end
 
@@ -280,6 +294,27 @@ local function build(): ScreenGui
 	speedTape = makeTape(box, true, 16)
 	altTape = makeTape(box, true, 16)
 	headingTape = makeTape(box, false, 16)
+
+	-- Bank scale (FullGlass / WAD): ticks on an arc below the box centre, a caret at your bank angle
+	bankScale = Instance.new("Frame")
+	bankScale.AnchorPoint = Vector2.new(0.5, 0.5)
+	bankScale.BackgroundTransparency = 1
+	bankScale.Size = UDim2.fromOffset(0, 0)
+	bankScale.Visible = false
+	bankScale.Parent = box
+	for _, mark in BANK_MARKS do
+		local angle = math.rad(mark)
+		local tick = line(bankScale, 2, if mark % 30 == 0 then 10 else 6)
+		tick.AnchorPoint = Vector2.new(0.5, 0)
+		tick.Position = UDim2.fromOffset(-math.sin(angle) * BANK_RADIUS, math.cos(angle) * BANK_RADIUS)
+		tick.Rotation = mark
+	end
+	bankCaret = text(bankScale, 14)
+	bankCaret.AnchorPoint = Vector2.new(0.5, 1)
+	bankCaret.Size = UDim2.fromOffset(16, 14)
+	bankCaret.Text = "▲"
+	speedTrend = line(box, 3, 0)
+	speedTrend.Visible = false
 
 	for _, name in { "G", "Mach", "AoA" } do
 		readouts[name] = text(box, 16, Enum.TextXAlignment.Left)
@@ -545,7 +580,7 @@ local function project(camera: Camera, direction: Vector3): (Vector2, boolean)
 	return Vector2.new(p.X, p.Y), onScreen and p.Z > 0
 end
 
-local function update()
+local function update(dt: number)
 	local gui = HUDController.gui
 	local state, root = FlightController.state, FlightController.root
 	if not (gui and state and root) then
@@ -566,14 +601,17 @@ local function update()
 	-- Size the box in degrees, using pixels-per-degree at the screen centre.
 	local focal = (viewport.Y / 2) / math.tan(math.rad(camera.FieldOfView / 2))
 	local pxPerDeg = focal * math.tan(math.rad(1))
-	local boxW = math.min(math.floor(pxPerDeg * BOX_WIDTH_DEG), viewport.X - 40)
-	local boxH = math.min(math.floor(pxPerDeg * BOX_HEIGHT_DEG), viewport.Y - 60)
+	local style = HUDStyles.forEra(FlightController.airframe and FlightController.airframe.Era)
+	local boxW = math.min(math.floor(pxPerDeg * style.boxWidth), viewport.X - 40)
+	local boxH = math.min(math.floor(pxPerDeg * style.boxHeight), viewport.Y - 60)
 
-	-- The box follows the boresight (the nose), like symbology on the HUD glass.
+	-- The box follows the boresight (the nose), like symbology on the HUD glass; a helmet display (WAD)
+	-- stays at the centre of your view instead.
 	local nose, noseVisible = project(camera, look)
-	box.Visible = noseVisible
+	local centre = if style.helmet then viewport / 2 else nose
+	box.Visible = style.helmet or noseVisible
 	box.Size = UDim2.fromOffset(boxW, boxH)
-	local boxOrigin = nose - Vector2.new(boxW / 2, boxH / 2)
+	local boxOrigin = centre - Vector2.new(boxW / 2, boxH / 2)
 	box.Position = UDim2.fromOffset(boxOrigin.X, boxOrigin.Y)
 	local function toBox(screen: Vector2): UDim2
 		local p = screen - boxOrigin
@@ -587,8 +625,11 @@ local function update()
 		return p.X >= marginX and p.X <= boxW - marginX and p.Y >= marginY and p.Y <= boxH - marginY
 	end
 
-	gunCross.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
-	fixedRing.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	-- The gun cross always marks the nose (on a helmet display it moves around inside the box)
+	local boresight = toBox(nose)
+	gunCross.Position = boresight
+	gunCross.Visible = noseVisible and inside(nose, 20, 20)
+	fixedRing.Position = boresight
 
 	-- Pitch ladder and horizon: conformal, rotated by the *camera's* bank (the screen's tilt against
 	-- the real horizon), which matches whether the view rolls with the jet or stays level.
@@ -603,15 +644,30 @@ local function update()
 	for _, rung in rungs do
 		local p = math.rad(rung.pitch)
 		local screen, visible = project(camera, flat * math.cos(p) + Vector3.new(0, math.sin(p), 0))
-		rung.holder.Visible = visible and inside(screen, 90, 24)
+		rung.holder.Visible = rung.pitch % style.ladderStep == 0 and visible and inside(screen, 90, 24)
 		rung.holder.Position = toBox(screen)
 		rung.holder.Rotation = -bank
+		for _, label in rung.labels do
+			label.Visible = style.ladderNumbers
+		end
 	end
 
-	if state.velocity.Magnitude > 1 then
+	fpm.Visible = false
+	if style.flightPath and state.velocity.Magnitude > 1 then
 		local v, vVisible = project(camera, state.velocity.Unit)
 		fpm.Visible = vVisible and inside(v, 10, 10)
 		fpm.Position = toBox(v)
+	end
+
+	-- Bank scale: the jet's own bank against the horizon, caret on the arc
+	bankScale.Visible = style.bankScale
+	if style.bankScale then
+		bankScale.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+		local jetBank = math.deg(math.atan2(-jetCF.RightVector.Y, jetCF.UpVector.Y))
+		local shown = math.rad(math.clamp(jetBank, -65, 65))
+		local r = BANK_RADIUS - 2
+		bankCaret.Position = UDim2.fromOffset(-math.sin(shown) * r, math.cos(shown) * r)
+		bankCaret.Rotation = math.deg(shown)
 	end
 
 	-- Tapes
@@ -620,6 +676,9 @@ local function update()
 	local metric = SettingsController:Get("Units") == "Metric"
 	local knots = if metric then state.speed * 3.6 else Units.knots(state.speed)
 	local feet = if metric then state.altitude else Units.feet(state.altitude)
+	speedTape.frame.Visible = style.tapes
+	altTape.frame.Visible = style.tapes
+	headingTape.frame.Visible = style.headingTape
 	speedTape.frame.Size = UDim2.fromOffset(70, tapeH)
 	speedTape.frame.Position = UDim2.fromOffset(16, (boxH - tapeH) / 2)
 	layoutTape(speedTape, {
@@ -635,6 +694,23 @@ local function update()
 	})
 	speedTape.valueBox.Position = UDim2.fromOffset(12, boxH / 2 - 13)
 	speedTape.valueBox.Text = tostring(math.round(knots))
+
+	-- Speed trend: smoothed acceleration, drawn up (faster) or down (slower) beside the speed box
+	if lastSpeed and dt > 0 then
+		smoothedAccel += ((state.speed - lastSpeed) / dt - smoothedAccel) * math.min(dt * 3, 1)
+	end
+	lastSpeed = state.speed
+	speedTrend.Visible = false
+	if style.speedTrend and style.tapes then
+		local change = smoothedAccel * TREND_SECONDS * (if metric then 3.6 else Units.knots(1))
+		local pixels = math.clamp(change * tapeH / (if metric then 260 else 140), -tapeH / 2, tapeH / 2)
+		if math.abs(pixels) > 3 then
+			speedTrend.Visible = true
+			speedTrend.AnchorPoint = Vector2.new(0.5, if pixels > 0 then 1 else 0)
+			speedTrend.Position = UDim2.fromOffset(92, boxH / 2)
+			speedTrend.Size = UDim2.fromOffset(3, math.abs(pixels))
+		end
+	end
 
 	altTape.frame.Size = UDim2.fromOffset(70, tapeH)
 	altTape.frame.Position = UDim2.fromOffset(boxW - 86, (boxH - tapeH) / 2)
@@ -665,7 +741,7 @@ local function update()
 			return string.format("%02d", math.round((v % 360) / 10) % 36)
 		end,
 	})
-	headingTape.valueBox.Position = UDim2.fromOffset(boxW / 2 - 28, 42)
+	headingTape.valueBox.Position = UDim2.fromOffset(boxW / 2 - 28, if style.headingTape then 42 else 8)
 	headingTape.valueBox.Text = string.format("%03d", math.round(heading) % 360)
 
 	-- Corner readouts
@@ -675,6 +751,9 @@ local function update()
 	readouts.G.Position = UDim2.fromOffset(leftX, bottomY)
 	readouts.G.Text = string.format("G  %4.1f", state.gLoad)
 	readouts.G.TextColor3 = if airframe and state.gLoad > airframe.MaxG * 0.95 then RED else GREEN
+	readouts.Mach.Visible = style.fullReadouts
+	readouts.AoA.Visible = style.fullReadouts
+	readouts.VS.Visible = style.fullReadouts
 	readouts.Mach.Position = UDim2.fromOffset(leftX, bottomY + 20)
 	readouts.Mach.Text = string.format("M  %.2f", state.mach)
 	readouts.AoA.Position = UDim2.fromOffset(leftX, bottomY + 40)
@@ -948,7 +1027,7 @@ local function update()
 	-- The seeker circle shows the heat-seeker searching at the boresight; once it sees a target, the
 	-- target's own marker (green square, then red) takes over.
 	seekerCircle.Visible = isIR and SensorController.irTargetId == 0
-	seekerCircle.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	seekerCircle.Position = boresight
 	-- Helmet sight: shown once your head is off the nose, so you can see where the seeker will be cued
 	local offNose = jetModel ~= nil
 		and jetModel.PrimaryPart ~= nil
