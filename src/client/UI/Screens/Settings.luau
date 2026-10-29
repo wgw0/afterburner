@@ -74,6 +74,15 @@ local SECTIONS = {
 				format = "%d%%",
 				percent = true,
 			},
+			{ key = "MusicVolume", label = "Music volume", step = 0.05, format = "%d%%", percent = true },
+			{
+				key = "RadioVolume",
+				label = "Radio volume",
+				hint = 'Callouts like "Fox two" and "Splash one".',
+				step = 0.05,
+				format = "%d%%",
+				percent = true,
+			},
 		},
 	},
 	{

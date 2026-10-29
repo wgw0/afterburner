@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
+local Sounds = require(script.Parent.Sounds)
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
@@ -113,6 +114,7 @@ function Components.Button(props: any)
 		ZIndex = props.ZIndex,
 		[React.Event.Activated] = function()
 			if not disabled and props.OnClick then
+				Sounds.play("UIClick")
 				props.OnClick()
 			end
 		end,

@@ -34,6 +34,7 @@ local TutorialController = require(script.Parent.TutorialController)
 local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
 local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
+local Sounds = require(UI:WaitForChild("Sounds"))
 
 local MODE_NAMES = {
 	Any = "",
@@ -141,6 +142,14 @@ local function queueStatus(): string?
 	return queue.message
 end
 
+-- A spend that went through gets the confirm chime (AUD-05).
+local function confirmed(ok: boolean, err: string?): (boolean, string?)
+	if ok then
+		Sounds.play("UIConfirm")
+	end
+	return ok, err
+end
+
 local function navigate(screen: string, id: string?)
 	if screen == "Detail" then
 		state.backTo = if state.screen == "Detail" then state.backTo else state.screen
@@ -228,13 +237,13 @@ render = function()
 			end
 		end,
 		OnResearch = function(id)
-			return PlayerDataController:Research(id)
+			return confirmed(PlayerDataController:Research(id))
 		end,
 		OnBuy = function(id)
-			return PlayerDataController:Buy(id)
+			return confirmed(PlayerDataController:Buy(id))
 		end,
 		OnBuySkin = function(id, skinId)
-			return PlayerDataController:BuySkin(id, skinId)
+			return confirmed(PlayerDataController:BuySkin(id, skinId))
 		end,
 		OnSetSkin = function(id, skinId)
 			return PlayerDataController:SetSkin(id, skinId)
@@ -243,7 +252,7 @@ render = function()
 			return PlayerDataController:SetModuleFitted(id, moduleId, fitted)
 		end,
 		OnBuyModule = function(id, moduleId)
-			return PlayerDataController:BuyModule(id, moduleId)
+			return confirmed(PlayerDataController:BuyModule(id, moduleId))
 		end,
 		OnLineup = function(ids)
 			return PlayerDataController:SetLineup(ids)
@@ -334,7 +343,12 @@ function MenuController:Start()
 	root = ReactRoblox.createRoot(gui)
 
 	PlayerDataController.Changed:Connect(render)
-	PlayerDataController.Rewards:Connect(render)
+	PlayerDataController.Rewards:Connect(function(payload: any)
+		if payload and (payload.LevelsGained or 0) > 0 then
+			task.delay(1.5, Sounds.play, "LevelUp") -- as the results screen's level bar fills
+		end
+		render()
+	end)
 	MatchController.Changed:Connect(function()
 		local match = MatchController.state
 		if match and match.state == "Closing" then
@@ -353,6 +367,7 @@ function MenuController:Start()
 		queue.message = payload.message
 		queue.startedAt = os.clock() - (payload.waited or 0)
 		if payload.state == "Found" then
+			Sounds.play("MatchFound")
 			showTeleportScreen("Joining your match…")
 		else
 			state.teleportScreen = false
