@@ -130,10 +130,16 @@ local function LevelTrack(props: any)
 			end
 		end
 	end
+	-- Titles from elsewhere (the login streak) only show once you have them
+	for _, id in LevelRewards.OTHER_TITLES do
+		if data.Titles and data.Titles[id] then
+			table.insert(options, { id, LevelRewards.TITLES[id] })
+		end
+	end
 	local locked = 0
 	for i, option in options do
 		local id, name = option[1], option[2]
-		if LevelRewards.titleUnlocked(id, level, allUnlocked) then
+		if LevelRewards.titleUnlocked(id, level, allUnlocked, data.Titles) then
 			titles[`T{i}`] = e(C.Button, {
 				Text = name,
 				Style = if (data.Title or "") == id then "Primary" else "Ghost",

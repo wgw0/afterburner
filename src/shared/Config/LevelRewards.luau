@@ -33,7 +33,11 @@ LevelRewards.TITLES = table.freeze({
 	Legend = "Legend",
 	GroupCaptain = "Group Captain",
 	AirMarshal = "Air Marshal",
+	-- Not from levels: the login streak (Streak.MILESTONES), unlocked in data.Titles
+	Regular = "Regular",
+	Devoted = "Devoted",
 })
+LevelRewards.OTHER_TITLES = table.freeze({ "Regular", "Devoted" })
 
 LevelRewards.HUD_COLOURS = table.freeze({ Pink = 7, Blue = 18, Violet = 40 }) -- colour → level
 
@@ -122,9 +126,15 @@ function LevelRewards.describe(milestone: Milestone): string
 	return kind
 end
 
--- Titles unlocked at a level ("" = no title is always allowed).
-function LevelRewards.titleUnlocked(titleId: string, level: number, allUnlocked: boolean?): boolean
-	if titleId == "" then
+-- Whether a title can be worn: "" (none) always; a level title from its level; any title unlocked some other
+-- way (`owned`: data.Titles, e.g. the login streak).
+function LevelRewards.titleUnlocked(
+	titleId: string,
+	level: number,
+	allUnlocked: boolean?,
+	owned: { [string]: boolean }?
+): boolean
+	if titleId == "" or (owned ~= nil and owned[titleId] == true and LevelRewards.TITLES[titleId] ~= nil) then
 		return true
 	end
 	local needed = LevelRewards.levelFor("Title", titleId)
