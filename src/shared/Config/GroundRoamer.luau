@@ -4,6 +4,9 @@
 -- Wheel positions are relative to the model's pivot: on the ground, midway between the axles; x right, z aft.
 
 local GroundRoamer = {
+	-- Off since November 2026 (Will: no Drive mode for now). The model and code stay so it can come back:
+	-- set this to true and the hangar's DRIVE button needs re-adding (see git history of Screens/Hangar).
+	Enabled = false,
 	ModelName = "GroundRoamer",
 	DisplayName = "Ground Roamer",
 

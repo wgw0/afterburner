@@ -69,6 +69,9 @@ local function dress(model: Model, skin: string)
 end
 
 local function spawn(player: Player, skin: string?): (boolean, string?)
+	if not Config.Enabled then
+		return false, "The Ground Roamer is off"
+	end
 	if AircraftService:GetJet(player) then
 		return false, "You're flying: land in the menu first"
 	end
