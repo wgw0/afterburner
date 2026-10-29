@@ -11,6 +11,7 @@
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
 local Challenges = require(script.Parent.Challenges)
+local Streak = require(script.Parent.Streak)
 local Economy = require(script.Parent.Config.Economy)
 local Settings = require(script.Parent.Config.Settings)
 
@@ -36,6 +37,8 @@ PlayerData.REPLICATED = table.freeze({
 	"Achievements",
 	"Title",
 	"Lessons",
+	"Streak",
+	"Titles",
 })
 
 local function deepCopy<T>(value: T): T
@@ -80,6 +83,8 @@ function PlayerData.template(): { [string]: any }
 		Title = "", -- the title shown on the scoreboard (Config/LevelRewards), "" for none
 		LevelRewardsClaimed = 0, -- the level whose Credits / Free RP milestones have been paid up to
 		Lessons = {}, -- [lessonId] = true once finished (TelemetryService)
+		Streak = Streak.newState(), -- the daily login streak (LIV-03)
+		Titles = {}, -- titles unlocked other than by level, e.g. the streak's [titleId] = true
 		Onboarding = {}, -- onboarding funnel steps already logged (ANL-02)
 		TopTier = 0, -- highest tier owned, for the progression event
 		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
