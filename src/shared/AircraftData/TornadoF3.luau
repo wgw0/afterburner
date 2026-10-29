@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 9,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "AIM9L", Count = 4 }, { Weapon = "Skyflash", Count = 4 } },
-	Radar = { Range = 55000, Cone = 30, CanNotch = true }, -- AI.24 Foxhunter: pulse-Doppler
+	Radar = { Range = 22000, Cone = 30, CanNotch = true }, -- AI.24 Foxhunter: pulse-Doppler
 	RWR = { LaunchWarning = false, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "BK27",

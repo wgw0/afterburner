@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 8,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "AIM9P", Count = 4 }, { Weapon = "AIM7F", Count = 4 } },
-	Radar = { Range = 40000, Cone = 30, CanNotch = false }, -- AN/APQ-120: pulse radar, poor look-down
+	Radar = { Range = 16000, Cone = 30, CanNotch = false }, -- AN/APQ-120: pulse radar, poor look-down
 	RWR = { LaunchWarning = false, Resolution = "Coarse" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "M61A1",

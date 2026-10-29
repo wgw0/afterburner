@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 13,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "ASRAAM", Count = 2 }, { Weapon = "Meteor", Count = 4 } },
-	Radar = { Range = 80000, Cone = 30, CanNotch = true }, -- CAPTOR-M: pulse-Doppler
+	Radar = { Range = 32000, Cone = 30, CanNotch = true }, -- CAPTOR-M: pulse-Doppler
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "BK27",

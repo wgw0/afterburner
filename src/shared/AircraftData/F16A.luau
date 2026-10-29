@@ -34,7 +34,7 @@ return {
 	MaxYawRate = 12,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "AIM9L", Count = 6 } },
-	Radar = { Range = 40000, Cone = 30, CanNotch = true }, -- AN/APG-66: pulse-Doppler
+	Radar = { Range = 16000, Cone = 30, CanNotch = true }, -- AN/APG-66: pulse-Doppler
 	RWR = { LaunchWarning = false, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "M61A1",

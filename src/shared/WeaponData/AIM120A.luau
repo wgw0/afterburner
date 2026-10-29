@@ -12,7 +12,7 @@ return {
 	Drag = 0.0001,
 	MaxG = 30,
 	MinSpeed = 280,
-	MaxRange = 35000,
+	MaxRange = 14000,
 	MinRange = 1000,
 	SeekerCone = 30,
 	Gimbal = 45,
@@ -23,5 +23,5 @@ return {
 	ProximityFuse = 10,
 	Damage = 180,
 	Lifetime = 60,
-	ActiveRange = 9000,
+	ActiveRange = 3600,
 }

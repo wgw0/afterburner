@@ -37,7 +37,7 @@ return {
 	MaxYawRate = 15,
 	-- Weapons and sensors (carried internally)
 	Missiles = { { Weapon = "ASRAAM", Count = 2 }, { Weapon = "Meteor", Count = 6 } },
-	Radar = { Range = 150000, Cone = 30, CanNotch = true }, -- invented: a fused multi-function array
+	Radar = { Range = 60000, Cone = 30, CanNotch = true }, -- invented: a fused multi-function array
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "BK27",

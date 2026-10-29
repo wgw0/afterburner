@@ -36,7 +36,7 @@ return {
 	MaxYawRate = 12,
 	-- Weapons and sensors (carried internally)
 	Missiles = { { Weapon = "AIM9X", Count = 2 }, { Weapon = "AIM120D", Count = 4 } },
-	Radar = { Range = 110000, Cone = 30, CanNotch = true }, -- AN/APG-81: AESA
+	Radar = { Range = 44000, Cone = 30, CanNotch = true }, -- AN/APG-81: AESA
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GAU22",

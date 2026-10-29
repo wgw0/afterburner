@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 14,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R73", Count = 4 }, { Weapon = "R77", Count = 4 }, { Weapon = "R27ER", Count = 2 } },
-	Radar = { Range = 80000, Cone = 30, CanNotch = true }, -- N011M Bars: electronically scanned
+	Radar = { Range = 32000, Cone = 30, CanNotch = true }, -- N011M Bars: electronically scanned
 	RWR = { LaunchWarning = true, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "GSh301",

@@ -35,7 +35,7 @@ return {
 	MaxYawRate = 11,
 	-- Weapons and sensors
 	Missiles = { { Weapon = "R550Magic2", Count = 2 }, { Weapon = "Super530D", Count = 2 } },
-	Radar = { Range = 45000, Cone = 30, CanNotch = true }, -- RDI: pulse-Doppler, look-down
+	Radar = { Range = 18000, Cone = 30, CanNotch = true }, -- RDI: pulse-Doppler, look-down
 	RWR = { LaunchWarning = false, Resolution = "Fine" },
 	Countermeasures = { Flares = 30, Chaff = 30 },
 	Gun = "DEFA554_Twin",
