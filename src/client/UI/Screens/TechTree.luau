@@ -10,6 +10,7 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local TechTree = require(Shared.TechTree)
+local LiveConfig = require(Shared.LiveConfig)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -79,7 +80,7 @@ local function NodeCard(props: any)
 			TextSize = 16,
 		}),
 		BR = e(C.Label, {
-			Text = `BR {airframe and airframe.BattleRating or "?"}`,
+			Text = `BR {airframe and LiveConfig.battleRating(node.Id) or "?"}`,
 			Size = UDim2.new(1, -24, 0, 18),
 			Position = UDim2.fromOffset(12, 34),
 			Color = Theme.Dim,

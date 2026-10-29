@@ -26,6 +26,8 @@ export type MatchSummary = {
 	Won: boolean,
 	Afk: boolean, -- no input for Economy.AFK_SECONDS: no survival or win bonus
 	Day: number, -- os.time() // 86400, for first win of the day
+	-- Live config multipliers (OPS-01), e.g. a double XP weekend; Label names the line on the results screen
+	Boost: { XP: number, Credits: number, RP: number, Label: string }?,
 }
 
 export type RewardLine = { Label: string, XP: number, RP: number, Credits: number }
@@ -126,6 +128,24 @@ function Progression.matchRewards(summary: MatchSummary, lastWinDay: number): Re
 		rewards.XP *= multiplier
 		rewards.Credits *= multiplier
 		table.insert(rewards.Lines, bonusLine)
+	end
+
+	-- A live event (LiveConfig economy.*): its own line with what it added
+	local boost = summary.Boost
+	if boost and (boost.XP ~= 1 or boost.Credits ~= 1 or boost.RP ~= 1) then
+		local boostLine = {
+			Label = boost.Label,
+			XP = rewards.XP * (boost.XP - 1),
+			RP = 0,
+			Credits = rewards.Credits * (boost.Credits - 1),
+		}
+		for airframe, rp in rewards.RP do
+			boostLine.RP += rp * (boost.RP - 1)
+			rewards.RP[airframe] = rp * boost.RP
+		end
+		rewards.XP *= boost.XP
+		rewards.Credits *= boost.Credits
+		table.insert(rewards.Lines, boostLine)
 	end
 
 	-- Whole numbers only

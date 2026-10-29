@@ -12,6 +12,7 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Progression = require(Shared.Progression)
+local LiveConfig = require(Shared.LiveConfig)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -142,7 +143,7 @@ local function Training(props: any)
 		if aa.Tier ~= bb.Tier then
 			return aa.Tier < bb.Tier
 		end
-		return aa.BattleRating < bb.BattleRating
+		return (LiveConfig.battleRating(a) or 0) < (LiveConfig.battleRating(b) or 0)
 	end)
 	local jets: { [string]: any } = { Layout = C.List({ Gap = 4 }) }
 	jets.Title = e(C.Label, { Text = "ANY JET", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
@@ -170,7 +171,7 @@ local function Training(props: any)
 				Color = if owned then Theme.Text else Theme.Dim,
 			}),
 			Tier = e(C.Label, {
-				Text = `{TIER_NAMES[info.Tier]} · {info.BattleRating}`,
+				Text = `{TIER_NAMES[info.Tier]} · {LiveConfig.battleRating(id)}`,
 				Size = UDim2.fromOffset(60, 34),
 				Position = UDim2.new(1, -66, 0, 0),
 				TextSize = 12,
@@ -295,7 +296,7 @@ local function Training(props: any)
 		}),
 		JetInfo = e(C.Label, {
 			Text = if airframe
-				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {airframe.BattleRating}  ·  {airframe.Branch}{if data.Aircraft[selected]
+				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}{if data.Aircraft[selected]
 						and data.Aircraft[selected].Owned
 					then ""
 					else "  ·  not owned yet"}`

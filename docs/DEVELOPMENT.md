@@ -1862,6 +1862,8 @@ end
 - Overridable values: BR per airframe, economy multipliers, event flags (double XP weekend), shop rotation, featured mode, message of the day.
 - Changes are written by admins through admin commands, and recorded with who changed what and when.
 
+- **As built (OPS-01, November 2026):** `LiveConfig.luau` (shared) lists what can change and validates it: `br.<Jet>` (1–15), `economy.xp` / `economy.credits` / `economy.rp` (0.5–3, applied to match rewards with their own line on the results screen, labelled with the event), `event` (60 characters) and `motd` (160), both shown as a banner at the top of the hangar. `ConfigService` keeps the overrides in the `LiveConfig` DataStore with the last 50 changes (who, when, old, new), puts each on ReplicatedStorage as an `LC_<key>` attribute for server and clients, loads them as the server starts, every 5 minutes, and at once when another server changes one (MessagingService `LiveConfigChanged`). Every BR read in the game goes through `LiveConfig.battleRating`. Admin commands, live and test: `config.set { key, value }`, `config.clear { key }`, `config.show` (overrides and recent changes). Not overridable yet: shop rotation and featured mode (they come with the shop and mode select).
+
 ### 31.2 AdminService
 
 - Admins (`AdminService:IsAdmin`) are everyone in Studio plus the game's owners (`IsOwner`): the creator, the owner of the group that owns the game, and the `ADMINS` list of user IDs.

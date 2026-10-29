@@ -23,6 +23,7 @@ local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
 local ServerRole = require(Shared.ServerRole)
 local LevelRewards = require(Shared.Config.LevelRewards)
+local LiveConfig = require(Shared.LiveConfig)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
@@ -102,6 +103,12 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 		Won = won,
 		Afk = os.clock() - tally.lastActive > Economy.AFK_SECONDS,
 		Day = os.time() // 86400,
+		Boost = {
+			XP = LiveConfig.get("economy.xp"),
+			Credits = LiveConfig.get("economy.credits"),
+			RP = LiveConfig.get("economy.rp"),
+			Label = if LiveConfig.get("event") ~= "" then LiveConfig.get("event") else "Event bonus",
+		},
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
