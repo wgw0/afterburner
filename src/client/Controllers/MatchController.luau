@@ -103,8 +103,9 @@ local function byTeam(ranking: { any }, teams: { string }, teamScores: { [string
 end
 
 local function fillRows(container: Frame, ranking: { any }, limit: number)
+	-- Everything from the last fill: rows (Frames) and team headers (TextLabels), not the list layout
 	for _, child in container:GetChildren() do
-		if child:IsA("Frame") then
+		if child:IsA("GuiObject") then
 			child:Destroy()
 		end
 	end
