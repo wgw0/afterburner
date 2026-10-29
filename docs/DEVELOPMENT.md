@@ -2016,9 +2016,11 @@ same work against the task IDs.
 
 ### 37.3 Installing art in Studio (the routine that works)
 
-1. The art lives in a Blender worktree's `tools/blender/out/` (not in git). Copy the FBX files Will is to import
-   to the main checkout's `tools/blender/out/` (also ignored) and give him that path; hidden `.claude` folders are
-   awkward to browse to.
+1. The art lives in `tools/blender/out/`, in git through **Git LFS** (since 29 October 2026): the `.fbx` models,
+   `.blend` sources, `*_manifest.json` and the PBR texture maps, for every jet, cockpit, the Ground Roamer, the
+   bridge, the sky and the terrain. Preview renders and `.blend1` backups stay ignored (`.gitignore` whitelists
+   what's kept). A fresh clone needs `git lfs install` once; CI checks out without LFS and doesn't need the files.
+   Point Will at the main checkout's `tools/blender/out/`; hidden `.claude` folders are awkward to browse to.
 2. Will imports with Merge Meshes off, Anchored on, Meter, Upload on.
 3. Textures: serve the PNGs from a scratch folder with `python -m http.server 8765` and upload them with the Studio
    MCP `upload_image` tool in batches of 24. A small temporary ModuleScript in ServerStorage can record the returned
