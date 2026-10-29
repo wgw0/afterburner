@@ -456,7 +456,7 @@ function TutorialController:Begin(lessonId: string, airframeId: string): (boolea
 		return false, "Unknown lesson"
 	end
 	if not ServerRole.isTraining() then
-		return false, "Lessons run on training servers: press TRAINING (top right)"
+		return false, "Lessons run on training servers: press TRAINING next to PLAY"
 	end
 	if ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight" then
 		return false, "Lessons need free flight: press BACK TO FREE FLIGHT first"

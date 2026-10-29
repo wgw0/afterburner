@@ -2,8 +2,8 @@
 -- The menus (DEVELOPMENT.md §24, UI-01–04 / UI-06), drawn with React (UI/App). Replaces the Phase 1
 -- spawn menu. Shown whenever you aren't flying (after the death camera); the results screen while a
 -- match's results are up. Owns the menu state and turns screen actions into intents for the server.
--- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again. DRIVE takes out the Ground
--- Roamer (§36); the menu stays hidden while you drive.
+-- Keys while in the menu: 1–3 fly that lineup slot, R flies the last jet again. (The Ground Roamer, §36, is
+-- off: Config/GroundRoamer.Enabled; the menu still hides if one is out.)
 -- In a lobby (MMK-03) PLAY joins the matchmaking queue for the mode picked over it (it becomes CANCEL while
 -- searching); on a match server you launch in the selected jet as the match starts (you already chose to
 -- play), and PLAY flies again after that; on a training server PLAY flies.
@@ -226,13 +226,6 @@ render = function()
 			if state.queue.state == "Searching" then
 				Net.Client.fire("QueueJoin", mode) -- keeps your place, changes the mode
 			end
-		end,
-		OnDrive = function()
-			setStatus("Fetching the Ground Roamer…")
-			task.spawn(function()
-				local ok, why = DriveController:TakeOut(nil)
-				setStatus(if ok then "" else why or "Couldn't take it out")
-			end)
 		end,
 		OnResearch = function(id)
 			return PlayerDataController:Research(id)

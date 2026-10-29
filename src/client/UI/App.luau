@@ -86,20 +86,17 @@ local function TopBar(props: any)
 			BackgroundTransparency = 1,
 		}, {
 			Layout = C.List({ Horizontal = true, Gap = 22, Align = "Right", AlignY = "Center" }),
-			-- Lobby → training; training or a match → back to a lobby (MatchmakingService)
-			Travel = if props.Role == "Pending"
+			-- Training or a match → back to a lobby (MatchmakingService); in a lobby TRAINING sits by PLAY
+			Travel = if props.Role ~= "Training" and props.Role ~= "Match"
 				then nil
 				else e(C.Button, {
-					Text = if props.Role == "Training"
-						then "MULTIPLAYER"
-						elseif props.Role == "Match" then "LEAVE MATCH"
-						else "TRAINING",
+					Text = if props.Role == "Training" then "MULTIPLAYER" else "LEAVE MATCH",
 					Style = "Ghost",
 					Size = UDim2.fromOffset(150, 40),
 					TextSize = 14,
 					LayoutOrder = 0,
 					OnClick = function()
-						props.OnTravel(if props.Role == "Lobby" then "Training" else "Lobby")
+						props.OnTravel("Lobby")
 					end,
 				}),
 			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
@@ -199,7 +196,11 @@ local function App(props: any)
 			Status = props.Status,
 			CanPlay = props.CanPlay,
 			OnPlay = props.OnPlay,
-			OnDrive = props.OnDrive,
+			OnTraining = if props.Role == "Lobby"
+				then function()
+					props.OnTravel("Training")
+				end
+				else nil,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,

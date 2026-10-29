@@ -1,7 +1,8 @@
 --!strict
 -- Hangar, the home screen (UI-02): the selected jet on a turntable, your lineup, your other jets and the
 -- Play button with the match status. Training is on its own servers (TRAINING in the top bar).
--- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnDrive() (the Ground Roamer), OnDetails(id),
+-- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), OnTraining() (lobby only: to a
+--   training server), OnDetails(id),
 --   OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
 --   lobby: the mode picker over PLAY).
 
@@ -250,17 +251,16 @@ local function Hangar(props: any)
 				props.OnPlay(selected)
 			end,
 		}),
-		Drive = e(C.Button, {
-			Text = "DRIVE",
-			Style = "Ghost",
-			TextSize = 14,
-			Size = UDim2.fromOffset(110, 44),
-			Position = UDim2.new(0.5, -260, 1, -102),
-			Disabled = props.OnDrive == nil,
-			OnClick = function()
-				props.OnDrive()
-			end,
-		}),
+		Training = if props.OnTraining
+			then e(C.Button, {
+				Text = "TRAINING",
+				Style = "Ghost",
+				TextSize = 14,
+				Size = UDim2.fromOffset(110, 44),
+				Position = UDim2.new(0.5, -260, 1, -102),
+				OnClick = props.OnTraining,
+			})
+			else nil,
 		Details = e(C.Button, {
 			Text = "DETAILS",
 			Style = "Ghost",
