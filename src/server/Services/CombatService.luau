@@ -13,6 +13,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Callsign = require(Shared.Callsign)
 local Ballistics = require(Shared.Ballistics)
 local DamageModel = require(Shared.DamageModel)
 local Net = require(Shared.Net)
@@ -352,9 +353,9 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 		local weapon = if killer and state and cause == "Shot" then state.attackerWeapon[killer] or "Gun" else cause
 		local assistNames = {}
 		for _, assist in credit.assists do
-			table.insert(assistNames, assist.Name)
+			table.insert(assistNames, Callsign.nameOf(assist))
 		end
-		Net.Server.fireAll("KillFeed", if killer then killer.Name else "", jet.name, weapon, assistNames)
+		Net.Server.fireAll("KillFeed", if killer then Callsign.nameOf(killer) else "", jet.name, weapon, assistNames)
 	end
 	CombatService.Kill:Fire(jet, credit, cause)
 end

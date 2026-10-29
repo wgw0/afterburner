@@ -131,6 +131,8 @@ local definitions: { [string]: Definition } = {
 	LessonCompleted = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Pick the title shown next to your name (a Config/LevelRewards title id, or "" for none)
 	SetTitle = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	-- Your custom callsign ("" = your username); filtered by Roblox before anyone sees it (CMP-01)
+	SetCallsign = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Leave the current flight for the hangar (HangarButtonController)
 	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id), leave it, and its state

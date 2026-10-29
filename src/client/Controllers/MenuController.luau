@@ -197,7 +197,11 @@ local function reportTargets(): { any }
 		end
 	end
 	for _, player in Players:GetPlayers() do
-		add(player.UserId, player.Name)
+		local callsign = player:GetAttribute("Callsign")
+		add(
+			player.UserId,
+			if type(callsign) == "string" and callsign ~= "" then `{callsign} (@{player.Name})` else player.Name
+		)
 	end
 	local match = MatchController.state
 	for _, score in (match and match.ranking) or {} do
@@ -421,6 +425,13 @@ render = function()
 		end,
 		OnSetTitle = function(titleId: string): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "SetTitle", titleId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnSetCallsign = function(text: string): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "SetCallsign", text)
 			if not ok then
 				return false, "Try again in a moment."
 			end

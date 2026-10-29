@@ -168,7 +168,7 @@ local function App(props: any)
 	if screen == "Results" and props.Match then
 		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data, OnReport = props.OnReport })
 	elseif screen == "Career" then
-		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle })
+		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle, OnSetCallsign = props.OnSetCallsign })
 	elseif screen == "Settings" then
 		body = e(SettingsScreen, {
 			Values = props.Settings,
