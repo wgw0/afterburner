@@ -821,8 +821,6 @@ From `gStress` (FLT step 12):
 
 **Acceptance:** on a phone-sized viewport (Device Emulator, small phone), every element is readable and nothing overlaps the touch buttons.
 
----
-
 ### 9.4 As built: HUD by cockpit era (HUD-05)
 
 Each airframe's `Era` picks a style from `Config/HUDStyles` (tested in `HUDStyles.spec`, which also checks every jet's Era has one); `HUDController` reads it every frame.
