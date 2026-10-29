@@ -209,7 +209,7 @@ function ProgressionService:Init()
 	Net.Server.handle("SetTitle", function(player: Player, titleId: string)
 		local ok, err = DataService:Update(player, function(data)
 			local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
-			if not LevelRewards.titleUnlocked(titleId, data.PilotLevel, allUnlocked) then
+			if not LevelRewards.titleUnlocked(titleId, data.PilotLevel, allUnlocked, data.Titles) then
 				return false, "That title isn't unlocked yet"
 			end
 			data.Title = titleId
@@ -226,7 +226,7 @@ function ProgressionService:Init()
 			Progression.claimLevelRewards(d)
 		end)
 		local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
-		local title = if LevelRewards.titleUnlocked(data.Title or "", data.PilotLevel, allUnlocked)
+		local title = if LevelRewards.titleUnlocked(data.Title or "", data.PilotLevel, allUnlocked, data.Titles)
 			then data.Title
 			else ""
 		player:SetAttribute("Title", LevelRewards.TITLES[title] or "")
