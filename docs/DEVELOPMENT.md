@@ -1661,6 +1661,15 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - Achievements defined as data with matching Roblox **Badges** created on the Creator Dashboard. Award with `BadgeService:AwardBadge` (wrapped in `pcall`, retried).
 - Examples: First Blood, Ace in a Day, Guns Only, Notched, Untouchable (win without taking damage), Test Pilot (Tempest).
 
+### 26.2a As built (November 2026)
+
+- **Challenges** (`Challenges.luau`, tests in `Challenges.spec`): 12 daily and 6 weekly in the pools. 3 dailies a day (the same 3 for everyone, seeded by the UTC day), 2 weeklies (new on Monday 00:00 UTC), one reroll a day. Events: Kill (weapon class Gun / IR / Radar, tier of the jet flown), Assist, MissileDefeated, Capture, MatchFinished (survived?), Win. A completed challenge pays its Credits and XP at once (dailies 1,200–2,000 Cr, weeklies 8,000–12,000).
+- **Achievements** (`Achievements.luau`): First Blood, Guns Only, Victor, Ace in a Day, Untouchable, Notched (a radar missile defeated), Zone Hunter, Veteran (50 matches), Test Pilot (the Tempest in a match). Pilots who played before achievements existed get the ones their lifetime stats already show when they join.
+- **ChallengeService** watches scored matches only (not training servers, the stress test or free flight) and saves `data.Challenges` and `data.Achievements`; lifetime `Stats` stay with the match rewards (`Progression.applyRewards`). Each completion sends `ChallengeNotice`, shown by `ToastController`.
+- **Badges**: put each achievement's badge id in `Config/Badges` (per universe; the test and live experiences need their own). Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
+- **UI**: the challenges panel on the right of the Hangar (progress, rewards, REROLL, time to reset) and the CAREER tab (lifetime stats and the achievements).
+- **Testing**: the test-only admin command `career.reset` clears a player's challenges and achievements (stats are kept).
+
 ### 26.3 Seasons
 
 - `SeasonService` reads the current season from config (`{ id, startUtc, endUtc, passProductId, tiers = {...} }`).

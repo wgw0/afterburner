@@ -1,0 +1,310 @@
+--!strict
+-- Challenges, achievements and badges (DEVELOPMENT.md §26, LIV-01/02).
+-- Watches scored matches (not training servers, not the stress test) and turns what happens into events:
+--   Kill (weapon class, tier of the jet flown), Assist, MissileDefeated (missiles fired at you that missed),
+--   Capture (Air Superiority), and at the end MatchFinished (survived?) and Win.
+-- Each event goes through Challenges.record (completed challenges pay their Credits and XP at once) and
+-- Achievements.earned (new achievements are saved and their Roblox badge awarded, with retries; a badge
+-- that couldn't be awarded, or had no id yet, is tried again the next time the player joins).
+-- The player hears about each one through ChallengeNotice (a toast on their screen).
+--   RerollChallenge(index) swaps one unfinished daily challenge, once a day.
+
+local BadgeService = game:GetService("BadgeService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Achievements = require(Shared.Achievements)
+local AircraftData = require(Shared.AircraftData)
+local Badges = require(Shared.Config.Badges)
+local Challenges = require(Shared.Challenges)
+local Net = require(Shared.Net)
+local Progression = require(Shared.Progression)
+local ServerRole = require(Shared.ServerRole)
+local WeaponData = require(Shared.WeaponData)
+
+local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
+local AircraftService = require(script.Parent.AircraftService)
+local CombatService = require(script.Parent.CombatService)
+local DataService = require(script.Parent.DataService)
+local MatchService = require(script.Parent.MatchService)
+local MissileService = require(script.Parent.MissileService)
+
+local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
+local BADGE_TRIES = 3
+
+local ChallengeService = {
+	Priority = 75, -- after ProgressionService
+}
+
+-- This match, per player: the jet flown now, kills this life, deaths, whether they were hit, whether they flew
+type Session = { airframe: string?, lifeKills: number, deaths: number, hit: boolean, flew: boolean }
+local sessions: { [Player]: Session } = {}
+
+local function now(): number
+	return os.time()
+end
+
+local function sessionOf(player: Player): Session
+	local session = sessions[player]
+	if not session then
+		session = { airframe = nil, lifeKills = 0, deaths = 0, hit = false, flew = false }
+		sessions[player] = session
+	end
+	return session
+end
+
+-- Only scored matches count: not training, not the stress test, not free flight.
+local function counting(): boolean
+	local mode = MatchService:GetMode()
+	return mode.Scored and mode.Id ~= "Stress" and not ServerRole.isTraining()
+end
+
+local function live(): boolean
+	return counting() and MatchService:GetState() == "InProgress"
+end
+
+local function tierOf(airframeId: string?): number?
+	local airframe = airframeId and AircraftData.get(airframeId) :: any
+	return airframe and airframe.Tier
+end
+
+local function weaponClass(weaponId: string?): string
+	local missile = weaponId and WeaponData.getMissile(weaponId) :: any
+	return Challenges.weaponClass(missile and missile.Class)
+end
+
+-- Awards an achievement's badge (if it has one) and marks it awarded.
+local function awardBadge(player: Player, id: string)
+	local badgeId = Badges.idFor(id)
+	if not badgeId then
+		return
+	end
+	task.spawn(function()
+		for attempt = 1, BADGE_TRIES do
+			local ok, err = pcall(function()
+				BadgeService:AwardBadge(player.UserId, badgeId)
+			end)
+			if ok then
+				DataService:Update(player, function(data)
+					local entry = data.Achievements[id]
+					if entry then
+						entry.Badge = true
+					end
+				end)
+				return
+			end
+			warn(`[Challenges] badge {id} for {player.Name}, try {attempt}: {err}`)
+			task.wait(attempt * 3)
+		end
+	end)
+end
+
+-- Records events for a player: challenge progress and rewards, achievements, then tells them.
+local function record(player: Player, challengeEvents: { Challenges.Event }, achievementEvents: { Achievements.Event })
+	local notices = {}
+	local newAchievements = {}
+	DataService:Update(player, function(data)
+		local unix = now()
+		for _, event in challengeEvents do
+			for _, def in Challenges.record(data.Challenges, event, unix) do
+				data.Credits += def.credits
+				Progression.addXP(data, def.xp)
+				local weekly = table.find(Challenges.WEEKLY_POOL, def) ~= nil
+				table.insert(notices, {
+					kind = if weekly then "Weekly challenge" else "Daily challenge",
+					text = def.text,
+					credits = def.credits,
+					xp = def.xp,
+				})
+				Telemetry.event("ChallengeCompleted", def.credits, { id = def.id }, player)
+			end
+		end
+		for _, event in achievementEvents do
+			for _, id in Achievements.earned(event) do
+				if not data.Achievements[id] then
+					data.Achievements[id] = { At = unix, Badge = false }
+					table.insert(newAchievements, id)
+					local def = Achievements.get(id) :: Achievements.Def
+					table.insert(notices, { kind = "Achievement", text = def.name, detail = def.text })
+					Telemetry.event("AchievementEarned", 1, { id = id }, player)
+				end
+			end
+		end
+	end)
+	for _, notice in notices do
+		Net.Server.fire("ChallengeNotice", player, notice)
+	end
+	for _, id in newAchievements do
+		awardBadge(player, id)
+	end
+end
+
+function ChallengeService:Init()
+	Net.Server.handle("RerollChallenge", function(player: Player, index: number)
+		local ok, err = DataService:Update(player, function(data)
+			return Challenges.reroll(data.Challenges, index, now())
+		end)
+		if ok then
+			Telemetry.event("ChallengeRerolled", 1, {}, player)
+		end
+		return ok == true, err
+	end)
+
+	AircraftService.JetSpawned:Connect(function(jet)
+		local player = jet.pilot
+		if not player then
+			return
+		end
+		local session = sessionOf(player)
+		session.airframe = jet.airframeId
+		session.lifeKills = 0
+		if counting() then
+			session.flew = true
+			record(player, {}, { { kind = "Spawn", airframe = jet.airframeId } })
+		end
+	end)
+
+	CombatService.JetDamaged:Connect(function(target, _component, _amount, attacker)
+		local player = target.pilot
+		if player and attacker ~= nil and attacker ~= player and live() then
+			sessionOf(player).hit = true
+		end
+	end)
+
+	CombatService.Kill:Connect(function(victimJet, credit, cause)
+		if not live() then
+			return
+		end
+		local killer = credit.killer
+		local victim = victimJet.pilot
+		if typeof(killer) == "Instance" and killer:IsA("Player") and killer ~= victim then
+			local session = sessionOf(killer)
+			session.lifeKills += 1
+			local weapon = weaponClass(credit.weapon)
+			local tier = tierOf(session.airframe)
+			record(killer, { { kind = "Kill", weapon = weapon, tier = tier, mode = MatchService:GetMode().Id } }, {
+				{ kind = "Kill", weapon = weapon, lifeKills = session.lifeKills },
+			})
+		end
+		for _, helper in credit.assists or {} do
+			if typeof(helper) == "Instance" and helper:IsA("Player") then
+				record(helper, { { kind = "Assist", tier = tierOf(sessionOf(helper).airframe) } }, {})
+			end
+		end
+		if victim and not (QUIET_CAUSES[cause] and killer == nil) then
+			sessionOf(victim).deaths += 1
+		end
+	end)
+
+	MissileService.MissileDefeated:Connect(function(targetJet, _owner, weaponId: string)
+		local player = targetJet.pilot
+		if player and live() then
+			local weapon = weaponClass(weaponId)
+			record(
+				player,
+				{ { kind = "MissileDefeated", weapon = weapon } },
+				{ { kind = "MissileDefeated", weapon = weapon } }
+			)
+		end
+	end)
+
+	MatchService.ZoneCaptured:Connect(function(identity)
+		if typeof(identity) == "Instance" and identity:IsA("Player") and live() then
+			record(identity, { { kind = "Capture", mode = MatchService:GetMode().Id } }, { { kind = "Capture" } })
+		end
+	end)
+
+	MatchService.MatchStarted:Connect(function()
+		for _, session in sessions do
+			session.deaths, session.hit, session.flew, session.lifeKills = 0, false, false, 0
+		end
+		for _, player in Players:GetPlayers() do
+			-- Already in the air as the match starts (a training repeat): they're flying it
+			if AircraftService:GetJet(player) then
+				sessionOf(player).flew = true
+			end
+		end
+	end)
+
+	MatchService.MatchEnded:Connect(function(ranking, _reason, winnerTeam: string?)
+		if not counting() then
+			return
+		end
+		local mode = MatchService:GetMode().Id
+		local winner = ranking[1]
+		for _, player in Players:GetPlayers() do
+			local session = sessions[player]
+			if session and session.flew then
+				local won = if winnerTeam
+					then player:GetAttribute("Team") == winnerTeam
+					else winner ~= nil and not winner.isAI and winner.userId == player.UserId
+				-- Lifetime stats are counted with the match rewards (Progression.applyRewards)
+				local data = DataService:GetData(player)
+				local matches = if data then data.Stats.Matches else 0
+				local tier = tierOf(session.airframe)
+				local events: { Challenges.Event } =
+					{ { kind = "MatchFinished", survived = session.deaths == 0, mode = mode, tier = tier } }
+				local earned: { Achievements.Event } = { { kind = "MatchFinished", matches = matches } }
+				if won then
+					table.insert(events, { kind = "Win", mode = mode, tier = tier })
+					table.insert(earned, { kind = "Win", hitThisMatch = session.hit })
+				end
+				record(player, events, earned)
+			end
+		end
+	end)
+
+	-- On joining: today's challenges, achievements already earned by the lifetime stats (for pilots who
+	-- played before achievements existed), and any badges still owed
+	DataService.ProfileLoaded:Connect(function(player, data)
+		DataService:Update(player, function(d)
+			Challenges.refresh(d.Challenges, now())
+		end)
+		local stats = data.Stats
+		local past: { Achievements.Event } = { { kind = "MatchFinished", matches = stats.Matches } }
+		if stats.Kills + stats.AIKills > 0 then
+			table.insert(past, { kind = "Kill", lifeKills = 1 })
+		end
+		if stats.Wins > 0 then
+			table.insert(past, { kind = "Win" })
+		end
+		task.delay(6, function() -- after the client is listening, so the toasts arrive
+			if player.Parent then
+				record(player, {}, past)
+			end
+		end)
+		for id, entry in data.Achievements do
+			if not entry.Badge then
+				awardBadge(player, id)
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		sessions[player] = nil
+	end)
+end
+
+function ChallengeService:Start()
+	-- A new UTC day (or week) while playing: new challenges
+	task.spawn(function()
+		while true do
+			task.wait(60)
+			local unix = now()
+			for _, player in Players:GetPlayers() do
+				local data = DataService:GetData(player)
+				if
+					data
+					and (data.Challenges.Day ~= Challenges.day(unix) or data.Challenges.Week ~= Challenges.week(unix))
+				then
+					DataService:Update(player, function(d)
+						Challenges.refresh(d.Challenges, unix)
+					end)
+				end
+			end
+		end
+	end)
+end
+
+return ChallengeService

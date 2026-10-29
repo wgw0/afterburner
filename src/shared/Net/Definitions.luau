@@ -117,6 +117,10 @@ local definitions: { [string]: Definition } = {
 	DebugLaunchAtMe = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Spawn a target drone: mode "ahead" (in front of you, same heading) or "circle" (orbits the range)
 	DebugSpawnDrone = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
+	-- Challenges and achievements (ChallengeService): swap one unfinished daily challenge (once a day), and the
+	-- toast when a challenge or achievement completes: { kind, text, detail?, credits?, xp? }
+	RerollChallenge = { direction = "Function", args = { "integer" }, rate = { burst = 3, perSecond = 0.5 } },
+	ChallengeNotice = { direction = "ServerToClient", args = { "table" } },
 	-- Leave the current flight for the hangar (HangarButtonController)
 	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id), leave it, and its state

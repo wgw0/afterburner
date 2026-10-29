@@ -22,6 +22,7 @@ export type Credit = {
 	killer: any?, -- whoever gets the kill (a Player on the server; anything comparable in tests)
 	assists: { any },
 	forcedCrash: boolean, -- killed by making the victim crash
+	weapon: string?, -- set by CombatService: the killer's last weapon id ("Gun" or a missile)
 }
 
 local DamageModel = {}

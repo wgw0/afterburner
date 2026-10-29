@@ -282,6 +282,13 @@ render = function()
 		OnSetting = function(key, value)
 			SettingsController:Set(key, value)
 		end,
+		OnReroll = function(index: number): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "RerollChallenge", index)
+			if not ok then
+				return false, "Couldn't reroll just now. Try again in a moment."
+			end
+			return result == true, message
+		end,
 		OnCapture = function(device: string, callback: (string?) -> ()): boolean
 			return BindingsController:Capture(device, callback)
 		end,
@@ -295,7 +302,7 @@ end
 
 -- Gamepad (UI-09): keep a button selected while the menu is up: PLAY (or FLY), else the first one. Run after
 -- renders and device changes, since a screen change can remove the selected button.
-local TABS = { "Hangar", "TechTree", "Settings" }
+local TABS = { "Hangar", "TechTree", "Career", "Settings" }
 
 local function gamepadSelect()
 	if not (MenuController.visible and InputController.device == "Gamepad") then

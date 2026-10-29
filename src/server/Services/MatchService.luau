@@ -55,6 +55,7 @@ local MatchService = {
 	MatchEnded = Signal.new(), -- (ranking, reason)
 	MatchStarted = Signal.new(), -- (mode) a match went live (also Free Flight, which never ends)
 	MatchOver = Signal.new(), -- () a match server's results are done: send everyone home
+	ZoneCaptured = Signal.new(), -- (identity) a pilot was in a zone as their team captured it
 }
 
 local mode: MatchRules.ModeConfig = MatchRules.MODES.Dogfight
@@ -358,6 +359,7 @@ local function stepZones(dt: number)
 			local score = scores[identity]
 			if score and score.team == capture.team then
 				score.score += MatchRules.POINTS.Capture
+				MatchService.ZoneCaptured:Fire(identity)
 			end
 		end
 		Telemetry.event("ZoneCaptured", 1, { zone = capture.zone, team = capture.team })
