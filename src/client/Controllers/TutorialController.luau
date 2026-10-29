@@ -17,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LessonRunner = require(Shared.LessonRunner)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
+local ServerRole = require(Shared.ServerRole)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
 
@@ -454,8 +455,11 @@ function TutorialController:Begin(lessonId: string, airframeId: string): (boolea
 	if not LESSONS[lessonId] then
 		return false, "Unknown lesson"
 	end
+	if not ServerRole.isTraining() then
+		return false, "Lessons run on training servers: press TRAINING (top right)"
+	end
 	if ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight" then
-		return false, "Training runs on Free Flight servers"
+		return false, "Lessons need free flight: press BACK TO FREE FLIGHT first"
 	end
 	pendingLesson = lessonId
 	if FlightController.jet then

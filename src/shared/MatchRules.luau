@@ -20,6 +20,7 @@ export type ModeConfig = {
 	ResultsSeconds: number,
 	Teams: { string }?, -- team modes: the team ids (ScoreLimit is then team kills)
 	Objective: "Zones"?, -- Air Superiority: zones and tickets decide it (AirSuperiority.luau)
+	AIDifficulty: string?, -- AI pilots' profile (AIBrain.PROFILES; default Normal). Set for Vs AI matches.
 }
 
 export type Score = {

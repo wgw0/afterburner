@@ -18,6 +18,7 @@ local AircraftDetail = require(Screens.AircraftDetail)
 local Hangar = require(Screens.Hangar)
 local Results = require(Screens.Results)
 local SettingsScreen = require(Screens.Settings)
+local Training = require(Screens.Training)
 local TechTree = require(Screens.TechTree)
 
 local e = React.createElement
@@ -79,12 +80,23 @@ local function TopBar(props: any)
 			Settings = tab("Settings", "SETTINGS", 3),
 		}),
 		Wallet = e("Frame", {
-			Size = UDim2.fromOffset(520, Theme.TopBar),
+			Size = UDim2.fromOffset(690, Theme.TopBar),
 			Position = UDim2.new(1, -20, 0, 0),
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundTransparency = 1,
 		}, {
 			Layout = C.List({ Horizontal = true, Gap = 22, Align = "Right", AlignY = "Center" }),
+			-- To a private training server and back (TrainingService)
+			Travel = e(C.Button, {
+				Text = if props.Role == "Training" then "MULTIPLAYER" else "TRAINING",
+				Style = "Ghost",
+				Size = UDim2.fromOffset(150, 40),
+				TextSize = 14,
+				LayoutOrder = 0,
+				OnClick = function()
+					props.OnTravel(if props.Role == "Training" then "Multiplayer" else "Training")
+				end,
+			}),
 			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
 				Label = e(C.Label, {
 					Text = `PILOT LEVEL {data.PilotLevel}`,
@@ -159,6 +171,21 @@ local function App(props: any)
 			OnSetSkin = props.OnSetSkin,
 			OnLineup = props.OnLineup,
 		})
+	elseif props.Role == "Training" then
+		body = e(Training, {
+			Data = data,
+			Selected = props.Selected,
+			OnSelect = props.OnSelect,
+			Status = props.Status,
+			CanPlay = props.CanPlay,
+			OnPlay = props.OnPlay,
+			Lessons = props.Lessons,
+			OnLesson = props.OnLesson,
+			VsAIRunning = props.VsAIRunning,
+			ModeName = props.ModeName,
+			OnVsAI = props.OnVsAI,
+			OnFreeFlight = props.OnFreeFlight,
+		})
 	else
 		body = e(Hangar, {
 			Data = data,
@@ -172,9 +199,6 @@ local function App(props: any)
 				props.Navigate("Detail", id)
 			end,
 			OnLineup = props.OnLineup,
-			OnLesson = props.OnLesson,
-			Lessons = props.Lessons,
-			TrainingNote = props.TrainingNote,
 		})
 	end
 	-- Menu scale setting (SET-03): a UIScale grows everything; the frame shrinks by the same factor so the
@@ -188,7 +212,13 @@ local function App(props: any)
 	}, {
 		Scale = e("UIScale", { Scale = scale }),
 		Top = if screen ~= "Results"
-			then e(TopBar, { Data = data, Screen = screen, Navigate = props.Navigate })
+			then e(TopBar, {
+				Data = data,
+				Screen = screen,
+				Navigate = props.Navigate,
+				Role = props.Role,
+				OnTravel = props.OnTravel,
+			})
 			else nil,
 		Body = e("Frame", {
 			Size = UDim2.new(1, 0, 1, if screen == "Results" then 0 else -Theme.TopBar),

@@ -7,6 +7,7 @@
 --   Leaving mid-match still saves the rewards earned so far (DataService.BeforeRelease).
 --   Research / buy / modules / lineup / settings arrive as remotes and go through the Progression rules.
 --   Spawning is limited to jets in your lineup; fitted modules ride on the jet (AircraftService.modulesFor).
+--   Training servers (ServerRole): any jet, owned or not, and no rewards at all (the results show why).
 --   Economy events (sources and sinks) go to analytics.
 
 local AnalyticsService = game:GetService("AnalyticsService")
@@ -16,9 +17,11 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
+local ServerRole = require(Shared.ServerRole)
 local Settings = require(Shared.Config.Settings)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
@@ -128,6 +131,9 @@ function ProgressionService:CanFly(player: Player, airframeId: string): (boolean
 	local data = DataService:GetData(player)
 	if not data then
 		return false, "Your save is still loading"
+	end
+	if ServerRole.isTraining() then
+		return AircraftData.get(airframeId) ~= nil, "Unknown jet" -- try anything, earn nothing
 	end
 	local entry = data.Aircraft[airframeId]
 	if not (entry and entry.Owned) then
@@ -297,7 +303,22 @@ function ProgressionService:Start()
 		local winner = ranking[1]
 		for _, player in Players:GetPlayers() do
 			local data = DataService:GetData(player)
-			if data then
+			if data and ServerRole.isTraining() then
+				-- Training: nothing is earned, but the results screen still gets a payload to say so
+				tallies[player] = nil
+				Net.Server.fire("MatchRewards", player, {
+					XP = 0,
+					Credits = 0,
+					RP = {},
+					FreeRP = 0,
+					Lines = { { Label = "Training: no rewards", XP = 0, RP = 0, Credits = 0 } },
+					FirstWin = false,
+					LevelsGained = 0,
+					Level = data.PilotLevel,
+					Afk = false,
+					Training = true,
+				})
+			elseif data then
 				-- Team modes: everyone on the winning team won; otherwise the top of the ranking
 				local won = if winnerTeam
 					then player:GetAttribute("Team") == winnerTeam
@@ -310,7 +331,7 @@ function ProgressionService:Start()
 		end
 	end)
 	DataService.BeforeRelease:Connect(function(player, data)
-		if scoredMatchLive() then
+		if scoredMatchLive() and not ServerRole.isTraining() then
 			award(player, data, false, false) -- leaving keeps what you'd earned
 		end
 		tallies[player] = nil
