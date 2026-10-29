@@ -1666,7 +1666,7 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **Challenges** (`Challenges.luau`, tests in `Challenges.spec`): 12 daily and 6 weekly in the pools. 3 dailies a day (the same 3 for everyone, seeded by the UTC day), 2 weeklies (new on Monday 00:00 UTC), one reroll a day. Events: Kill (weapon class Gun / IR / Radar, tier of the jet flown), Assist, MissileDefeated, Capture, MatchFinished (survived?), Win. A completed challenge pays its Credits and XP at once (dailies 1,200–2,000 Cr, weeklies 8,000–12,000).
 - **Achievements** (`Achievements.luau`): First Blood, Guns Only, Victor, Ace in a Day, Untouchable, Notched (a radar missile defeated), Zone Hunter, Veteran (50 matches), Test Pilot (the Tempest in a match). Pilots who played before achievements existed get the ones their lifetime stats already show when they join.
 - **ChallengeService** watches scored matches only (not training servers, the stress test or free flight) and saves `data.Challenges` and `data.Achievements`; lifetime `Stats` stay with the match rewards (`Progression.applyRewards`). Each completion sends `ChallengeNotice`, shown by `ToastController`.
-- **Badges**: put each achievement's badge id in `Config/Badges` (per universe; the test and live experiences need their own). Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
+- **Badges**: put each achievement's badge id in `Config/Badges` (per universe). They'll be made on the production experience at launch (release checklist §35.3 step 6); the test experience has none. Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
 - **UI**: the challenges panel on the right of the Hangar (progress, rewards, REROLL, time to reset) and the CAREER tab (lifetime stats and the achievements).
 - **Testing**: the test-only admin command `career.reset` clears a player's challenges and achievements (stats are kept).
 
@@ -1966,8 +1966,9 @@ On every push and PR:
 3. Check data migrations against a copy of real data shapes.
 4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). **Before publishing to production, set the `Environment` attribute on ReplicatedStorage to `Prod`** (the committed place says `Test`, for the test experience); it picks the save store and turns off debug and admin data tools.
 5. Store art: the experience thumbnail is [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg). Upload it in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. The file is 1376×768 (the largest the generator exports), above Roblox's 768×432 minimum; Roblox recommends 1920×1080 for new thumbnails. The test experience keeps its default thumbnail.
-6. Tag the commit, update the changelog.
-7. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
+6. First launch only: badges. Create one badge per achievement in `Achievements.LIST` on the production experience (Creator Dashboard → Monetization → Badges) and put their ids under the production universe in `Config/Badges`. Players who already hold an achievement get its badge on their next join. The test experience has none (Will's call, November 2026).
+7. Tag the commit, update the changelog.
+8. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
 
 | ID | Task | Phase |
 |---|---|---|
