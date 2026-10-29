@@ -83,6 +83,20 @@ local COMMANDS: { [string]: Command } = {
 			return true, HttpService:JSONEncode(view)
 		end,
 	},
+	-- The latest analytics events this server sent (ANL-04), newest last: { count? = 30, name? = filter }.
+	["telemetry.recent"] = {
+		testOnly = false,
+		run = function(_admin, args)
+			local count = math.clamp(tonumber(args.count) or 30, 1, 200)
+			local list = {}
+			for _, entry in Telemetry.recent do
+				if args.name == nil or entry.name == args.name then
+					table.insert(list, entry)
+				end
+			end
+			return true, HttpService:JSONEncode({ table.unpack(list, math.max(#list - count + 1, 1), #list) })
+		end,
+	},
 	-- Resets a save to a fresh account.
 	["data.reset"] = {
 		testOnly = true,

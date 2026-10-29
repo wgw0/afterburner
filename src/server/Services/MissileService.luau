@@ -73,6 +73,10 @@ local MissileService = {
 	Priority = 34,
 	-- A missile ended without damaging the jet it was fired at: (targetJet, ownerIdentity, weaponId)
 	MissileDefeated = Signal.new(),
+	-- For the balance numbers (ANL-04): a missile left the rail (jet, weaponId), and how it ended
+	-- (ownerIdentity, weaponId, hit: whether it damaged the jet it was fired at)
+	MissileLaunched = Signal.new(),
+	MissileEnded = Signal.new(),
 }
 
 local loadouts: { [number]: Loadout } = {}
@@ -239,6 +243,7 @@ local function launch(jet: Jet, targetId: number): boolean
 	local position = if hardpoint then hardpoint.WorldPosition else jet.root.Position
 	local velocity = Units.velocityFromStuds(jet.root.AssemblyLinearVelocity) - jet.root.CFrame.UpVector * EJECT_SPEED
 	spawnMissile(spec, slot.id, position, velocity, jet, target)
+	MissileService.MissileLaunched:Fire(jet, slot.id)
 	setAttributes(loadout)
 	return true
 end
@@ -402,6 +407,7 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 	if target and not hitTarget then
 		MissileService.MissileDefeated:Fire(target, missile.ownerIdentity, missile.weaponId)
 	end
+	MissileService.MissileEnded:Fire(missile.ownerIdentity, missile.weaponId, hitTarget)
 end
 
 -- What the missile is steering at this tick (position, velocity) or nil.

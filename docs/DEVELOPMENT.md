@@ -1835,6 +1835,13 @@ end
 - Never log personal data beyond what Roblox provides.
 - A weekly **balance report** from the per-airframe data (DESIGN §5.2) drives BR changes.
 
+### 30.3 As built (November 2026)
+
+- **Wrapper** (`Lib/Telemetry`): `event(name, value, fields, player, primary)` sends two custom fields plus the environment; `primary` picks which two (else the first two alphabetically). Every event is also kept in memory; the admin command `telemetry.recent { count, name }` shows the latest (works in test and live). `onboarding(player, step, name)` and `progression(player, path, level)` wrap the matching AnalyticsService calls.
+- **Onboarding funnel** (ANL-02, `TelemetryService`, each step once per player, saved in `data.Onboarding`): 1 Joined, 2 Lesson1 (Basic flight done), 3 Lesson3 (Guns done), 4 FirstMatch, 5 FirstKill, 6 FirstResearch. Lessons report themselves (`LessonCompleted`, training servers only; saved in `data.Lessons`). Progression path "Tier": the highest tier owned (`data.TopTier`).
+- **Balance events** (ANL-04, scored matches only), value 1 unless said: `Spawn` (airframe, mode), `Kill` (airframe, victim airframe), `ShotDown` (airframe, cause), `AirframeResult` (airframe, mode; 1 won / 0 lost: the mean is the win rate), `MissileFired` and `MissileResult` (class, weapon; 1 hit / 0: the mean is the hit rate). Plus `MatchEnded` (value: duration in s; mode, BR band top), `Death` (cause, mode), `QueueMatched` / `MatchFormed` (waits, BR spread), `AntiCheatStrike`, economy events.
+- A per-jet K/D is `Kill` ÷ `ShotDown` by airframe; the weekly balance report (ANL-05) reads these in the Creator Dashboard.
+
 | ID | Task | Phase |
 |---|---|---|
 | ANL-01 | Telemetry wrapper | 4 |

@@ -27,8 +27,16 @@ local function anyPlayer(): Player?
 	return Players:GetPlayers()[1]
 end
 
--- A custom event. player optional (server-wide events attach to someone present).
-function Telemetry.event(name: string, value: number?, fields: { [string]: any }?, player: Player?)
+-- A custom event. player optional (server-wide events attach to someone present). Roblox keeps two custom
+-- fields per event (the third is the environment): `primary` names which fields go (in order); without it,
+-- the first two keys alphabetically. Every field stays in the in-memory log.
+function Telemetry.event(
+	name: string,
+	value: number?,
+	fields: { [string]: any }?,
+	player: Player?,
+	primary: { string }?
+)
 	local data = table.clone(fields or {})
 	data.env = Environment.get()
 	remember(name, value, data)
@@ -40,12 +48,16 @@ function Telemetry.event(name: string, value: number?, fields: { [string]: any }
 		-- Custom fields are limited to three; send the most useful ones.
 		local custom = {}
 		local keys = {}
-		for k in data do
-			if k ~= "env" then
-				table.insert(keys, k)
+		if primary then
+			keys = table.clone(primary)
+		else
+			for k in data do
+				if k ~= "env" then
+					table.insert(keys, k)
+				end
 			end
+			table.sort(keys)
 		end
-		table.sort(keys)
 		local slots = { Enum.AnalyticsCustomFieldKeys.CustomField01, Enum.AnalyticsCustomFieldKeys.CustomField02 }
 		for i, k in keys do
 			if slots[i] then
@@ -57,11 +69,28 @@ function Telemetry.event(name: string, value: number?, fields: { [string]: any }
 	end)
 end
 
--- One step of an onboarding funnel (ANL-02 builds on this).
+-- One step of a recurring funnel (a session id groups one run of it).
 function Telemetry.funnel(player: Player, funnel: string, step: number, stepName: string)
 	remember(`funnel:{funnel}`, step, { step = stepName })
 	pcall(function()
 		AnalyticsService:LogFunnelStepEvent(player, funnel, nil, step, stepName)
+	end)
+end
+
+-- A step of the one-time onboarding funnel (ANL-02). Log each step once per player (TelemetryService keeps
+-- track in the save).
+function Telemetry.onboarding(player: Player, step: number, stepName: string)
+	remember("onboarding", step, { step = stepName })
+	pcall(function()
+		AnalyticsService:LogOnboardingFunnelStepEvent(player, step, stepName)
+	end)
+end
+
+-- A progression milestone, e.g. the highest tier a player has reached.
+function Telemetry.progression(player: Player, path: string, level: number, levelName: string?)
+	remember(`progression:{path}`, level, { name = levelName })
+	pcall(function()
+		AnalyticsService:LogProgressionEvent(player, path, Enum.AnalyticsProgressionType.Complete, level, levelName)
 	end)
 end
 

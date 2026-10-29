@@ -24,6 +24,7 @@ local Progression = require(Shared.Progression)
 local ServerRole = require(Shared.ServerRole)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Settings = require(Shared.Config.Settings)
+local Signal = require(Shared.Util.Signal)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local AircraftService = require(script.Parent.AircraftService)
@@ -34,6 +35,7 @@ local MissileService = require(script.Parent.MissileService)
 
 local ProgressionService = {
 	Priority = 70, -- after MatchService, so the spawn gate can wrap its own
+	IntentDone = Signal.new(), -- (player, action, item) a research, purchase or change went through
 }
 
 type Tally = {
@@ -157,6 +159,7 @@ local function handleIntent(
 	local creditsBefore = before and before.Credits or 0
 	local ok, err = DataService:Update(player, fn)
 	if ok then
+		ProgressionService.IntentDone:Fire(player, action, item)
 		local data = DataService:GetData(player)
 		if data and spendsCredits then
 			economyEvent(player, "Sink", creditsBefore - data.Credits, data.Credits, action, item)
