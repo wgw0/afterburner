@@ -88,6 +88,19 @@ function DamageModel.fractions(health: Health, maxHealth: Health): { [string]: n
 	return out
 end
 
+-- How a component reads on the pilot's damage diagram (DMG-05): "Ok" (75%+), "Damaged" (40%+), "Critical"
+-- (above 0) or "Lost".
+function DamageModel.condition(fraction: number): string
+	if fraction <= 0 then
+		return "Lost"
+	elseif fraction < 0.4 then
+		return "Critical"
+	elseif fraction < 0.75 then
+		return "Damaged"
+	end
+	return "Ok"
+end
+
 -- Flight model modifiers from component health fractions (FLT-10).
 function DamageModel.modifiers(fractions: { [string]: number }): Modifiers
 	local engine = fractions.Engine or 1

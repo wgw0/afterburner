@@ -28,6 +28,8 @@ local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
 local SettingsController = require(script.Parent.SettingsController)
 
+local DamageDiagram = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("DamageDiagram"))
+
 local GREEN = Color3.fromRGB(110, 255, 150) -- the HUD colour: changes with the HUDColour setting
 -- HUDColour presets (SET-03): cyan and white stay clear of the red and amber warnings for red-green
 -- colour blindness
@@ -76,6 +78,7 @@ local terrainCheckAt = 0
 local terrainAhead = false
 local aimReticle: Frame
 local fuelLabel: TextLabel
+local damageDiagram: DamageDiagram.Diagram -- above the fuel readout once you're damaged (DMG-05)
 local helpLabel: TextLabel
 -- HUD-02: guns
 local leadMarker: Frame
@@ -298,6 +301,7 @@ local function build(): ScreenGui
 	fuelLabel.AnchorPoint = Vector2.new(0, 1)
 	fuelLabel.Position = UDim2.new(0, 20, 1, -20)
 	fuelLabel.Size = UDim2.fromOffset(320, 18)
+	damageDiagram = DamageDiagram.create(gui)
 
 	helpLabel = text(gui, 13, Enum.TextXAlignment.Right)
 	helpLabel.AnchorPoint = Vector2.new(1, 1)
@@ -933,6 +937,14 @@ local function update()
 	fuelLabel.Position = if InputController.device == "Touch"
 		then UDim2.new(0, 20, 1, -230)
 		else UDim2.new(0, 20, 1, -20)
+	damageDiagram.frame.Position = fuelLabel.Position - UDim2.fromOffset(0, 24)
+	local jet = FlightController.jet
+	DamageDiagram.update(
+		damageDiagram,
+		FlightController.damage,
+		jet ~= nil and jet:GetAttribute("OnFire") == true,
+		GREEN
+	)
 	local function key(id: string): string
 		return Bindings.label(BindingsController:Name(id, "keyboard"))
 	end
