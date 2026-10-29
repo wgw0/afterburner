@@ -20,6 +20,7 @@ local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local ServerRole = require(Shared.ServerRole)
+local Streak = require(Shared.Streak)
 local Net = require(Shared.Net)
 
 local BindingsController = require(script.Parent.BindingsController)
@@ -34,6 +35,7 @@ local TutorialController = require(script.Parent.TutorialController)
 
 local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
+local DailyReward = require(UI:WaitForChild("DailyReward"))
 local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
 local Sounds = require(UI:WaitForChild("Sounds"))
 
@@ -60,6 +62,9 @@ local MenuController = {
 
 local gui: ScreenGui
 local root: any
+local modalGui: ScreenGui -- the daily reward window, above the menu (LIV-03)
+local modalRoot: any
+local daily = { dismissed = false, pending = false, result = nil :: any }
 local state = {
 	screen = "Hangar",
 	detailId = nil :: string?,
@@ -174,6 +179,50 @@ local function fixSelection()
 		local saved = SettingsController:Get("SelectedJet")
 		state.selected = if saved and table.find(data.Lineup, saved) then saved else data.Lineup[1]
 	end
+end
+
+-- The daily login reward window: once a day, while the menu is up (not over the results screen).
+local function renderDaily(resultsUp: boolean)
+	local data = PlayerDataController.data
+	local today = os.time() // 86400
+	local show = MenuController.visible
+		and not resultsUp
+		and not daily.dismissed
+		and data ~= nil
+		and data.Streak ~= nil
+		and ServerRole.get() ~= "Pending"
+		and (daily.result ~= nil or Streak.canClaim(data.Streak, today))
+	modalGui.Enabled = show
+	if not show then
+		modalRoot:render(nil)
+		return
+	end
+	modalRoot:render(React.createElement(DailyReward, {
+		Streak = data.Streak,
+		Today = today,
+		Result = daily.result,
+		Pending = daily.pending,
+		OnClaim = function()
+			daily.pending = true
+			render()
+			task.spawn(function()
+				local ok, result = pcall(Net.Client.invoke, "ClaimDailyReward")
+				daily.pending = false
+				if ok and result then
+					daily.result = result
+					Sounds.play("UIConfirm")
+				else
+					daily.dismissed = true -- already claimed (another server), or try again next time
+				end
+				render()
+			end)
+		end,
+		OnClose = function()
+			daily.dismissed = true
+			daily.result = nil
+			render()
+		end,
+	}))
 end
 
 render = function()
@@ -309,6 +358,7 @@ render = function()
 			setStatus(if ok then "Starting training…" else why)
 		end,
 	}))
+	renderDaily(resultsUp)
 end
 
 -- Gamepad (UI-09): keep a button selected while the menu is up: PLAY (or FLY), else the first one. Run after
@@ -320,6 +370,14 @@ local function gamepadSelect()
 		return
 	end
 	local selected = GuiService.SelectedObject
+	-- The daily reward window first, while it's up
+	if modalGui.Enabled then
+		local action = modalGui:FindFirstChild("Action", true)
+		if action and action:IsA("GuiButton") and selected ~= action then
+			GuiService.SelectedObject = action
+		end
+		return
+	end
 	if selected and selected:IsDescendantOf(gui) and selected.Visible then
 		return
 	end
@@ -339,6 +397,9 @@ local function setVisible(visible: boolean)
 	end
 	MenuController.visible = visible
 	gui.Enabled = visible
+	if not visible then
+		modalGui.Enabled = false
+	end
 	if visible then
 		if state.screen == "Results" then
 			state.screen = "Hangar"
@@ -381,6 +442,14 @@ function MenuController:Start()
 	gui.Enabled = false
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	root = ReactRoblox.createRoot(gui)
+	modalGui = Instance.new("ScreenGui")
+	modalGui.Name = "AfterburnerDailyReward"
+	modalGui.IgnoreGuiInset = true
+	modalGui.ResetOnSpawn = false
+	modalGui.DisplayOrder = 25 -- over the menu, under toasts
+	modalGui.Enabled = false
+	modalGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	modalRoot = ReactRoblox.createRoot(modalGui)
 	-- The gamepad selection outline, in the menu's orange (UI-09)
 	local outline = Instance.new("Frame")
 	outline.Name = "AfterburnerSelection"

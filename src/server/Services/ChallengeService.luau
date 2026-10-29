@@ -23,6 +23,7 @@ local Badges = require(Shared.Config.Badges)
 local Challenges = require(Shared.Challenges)
 local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
+local Streak = require(Shared.Streak)
 local ServerRole = require(Shared.ServerRole)
 local WeaponData = require(Shared.WeaponData)
 
@@ -206,6 +207,25 @@ local function record(
 end
 
 function ChallengeService:Init()
+	-- The daily login reward (LIV-03): claims today's day of the streak and pays it.
+	Net.Server.handle("ClaimDailyReward", function(player: Player)
+		local result = nil
+		DataService:Update(player, function(data)
+			local reward, count = Streak.claim(data.Streak, os.time() // 86400)
+			if reward then
+				data.Credits += reward.credits
+				data.FreeRP += reward.freeRP
+				if reward.title then
+					data.Titles[reward.title] = true
+				end
+				result = { count = count, credits = reward.credits, freeRP = reward.freeRP, title = reward.title }
+			end
+		end)
+		if result then
+			Telemetry.event("DailyReward", result.count, { credits = result.credits }, player)
+		end
+		return result
+	end)
 	Net.Server.handle("RerollChallenge", function(player: Player, index: number)
 		local ok, err = DataService:Update(player, function(data)
 			return Challenges.reroll(data.Challenges, index, now())
