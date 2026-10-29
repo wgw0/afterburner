@@ -27,8 +27,22 @@ desktop.ini
 # Claude Code local settings
 .claude/settings.local.json
 
-# Blender generator output (regenerate with tools/blender/*.py)
-tools/blender/out/
+# Blender generator output. The files needed to rebuild the game's art are kept (in Git LFS, see
+# .gitattributes): models (.fbx), Blender sources (.blend), manifests and texture maps. Preview renders and
+# Blender's .blend1 backups are not; regenerate them with tools/blender/*.py.
+tools/blender/out/**
+!tools/blender/out/**/
+!tools/blender/out/**/*.fbx
+!tools/blender/out/**/*.blend
+!tools/blender/out/**/*_manifest.json
+!tools/blender/out/**/*_Color.png
+!tools/blender/out/**/*_Normal.png
+!tools/blender/out/**/*_Roughness.png
+!tools/blender/out/**/*_Metalness.png
+!tools/blender/out/textures/sky/Sky_??.png
+!tools/blender/out/textures/Border_Stripes.png
+!tools/blender/out/Woods_Palette.png
+!tools/blender/out/trees.txt
 
 # Python bytecode (tools/blender scripts import each other)
 __pycache__/

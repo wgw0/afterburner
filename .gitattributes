@@ -3,3 +3,8 @@
 *.rbxm binary
 *.png binary
 *.jpg binary
+
+# Art assets in Git LFS (large binaries; the repository keeps small pointers)
+tools/blender/out/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+tools/blender/out/**/*.blend filter=lfs diff=lfs merge=lfs -text
+tools/blender/out/**/*.png filter=lfs diff=lfs merge=lfs -text

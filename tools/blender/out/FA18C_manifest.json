@@ -1,0 +1,1265 @@
+{
+  "airframe": "FA18C",
+  "units": "metres (Roblox axes: x right, y up, z aft)",
+  "studsPerMetre": 3.5714,
+  "length": 17.07,
+  "triangles": 10812,
+  "parts": [
+    {
+      "name": "Fuselage",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.2409,
+          -2.4954
+        ],
+        "size": [
+          2.1327,
+          1.8362,
+          16.4193
+        ]
+      },
+      "triangles": 4576
+    },
+    {
+      "name": "Nacelles",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          -0.2597,
+          0.5891
+        ],
+        "size": [
+          2.1,
+          0.88,
+          4.3135
+        ]
+      },
+      "triangles": 476
+    },
+    {
+      "name": "IntakeDucts",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          -0.2597,
+          -1.3331
+        ],
+        "size": [
+          1.9935,
+          0.7744,
+          0.1324
+        ]
+      },
+      "triangles": 160
+    },
+    {
+      "name": "Strakes",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.3803,
+          -2.4119
+        ],
+        "size": [
+          2.9314,
+          0.247,
+          9.3878
+        ]
+      },
+      "triangles": 100
+    },
+    {
+      "name": "Canopy",
+      "set": "Glass",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.0606,
+          -5.2783
+        ],
+        "size": [
+          0.88,
+          0.8274,
+          3.7106
+        ]
+      },
+      "triangles": 544
+    },
+    {
+      "name": "CanopyFrame",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          1.0082,
+          -5.116
+        ],
+        "size": [
+          0.88,
+          0.762,
+          1.8689
+        ]
+      },
+      "triangles": 256
+    },
+    {
+      "name": "WingR",
+      "set": "Wings",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          3.3952,
+          0.2968,
+          0.7774
+        ],
+        "size": [
+          4.7495,
+          0.2139,
+          3.3432
+        ]
+      },
+      "triangles": 568
+    },
+    {
+      "name": "LEFlapR",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        3.3602,
+        0.2968,
+        0.016
+      ],
+      "bounds": {
+        "centre": [
+          3.3602,
+          0.2968,
+          -0.4555
+        ],
+        "size": [
+          4.6796,
+          0.2085,
+          2.7634
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.932,
+          0.0,
+          0.3626
+        ],
+        "min": 0,
+        "max": 24,
+        "control": "LEFlap"
+      },
+      "triangles": 216
+    },
+    {
+      "name": "FlapR",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        2.5,
+        0.2968,
+        1.3772
+      ],
+      "bounds": {
+        "centre": [
+          2.5,
+          0.2968,
+          1.8115
+        ],
+        "size": [
+          2.8,
+          0.1286,
+          1.2737
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.9897,
+          0.0,
+          0.1432
+        ],
+        "min": 0,
+        "max": 30,
+        "control": "Flap"
+      },
+      "triangles": 120
+    },
+    {
+      "name": "AileronR",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        4.825,
+        0.2968,
+        1.7137
+      ],
+      "bounds": {
+        "centre": [
+          4.825,
+          0.2968,
+          2.0063
+        ],
+        "size": [
+          1.75,
+          0.0846,
+          0.8385
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.9897,
+          0.0,
+          0.1432
+        ],
+        "min": -20,
+        "max": 20,
+        "control": "AileronR"
+      },
+      "triangles": 120
+    },
+    {
+      "name": "WingtipRailR",
+      "set": "Details",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          5.8099,
+          0.2968,
+          1.4767
+        ],
+        "size": [
+          0.08,
+          0.1,
+          1.6
+        ]
+      },
+      "triangles": 12
+    },
+    {
+      "name": "WingL",
+      "set": "Wings",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -3.3952,
+          0.2968,
+          0.7774
+        ],
+        "size": [
+          4.7495,
+          0.2139,
+          3.3432
+        ]
+      },
+      "triangles": 568
+    },
+    {
+      "name": "LEFlapL",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        -3.3602,
+        0.2968,
+        0.016
+      ],
+      "bounds": {
+        "centre": [
+          -3.3602,
+          0.2968,
+          -0.4555
+        ],
+        "size": [
+          4.6796,
+          0.2085,
+          2.7634
+        ]
+      },
+      "hinge": {
+        "axis": [
+          -0.932,
+          0.0,
+          0.3626
+        ],
+        "min": 0,
+        "max": 24,
+        "control": "LEFlap"
+      },
+      "triangles": 216
+    },
+    {
+      "name": "FlapL",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        -2.5,
+        0.2968,
+        1.3772
+      ],
+      "bounds": {
+        "centre": [
+          -2.5,
+          0.2968,
+          1.8115
+        ],
+        "size": [
+          2.8,
+          0.1286,
+          1.2737
+        ]
+      },
+      "hinge": {
+        "axis": [
+          -0.9897,
+          0.0,
+          0.1432
+        ],
+        "min": 0,
+        "max": 30,
+        "control": "Flap"
+      },
+      "triangles": 120
+    },
+    {
+      "name": "AileronL",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        -4.825,
+        0.2968,
+        1.7137
+      ],
+      "bounds": {
+        "centre": [
+          -4.825,
+          0.2968,
+          2.0063
+        ],
+        "size": [
+          1.75,
+          0.0846,
+          0.8385
+        ]
+      },
+      "hinge": {
+        "axis": [
+          -0.9897,
+          0.0,
+          0.1432
+        ],
+        "min": -20,
+        "max": 20,
+        "control": "AileronL"
+      },
+      "triangles": 120
+    },
+    {
+      "name": "WingtipRailL",
+      "set": "Details",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -5.8099,
+          0.2968,
+          1.4767
+        ],
+        "size": [
+          0.08,
+          0.1,
+          1.6
+        ]
+      },
+      "triangles": 12
+    },
+    {
+      "name": "StabilatorR",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        0.974,
+        -0.0557,
+        4.333
+      ],
+      "bounds": {
+        "centre": [
+          2.0872,
+          -0.0557,
+          5.0974
+        ],
+        "size": [
+          2.2263,
+          0.1232,
+          4.0167
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": -24,
+        "max": 10,
+        "control": "ElevonR"
+      },
+      "triangles": 280
+    },
+    {
+      "name": "StabilatorL",
+      "set": "Wings",
+      "kind": "ControlSurface",
+      "pivot": [
+        -0.974,
+        -0.0557,
+        4.333
+      ],
+      "bounds": {
+        "centre": [
+          -2.0872,
+          -0.0557,
+          5.0974
+        ],
+        "size": [
+          2.2263,
+          0.1232,
+          4.0167
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": -24,
+        "max": 10,
+        "control": "ElevonL"
+      },
+      "triangles": 280
+    },
+    {
+      "name": "FinR",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          1.29,
+          1.7198,
+          3.0659
+        ],
+        "size": [
+          0.8456,
+          2.3656,
+          3.423
+        ]
+      },
+      "triangles": 440
+    },
+    {
+      "name": "RudderR",
+      "set": "Body",
+      "kind": "ControlSurface",
+      "pivot": [
+        1.1823,
+        1.3404,
+        3.8807
+      ],
+      "bounds": {
+        "centre": [
+          1.178,
+          1.339,
+          4.0836
+        ],
+        "size": [
+          0.4524,
+          1.2671,
+          0.9163
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.2881,
+          0.8868,
+          0.3615
+        ],
+        "min": -30,
+        "max": 30,
+        "control": "Rudder"
+      },
+      "triangles": 168
+    },
+    {
+      "name": "FinL",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -1.29,
+          1.7198,
+          3.0659
+        ],
+        "size": [
+          0.8456,
+          2.3656,
+          3.423
+        ]
+      },
+      "triangles": 440
+    },
+    {
+      "name": "RudderL",
+      "set": "Body",
+      "kind": "ControlSurface",
+      "pivot": [
+        -1.1823,
+        1.3404,
+        3.8807
+      ],
+      "bounds": {
+        "centre": [
+          -1.178,
+          1.339,
+          4.0836
+        ],
+        "size": [
+          0.4524,
+          1.2671,
+          0.9163
+        ]
+      },
+      "hinge": {
+        "axis": [
+          -0.2881,
+          0.8868,
+          0.3615
+        ],
+        "min": -30,
+        "max": 30,
+        "control": "Rudder"
+      },
+      "triangles": 168
+    },
+    {
+      "name": "NozzleR",
+      "set": "Details",
+      "kind": "Nozzle",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.5009,
+          0.0,
+          6.0158
+        ],
+        "size": [
+          0.84,
+          0.84,
+          0.6957
+        ]
+      },
+      "engine": "R",
+      "triangles": 120
+    },
+    {
+      "name": "AfterburnerR",
+      "set": "Details",
+      "kind": "Afterburner",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.5009,
+          0.0,
+          5.9158
+        ],
+        "size": [
+          0.5,
+          0.5,
+          0.5957
+        ]
+      },
+      "engine": "R",
+      "triangles": 64
+    },
+    {
+      "name": "NozzleL",
+      "set": "Details",
+      "kind": "Nozzle",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -0.5009,
+          0.0,
+          6.0158
+        ],
+        "size": [
+          0.84,
+          0.84,
+          0.6957
+        ]
+      },
+      "engine": "L",
+      "triangles": 120
+    },
+    {
+      "name": "AfterburnerL",
+      "set": "Details",
+      "kind": "Afterburner",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          -0.5009,
+          0.0,
+          5.9158
+        ],
+        "size": [
+          0.5,
+          0.5,
+          0.5957
+        ]
+      },
+      "engine": "L",
+      "triangles": 64
+    },
+    {
+      "name": "EjectionSeat",
+      "set": "Details",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.905,
+          -4.9414
+        ],
+        "size": [
+          0.46,
+          0.91,
+          0.59
+        ]
+      },
+      "triangles": 36
+    },
+    {
+      "name": "Pitot",
+      "set": "Details",
+      "kind": "Static",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          -0.167,
+          -8.2468
+        ],
+        "size": [
+          1.0745,
+          0.036,
+          0.4695
+        ]
+      },
+      "triangles": 64
+    },
+    {
+      "name": "NoseGearStrut",
+      "set": "Details",
+      "kind": "Gear",
+      "pivot": [
+        0,
+        -0.4951,
+        -5.0536
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          -1.0494,
+          -5.0036
+        ],
+        "size": [
+          0.1331,
+          1.1211,
+          0.2394
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": 0,
+        "max": 95,
+        "control": "Gear"
+      },
+      "triangles": 40
+    },
+    {
+      "name": "NoseGearWheel",
+      "set": "Details",
+      "kind": "GearWheel",
+      "pivot": [
+        0,
+        -1.7237,
+        -4.9536
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          -1.7237,
+          -4.9536
+        ],
+        "size": [
+          0.16,
+          0.5515,
+          0.56
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": -720,
+        "max": 720,
+        "control": "Wheel"
+      },
+      "triangles": 72
+    },
+    {
+      "name": "NoseGearDoorR",
+      "set": "Details",
+      "kind": "GearDoor",
+      "pivot": [
+        0.14,
+        -0.5751,
+        -5.0536
+      ],
+      "bounds": {
+        "centre": [
+          0.16,
+          -0.7051,
+          -5.0536
+        ],
+        "size": [
+          0.03,
+          0.26,
+          0.8
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 85,
+        "control": "GearDoor"
+      },
+      "triangles": 12
+    },
+    {
+      "name": "NoseGearDoorL",
+      "set": "Details",
+      "kind": "GearDoor",
+      "pivot": [
+        -0.14,
+        -0.5751,
+        -5.0536
+      ],
+      "bounds": {
+        "centre": [
+          -0.16,
+          -0.7051,
+          -5.0536
+        ],
+        "size": [
+          0.03,
+          0.26,
+          0.8
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 85,
+        "control": "GearDoor"
+      },
+      "triangles": 12
+    },
+    {
+      "name": "MainGearStrutR",
+      "set": "Details",
+      "kind": "Gear",
+      "pivot": [
+        0.95,
+        -0.538,
+        0.4514
+      ],
+      "bounds": {
+        "centre": [
+          1.25,
+          -1.0259,
+          0.6014
+        ],
+        "size": [
+          0.7343,
+          1.0619,
+          0.4504
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 90,
+        "control": "Gear"
+      },
+      "triangles": 40
+    },
+    {
+      "name": "MainGearWheelR",
+      "set": "Details",
+      "kind": "GearWheel",
+      "pivot": [
+        1.55,
+        -1.6137,
+        0.7514
+      ],
+      "bounds": {
+        "centre": [
+          1.55,
+          -1.6137,
+          0.7514
+        ],
+        "size": [
+          0.22,
+          0.7682,
+          0.78
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": -720,
+        "max": 720,
+        "control": "Wheel"
+      },
+      "triangles": 72
+    },
+    {
+      "name": "MainGearDoorR",
+      "set": "Details",
+      "kind": "GearDoor",
+      "pivot": [
+        1.06,
+        -0.588,
+        0.7514
+      ],
+      "bounds": {
+        "centre": [
+          1.06,
+          -0.838,
+          0.7514
+        ],
+        "size": [
+          0.04,
+          0.5,
+          0.9
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 85,
+        "control": "GearDoor"
+      },
+      "triangles": 12
+    },
+    {
+      "name": "MainGearStrutL",
+      "set": "Details",
+      "kind": "Gear",
+      "pivot": [
+        -0.95,
+        -0.538,
+        0.4514
+      ],
+      "bounds": {
+        "centre": [
+          -1.25,
+          -1.0259,
+          0.6014
+        ],
+        "size": [
+          0.7343,
+          1.0619,
+          0.4504
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 90,
+        "control": "Gear"
+      },
+      "triangles": 40
+    },
+    {
+      "name": "MainGearWheelL",
+      "set": "Details",
+      "kind": "GearWheel",
+      "pivot": [
+        -1.55,
+        -1.6137,
+        0.7514
+      ],
+      "bounds": {
+        "centre": [
+          -1.55,
+          -1.6137,
+          0.7514
+        ],
+        "size": [
+          0.22,
+          0.7682,
+          0.78
+        ]
+      },
+      "hinge": {
+        "axis": [
+          1.0,
+          0.0,
+          -0.0
+        ],
+        "min": -720,
+        "max": 720,
+        "control": "Wheel"
+      },
+      "triangles": 72
+    },
+    {
+      "name": "MainGearDoorL",
+      "set": "Details",
+      "kind": "GearDoor",
+      "pivot": [
+        -1.06,
+        -0.588,
+        0.7514
+      ],
+      "bounds": {
+        "centre": [
+          -1.06,
+          -0.838,
+          0.7514
+        ],
+        "size": [
+          0.04,
+          0.5,
+          0.9
+        ]
+      },
+      "hinge": {
+        "axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "min": 0,
+        "max": 85,
+        "control": "GearDoor"
+      },
+      "triangles": 12
+    }
+  ],
+  "attachments": {
+    "CockpitEye": [
+      0,
+      1.2,
+      -5.0464
+    ],
+    "GunMuzzle": [
+      0,
+      -0.0742,
+      -10.6586
+    ],
+    "Nozzle1": [
+      -0.5009,
+      0.0,
+      6.3636
+    ],
+    "Nozzle2": [
+      0.5009,
+      0.0,
+      6.3636
+    ],
+    "WingtipL": [
+      -5.8199,
+      0.2968,
+      1.4767
+    ],
+    "WingtipR": [
+      5.8199,
+      0.2968,
+      1.4767
+    ],
+    "FlareDispenser": [
+      -0.7,
+      -0.55,
+      3.2096
+    ],
+    "ChaffDispenser": [
+      0.7,
+      -0.55,
+      3.2096
+    ],
+    "ChaseCam": [
+      0,
+      4.0,
+      20.5
+    ],
+    "Hardpoint1": [
+      -5.8499,
+      0.1968,
+      1.4767
+    ],
+    "Hardpoint2": [
+      5.8499,
+      0.1968,
+      1.4767
+    ],
+    "Hardpoint3": [
+      -3.9,
+      -0.0032,
+      0.8905
+    ],
+    "Hardpoint4": [
+      3.9,
+      -0.0032,
+      0.8905
+    ],
+    "Hardpoint5": [
+      -2.5,
+      -0.0032,
+      0.2412
+    ],
+    "Hardpoint6": [
+      2.5,
+      -0.0032,
+      0.2412
+    ],
+    "Hardpoint7": [
+      -0.8,
+      -0.7236,
+      -0.0371
+    ],
+    "Hardpoint8": [
+      0.8,
+      -0.7236,
+      -0.0371
+    ],
+    "Hardpoint9": [
+      0,
+      -0.7236,
+      1.3544
+    ]
+  },
+  "hull": {
+    "size": [
+      2.4,
+      1.8,
+      15.6
+    ],
+    "at": [
+      0,
+      0.1,
+      -1.6
+    ]
+  },
+  "hitboxes": {
+    "Cockpit": {
+      "size": [
+        0.9,
+        1.0,
+        2.4
+      ],
+      "at": [
+        0,
+        1.1,
+        -5.0
+      ]
+    },
+    "Fuselage": {
+      "size": [
+        2.4,
+        1.5,
+        6.5
+      ],
+      "at": [
+        0,
+        0.1,
+        -1.0
+      ]
+    },
+    "Engine": {
+      "size": [
+        2.2,
+        1.1,
+        4.2
+      ],
+      "at": [
+        0,
+        0.0,
+        4.4
+      ]
+    },
+    "WingL": {
+      "size": [
+        4.6,
+        0.4,
+        3.2
+      ],
+      "at": [
+        -3.5,
+        0.3,
+        1.6
+      ]
+    },
+    "WingR": {
+      "size": [
+        4.6,
+        0.4,
+        3.2
+      ],
+      "at": [
+        3.5,
+        0.3,
+        1.6
+      ]
+    },
+    "Tail": {
+      "size": [
+        6.6,
+        2.8,
+        3.4
+      ],
+      "at": [
+        0,
+        1.2,
+        5.4
+      ]
+    }
+  }
+}
