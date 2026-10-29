@@ -80,14 +80,9 @@ local function subtitle(text: string, seconds: number)
 	end
 end
 
--- For other controllers (RadioController): a line of text in the subtitle area. `always` shows it even with
--- the Subtitles setting off (a radio call with no recording yet is only text).
-function ToneController:Subtitle(text: string, seconds: number, always: boolean?)
-	if always then
-		subtitles[text] = math.max(subtitles[text] or 0, os.clock() + seconds)
-	else
-		subtitle(text, seconds)
-	end
+-- For other controllers (RadioController): a line in the subtitle area, if the Subtitles setting is on.
+function ToneController:Subtitle(text: string, seconds: number)
+	subtitle(text, seconds)
 end
 
 local function drawSubtitles(now: number)
