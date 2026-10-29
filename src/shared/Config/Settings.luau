@@ -19,6 +19,8 @@ local SPECS: { [string]: Spec } = {
 	Units = { kind = "enum", values = { "Imperial", "Metric" }, default = "Imperial" },
 	MasterVolume = { kind = "number", min = 0, max = 1, default = 1 },
 	CockpitVolume = { kind = "number", min = 0, max = 1, default = 1 },
+	MusicVolume = { kind = "number", min = 0, max = 1, default = 0.6 }, -- AUD-05
+	RadioVolume = { kind = "number", min = 0, max = 1, default = 1 }, -- radio calls (AUD-04)
 	ReduceShake = { kind = "boolean", default = false },
 	ReduceFlashing = { kind = "boolean", default = false },
 	-- SET-03 accessibility

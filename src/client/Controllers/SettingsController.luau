@@ -26,9 +26,11 @@ local SettingsController = {
 	Changed = Signal.new(), -- (key, value)
 }
 
+-- Sound groups with their own volume setting on top of the master volume
+local GROUP_SETTINGS = { Cockpit = "CockpitVolume", Music = "MusicVolume", Radio = "RadioVolume" }
+
 local function applyVolumes()
 	local master = SettingsController.values.MasterVolume
-	local cockpit = SettingsController.values.CockpitVolume
 	for _, group in SoundService:GetChildren() do
 		if group:IsA("SoundGroup") then
 			local base = group:GetAttribute("BaseVolume") :: number?
@@ -36,7 +38,8 @@ local function applyVolumes()
 				base = group.Volume
 				group:SetAttribute("BaseVolume", base)
 			end
-			group.Volume = (base :: number) * master * (if group.Name == "Cockpit" then cockpit else 1)
+			local own = GROUP_SETTINGS[group.Name]
+			group.Volume = (base :: number) * master * (if own then SettingsController.values[own] else 1)
 		end
 	end
 end
@@ -52,7 +55,7 @@ local function apply(key: string, value: any)
 		CameraController.baseFov = value
 	elseif key == "DefaultCamera" then
 		CameraController.defaultMode = value
-	elseif key == "MasterVolume" or key == "CockpitVolume" then
+	elseif key == "MasterVolume" or key == "CockpitVolume" or key == "MusicVolume" or key == "RadioVolume" then
 		applyVolumes()
 	end
 end
@@ -100,6 +103,11 @@ function SettingsController:Start()
 		load(PlayerDataController.data.Settings)
 	end
 	task.delay(3, applyVolumes) -- sound groups made by other controllers
+	SoundService.ChildAdded:Connect(function(child)
+		if child:IsA("SoundGroup") then
+			task.defer(applyVolumes) -- after its maker has set its base volume
+		end
+	end)
 end
 
 return SettingsController
