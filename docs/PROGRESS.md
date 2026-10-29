@@ -304,9 +304,11 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Once per player: joined, lesson 1, lesson 3, first match, first kill, first research (`TelemetryService`, DEVELOPMENT.md §30.3); lessons report themselves to the server. Tier progression logged too. Checked in play (via `telemetry.recent`) and by Will. *The Creator Dashboard fills in on the published game.*
 - [x] **ANL-04** Combat and balance events
   - Scored matches: Spawn, Kill (killer and victim jets), ShotDown (jet, cause), AirframeResult (win rate per jet), MissileFired / MissileResult (hit rate per missile), MatchEnded (duration, mode, BR band). Checked in play and by Will.
-- [ ] **OPS-01** ConfigService with live overrides
+- [x] **OPS-01** ConfigService with live overrides
+  - `ConfigService` and `Shared/LiveConfig` (DEVELOPMENT.md §31.1): XP / Credits / RP multipliers, an event banner and message of the day on the hangar, and per-jet battle ratings, changed with the admin commands `config.set` / `config.clear` / `config.show` and reaching every server within seconds (MessagingService, with a 5-minute reload as backup). Out-of-range values and unknown keys refused; every change audited. Checked in Studio (banner, BR 5.3 shown and used, persisted across a restart) and by Will.
 - [ ] **CMP-01** Text filtering service for callsigns and squadron names
-- [ ] **CMP-03** Report-cheater flow
+- [x] **CMP-03** Report-cheater flow
+  - REPORT in the hangar on match servers and on the results scoreboard; a report window (pilot, reason, a pointer to Roblox's own report). Each report is stored (UserIds only) with the target's anti-cheat record from that server; admin `reports.top` / `reports.show` to review (DEVELOPMENT.md §32.1). Checked in Studio (refusals, rate limit, storage and admin read-back) and by Will.
 - [ ] **TST-04** Headless unit tests in CI (if a suitable runner is available)
 - [ ] **PRF-03** Mobile performance pass
 - [ ] **REL-03** Version module, changelog, tagging process
