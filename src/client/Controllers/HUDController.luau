@@ -24,6 +24,7 @@ local WeaponData = require(Shared.WeaponData)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
+local SettingsController = require(script.Parent.SettingsController)
 
 local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
@@ -554,15 +555,17 @@ local function update()
 
 	-- Tapes
 	local tapeH = math.floor(boxH * 0.62)
-	local knots = Units.knots(state.speed)
-	local feet = Units.feet(state.altitude)
+	-- Units setting: knots and feet, or km/h and metres
+	local metric = SettingsController:Get("Units") == "Metric"
+	local knots = if metric then state.speed * 3.6 else Units.knots(state.speed)
+	local feet = if metric then state.altitude else Units.feet(state.altitude)
 	speedTape.frame.Size = UDim2.fromOffset(70, tapeH)
 	speedTape.frame.Position = UDim2.fromOffset(16, (boxH - tapeH) / 2)
 	layoutTape(speedTape, {
 		value = knots,
-		tickStep = 10,
-		labelEvery = 50,
-		pxPerUnit = tapeH / 140,
+		tickStep = if metric then 20 else 10,
+		labelEvery = if metric then 100 else 50,
+		pxPerUnit = tapeH / (if metric then 260 else 140),
 		vertical = true,
 		length = tapeH,
 		format = function(v)
@@ -576,9 +579,9 @@ local function update()
 	altTape.frame.Position = UDim2.fromOffset(boxW - 86, (boxH - tapeH) / 2)
 	layoutTape(altTape, {
 		value = feet,
-		tickStep = 100,
-		labelEvery = 500,
-		pxPerUnit = tapeH / 1400,
+		tickStep = if metric then 50 else 100,
+		labelEvery = if metric then 250 else 500,
+		pxPerUnit = tapeH / (if metric then 430 else 1400),
 		vertical = true,
 		length = tapeH,
 		format = tostring,
@@ -619,7 +622,9 @@ local function update()
 
 	local rightX = boxW - 18 - 120
 	readouts.VS.Position = UDim2.fromOffset(rightX, bottomY + 20)
-	readouts.VS.Text = string.format("%+d VS", math.round(Units.feet(state.velocity.Y) * 60 / 100) * 100)
+	readouts.VS.Text = if SettingsController:Get("Units") == "Metric"
+		then string.format("%+d m/s", math.round(state.velocity.Y))
+		else string.format("%+d VS", math.round(Units.feet(state.velocity.Y) * 60 / 100) * 100)
 	if input then
 		readouts.Throttle.Position = UDim2.fromOffset(rightX, bottomY + 40)
 		readouts.Throttle.Text = if input.afterburner then "AB" else `THR {math.round(input.throttle * 100)}`
@@ -704,7 +709,8 @@ local function update()
 	HUDController.warnings = warnings
 	warningLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72)
 	warningLabel.Text = warnings[1] or ""
-	warningLabel.Visible = #warnings > 0 and (now % 0.6) < 0.4
+	-- Reduce flashing: the top warning stays lit instead of blinking
+	warningLabel.Visible = #warnings > 0 and (SettingsController:Get("ReduceFlashing") or (now % 0.6) < 0.4)
 	cautionLabel.Position = UDim2.fromOffset(boxW / 2, boxH * 0.72 + 24)
 	cautionLabel.Text = table.concat(warnings, "  ·  ", 2)
 
@@ -807,8 +813,13 @@ local function update()
 			lockLabel.Position = UDim2.fromOffset(screen.X, screen.Y - 24)
 			local rel = lockRoot.Position - myPosition
 			local closure = -(Units.velocityFromStuds(lockRoot.AssemblyLinearVelocity) - myVelocity):Dot(rel.Unit)
-			lockLabel.Text =
-				string.format("%.1f km  %+d kt", Units.toMetres(rel.Magnitude) / 1000, math.round(Units.knots(closure)))
+			lockLabel.Text = if SettingsController:Get("Units") == "Metric"
+				then string.format("%.1f km  %+d km/h", Units.toMetres(rel.Magnitude) / 1000, math.round(closure * 3.6))
+				else string.format(
+					"%.1f km  %+d kt",
+					Units.toMetres(rel.Magnitude) / 1000,
+					math.round(Units.knots(closure))
+				)
 		end
 	end
 

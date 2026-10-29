@@ -16,6 +16,7 @@ local Pool = require(Shared.Util.Pool)
 
 local FlightController = require(script.Parent.FlightController)
 local MissileViewController = require(script.Parent.MissileViewController)
+local SettingsController = require(script.Parent.SettingsController)
 local WeaponController = require(script.Parent.WeaponController)
 
 local FIRE_TEXTURE = "rbxasset://textures/particles/fire_main.dds"
@@ -129,7 +130,7 @@ local function explosion(position: Vector3)
 		a.sparks.Acceleration = Vector3.new(0, -17, 0)
 		a.sparks:Emit(50)
 		a.light.Range = 34
-		a.light.Brightness = 8
+		a.light.Brightness = if SettingsController:Get("ReduceFlashing") then 1.5 else 8
 		task.delay(0.35, function()
 			a.light.Brightness = 0
 		end)
@@ -223,7 +224,8 @@ local function updateMuzzles()
 		end
 		if fx then
 			local muzzle = fx.light.Parent :: Attachment
-			local flicker = math.random()
+			-- Reduce flashing: a steady, dim muzzle light instead of a flicker
+			local flicker = if SettingsController:Get("ReduceFlashing") then 0.3 else math.random()
 			fx.light.Brightness = 2 + 3 * flicker
 			fx.flash.Size = Vector3.one * (0.22 + 0.39 * flicker)
 			fx.flash.CFrame = muzzle.WorldCFrame * CFrame.new(0, 0, -0.28)

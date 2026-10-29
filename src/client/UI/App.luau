@@ -1,7 +1,7 @@
 --!strict
 -- The menu root (UI-01): a top bar (pilot level, Credits, free RP, navigation) and the current screen.
 -- MenuController owns the state and re-renders this with fresh props; screens only send intents back.
--- props: Data, Screen ("Hangar" | "TechTree" | "Detail" | "Results"), DetailId, Navigate(screen, id?),
+-- props: Data, Screen ("Hangar" | "TechTree" | "Settings" | "Detail" | "Results"), DetailId, Navigate(screen, id?),
 --   plus everything the screens need (see MenuController).
 
 local GuiService = game:GetService("GuiService")
@@ -17,6 +17,7 @@ local Screens = script.Parent.Screens
 local AircraftDetail = require(Screens.AircraftDetail)
 local Hangar = require(Screens.Hangar)
 local Results = require(Screens.Results)
+local SettingsScreen = require(Screens.Settings)
 local TechTree = require(Screens.TechTree)
 
 local e = React.createElement
@@ -67,7 +68,7 @@ local function TopBar(props: any)
 			Color = Theme.Accent,
 		}),
 		Tabs = e("Frame", {
-			Size = UDim2.fromOffset(300, 40),
+			Size = UDim2.fromOffset(460, 40),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
@@ -75,6 +76,7 @@ local function TopBar(props: any)
 			Layout = C.List({ Horizontal = true, Gap = 12, Align = "Center" }),
 			Hangar = tab("Hangar", "HANGAR", 1),
 			Tree = tab("TechTree", "TECH TREE", 2),
+			Settings = tab("Settings", "SETTINGS", 3),
 		}),
 		Wallet = e("Frame", {
 			Size = UDim2.fromOffset(520, Theme.TopBar),
@@ -133,6 +135,8 @@ local function App(props: any)
 	local body
 	if screen == "Results" and props.Match then
 		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data })
+	elseif screen == "Settings" then
+		body = e(SettingsScreen, { Values = props.Settings, OnSet = props.OnSetting })
 	elseif screen == "TechTree" then
 		body = e(TechTree, {
 			Data = data,
