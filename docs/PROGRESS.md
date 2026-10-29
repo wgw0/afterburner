@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 17 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
+| 6 Content and polish for a soft launch | 18 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -293,7 +293,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **LIV-03** Login streak rewards
 - [x] **TUT-03** Lessons 4–6
   - 4 Missiles (lock a far drone, hit two with heat-seekers), 5 Defend (survive missiles fired at you with flares and turns), 6 First fight (one AI opponent, head-on from 2.5 km). They run on **training servers**: TRAINING in the top bar takes you to a private server with all six lessons, Vs AI (free-for-all, teams or zones; Easy to Ace; 1–11 opponents), free flight and any jet, with no rewards. AI in Vs AI fly jets near the one you picked. Checked in play (any jet spawned, lesson 4 ran, a Hard Teams match with 3 AI started, results showed no rewards) and by Will. *Lessons 5–6 not yet played end to end.*
-- [ ] **TUT-04** First-session flow and funnel analytics
+- [x] **TUT-04** First-session flow and funnel analytics
+  - A new pilot is sent to training on their first join and lesson 1 starts by itself; HOLD H TO QUIT on every lesson; a welcome card (lessons 1–3, START the next or SKIP TO MULTIPLAYER); 2,000 Credits for lessons 1–3, once; onboarded once they go to multiplayer or keep training (DEVELOPMENT.md §28). Funnel and events in §30.3. Checked in play (via `onboarding.restart`) and by Will.
 - [x] **SET-02** Settings UI
   - A SETTINGS tab in the menu (`UI/Screens/Settings`): control scheme, mouse sensitivity, invert pitch, default view, field of view, HUD units, master and cockpit volume, Reduce flashing. Changes apply at once and save through `SettingsController`; − / + buttons around a bar work with mouse, touch and gamepad. Units now switches the HUD (km/h, metres, m/s) and Reduce flashing holds HUD warnings and RWR marks steady and dims explosions and muzzle flashes. Checked in play and by Will. *The menu only shows between flights; ReduceShake waits for a camera shake to reduce.*
 - [x] **SET-03** Accessibility options
