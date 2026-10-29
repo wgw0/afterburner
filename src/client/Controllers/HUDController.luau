@@ -87,6 +87,12 @@ local hitUntil = 0
 local killFeed: Frame
 local feedLines: { { label: TextLabel, expires: number } } = {}
 local targetMarkers: { [Model]: any } = {}
+-- Gunsights (GUN-07): each target's smoothed acceleration for the LCOS pipper, and the last second of where
+-- your gun pointed for the EEGS funnel
+local targetMotion: { [Model]: { velocity: Vector3, time: number, accel: Vector3 } } = {}
+local gunHistory: { { time: number, muzzle: CFrame, velocity: Vector3 } } = {}
+local FUNNEL_TIMES = { 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2 } -- seconds of flight drawn
+local funnelDots: { { Frame } } = {} -- { left, right } per FUNNEL_TIMES entry
 local markerLayer: Frame
 -- HUD-03: missiles
 local seekerCircle: Frame
@@ -99,7 +105,6 @@ local missileWarning: TextLabel
 local warningArrow: TextLabel
 
 local TARGET_RANGE = 5000 -- real metres: show markers on jets within this
-local LEAD_RANGE = 1600 -- real metres: show the gun lead indicator within this
 local LEAD_CONE = 30 -- degrees off the nose
 local FEED_SECONDS = 7
 local FEED_LINES = 5
@@ -340,6 +345,17 @@ local function build(): ScreenGui
 	leadDot.AnchorPoint = Vector2.new(0.5, 0.5)
 	leadDot.Position = UDim2.fromScale(0.5, 0.5)
 	leadMarker.Visible = false
+	-- EEGS funnel (Tier V+): a dot each side per FUNNEL_TIMES entry, a wingspan apart at that range
+	for i = 1, #FUNNEL_TIMES do
+		local pair = {}
+		for side = 1, 2 do
+			local dot = line(box, 4, 4)
+			dot.AnchorPoint = Vector2.new(0.5, 0.5)
+			dot.Visible = false
+			pair[side] = dot
+		end
+		funnelDots[i] = pair
+	end
 
 	hitMarker = text(box, 30)
 	hitMarker.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -735,6 +751,10 @@ local function update()
 	local myPosition = root.Position
 	local myVelocity = state.velocity
 	local gun = jetModel and WeaponData.get(jetModel:GetAttribute("Gun") :: string)
+	-- The gunsight for this jet's tier (GUN-07): Simple, LCOS or EEGS
+	local sight = Ballistics.sightFor(if airframe then airframe.Tier else 1)
+	local leadRange = if sight == "Simple" then Ballistics.SIMPLE_RANGE else Ballistics.SIGHT_RANGE
+	local now = os.clock()
 	local bestOff, bestModel = math.huge, nil
 	local seen: { [Model]: boolean } = {}
 	for _, model in workspace.Jets:GetChildren() do
@@ -779,8 +799,18 @@ local function update()
 			range / 1000
 		)
 		local off = math.deg(math.acos(math.clamp((otherRoot.Position - myPosition).Unit:Dot(look), -1, 1)))
-		if range <= LEAD_RANGE and off <= LEAD_CONE and off < bestOff then
+		if range <= leadRange and off <= LEAD_CONE and off < bestOff then
 			bestOff, bestModel = off, model
+		end
+		-- Smoothed acceleration for the LCOS pipper
+		local velocity = Units.velocityFromStuds(otherRoot.AssemblyLinearVelocity)
+		local motion = targetMotion[model]
+		if motion and now - motion.time > 1e-3 then
+			local raw = (velocity - motion.velocity) / (now - motion.time)
+			motion.accel = motion.accel:Lerp(raw, 0.15)
+			motion.velocity, motion.time = velocity, now
+		elseif not motion then
+			targetMotion[model] = { velocity = velocity, time = now, accel = Vector3.zero }
 		end
 	end
 	for model, m in targetMarkers do
@@ -790,22 +820,72 @@ local function update()
 			targetMarkers[model] = nil
 		end
 	end
+	for model in targetMotion do
+		if not seen[model] then
+			targetMotion[model] = nil
+		end
+	end
 
 	leadMarker.Visible = false
 	if gun and bestModel and bestModel.PrimaryPart then
 		local target = bestModel.PrimaryPart
+		local motion = targetMotion[bestModel]
 		local dir = Ballistics.leadDirection(
 			myPosition,
 			myVelocity,
 			target.Position,
 			Units.velocityFromStuds(target.AssemblyLinearVelocity),
 			gun.MuzzleVelocity,
-			gun.Lifetime
+			gun.Lifetime,
+			if sight ~= "Simple" and motion then motion.accel else nil
 		)
 		if dir then
 			local p, visible = project(camera, dir)
 			leadMarker.Visible = visible and inside(p, 10, 10)
 			leadMarker.Position = toBox(p)
+		end
+	end
+
+	-- EEGS funnel (Tier V+): where rounds fired over the last second are now, from where the gun pointed
+	-- then, a wingspan wide at each range. Put the target's wings across it and fire.
+	local muzzle = root:FindFirstChild("GunMuzzle") :: Attachment?
+	table.insert(gunHistory, {
+		time = now,
+		muzzle = if muzzle then muzzle.WorldCFrame else root.CFrame,
+		velocity = myVelocity,
+	})
+	while #gunHistory > 0 and now - gunHistory[1].time > FUNNEL_TIMES[#FUNNEL_TIMES] + 0.1 do
+		table.remove(gunHistory, 1)
+	end
+	local showFunnel = gun ~= nil and sight == "EEGS" and bestModel ~= nil
+	local right = camera.CFrame.RightVector * Units.toStuds(Ballistics.FUNNEL_WINGSPAN / 2)
+	local h = #gunHistory
+	for i, t in FUNNEL_TIMES do
+		local pair = funnelDots[i]
+		-- The history entry from about t seconds ago (newest last)
+		local entry = nil
+		for j = h, 1, -1 do
+			if now - gunHistory[j].time >= t then
+				entry = gunHistory[j]
+				break
+			end
+		end
+		local point = if showFunnel
+				and entry
+				and gun
+			then Ballistics.positionAfter(entry.muzzle, entry.velocity, gun, t)
+			else nil
+		for side = 1, 2 do
+			local dot = pair[side]
+			dot.Visible = false
+			if point then
+				local p = camera:WorldToViewportPoint(point + right * (if side == 1 then -1 else 1))
+				local screen = Vector2.new(p.X, p.Y)
+				if p.Z > 0 and inside(screen, 6, 6) then
+					dot.Visible = true
+					dot.Position = toBox(screen)
+				end
+			end
 		end
 	end
 
