@@ -28,6 +28,7 @@ local SensorController = require(script.Parent.SensorController)
 local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
 local RED = Color3.fromRGB(255, 80, 70)
+local BLUE = Color3.fromRGB(90, 165, 255) -- teammates (team modes)
 local PANEL = Color3.fromRGB(6, 16, 10)
 local FONT = Enum.Font.RobotoMono
 
@@ -348,7 +349,7 @@ local function update()
 						if locked then 12 elseif beyond then 5 else 7,
 						if locked then 12 elseif beyond then 5 else 7
 					)
-					b.BackgroundColor3 = if locked then RED else AMBER
+					b.BackgroundColor3 = if locked then RED elseif contact.friendly then BLUE else AMBER
 					b.BackgroundTransparency = if locked then 0.6 elseif beyond then 0.5 else 0
 					(b:FindFirstChildOfClass("UIStroke") :: UIStroke).Enabled = locked
 					b.Visible = true
@@ -396,7 +397,11 @@ local function update()
 			d.Position = UDim2.fromScale(0.5 + p.X, 0.5 - p.Y)
 			local locked = id == SensorController.lockId
 				or (id == SensorController.irTargetId and SensorController.irLocked)
-			d.BackgroundColor3 = if locked then RED elseif SensorController.lockable[id] then GREEN else AMBER
+			d.BackgroundColor3 = if locked
+				then RED
+				elseif contact.friendly then BLUE
+				elseif SensorController.lockable[id] then GREEN
+				else AMBER
 			d.Size = if locked
 				then UDim2.fromOffset(8, 8)
 				elseif beyond then UDim2.fromOffset(4, 4)

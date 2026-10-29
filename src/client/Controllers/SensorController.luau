@@ -13,6 +13,7 @@
 --   RWR: threats the server says are painting you.
 -- Updated 5× a second; the HUD, scopes, camera (padlock) and audio read from here.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -51,6 +52,7 @@ export type Contact = {
 	range: number, -- real metres
 	spotted: boolean,
 	onRadar: boolean,
+	friendly: boolean, -- on your team (team modes): never lockable
 }
 
 export type Threat = { id: number, kind: string, position: Vector3 }
@@ -118,6 +120,12 @@ function SensorController:PadlockTarget(): Model?
 	return best
 end
 
+-- On your team (team modes): both jets carry the same non-empty Team.
+local function isFriendly(model: Model): boolean
+	local team = Players.LocalPlayer:GetAttribute("Team")
+	return type(team) == "string" and team ~= "" and model:GetAttribute("Team") == team
+end
+
 local function radarOf(jet: Model): Signature.RadarSpec?
 	local airframe = Progression.airframeForModel(jet) :: any
 	return airframe and airframe.Radar
@@ -162,7 +170,7 @@ function SensorController:ExplainNoLock()
 	end
 	local best, bestDot = nil, -2
 	for _, model in workspace.Jets:GetChildren() do
-		local otherRoot = model:IsA("Model") and model ~= jet and model.PrimaryPart
+		local otherRoot = model:IsA("Model") and model ~= jet and not isFriendly(model) and model.PrimaryPart
 		if otherRoot then
 			local dot = root.CFrame.LookVector:Dot((otherRoot.Position - root.Position).Unit)
 			if dot > bestDot then
@@ -238,6 +246,7 @@ local function update()
 				range = range,
 				spotted = spotted,
 				onRadar = onRadar,
+				friendly = isFriendly(model),
 			}
 		end
 	end
@@ -260,7 +269,7 @@ local function update()
 	table.clear(self.lockable)
 	if missile and WeaponData.isRadar(missile) then
 		for id, contact in self.contacts do
-			if contact.onRadar then
+			if contact.onRadar and not contact.friendly then
 				self.lockable[id] = true
 			end
 		end
@@ -283,6 +292,9 @@ local function update()
 	end
 	if missile and WeaponData.isIR(missile) and not self.seekerCaged then
 		for id, contact in self.contacts do
+			if contact.friendly then
+				continue
+			end
 			local throttle = (contact.model:GetAttribute("Throttle") :: number?) or 0.85
 			local afterburner = contact.model:GetAttribute("Afterburner") == true
 			local otherRoot = contact.model.PrimaryPart

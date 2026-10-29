@@ -29,6 +29,7 @@ local GREEN = Color3.fromRGB(110, 255, 150)
 local AMBER = Color3.fromRGB(255, 190, 80)
 local RED = Color3.fromRGB(255, 85, 70)
 local CONTACT = Color3.fromRGB(205, 215, 205) -- jets you can see but not lock
+local FRIENDLY = Color3.fromRGB(90, 165, 255) -- teammates (team modes)
 local AIM_WHITE = Color3.fromRGB(230, 255, 235)
 local FONT = Enum.Font.RobotoMono
 
@@ -448,11 +449,16 @@ local MARKER_STYLES = {
 	Lockable = { size = 34, circle = true, thickness = 2 },
 	Locking = { size = 34, circle = false, thickness = 2.5 },
 	Locked = { size = 38, circle = false, thickness = 3 },
+	Friendly = { size = 14, circle = true, thickness = 1.5 }, -- a teammate (team modes)
 }
 
 local function styleMarker(m: Marker, state: string)
 	local style = MARKER_STYLES[state]
-	local colour = if state == "Locked" then RED elseif state == "Contact" then CONTACT else GREEN
+	local colour = if state == "Locked"
+		then RED
+		elseif state == "Contact" then CONTACT
+		elseif state == "Friendly" then FRIENDLY
+		else GREEN
 	m.box.Size = UDim2.fromOffset(style.size, style.size)
 	m.corner.CornerRadius = if style.circle then UDim.new(0.5, 0) else UDim.new(0, 0)
 	m.stroke.Color = colour
@@ -728,7 +734,10 @@ local function update()
 		m.box.Position = UDim2.fromOffset(screen.X, screen.Y)
 		local id = model:GetAttribute("JetId") :: number?
 		local markerState = "Contact"
-		if id then
+		local contact = id and SensorController.contacts[id]
+		if contact and contact.friendly then
+			markerState = "Friendly"
+		elseif id then
 			if id == SensorController.lockId or (id == SensorController.irTargetId and SensorController.irLocked) then
 				markerState = "Locked"
 			elseif id == SensorController.irTargetId or id == SensorController.acquiringId then

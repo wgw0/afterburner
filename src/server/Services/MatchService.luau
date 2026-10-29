@@ -4,6 +4,10 @@
 --   Dogfight:    free-for-all. Waiting → Countdown → InProgress → Results → Countdown …
 --                First to the kill limit or most points at the time limit wins. AI pilots fill the
 --                match up to the mode's AIFill. Respawns follow the mode's rule (timer or lives).
+--   Team Deathmatch (MCH-05): the same loop with two teams. Players join the team with fewer players,
+--                AI fills each side to even numbers, teams spawn over their own coast, the first team
+--                to the kill limit (or ahead at the time limit) wins. Teammates can't hurt each other
+--                (Lib/Teams, checked by the combat, missile, sensor and AI services).
 -- The mode comes from the GameMode attribute on ReplicatedStorage (default Dogfight); in the test
 -- environment it can be switched live from the tuning panel.
 
@@ -22,6 +26,7 @@ local Net = require(Shared.Net)
 local Scale = require(Shared.Config.Scale)
 local Signal = require(Shared.Util.Signal)
 
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local AIService = require(script.Parent.AIService)
 local DataService = require(script.Parent.DataService)
@@ -45,7 +50,7 @@ local state = "Waiting"
 local stateSince = 0
 local scores: { [any]: MatchRules.Score } = {}
 local pilotStates: { [any]: MatchRules.PilotState } = {}
-local results: { winner: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
+local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
 
 local function humans(): { Player }
@@ -63,20 +68,30 @@ end
 
 local function ensureScore(identity: any, name: string, isAI: boolean, userId: number)
 	if not scores[identity] then
-		scores[identity] = MatchRules.newScore(name, isAI, userId)
+		local score = MatchRules.newScore(name, isAI, userId)
+		-- Team modes: humans spread evenly over the teams (AI fill then evens the numbers)
+		score.team = MatchRules.pickTeam(mode, scores, not isAI)
+		scores[identity] = score
+		Teams.set(identity, score.team)
 	end
 	if not pilotStates[identity] then
 		pilotStates[identity] = { diedAt = nil, livesUsed = 0 }
 	end
 end
 
--- Candidate airborne spawns: tagged SpawnPoint parts on the map, or a ring around the centre.
-local function spawnCandidates(): { CFrame }
+-- Candidate airborne spawns: tagged SpawnPoint parts on the map, or a ring around the centre. With a team,
+-- only that team's spawn points (each SpawnPoint has a Team attribute: West or East), if there are any.
+local function spawnCandidates(team: string?): { CFrame }
 	local list = {}
 	for _, part in CollectionService:GetTagged("SpawnPoint") do
 		if part:IsA("BasePart") and part:IsDescendantOf(workspace) and part:GetAttribute("Type") ~= "Runway" then
-			table.insert(list, part.CFrame)
+			if team == nil or part:GetAttribute("Team") == team then
+				table.insert(list, part.CFrame)
+			end
 		end
+	end
+	if #list == 0 and team ~= nil then
+		return spawnCandidates(nil)
 	end
 	if #list == 0 then
 		local radius = Scale.MAP_HALF_EXTENT * 0.4
@@ -101,12 +116,13 @@ local SLOT_OFFSETS = {
 	Vector3.new(140, 84, 168),
 }
 
--- The spawn slot furthest from every other jet, so nobody spawns into a fight (or into another jet).
-function MatchService:PickSpawn(): CFrame
+-- The spawn slot furthest from every other jet, so nobody spawns into a fight (or into another jet). With an
+-- identity in a team mode, over that pilot's own coast.
+function MatchService:PickSpawn(identity: any?): CFrame
 	local best, bestScore = nil, -math.huge
 	local jets = AircraftService:GetJets()
 	local slots = {}
-	for _, point in spawnCandidates() do
+	for _, point in spawnCandidates(Teams.of(identity)) do
 		for _, offset in SLOT_OFFSETS do
 			table.insert(slots, point * CFrame.new(offset))
 		end
@@ -144,7 +160,7 @@ local function spawnGate(player: Player, _airframeId: string): (boolean, CFrame?
 	-- No BR cap on spawning (Will: let any lineup jet fly). The band still picks the AI's jets; proper
 	-- BR matching comes with separate match servers (MMK-02–04).
 	pilotStates[player].livesUsed += 1
-	return true, MatchService:PickSpawn()
+	return true, MatchService:PickSpawn(player)
 end
 
 local function clearJets()
@@ -173,10 +189,29 @@ local function syncAIFill()
 	local wanted = if mode.AIFill > 0 and state ~= "Waiting" then math.max(mode.AIFill - #humans(), 0) else 0
 	local current = AIService:GetPilots()
 	while #current > wanted do
+		-- In team modes, take the AI pilot from the bigger team, so a player joining keeps the sides even
 		local pilot = current[#current]
+		if mode.Teams then
+			local counts = {}
+			for _, s in scores do
+				if s.team then
+					counts[s.team] = (counts[s.team] or 0) + 1
+				end
+			end
+			local biggest = -1
+			for _, candidate in current do
+				local team = Teams.of(candidate.identity)
+				local count = if team then counts[team] or 0 else 0
+				if count > biggest then
+					pilot, biggest = candidate, count
+				end
+			end
+		end
 		scores[pilot.identity] = nil
 		pilotStates[pilot.identity] = nil
+		Teams.set(pilot.identity, nil)
 		AIService:RemovePilot(pilot)
+		current = AIService:GetPilots()
 	end
 	while #AIService:GetPilots() < wanted do
 		local choices = Matchmaking.aiAirframes(band)
@@ -189,6 +224,7 @@ local function startMatch()
 	scores = {}
 	pilotStates = {}
 	results = nil
+	Teams.clear()
 	clearJets()
 	refreshBand()
 	for _, player in humans() do
@@ -202,10 +238,12 @@ end
 
 local function endMatch(reason: string)
 	local ranking = MatchRules.ranking(scores)
-	results = { winner = ranking[1] and ranking[1].name, reason = reason, ranking = ranking }
+	local winnerTeam = if mode.Teams then MatchRules.winningTeam(mode, scores) else nil
+	local winner = if mode.Teams then winnerTeam or "Draw" else ranking[1] and ranking[1].name
+	results = { winner = winner, winnerTeam = winnerTeam, reason = reason, ranking = ranking }
 	setState("Results")
 	clearJets()
-	MatchService.MatchEnded:Fire(ranking, reason)
+	MatchService.MatchEnded:Fire(ranking, reason, winnerTeam)
 	Telemetry.event("MatchEnded", os.clock() - stateSince, {
 		mode = mode.Id,
 		reason = reason,
@@ -239,7 +277,7 @@ local function respawnAI()
 			local allowed = canSpawn(pilot.identity)
 			if allowed then
 				pilotStates[pilot.identity].livesUsed += 1
-				AIService:SpawnPilot(pilot, MatchService:PickSpawn())
+				AIService:SpawnPilot(pilot, MatchService:PickSpawn(pilot.identity))
 			end
 		end
 	end
@@ -275,6 +313,8 @@ local function broadcast()
 		ranking = ranking,
 		winner = results and results.winner,
 		reason = results and results.reason,
+		teams = mode.Teams,
+		teamScores = if mode.Teams then MatchRules.teamScores(mode, scores) else nil,
 		br = if mode.Scored then { min = band.min, max = band.max } else nil,
 	})
 end
@@ -333,6 +373,7 @@ function MatchService:SetMode(modeId: string)
 	scores = {}
 	pilotStates = {}
 	results = nil
+	Teams.clear()
 	AIService:RemoveAll()
 	setState(if modeId == "FreeFlight" then "InProgress" else "Waiting")
 end
@@ -361,6 +402,7 @@ function MatchService:Init()
 	Players.PlayerRemoving:Connect(function(player)
 		scores[player] = nil
 		pilotStates[player] = nil
+		Teams.set(player, nil)
 	end)
 
 	if Environment.isTest() then

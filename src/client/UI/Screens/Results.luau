@@ -40,7 +40,10 @@ local function Results(props: any)
 	local reason = if match.reason == "ScoreLimit" then "kill limit reached" else "time's up"
 	local children: { [string]: any } = {
 		Title = e(C.Label, {
-			Text = `{match.winner or "Nobody"} WINS`,
+			Text = if match.teams and match.winner == "Draw"
+				then "DRAW"
+				elseif match.teams then `{string.upper(match.winner or "Nobody")} TEAM WINS`
+				else `{match.winner or "Nobody"} WINS`,
 			Size = UDim2.new(1, 0, 0, 40),
 			Position = UDim2.fromOffset(0, 16),
 			Align = "Center",

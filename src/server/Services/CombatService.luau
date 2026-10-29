@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
@@ -21,6 +22,7 @@ local WeaponData = require(Shared.WeaponData)
 
 local AircraftService = require(script.Parent.AircraftService)
 local HistoryService = require(script.Parent.HistoryService)
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 
 type Jet = AircraftService.Jet
 
@@ -105,6 +107,9 @@ function CombatService:ApplyDamage(target: Jet, component: string, amount: numbe
 	local state = states[target.id]
 	if not state or AircraftService:GetJetById(target.id) == nil then
 		return -- already destroyed (e.g. by an earlier round this tick)
+	end
+	if Teams.areFriends(attacker, target.identity) then
+		return -- no friendly fire in team modes (missile blasts come through here too)
 	end
 	local health, destroyed = DamageModel.applyDamage(state.health, component, amount)
 	state.health = health
@@ -209,7 +214,7 @@ local function flyRounds(state: CombatState, dt: number)
 	-- Rewound poses of every possible target, computed once per tick.
 	local targets = {}
 	for id, other in states do
-		if id ~= shooter.id then
+		if id ~= shooter.id and not Teams.areFriends(shooter.identity, other.jet.identity) then
 			local pose = HistoryService:PoseAt(id, rewind)
 			if pose then
 				table.insert(targets, { state = other, pose = pose })

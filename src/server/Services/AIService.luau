@@ -8,6 +8,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AIBrain = require(Shared.AIBrain)
@@ -24,6 +25,7 @@ local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
 local MissileService = require(script.Parent.MissileService)
 local SensorService = require(script.Parent.SensorService)
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 
 type Jet = AircraftService.Jet
 
@@ -157,7 +159,11 @@ local function chooseTarget(pilot: Pilot): Jet?
 	local me = pilot.jet :: Jet
 	local best, bestCost = nil, math.huge
 	for id, other in AircraftService:GetJets() do
-		if id ~= me.id and other.identity ~= pilot.identity then
+		if
+			id ~= me.id
+			and other.identity ~= pilot.identity
+			and not Teams.areFriends(pilot.identity, other.identity)
+		then
 			local offset = other.root.Position - me.root.Position
 			local range = Units.toMetres(offset.Magnitude)
 			if range <= TARGET_RANGE then

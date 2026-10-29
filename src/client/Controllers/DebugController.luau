@@ -194,6 +194,12 @@ local function build()
 			end,
 		},
 		{
+			"MODE: TEAM DEATHMATCH",
+			function()
+				Net.Client.fire("DebugSetMode", "TeamDeathmatch")
+			end,
+		},
+		{
 			"MODE: STRESS (24 JETS)",
 			function()
 				Net.Client.fire("DebugSetMode", "Stress")

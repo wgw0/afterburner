@@ -293,12 +293,15 @@ function ProgressionService:Start()
 			)
 		end
 	end)
-	MatchService.MatchEnded:Connect(function(ranking)
+	MatchService.MatchEnded:Connect(function(ranking, _reason, winnerTeam: string?)
 		local winner = ranking[1]
 		for _, player in Players:GetPlayers() do
 			local data = DataService:GetData(player)
 			if data then
-				local won = winner ~= nil and not winner.isAI and winner.userId == player.UserId
+				-- Team modes: everyone on the winning team won; otherwise the top of the ranking
+				local won = if winnerTeam
+					then player:GetAttribute("Team") == winnerTeam
+					else winner ~= nil and not winner.isAI and winner.userId == player.UserId
 				local payload = award(player, data, won, true)
 				if payload then
 					Net.Server.fire("MatchRewards", player, payload)

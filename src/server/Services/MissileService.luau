@@ -10,6 +10,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Progression = require(Shared.Progression)
@@ -26,6 +27,7 @@ local WeaponData = require(Shared.WeaponData)
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
 local SensorService = require(script.Parent.SensorService)
+local Teams = require(ServerScriptService.Server.Lib.Teams)
 
 type Jet = AircraftService.Jet
 
@@ -135,7 +137,7 @@ end
 local function bestIRTarget(shooter: Jet, spec: WeaponData.Missile): number?
 	local bestId, bestDot = nil, -2
 	for id, other in AircraftService:GetJets() do
-		if id ~= shooter.id then
+		if id ~= shooter.id and not Teams.areFriends(shooter.identity, other.identity) then
 			local throttle, afterburner = throttleOf(other)
 			if Guidance.irLockable(spec, shooter.root.CFrame, other.root.CFrame, throttle, afterburner) then
 				local dot = shooter.root.CFrame.LookVector:Dot((other.root.Position - shooter.root.Position).Unit)
@@ -221,6 +223,10 @@ local function launch(jet: Jet, targetId: number): boolean
 	else
 		-- Radar missiles need the radar locked on that target; no lock, no launch.
 		if targetId == 0 or SensorService:GetLock(jet.id) ~= targetId then
+			return false
+		end
+		local target = AircraftService:GetJetById(targetId)
+		if target and Teams.areFriends(jet.identity, target.identity) then
 			return false
 		end
 		target = targetId
@@ -508,6 +514,9 @@ local function stepMissiles(dt: number)
 			for _, jet in AircraftService:GetJets() do
 				if missile.owner and jet == missile.owner then
 					continue
+				end
+				if Teams.areFriends(missile.ownerIdentity, jet.identity) then
+					continue -- the fuse ignores teammates
 				end
 				local velocity = jet.root.AssemblyLinearVelocity
 				local miss = Guidance.closestApproach(from, to, jet.root.Position - velocity * dt, jet.root.Position)
