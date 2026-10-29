@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 12 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
+| 6 Content and polish for a soft launch | 14 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -239,7 +239,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Next: the Mirage IIIE, then the rest of the launch roster.
 - [ ] **FLT-08** Variable geometry (F-14)
   - Not started. The F-14A and Tornado F3 fly with fixed mid-sweep figures and models posed at a fixed sweep.
-- [ ] **INP-05** Rebinding UI and persisted bindings
+- [x] **INP-05** Rebinding UI and persisted bindings
+  - Every control is an action in `Config/Bindings` with keyboard and gamepad defaults; `BindingsController` serves every controller. Settings has a KEY BINDINGS panel (click, press a key or button; a key in use swaps; reset to defaults); only changes are saved, validated on the server (`Bindings.spec`, 14 tests). The HUD key line and lesson hints show the player's keys. Checked in play (fire missile moved to G, flares and chaff swapped, saved, reset) and by Will with a controller.
 - [x] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
   - Went further than planned: every one of the 27 jets has its own modelled, textured cockpit with live instrument faces (`AircraftAssembler.installCockpit`, `CockpitController`), so the shared kits are only the fallback. Flown hands-on in several jets by Will (MiG-21, Mirage F1, Typhoon, the Tier IV jets).
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
@@ -275,7 +276,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **PRG-07** Aircraft mastery stars and rewards
 - [x] **UI-05** Mode select and queue UI
   - In a lobby, a mode picker over PLAY (ANY MODE, DOGFIGHT, TEAMS, ZONES; remembered), PLAY joins the queue and becomes CANCEL with a timer, a loading screen covers each teleport, and a match server launches you in your selected jet when the countdown ends (no second PLAY). Checked in Studio and by Will.
-- [ ] **UI-09** Gamepad and touch passes on every screen
+- [x] **UI-09** Gamepad and touch passes on every screen
+  - Gamepad: a button is always selected in the menus (PLAY first) with an orange outline, LB / RB switch tabs, B goes back, D-pad left (hold) leaves for the hangar, L3 the limiter override. Checked by Will with a controller. *Touch had its pass with INP-04; a check on a real phone is still in the mobile test (testing/MULTIPLAYER_AND_MOBILE.md).*
 - [ ] **MMK-02** Lobby and battle place split, place-specific boot (server knows its role from a place attribute)
   - Built: every server works out its role (Lobby, Match, Training) from whether it's reserved and the record the lobby wrote for it (`MatchmakingService`, DEVELOPMENT.md §25.6). Matches use reserved servers of the lobby place until a Battle place id goes in `Config/Places`; a separate place is optional. Checked in Studio and by Will. *To tick after the live test on the test experience.*
 - [ ] **MMK-03** MemoryStore queues, lease-based matchmaker, match records
