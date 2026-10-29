@@ -12,10 +12,12 @@
 local BadgeService = game:GetService("BadgeService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Achievements = require(Shared.Achievements)
+local BridgeRun = require(Shared.BridgeRun)
 local AircraftData = require(Shared.AircraftData)
 local Badges = require(Shared.Config.Badges)
 local Challenges = require(Shared.Challenges)
@@ -33,6 +35,9 @@ local MissileService = require(script.Parent.MissileService)
 
 local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
 local BADGE_TRIES = 3
+local BRIDGE_XP = 100 -- flying under a bridge (BridgeRun)
+local BRIDGE_COOLDOWN = 60 -- seconds before the next one pays
+local BRIDGE_CHECK = 0.1 -- seconds between checks
 
 local ChallengeService = {
 	Priority = 75, -- after ProgressionService
@@ -144,6 +149,10 @@ local function awardBadge(player: Player, id: string)
 	end)
 end
 
+-- Bridge runs: each jet's last position in each bridge's frame, and when each player was last paid
+local bridgeSeen: { [number]: { [Model]: Vector3 } } = {}
+local bridgePaidAt: { [Player]: number } = {}
+
 -- Records events for a player: challenge progress and rewards, achievements, then tells them.
 local function record(player: Player, challengeEvents: { Challenges.Event }, achievementEvents: { Achievements.Event })
 	local notices = {}
@@ -170,7 +179,12 @@ local function record(player: Player, challengeEvents: { Challenges.Event }, ach
 					data.Achievements[id] = { At = unix, Badge = false }
 					table.insert(newAchievements, id)
 					local def = Achievements.get(id) :: Achievements.Def
-					table.insert(notices, { kind = "Achievement", text = def.name, detail = def.text })
+					table.insert(notices, {
+						kind = "Achievement",
+						heading = if def.secret then "SECRET ACHIEVEMENT" else nil,
+						text = def.name,
+						detail = def.text,
+					})
 					Telemetry.event("AchievementEarned", 1, { id = id }, player)
 				end
 			end
@@ -350,10 +364,71 @@ function ChallengeService:Init()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		sessions[player] = nil
+		bridgePaidAt[player] = nil
 	end)
 end
 
+-- Flew under a bridge: a little XP (once a minute) and the secret achievement.
+local function bridgeRun(player: Player)
+	if not live() then
+		return
+	end
+	local now = os.clock()
+	if not bridgePaidAt[player] or now - bridgePaidAt[player] >= BRIDGE_COOLDOWN then
+		bridgePaidAt[player] = now
+		DataService:Update(player, function(data)
+			Progression.addXP(data, BRIDGE_XP)
+		end)
+		Net.Server.fire("ChallengeNotice", player, {
+			kind = "Bonus",
+			heading = "UNDER THE BRIDGE",
+			text = "Threaded the Severn Bridge",
+			xp = BRIDGE_XP,
+		})
+		Telemetry.event("BridgeRun", 1, {}, player)
+	end
+	record(player, {}, { { kind = "BridgeRun" } })
+end
+
+-- Watches players' jets near the bridges for a pass under a deck (BridgeRun.passedUnder).
+local function checkBridges()
+	local map = workspace:FindFirstChild("Map")
+	local folder = map and map:FindFirstChild("Bridges")
+	if not folder then
+		return
+	end
+	for id, jet in AircraftService:GetJets() do
+		local player = jet.pilot
+		if player then
+			local seen = bridgeSeen[id] or {}
+			bridgeSeen[id] = seen
+			for _, bridge in folder:GetChildren() do
+				if bridge:IsA("Model") then
+					local here = bridge:GetPivot():PointToObjectSpace(jet.root.Position)
+					local before = seen[bridge]
+					if before and BridgeRun.passedUnder(before, here) then
+						bridgeRun(player)
+					end
+					-- Only remember jets near the bridge
+					seen[bridge] = if math.abs(here.X) < 600 and math.abs(here.Z) < 1100 then here else nil
+				end
+			end
+		end
+	end
+end
+
 function ChallengeService:Start()
+	local sinceBridgeCheck = 0
+	RunService.Heartbeat:Connect(function(dt)
+		sinceBridgeCheck += dt
+		if sinceBridgeCheck >= BRIDGE_CHECK then
+			sinceBridgeCheck = 0
+			checkBridges()
+		end
+	end)
+	AircraftService.JetDestroyed:Connect(function(jet)
+		bridgeSeen[jet.id] = nil
+	end)
 	-- A new UTC day (or week) while playing: new challenges
 	task.spawn(function()
 		while true do
