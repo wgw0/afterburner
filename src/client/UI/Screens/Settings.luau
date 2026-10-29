@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared.Config.Bindings)
+local LevelRewards = require(Shared.Config.LevelRewards)
 local Settings = require(Shared.Config.Settings)
 
 local C = require(script.Parent.Parent.Components)
@@ -59,8 +60,15 @@ local SECTIONS = {
 			{
 				key = "HUDColour",
 				label = "HUD colour",
-				hint = "Cyan and white stay clear of the red and amber warnings.",
-				choices = { { "Green", "GREEN" }, { "Cyan", "CYAN" }, { "White", "WHITE" } },
+				hint = "All but green stay clear of the red and amber warnings. More unlock with level.",
+				choices = {
+					{ "Green", "GREEN" },
+					{ "Cyan", "CYAN" },
+					{ "White", "WHITE" },
+					{ "Pink", "PINK" },
+					{ "Blue", "BLUE" },
+					{ "Violet", "VIOLET" },
+				},
 			},
 		},
 	},
@@ -146,11 +154,15 @@ local function Row(props: any)
 		-- Two choices are 150 wide; more share the same 320 px
 		local width = math.min(150, math.floor((320 - 8 * (#row.choices - 1)) / #row.choices))
 		for i, choice in row.choices do
+			-- Choices that unlock with pilot level (HUD colours, Config/LevelRewards) show the level until then
+			local needed = row.key == "HUDColour" and LevelRewards.HUD_COLOURS[choice[1]]
+			local locked = needed and not props.AllUnlocked and (props.Level or 1) < needed
 			buttons[choice[1]] = e(C.Button, {
-				Text = choice[2],
+				Text = if locked then `LV {needed}` else choice[2],
 				Style = if value == choice[1] then "Primary" else "Ghost",
 				Size = UDim2.fromOffset(width, 44),
-				TextSize = 13,
+				TextSize = if #row.choices > 4 then 11 else 13,
+				Disabled = locked,
 				LayoutOrder = i,
 				OnClick = function()
 					props.OnSet(row.key, choice[1])
@@ -395,7 +407,14 @@ local function SettingsScreen(props: any)
 			}),
 		}
 		for j, row in section.rows do
-			rows[row.key] = e(Row, { Row = row, Values = props.Values, OnSet = props.OnSet, Order = j })
+			rows[row.key] = e(Row, {
+				Row = row,
+				Values = props.Values,
+				OnSet = props.OnSet,
+				Order = j,
+				Level = props.Level,
+				AllUnlocked = props.AllUnlocked,
+			})
 		end
 		local height = 24 + #section.rows * (ROW_H + 4) + 28
 		sections[section.title] = e(C.Panel, {

@@ -144,14 +144,14 @@ return function(ctx)
 	end)
 
 	describe("pilot level", function()
-		it("levels up through the curve and pays Credits per level", function()
+		it("levels up through the curve and pays Credits per level (plus the level 2 milestone)", function()
 			local data = PlayerData.template()
 			local credits = data.Credits
 			local gained = Progression.addXP(data, Economy.xpToNext(1) + Economy.xpToNext(2) + 10)
 			expect(gained).toBe(2)
 			expect(data.PilotLevel).toBe(3)
 			expect(data.PilotXP).toBe(10)
-			expect(data.Credits).toBe(credits + 2 * Economy.LEVEL_CREDITS)
+			expect(data.Credits).toBe(credits + 2 * Economy.LEVEL_CREDITS + 1000) -- Config/LevelRewards
 		end)
 
 		it("lineup slots open at levels 5 and 15", function()

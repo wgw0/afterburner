@@ -121,6 +121,8 @@ local definitions: { [string]: Definition } = {
 	-- toast when a challenge or achievement completes: { kind, text, detail?, credits?, xp? }
 	RerollChallenge = { direction = "Function", args = { "integer" }, rate = { burst = 3, perSecond = 0.5 } },
 	ChallengeNotice = { direction = "ServerToClient", args = { "table" } },
+	-- Pick the title shown next to your name (a Config/LevelRewards title id, or "" for none)
+	SetTitle = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
 	-- Leave the current flight for the hangar (HangarButtonController)
 	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id), leave it, and its state

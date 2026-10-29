@@ -165,7 +165,12 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	-- Paint: the pilot's chosen skin; AI jets get a random one, for a varied sky
 	local skin = pilot and self.skinFor and self.skinFor(pilot, airframeId)
 	if not pilot then
-		local choices = Skins.list(airframeId)
+		local choices = {}
+		for _, choice in Skins.list(airframeId) do
+			if not choice.Level then -- level skins are earned: not for AI
+				table.insert(choices, choice)
+			end
+		end
 		skin = if #choices > 0 then choices[math.random(#choices)].Id else nil
 	end
 	if skin then

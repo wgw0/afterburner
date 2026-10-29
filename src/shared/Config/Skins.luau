@@ -9,6 +9,7 @@ export type Skin = {
 	DisplayName: string,
 	Credits: number?, -- price; nil = free with the jet
 	Default: boolean?,
+	Level: number?, -- a level skin (Config/LevelRewards): free at this pilot level, on every jet
 }
 
 local SKINS: { [string]: { Skin } } = {

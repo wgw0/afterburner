@@ -139,9 +139,15 @@ local function App(props: any)
 	if screen == "Results" and props.Match then
 		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data })
 	elseif screen == "Career" then
-		body = e(Career, { Data = data })
+		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle })
 	elseif screen == "Settings" then
-		body = e(SettingsScreen, { Values = props.Settings, OnSet = props.OnSetting, OnCapture = props.OnCapture })
+		body = e(SettingsScreen, {
+			Values = props.Settings,
+			OnSet = props.OnSetting,
+			OnCapture = props.OnCapture,
+			Level = data.PilotLevel,
+			AllUnlocked = data.Flags and data.Flags.AllUnlocked == true,
+		})
 	elseif screen == "TechTree" then
 		body = e(TechTree, {
 			Data = data,

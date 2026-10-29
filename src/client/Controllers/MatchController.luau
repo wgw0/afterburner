@@ -143,8 +143,11 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		row.LayoutOrder = i
 		row.Parent = container
 		local mine = score.userId == localPlayer.UserId
+		-- A player's title (Config/LevelRewards) after their name
+		local player = if score.userId ~= 0 then Players:GetPlayerByUserId(score.userId) else nil
+		local title = player and player:GetAttribute("Title") :: string?
 		local values = {
-			`{rank}. {score.name}`,
+			if title and title ~= "" then `{rank}. {score.name} · {title}` else `{rank}. {score.name}`,
 			tostring(score.kills),
 			tostring(score.assists),
 			tostring(score.deaths),

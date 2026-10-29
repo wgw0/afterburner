@@ -5,6 +5,7 @@
 
 local AircraftData = require(script.Parent.AircraftData)
 local Economy = require(script.Parent.Config.Economy)
+local LevelRewards = require(script.Parent.Config.LevelRewards)
 local PlayerData = require(script.Parent.PlayerData)
 local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
@@ -145,7 +146,29 @@ end
 
 -- Pilot level -----------------------------------------------------------------------------------
 
--- Adds XP, levelling up as needed (each level pays Economy.LEVEL_CREDITS). Returns levels gained.
+-- Pays the Credits and Free RP milestones (Config/LevelRewards) for every level reached and not yet paid,
+-- once each. Run on levelling up and on joining (so levels reached before the milestones existed count).
+-- Returns the milestones paid.
+function Progression.claimLevelRewards(data: { [string]: any }): { LevelRewards.Milestone }
+	local paid = {}
+	local claimed = data.LevelRewardsClaimed or 0
+	for _, milestone in LevelRewards.MILESTONES do
+		if milestone.Level > claimed and milestone.Level <= data.PilotLevel then
+			if milestone.Kind == "Credits" then
+				data.Credits += milestone.Amount :: number
+				table.insert(paid, milestone)
+			elseif milestone.Kind == "FreeRP" then
+				data.FreeRP += milestone.Amount :: number
+				table.insert(paid, milestone)
+			end
+		end
+	end
+	data.LevelRewardsClaimed = math.max(claimed, data.PilotLevel)
+	return paid
+end
+
+-- Adds XP, levelling up as needed (each level pays Economy.LEVEL_CREDITS, plus its milestones).
+-- Returns levels gained.
 function Progression.addXP(data: { [string]: any }, amount: number): number
 	data.TotalXP += amount
 	data.PilotXP += amount
@@ -158,6 +181,9 @@ function Progression.addXP(data: { [string]: any }, amount: number): number
 	end
 	if data.PilotLevel >= Economy.MAX_LEVEL then
 		data.PilotXP = 0
+	end
+	if gained > 0 then
+		Progression.claimLevelRewards(data)
 	end
 	return gained
 end
@@ -497,6 +523,10 @@ function Progression.ownsSkin(data: { [string]: any }, airframeId: string, skinI
 	if not (entry and entry.Owned and Skins.get(airframeId, skinId)) then
 		return false
 	end
+	local skin = Skins.get(airframeId, skinId) :: any
+	if skin.Level then
+		return data.PilotLevel >= skin.Level or (data.Flags and data.Flags.AllUnlocked == true)
+	end
 	return skinId == Skins.default(airframeId) or (entry.Skins ~= nil and entry.Skins[skinId] == true)
 end
 
@@ -521,6 +551,9 @@ function Progression.canBuySkin(data: { [string]: any }, airframeId: string, ski
 	end
 	if Progression.ownsSkin(data, airframeId, skinId) then
 		return false, "Already owned"
+	end
+	if skin.Level then
+		return false, `Unlocks at pilot level {skin.Level}`
 	end
 	local price = skin.Credits or 0
 	if data.Credits < price then

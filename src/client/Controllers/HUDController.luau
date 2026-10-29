@@ -35,6 +35,9 @@ local HUD_COLOURS = {
 	Green = Color3.fromRGB(110, 255, 150),
 	Cyan = Color3.fromRGB(90, 220, 255),
 	White = Color3.fromRGB(235, 240, 245),
+	Pink = Color3.fromRGB(255, 150, 215),
+	Blue = Color3.fromRGB(120, 170, 255),
+	Violet = Color3.fromRGB(200, 150, 255),
 }
 local AMBER = Color3.fromRGB(255, 190, 80)
 local RED = Color3.fromRGB(255, 85, 70)
