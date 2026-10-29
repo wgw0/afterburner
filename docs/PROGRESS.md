@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 10 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
+| 6 Content and polish for a soft launch | 12 / 43 | In progress: content done, matchmaking built; retention, mobile, analytics and release to come (see below) |
 | 7 Monetisation | 0 / 11 | Not started |
 | 8 Launch and live ops | 1 / 20 | ACD-08 done early; three more partly done |
 
@@ -267,10 +267,11 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **MAP-04** Streaming and fog tuning for mobile
   - Streaming was turned off for a while (it unloaded the map on death and under memory pressure), then back on after the world-scale rework: the map is a twentieth of its old size in cells, loads in about 10 s, PLAY waits for `MapReady`, and it stays loaded through deaths (60 fps in Studio). Still to do: mobile memory, join time and fog on a real phone.
 - [ ] **FX-05** Quality settings and pooling audit
-- [ ] **AUD-04** Warnings and radio barks with subtitles
+- [x] **AUD-04** Warnings and radio barks with subtitles
   - Betty voice warnings from Will's recordings (`Assets.Audio`): PULL UP (cuts in, back to back), ENGINE FIRE, BINGO FUEL, ENGINE DAMAGE ("Caution"); the master warning chime for STALL, OVER-G, G-LIMIT and RETURN TO BATTLE AREA. RWR contact, lock and launch use his RWR recordings. Every missile guiding on you now warns, heat-seekers included, and a heat-seeker lock shows LOCKED like a radar lock.
-  - Still to do: radio barks and subtitles.
-- [ ] **AUD-05** Music and UI sounds, sound groups and mixer settings
+  - Subtitles for Betty and the RWR came with SET-03. Radio calls (`RadioController`): "Fox one / two / three" as your missile leaves the rail, "Splash one / two / three" for kills, "Missile, missile, missile!" for each missile on you, with a squelch before and after and a subtitle when Subtitles are on. Checked in play and by Will. *The voice lines are still to record (names in DEVELOPMENT.md §21.1); until then a call is the squelch alone.*
+- [x] **AUD-05** Music and UI sounds, sound groups and mixer settings
+  - Licensed APM menu music that fades with the menu, victory and defeat stings on the results screen, a click on every button, chimes for purchases, level-ups and a found match (our own, from `tools/audio/ui_sounds.py`). Sound groups for engine, wind, weapons, cockpit, radio, music and UI, with Master, Cockpit, Music and Radio volume sliders (defaults 50 / 80 / 20 / 50%, Will's). Checked in play and by Will ("the music fits and all sounds good").
 - [ ] **PRG-07** Aircraft mastery stars and rewards
 - [x] **UI-05** Mode select and queue UI
   - In a lobby, a mode picker over PLAY (ANY MODE, DOGFIGHT, TEAMS, ZONES; remembered), PLAY joins the queue and becomes CANCEL with a timer, a loading screen covers each teleport, and a match server launches you in your selected jet when the countdown ends (no second PLAY). Checked in Studio and by Will.
