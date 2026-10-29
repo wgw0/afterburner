@@ -25,8 +25,8 @@ Simulated lag is in NETWORK.md. Studio can't prove the lag compensation amount; 
 This is the Phase 4 exit test: 8 players and bots, a full match, then a chat about it.
 
 1. **Publish** the current place to the test experience, **Afterburner (TEST)** (place 72582604278324): File →
-   **Publish to Roblox**. The place carries `Environment = "Test"`, so it uses the test save store and the debug
-   tools; nobody's progress mixes with the future live game.
+   **Publish to Roblox**. The test experience always runs as `Test` (`Config/Environment`), so it uses the test save
+   store and the debug tools; nobody's progress mixes with the future live game.
 2. **Let your friends in.** The experience is private. In Studio, **Home → Game Settings → Permissions**, set
    **Playability** to **Friends** if it's offered (only your Roblox friends can join), or Public for the session
    and back to Private afterwards. Friends join from your profile, the experience page or a link you send.

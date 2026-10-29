@@ -95,6 +95,12 @@ local function load(player: Player)
 		return
 	end
 	profile:AddUserId(player.UserId)
+	-- A save from a newer release than this server (a rollback is live, REL-04): loaded as it is, keeping
+	-- the fields this code doesn't know, so the newer release reads them back
+	if type(profile.Data.Version) == "number" and profile.Data.Version > PlayerData.VERSION then
+		Telemetry.event("DataNewerThanCode", profile.Data.Version, { code = PlayerData.VERSION }, player)
+		warn(`[Data] {player.Name}'s save is v{profile.Data.Version}; this server knows v{PlayerData.VERSION}`)
+	end
 	local _, applied = PlayerData.migrate(profile.Data)
 	if #applied > 0 then
 		Telemetry.event("DataMigrated", #applied, { to = PlayerData.VERSION }, player)

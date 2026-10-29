@@ -122,7 +122,7 @@ All tunable numbers live in config modules under `src/shared/Config/` (shared) o
 | **Test universe** | A separate, private Roblox experience | Multiplayer tests, purchases with test products, matchmaking across places |
 | **Production** | The public experience | Releases only, from tagged commits |
 
-Keep **separate experiences** for test and production, so DataStores, MemoryStores and products never mix. `Shared.Config.Environment` reads the `Environment` attribute on **`ReplicatedStorage`** (so the server and clients agree), switches DataStore names and enables debug tools in test only. If the attribute is missing, Studio counts as `"Test"` and live servers as `"Prod"`, so debug tools can never switch on by accident in production. **Set `Environment = "Prod"` on the production place before publishing.**
+Keep **separate experiences** for test and production, so DataStores, MemoryStores and products never mix. `Shared.Config.Environment` works out the environment from the experience (`game.GameId`, the same on the server and clients): the test experience (listed in `TEST_UNIVERSES`) and Studio are `"Test"`, any other experience live is `"Prod"`. It switches DataStore names and enables debug tools in test only. Publishing to production needs no switch, and debug tools can't switch on in production by accident (REL-04). In Studio only, an `Environment = "Prod"` attribute on `ReplicatedStorage` tries production behaviour.
 
 ### 0.7 Shared vocabulary
 
@@ -1986,7 +1986,7 @@ On every push and PR:
 1. All tasks for the release are done (§0.8).
 2. Playtest in the **test universe** with the release build.
 3. Check data migrations against a copy of real data shapes.
-4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). **Before publishing to production, set the `Environment` attribute on ReplicatedStorage to `Prod`** (the committed place says `Test`, for the test experience); it picks the save store and turns off debug and admin data tools.
+4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). The environment follows the experience (§0.6), so production picks the production save store and turns off debug and admin data tools by itself.
 5. Store art: the experience thumbnail is [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg). Upload it in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. The file is 1376×768 (the largest the generator exports), above Roblox's 768×432 minimum; Roblox recommends 1920×1080 for new thumbnails. The test experience keeps its default thumbnail.
 6. First launch only: badges. Create one badge per achievement in `Achievements.LIST` on the production experience (Creator Dashboard → Monetization → Badges) and put their ids under the production universe in `Config/Badges`. Players who already hold an achievement get its badge on their next join. The test experience has none (Will's call, November 2026).
 7. Tag the commit, update the changelog.
@@ -1999,6 +1999,16 @@ On every push and PR:
 | REL-03 | Version module, changelog, tagging process | 6 |
 | REL-04 | Release checklist and rollback drill | 6 |
 | REL-05 | (Optional) Open Cloud publishing from CI | 8 |
+
+### 35.4 As built: versions, releases and rollbacks (REL-03, REL-04)
+
+The step-by-step guide is [RELEASE.md](RELEASE.md); this is what supports it.
+
+- **Version:** `Shared/Version` (`NUMBER`, `label`). Shown at the bottom of Settings with the server's place version ("v0.6.0 · Test · build 214"; no "· Test" in production), and in the server's boot log. Admin `server.info` returns the version, save version, environment, role, place version, job id, uptime and players.
+- **Changelog:** `CHANGELOG.md` at the root, a `## [x.y.z] - date` section per release (`Unreleased` until tagged). `scripts/ci-checks.sh` fails if the version has no section or isn't `x.y.z`.
+- **Tagging:** `bash scripts/release.sh` on a clean, up-to-date master: runs the checks, dates the changelog section, commits "Release vX", and makes an annotated tag holding that section. It never pushes; it prints the push command. `--dry-run` checks only.
+- **Environment from the experience:** see §0.6; the old manual "set Prod before publishing" step is gone.
+- **Saves across a rollback:** older code loads a newer save without downgrading it or dropping unknown fields (tested), and logs `DataNewerThanCode`. Migrations follow the add-only rule in RELEASE.md.
 
 ---
 
@@ -2172,7 +2182,7 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | Ground Roamer model | `OwnerUserId` | number | The driver; their DriveController drives it |
 | Ground Roamer model | `Skin` | string | Its skin |
 | Ground Roamer part | `TextureSet` | string | Body, Canvas, Details, Glass or Decals: which SurfaceAppearance it wears |
-| ReplicatedStorage | `Environment` | string | `"Test"` / `"Prod"` (missing = Test in Studio, Prod live) |
+| ReplicatedStorage | `Environment` | string | Studio only: `"Prod"` tries production behaviour (live servers go by the experience, §0.6) |
 | ReplicatedStorage | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"` (missing = Single) |
 | ReplicatedStorage | `ServerReady` | boolean | Boot finished |
 | SpawnPoint parts | `Team`, `Type`, `Altitude` | | §19 |
