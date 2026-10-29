@@ -5,7 +5,8 @@
 --   it burns, then just the smoke trail fades: you can see when a missile has run out of energy.
 --   Flares and chaff: simulated locally from the server's spawn event with the same physics.
 -- Missiles, flares and chaff are pooled, and lights, flare smoke and chaff bursts follow the effects quality
--- (GraphicsController, FX-05).
+-- (GraphicsController, FX-05). Each missile is drawn with its family's model (ReplicatedStorage.Assets.Missiles,
+-- WeaponData Model) scaled to its real Length, pooled per family; a plain stick stands in if the model is missing.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -16,6 +17,7 @@ local Net = require(Shared.Net)
 local Pack = require(Shared.Net.Pack)
 local Pool = require(Shared.Util.Pool)
 local Units = require(Shared.Units)
+local WeaponData = require(Shared.WeaponData)
 
 local GraphicsController = require(script.Parent.GraphicsController)
 
@@ -28,10 +30,12 @@ local FLARE_SMOKE_RATE = 25 -- at High
 -- (extrapolated from its launch velocity), starting on the rail as this client sees the launcher, and
 -- eases back to the interpolated track over LAUNCH_BLEND seconds.
 local LAUNCH_BLEND = 1.0
+local PLAIN = "" -- pool key for the plain stand-in
+local TRAIL_HALF_WIDTH = 0.11
 
 type Snapshot = { time: number, position: Vector3, velocity: Vector3, burning: boolean }
 type MissileView = {
-	part: BasePart,
+	shell: MissileShell,
 	trail: Trail,
 	flame: PointLight,
 	snapshots: { Snapshot },
@@ -42,7 +46,15 @@ type MissileView = {
 }
 type FlareShell = { part: BasePart, light: PointLight, smoke: ParticleEmitter }
 type FlareView = { flare: Countermeasures.Flare, shell: FlareShell }
-type MissileShell = { part: BasePart, trail: Trail, flame: PointLight }
+type MissileShell = {
+	model: Model?,
+	part: BasePart, -- the model's PrimaryPart, or the plain stand-in
+	parts: { BasePart },
+	trail: Trail,
+	flame: PointLight,
+	family: string,
+	baseLength: number, -- the model's own length (metres)
+}
 type ChaffShell = { part: BasePart, cloud: ParticleEmitter }
 
 local MissileViewController = {
@@ -55,26 +67,17 @@ local folder: Folder
 local views: { [number]: MissileView } = {}
 local flareViews: { FlareView } = {}
 local smokeTemplate: ParticleEmitter
-local missilePool: Pool.Pool<MissileShell>
+local missilePools: { [string]: Pool.Pool<MissileShell> } = {}
 local flarePool: Pool.Pool<FlareShell>
 local chaffPool: Pool.Pool<ChaffShell>
 local shellOf: { [BasePart]: MissileShell } = {}
 
-local function makeMissile(): MissileShell
-	local part = Instance.new("Part")
-	part.Name = "Missile"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.CanQuery = false
-	part.Size = Vector3.new(0.17, 0.17, 2.5)
-	part.Color = Color3.fromRGB(225, 225, 220)
-	part.Material = Enum.Material.SmoothPlastic
+local function addTrail(part: BasePart, tail: Vector3, up: Vector3): (Trail, PointLight)
 	local a0 = Instance.new("Attachment")
-	a0.Position = Vector3.new(0, 0.11, 1.25)
+	a0.Position = tail + up * TRAIL_HALF_WIDTH
 	a0.Parent = part
 	local a1 = Instance.new("Attachment")
-	a1.Position = Vector3.new(0, -0.11, 1.25)
+	a1.Position = tail - up * TRAIL_HALF_WIDTH
 	a1.Parent = part
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = a0
@@ -88,23 +91,117 @@ local function makeMissile(): MissileShell
 	flame.Color = Color3.fromRGB(255, 190, 110)
 	flame.Range = 7
 	flame.Parent = a0
-	return { part = part, trail = trail, flame = flame }
+	return trail, flame
 end
 
-local function newMissileView(position: Vector3, velocity: Vector3): MissileView
-	local shell = missilePool:Get()
+local function makePlainMissile(): MissileShell
+	local part = Instance.new("Part")
+	part.Name = "Missile"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.Size = Vector3.new(0.17, 0.17, 2.5)
+	part.Color = Color3.fromRGB(225, 225, 220)
+	part.Material = Enum.Material.SmoothPlastic
+	local trail, flame = addTrail(part, Vector3.new(0, 0, 1.25), Vector3.yAxis)
+	return { part = part, parts = { part }, trail = trail, flame = flame, family = PLAIN, baseLength = 2.5 }
+end
+
+-- A copy of a family's model (Assets.Missiles.<family>, built by tools/MissileBuilder): Body is the anchored
+-- PrimaryPart with the rest welded to it, and its Tail attachment marks the nozzle exit.
+local function makeModelMissile(template: Model): MissileShell
+	local model = template:Clone()
+	local part = model.PrimaryPart :: BasePart
+	local parts = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			table.insert(parts, d)
+		end
+	end
+	local tail = part:FindFirstChild("Tail") :: Attachment
+	-- PivotOffset maps the model's axes (nose -Z, up +Y) into the part's own
+	local trail, flame = addTrail(part, tail.Position, part.PivotOffset:VectorToWorldSpace(Vector3.yAxis))
+	return {
+		model = model,
+		part = part,
+		parts = parts,
+		trail = trail,
+		flame = flame,
+		family = template.Name,
+		baseLength = template:GetAttribute("Length") :: number,
+	}
+end
+
+local function missileTemplate(family: string?): Model?
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local models = assets and assets:FindFirstChild("Missiles")
+	local template = family and models and models:FindFirstChild(family)
+	if template and template:IsA("Model") and template.PrimaryPart and template:GetAttribute("Length") then
+		return template
+	end
+	return nil
+end
+
+local function unparentMissile(shell: MissileShell)
+	local top: Instance = shell.model or shell.part
+	top.Parent = nil
+end
+
+-- The pool for a family's model, or for the plain stand-in if that model is missing
+local function poolFor(family: string?): Pool.Pool<MissileShell>
+	local template = missileTemplate(family)
+	local key = if template then template.Name else PLAIN
+	local pool = missilePools[key]
+	if not pool then
+		local factory = if template
+			then function()
+				return makeModelMissile(template)
+			end
+			else makePlainMissile
+		pool = Pool.new(factory, 2, unparentMissile)
+		missilePools[key] = pool
+	end
+	return pool
+end
+
+local function setVisible(shell: MissileShell, visible: boolean)
+	for _, part in shell.parts do
+		part.Transparency = if visible then 0 else 1
+	end
+end
+
+local function placeShell(shell: MissileShell, cf: CFrame)
+	if shell.model then
+		shell.model:PivotTo(cf)
+	else
+		shell.part.CFrame = cf
+	end
+end
+
+local function shellLook(shell: MissileShell): Vector3
+	return if shell.model then shell.model:GetPivot().LookVector else shell.part.CFrame.LookVector
+end
+
+local function newMissileView(weaponId: string, position: Vector3, velocity: Vector3): MissileView
+	local spec = WeaponData.getMissile(weaponId)
+	local shell = poolFor(spec and spec.Model):Get()
 	local part = shell.part
-	part.Transparency = 0
-	part.CFrame = CFrame.lookAt(position, position + velocity)
+	if shell.model and spec then
+		shell.model:ScaleTo(spec.Length / shell.baseLength)
+	end
+	setVisible(shell, true)
+	placeShell(shell, CFrame.lookAt(position, position + velocity))
 	shell.trail.Transparency = NumberSequence.new(0.25, 1)
 	shell.trail:Clear() -- no streak from where this shell was last used
 	shell.trail.Enabled = true
 	shell.flame.Brightness = 4
 	shell.flame.Enabled = GraphicsController:Profile().jetLights
-	part.Parent = folder
+	local top: Instance = shell.model or part
+	top.Parent = folder
 	shellOf[part] = shell
 	return {
-		part = part,
+		shell = shell,
 		trail = shell.trail,
 		flame = shell.flame,
 		snapshots = {},
@@ -118,7 +215,7 @@ local function releaseMissile(part: BasePart)
 	local shell = shellOf[part]
 	shellOf[part] = nil
 	if shell then
-		missilePool:Release(shell)
+		missilePools[shell.family]:Release(shell)
 	end
 end
 
@@ -172,15 +269,15 @@ local function removeView(id: number, fade: boolean)
 	end
 	views[id] = nil
 	view.flame.Brightness = 0
-	view.part.Transparency = 1
+	setVisible(view.shell, false)
 	if fade then
 		-- Let the smoke trail hang in the air for a moment.
 		view.trail.Enabled = false
 		task.delay(view.trail.Lifetime, function()
-			releaseMissile(view.part)
+			releaseMissile(view.shell.part)
 		end)
 	else
-		releaseMissile(view.part)
+		releaseMissile(view.shell.part)
 	end
 end
 
@@ -275,8 +372,8 @@ local function update(dt: number)
 					view.railOffset = nil
 				end
 			end
-			local dir = if velocity.Magnitude > 1 then velocity.Unit else view.part.CFrame.LookVector
-			view.part.CFrame = CFrame.lookAt(position, position + dir)
+			local dir = if velocity.Magnitude > 1 then velocity.Unit else shellLook(view.shell)
+			placeShell(view.shell, CFrame.lookAt(position, position + dir))
 			view.flame.Brightness = if burning then 4 + math.random() * 2 else 0
 			view.trail.Transparency = if burning then NumberSequence.new(0.2, 1) else NumberSequence.new(0.6, 1) -- thinner smoke once the motor is out
 		end
@@ -314,19 +411,21 @@ function MissileViewController:Init()
 	local function unparent(shell: any)
 		shell.part.Parent = nil
 	end
-	missilePool = Pool.new(makeMissile, 6, unparent)
+	for _, family in WeaponData.MISSILE_MODELS do
+		poolFor(family)
+	end
 	flarePool = Pool.new(makeFlare, 16, unparent)
 	chaffPool = Pool.new(makeChaff, 4, unparent)
 
 	Net.Client.on(
 		"MissileSpawned",
-		function(id: number, _weapon: string, ownerJetId: number, position: Vector3, velocity: Vector3)
-			local view = newMissileView(position, velocity)
+		function(id: number, weaponId: string, ownerJetId: number, position: Vector3, velocity: Vector3)
+			local view = newMissileView(weaponId, position, velocity)
 			view.ownerJetId = ownerJetId
 			-- Show it on the rail from the first frame, before update() sets up the blend
 			local rail = launchRail(ownerJetId, position)
 			if rail and (rail.WorldPosition - position).Magnitude < 112 then
-				view.part.CFrame = CFrame.lookAt(rail.WorldPosition, rail.WorldPosition + velocity)
+				placeShell(view.shell, CFrame.lookAt(rail.WorldPosition, rail.WorldPosition + velocity))
 			end
 			table.insert(
 				view.snapshots,

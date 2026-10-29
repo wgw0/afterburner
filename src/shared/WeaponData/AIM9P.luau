@@ -22,4 +22,6 @@ return {
 	ProximityFuse = 6,
 	Damage = 140,
 	Lifetime = 20,
+	Model = "Sidewinder",
+	Length = 3.07,
 }

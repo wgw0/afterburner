@@ -42,9 +42,13 @@ export type Missile = {
 	Damage: number,
 	Lifetime: number, -- seconds before self-destruct
 	ActiveRange: number?, -- ARH only: real metres from the target where its own seeker goes active
+	Model: string, -- family model in ReplicatedStorage.Assets.Missiles (MISSILE_MODELS)
+	Length: number, -- real metres; the family model is scaled to it
 }
 
 local MISSILE_CLASSES = { "IR_Rear", "IR_All", "IR_Adv", "SARH", "ARH" }
+-- Missile model families (tools/blender/missiles_generate.py, built by tools/MissileBuilder.luau)
+local MISSILE_MODELS = { "Sidewinder", "CanardIR", "TailIR", "MediumRadar", "LargeRadar", "Phoenix" }
 
 local COMMON: { [string]: string } = {
 	Id = "string",
@@ -82,9 +86,12 @@ local MISSILE_RULES: { [string]: { number } } = {
 	ProximityFuse = { 1, 30 },
 	Damage = { 10, 500 },
 	Lifetime = { 3, 120 },
+	Length = { 1.5, 6 },
 }
 
 local WeaponData = {}
+
+WeaponData.MISSILE_MODELS = table.freeze(MISSILE_MODELS)
 
 function WeaponData.isMissile(weapon: any): boolean
 	return type(weapon) == "table" and table.find(MISSILE_CLASSES, weapon.Class) ~= nil
@@ -130,6 +137,9 @@ function WeaponData.validate(id: string, data: any): { string }
 		if type(range) ~= "number" or range < 1000 or range > 40000 then
 			table.insert(problems, `{id}: ARH missiles need ActiveRange (1000..40000 m)`)
 		end
+	end
+	if WeaponData.isMissile(data) and not table.find(MISSILE_MODELS, data.Model) then
+		table.insert(problems, `{id}: Model must be one of {table.concat(MISSILE_MODELS, ", ")}`)
 	end
 	if data.Id ~= nil and data.Id ~= id then
 		table.insert(problems, `{id}: Id "{tostring(data.Id)}" must match the module name`)

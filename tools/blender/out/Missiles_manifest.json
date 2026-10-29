@@ -1,0 +1,355 @@
+{
+  "airframe": "Missiles",
+  "units": "metres (Roblox axes: x right, y up, z aft)",
+  "studsPerMetre": 1.0,
+  "length": 3.96,
+  "triangles": 4024,
+  "parts": [
+    {
+      "name": "Sidewinder_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.0,
+          0.02
+        ],
+        "size": [
+          0.4759,
+          0.4759,
+          2.79
+        ]
+      },
+      "family": "Sidewinder",
+      "role": "Body",
+      "length": 2.87,
+      "radius": 0.0635,
+      "triangles": 520
+    },
+    {
+      "name": "Sidewinder_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        0.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.0,
+          0.005
+        ],
+        "size": [
+          0.1275,
+          0.1275,
+          2.88
+        ]
+      },
+      "family": "Sidewinder",
+      "role": "Trim",
+      "triangles": 280
+    },
+    {
+      "name": "CanardIR_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        1.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          1.0,
+          -0.0,
+          0.03
+        ],
+        "size": [
+          0.3649,
+          0.3649,
+          2.8
+        ]
+      },
+      "family": "CanardIR",
+      "role": "Body",
+      "length": 2.9,
+      "radius": 0.085,
+      "triangles": 392
+    },
+    {
+      "name": "CanardIR_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        1.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          1.0,
+          0.0,
+          0.005
+        ],
+        "size": [
+          0.1707,
+          0.1707,
+          2.91
+        ]
+      },
+      "family": "CanardIR",
+      "role": "Trim",
+      "triangles": 280
+    },
+    {
+      "name": "TailIR_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        2.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          2.0,
+          -0.0,
+          0.025
+        ],
+        "size": [
+          0.3203,
+          0.3203,
+          2.93
+        ]
+      },
+      "family": "TailIR",
+      "role": "Body",
+      "length": 3.02,
+      "radius": 0.0635,
+      "triangles": 368
+    },
+    {
+      "name": "TailIR_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        2.0,
+        0,
+        -0.0
+      ],
+      "bounds": {
+        "centre": [
+          2.0,
+          0.0,
+          0.005
+        ],
+        "size": [
+          0.1275,
+          0.1275,
+          3.03
+        ]
+      },
+      "family": "TailIR",
+      "role": "Trim",
+      "triangles": 240
+    },
+    {
+      "name": "MediumRadar_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        0.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          -0.0,
+          -0.0,
+          -5.96
+        ],
+        "size": [
+          0.321,
+          0.321,
+          3.54
+        ]
+      },
+      "family": "MediumRadar",
+      "role": "Body",
+      "length": 3.66,
+      "radius": 0.089,
+      "triangles": 408
+    },
+    {
+      "name": "MediumRadar_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        0.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          0.0,
+          0.0,
+          -5.995
+        ],
+        "size": [
+          0.1787,
+          0.1787,
+          3.67
+        ]
+      },
+      "family": "MediumRadar",
+      "role": "Trim",
+      "triangles": 240
+    },
+    {
+      "name": "LargeRadar_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        1.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          1.0,
+          -0.0,
+          -5.96
+        ],
+        "size": [
+          0.7135,
+          0.7135,
+          3.54
+        ]
+      },
+      "family": "LargeRadar",
+      "role": "Body",
+      "length": 3.66,
+      "radius": 0.1015,
+      "triangles": 408
+    },
+    {
+      "name": "LargeRadar_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        1.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          1.0,
+          0.0,
+          -5.995
+        ],
+        "size": [
+          0.2038,
+          0.2038,
+          3.67
+        ]
+      },
+      "family": "LargeRadar",
+      "role": "Trim",
+      "triangles": 240
+    },
+    {
+      "name": "Phoenix_Body",
+      "set": "Body",
+      "kind": "Static",
+      "pivot": [
+        2.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          2.0,
+          -0.0,
+          -5.94
+        ],
+        "size": [
+          0.6548,
+          0.6548,
+          3.8
+        ]
+      },
+      "family": "Phoenix",
+      "role": "Body",
+      "length": 3.96,
+      "radius": 0.19,
+      "triangles": 408
+    },
+    {
+      "name": "Phoenix_Trim",
+      "set": "Trim",
+      "kind": "Static",
+      "pivot": [
+        2.0,
+        0,
+        -6.0
+      ],
+      "bounds": {
+        "centre": [
+          2.0,
+          0.0,
+          -5.995
+        ],
+        "size": [
+          0.3815,
+          0.3815,
+          3.97
+        ]
+      },
+      "family": "Phoenix",
+      "role": "Trim",
+      "triangles": 240
+    }
+  ],
+  "attachments": {
+    "Sidewinder_Tail": [
+      0.0,
+      0,
+      1.445
+    ],
+    "CanardIR_Tail": [
+      1.0,
+      0,
+      1.46
+    ],
+    "TailIR_Tail": [
+      2.0,
+      0,
+      1.52
+    ],
+    "MediumRadar_Tail": [
+      0.0,
+      0,
+      -4.16
+    ],
+    "LargeRadar_Tail": [
+      1.0,
+      0,
+      -4.16
+    ],
+    "Phoenix_Tail": [
+      2.0,
+      0,
+      -4.01
+    ]
+  },
+  "hull": {},
+  "hitboxes": {}
+}
