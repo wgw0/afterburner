@@ -31,6 +31,8 @@ local FLARE_SMOKE_RATE = 25 -- at High
 -- eases back to the interpolated track over LAUNCH_BLEND seconds.
 local LAUNCH_BLEND = 1.0
 local PLAIN = "" -- pool key for the plain stand-in
+-- Missiles in flight are drawn this many times their real Length: at real size they are too small to see
+local FLIGHT_SCALE = 3
 local TRAIL_HALF_WIDTH = 0.11
 
 type Snapshot = { time: number, position: Vector3, velocity: Vector3, burning: boolean }
@@ -188,7 +190,7 @@ local function newMissileView(weaponId: string, position: Vector3, velocity: Vec
 	local shell = poolFor(spec and spec.Model):Get()
 	local part = shell.part
 	if shell.model and spec then
-		shell.model:ScaleTo(spec.Length / shell.baseLength)
+		shell.model:ScaleTo(spec.Length * FLIGHT_SCALE / shell.baseLength)
 	end
 	setVisible(shell, true)
 	placeShell(shell, CFrame.lookAt(position, position + velocity))
