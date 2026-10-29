@@ -649,23 +649,28 @@ Collects raw input from keyboard and mouse, gamepad and touch, and outputs a sin
 | Action | Default PC | Gamepad | Touch |
 |---|---|---|---|
 | Throttle up / down | W / S | RT / LT | Slider |
-| Afterburner | W held at 100% | RT fully pressed | Slider top detent |
+| Afterburner | W held at 100% | RT held at 100% | Slider top detent |
 | Roll | Q / E (Direct) or mouse (Mouse Aim) | Left stick X | Virtual stick |
 | Pitch | Mouse | Left stick Y | Virtual stick |
 | Yaw | A / D | LB / RB | Optional buttons |
-| Fire gun | LMB | RB + A *(tune)* | Fire button |
+| Limiter override (hold) | Left Shift | L3 | — |
+| Fire gun | LMB | A | Fire button |
 | Fire missile | Space | X | Missile button |
-| Cycle weapon | R | D-pad up | Weapon icon tap |
-| Radar lock / cycle | T | Y | Lock button |
-| Flares | F | D-pad left | Flare button |
-| Chaff | C | D-pad right | Chaff button |
+| Next missile | R | D-pad up | Weapon icon tap |
+| Radar lock / unlock | T | Y | Lock button |
+| Flares | F | B | Flare button |
+| Chaff | C | D-pad down | Chaff button |
 | Free look | RMB held | Right stick | Drag on screen |
-| Padlock | Middle mouse / Z | R3 | Padlock button |
-| Camera toggle | V | Select | Camera button |
-| Scoreboard | Tab | Start (hold) | Menu |
+| Padlock (hold) | X / middle mouse | R3 | Padlock button |
+| Zoom (hold) | Z | — | — |
+| Camera toggle | V | View (Select) | Camera button |
+| Scoreboard (hold) | Tab | Menu (Start) | Menu |
+| Back to hangar (hold) | H | D-pad left | HANGAR button |
+| Fly again (menu) | R | X | — |
 
-- Use `ContextActionService` for actions (it handles gamepad and touch buttons), and `UserInputService` for continuous mouse deltas.
 - All bindings are rebindable (§29) and stored in settings.
+- **As built (INP-05, November 2026):** the actions and defaults are in `Config/Bindings` (pure, tested in `Bindings.spec`); the Bindings setting stores only the player's changes, so new defaults still reach them. `BindingsController` answers `IsDown(action)`, `Matches(input, action)` and `Label(action)` for every controller, and `Capture` waits for a key to bind. Settings has a KEY BINDINGS panel: click a cell and press a key or button; a key already in use swaps with the other action; RESET TO DEFAULTS clears the changes. Sticks, triggers, the mouse, the arrow keys (fixed flight and snap-view alternates), Escape, 1–3 and P aren't rebindable. The HUD's key line and the lessons' hints show the player's own keys.
+- **Gamepad in the menus (UI-09):** a button is always selected while the menu is up (PLAY or FLY first), outlined in the menu's orange; LB / RB switch tabs and B goes back.
 
 ### 7.2 Control schemes
 

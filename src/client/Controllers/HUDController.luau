@@ -15,12 +15,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared.Config.Bindings)
 local Ballistics = require(Shared.Ballistics)
 local Net = require(Shared.Net)
 local Units = require(Shared.Units)
 local Guidance = require(Shared.Guidance)
 local WeaponData = require(Shared.WeaponData)
 
+local BindingsController = require(script.Parent.BindingsController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
 local SensorController = require(script.Parent.SensorController)
@@ -916,8 +918,14 @@ local function update()
 	fuelLabel.Position = if InputController.device == "Touch"
 		then UDim2.new(0, 20, 1, -230)
 		else UDim2.new(0, 20, 1, -20)
-	helpLabel.Text = `{if InputController.scheme == "MouseAim" then "MOUSE AIM" else "DIRECT"} · M scheme · V camera · Z zoom · P tuning`
-		.. "\nLMB guns · Space missile · R next missile · T lock/unlock · F flare · C chaff"
+	local function key(id: string): string
+		return Bindings.label(BindingsController:Name(id, "keyboard"))
+	end
+	local scheme = if InputController.scheme == "MouseAim" then "MOUSE AIM" else "DIRECT"
+	helpLabel.Text = `{scheme} · {key("SwitchScheme")} scheme · {key("Camera")} camera · {key("Zoom")} zoom · P tuning`
+		.. "\n"
+		.. `{key("FireGun")} guns · {key("FireMissile")} missile · {key("NextWeapon")} next missile · `
+		.. `{key("RadarLock")} lock/unlock · {key("Flares")} flare · {key("Chaff")} chaff`
 end
 
 -- Swaps the HUD colour on everything already drawn, then for everything drawn from now on.

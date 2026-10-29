@@ -4,11 +4,13 @@
 -- known keys with valid values (sanitize), so a modified client can't store anything else.
 
 local AircraftData = require(script.Parent.Parent.AircraftData)
+local Bindings = require(script.Parent.Bindings)
 
 export type Spec =
 	{ kind: "enum", values: { string }, default: string }
 	| { kind: "number", min: number, max: number, default: number }
 	| { kind: "boolean", default: boolean }
+	| { kind: "bindings", default: { [string]: any } }
 
 local SPECS: { [string]: Spec } = {
 	ControlScheme = { kind = "enum", values = { "MouseAim", "Direct" }, default = "MouseAim" },
@@ -36,6 +38,8 @@ local SPECS: { [string]: Spec } = {
 		table.sort(ids)
 		return { kind = "enum", values = ids, default = "F5E" }
 	end)(),
+	-- Key and button changes (INP-05): overrides of Config/Bindings' defaults
+	Bindings = { kind = "bindings", default = {} },
 	-- The mode PLAY queues for (MMK-03, UI-05)
 	QueueMode = {
 		kind = "enum",
@@ -51,7 +55,7 @@ Settings.SPECS = table.freeze(SPECS)
 function Settings.defaults(): { [string]: any }
 	local values = {}
 	for key, spec in SPECS do
-		values[key] = spec.default
+		values[key] = if type(spec.default) == "table" then table.clone(spec.default) else spec.default
 	end
 	return values
 end
@@ -66,6 +70,8 @@ function Settings.valid(key: string, value: any): boolean
 		return type(value) == "string" and table.find(spec.values, value) ~= nil
 	elseif spec.kind == "number" then
 		return type(value) == "number" and value == value and value >= spec.min and value <= spec.max
+	elseif spec.kind == "bindings" then
+		return Bindings.valid(value)
 	else
 		return type(value) == "boolean"
 	end

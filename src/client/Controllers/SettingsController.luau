@@ -16,6 +16,7 @@ local Net = require(Shared.Net)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
 
+local BindingsController = require(script.Parent.BindingsController)
 local CameraController = require(script.Parent.CameraController)
 local InputController = require(script.Parent.InputController)
 local PlayerDataController = require(script.Parent.PlayerDataController)
@@ -55,6 +56,8 @@ local function apply(key: string, value: any)
 		CameraController.baseFov = value
 	elseif key == "DefaultCamera" then
 		CameraController.defaultMode = value
+	elseif key == "Bindings" then
+		BindingsController:SetOverrides(value)
 	elseif key == "MasterVolume" or key == "CockpitVolume" or key == "MusicVolume" or key == "RadioVolume" then
 		applyVolumes()
 	end
