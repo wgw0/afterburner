@@ -93,6 +93,10 @@ local targetMotion: { [Model]: { velocity: Vector3, time: number, accel: Vector3
 local gunHistory: { { time: number, muzzle: CFrame, velocity: Vector3 } } = {}
 local FUNNEL_TIMES = { 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2 } -- seconds of flight drawn
 local funnelDots: { { Frame } } = {} -- { left, right } per FUNNEL_TIMES entry
+local fixedRing: Frame -- Simple sight (Tier I–II): the fixed reflector-sight ring around the gun cross
+local lcosRing: Frame -- LCOS / EEGS pipper: a ring with a range scale that shrinks as you close
+local lcosTicks: { Frame } = {}
+local LCOS_TICKS = 12
 local markerLayer: Frame
 -- HUD-03: missiles
 local seekerCircle: Frame
@@ -345,11 +349,26 @@ local function build(): ScreenGui
 	leadDot.AnchorPoint = Vector2.new(0.5, 0.5)
 	leadDot.Position = UDim2.fromScale(0.5, 0.5)
 	leadMarker.Visible = false
+	-- Gunsights by tier (GUN-07): each looks different, so you can tell which one your jet has
+	fixedRing = circle(box, 74, 1.5, GREEN)
+	fixedRing.Visible = false
+	lcosRing = circle(box, 44, 2, GREEN)
+	local lcosDot = line(lcosRing, 4, 4)
+	lcosDot.AnchorPoint = Vector2.new(0.5, 0.5)
+	lcosDot.Position = UDim2.fromScale(0.5, 0.5)
+	for i = 1, LCOS_TICKS do
+		local angle = math.rad(i / LCOS_TICKS * 360)
+		local tick = line(lcosRing, 3, 3)
+		tick.AnchorPoint = Vector2.new(0.5, 0.5)
+		tick.Position = UDim2.new(0.5, math.sin(angle) * 29, 0.5, -math.cos(angle) * 29)
+		lcosTicks[i] = tick
+	end
+	lcosRing.Visible = false
 	-- EEGS funnel (Tier V+): a dot each side per FUNNEL_TIMES entry, a wingspan apart at that range
 	for i = 1, #FUNNEL_TIMES do
 		local pair = {}
 		for side = 1, 2 do
-			local dot = line(box, 4, 4)
+			local dot = line(box, 6, 6)
 			dot.AnchorPoint = Vector2.new(0.5, 0.5)
 			dot.Visible = false
 			pair[side] = dot
@@ -561,6 +580,7 @@ local function update()
 	end
 
 	gunCross.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
+	fixedRing.Position = UDim2.fromOffset(boxW / 2, boxH / 2)
 
 	-- Pitch ladder and horizon: conformal, rotated by the *camera's* bank (the screen's tilt against
 	-- the real horizon), which matches whether the view rolls with the jet or stays level.
@@ -669,7 +689,11 @@ local function update()
 		local ammo = (jetModel:GetAttribute("Ammo") :: number?) or 0
 		local heat = (jetModel:GetAttribute("GunHeat") :: number?) or 0
 		local jammed = jetModel:GetAttribute("GunJammed") == true
-		readouts.Gun.Text = if jammed then "GUN JAM" elseif heat > 0.75 then `GUN {ammo} HOT` else `GUN {ammo}`
+		local sightName = Ballistics.sightFor(if airframe then airframe.Tier else 1)
+		readouts.Gun.Text = if jammed
+			then "GUN JAM"
+			elseif heat > 0.75 then `GUN {ammo} HOT`
+			else `GUN {ammo} · {string.upper(sightName)}`
 		readouts.Gun.TextColor3 = if jammed or ammo == 0 then RED elseif heat > 0.75 then AMBER else GREEN
 		local selected = jetModel:GetAttribute("SelectedMissile") :: string?
 		local selectedSpec = if selected and selected ~= "" then WeaponData.getMissile(selected) else nil
@@ -827,6 +851,8 @@ local function update()
 	end
 
 	leadMarker.Visible = false
+	lcosRing.Visible = false
+	fixedRing.Visible = gun ~= nil and sight == "Simple"
 	if gun and bestModel and bestModel.PrimaryPart then
 		local target = bestModel.PrimaryPart
 		local motion = targetMotion[bestModel]
@@ -841,13 +867,22 @@ local function update()
 		)
 		if dir then
 			local p, visible = project(camera, dir)
-			leadMarker.Visible = visible and inside(p, 10, 10)
-			leadMarker.Position = toBox(p)
+			-- Simple: the small pipper. LCOS / EEGS: the ring, its range scale lit in proportion to the range
+			local pipper = if sight == "Simple" then leadMarker else lcosRing
+			pipper.Visible = visible and inside(p, 10, 10)
+			pipper.Position = toBox(p)
+			if sight ~= "Simple" then
+				local range = Units.toMetres((target.Position - myPosition).Magnitude)
+				local lit = math.ceil(LCOS_TICKS * math.clamp(range / Ballistics.SIGHT_RANGE, 0, 1))
+				for i, tick in lcosTicks do
+					tick.Visible = i <= lit
+				end
+			end
 		end
 	end
 
-	-- EEGS funnel (Tier V+): where rounds fired over the last second are now, from where the gun pointed
-	-- then, a wingspan wide at each range. Put the target's wings across it and fire.
+	-- EEGS funnel (Tier V+, always on): where rounds fired over the last second are now, from where the gun
+	-- pointed then, a wingspan wide at each range. Put the target's wings across it and fire.
 	local muzzle = root:FindFirstChild("GunMuzzle") :: Attachment?
 	table.insert(gunHistory, {
 		time = now,
@@ -857,7 +892,7 @@ local function update()
 	while #gunHistory > 0 and now - gunHistory[1].time > FUNNEL_TIMES[#FUNNEL_TIMES] + 0.1 do
 		table.remove(gunHistory, 1)
 	end
-	local showFunnel = gun ~= nil and sight == "EEGS" and bestModel ~= nil
+	local showFunnel = gun ~= nil and sight == "EEGS" -- always on in Tier V+ jets
 	local right = camera.CFrame.RightVector * Units.toStuds(Ballistics.FUNNEL_WINGSPAN / 2)
 	local h = #gunHistory
 	for i, t in FUNNEL_TIMES do
