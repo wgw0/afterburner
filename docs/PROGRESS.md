@@ -357,12 +357,12 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: a purchase id is granted once; the grant works on a copy of the save and is kept only if it succeeds; the save is written straight away. Plus the Tier Unlock (pick two jets on the Tech Tree). Checked in play through `shop.grant` and by Will.
 - [x] **SHP-03** Game pass ownership checks and benefits
   - Built: VIP Pilot (+25% Credits, VIP tag, extra reroll), Extra Lineup Slot and Custom Callsign passes, and 2x Credits / RP boosters, created in both experiences (DEVELOPMENT.md §27.7). The VIP tag is bold gold. The VIP camo waits for SHP-07. Checked in Studio and by Will.
-- [ ] **SHP-04** Wings transactions and cosmetics granting
-  - Started: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6). Wings-only cosmetics come with SHP-07.
+- [x] **SHP-04** Wings transactions and cosmetics granting
+  - Built: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6); Wings-only cosmetics are bought, granted, saved and equipped through BuyCosmetic / EquipCosmetic, each spend logged as an economy sink (§27.8). Checked in play (saved data read back through `data.inspect`) and by Will.
 - [ ] **SHP-05** Weekly rotation, bundles, first-purchase offer
 - [ ] **SHP-06** Premium jet validator and blocked-category test
 - [ ] **SHP-07** Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets
-  - Built, waiting on Will's check: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Camos (Wings-only and VIP) still to do: they need new paint on every jet.
+  - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos (Wings-only and VIP) still to do: they need new paint on every jet.
 - [ ] **CMP-02** Policy checks wrapper
 
 ## Phase 8: Launch and live ops
