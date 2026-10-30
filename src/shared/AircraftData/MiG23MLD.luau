@@ -25,6 +25,15 @@ return {
 	InducedK = 0.12,
 	CLAlpha = 3.6,
 	CLMax = 1.2,
+	-- Swing wings (FLT-08): the real MiG-23's sweep is set by the pilot (16°, 45°, 72°); here it follows
+	-- speed like the F-14's
+	VariableGeometry = {
+		Schedule = { { 0.5, 16 }, { 0.8, 45 }, { 1.1, 72 } },
+		Forward = { CLMax = 1.45, CLAlpha = 4.3, InducedK = 0.10, CD0 = 0.021, WaveDrag = 1.15 },
+		Back = { CLMax = 0.95, CLAlpha = 3.0, InducedK = 0.16, CD0 = 0.017, WaveDrag = 0.7 },
+		ModelSweep = 45,
+		Pivot = Vector3.new(-1.4889, 0.5, 0.15),
+	},
 	CriticalAoA = 18, -- the real jet had a strict AoA limit
 
 	MaxG = 8.0,
