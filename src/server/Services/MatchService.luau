@@ -202,12 +202,18 @@ local function clearJets()
 	end
 end
 
+-- The jets AI pilots fly: inside the match's band, or on a training server (Vs AI) the jets at the level
+-- of the one the player flies (Will).
+local function aiChoices(): { string }
+	return if ServerRole.isTraining() then Matchmaking.vsAIAirframes(band.br) else Matchmaking.aiAirframes(band)
+end
+
 -- The match's BR band (the matchmaker's, or from the lineups of the players here, MMK-01), and AI jets to
 -- match it.
 refreshBand = function()
 	if record then
 		band = record.band
-		local choices = Matchmaking.aiAirframes(band)
+		local choices = aiChoices()
 		for i, pilot in AIService:GetMatchPilots() do
 			AIService:SetAirframe(pilot, choices[(i - 1) % #choices + 1])
 		end
@@ -223,9 +229,15 @@ refreshBand = function()
 		end
 	end
 	band = Matchmaking.band(lineups)
-	local choices = Matchmaking.aiAirframes(band)
+	local choices = aiChoices()
 	for i, pilot in AIService:GetMatchPilots() do
 		AIService:SetAirframe(pilot, choices[(i - 1) % #choices + 1])
+		-- Vs AI: a bot already up in a jet from another level (the player changed jets mid-match) swaps now,
+		-- respawning in the new one after the usual delay, not only once it's shot down
+		local jet = pilot.jet
+		if ServerRole.isTraining() and jet and not table.find(choices, jet.airframeId) then
+			AircraftService:Despawn(jet, "Despawn")
+		end
 	end
 end
 
@@ -259,7 +271,7 @@ local function syncAIFill()
 		current = AIService:GetMatchPilots()
 	end
 	while #AIService:GetMatchPilots() < wanted do
-		local choices = Matchmaking.aiAirframes(band)
+		local choices = aiChoices()
 		local pilot =
 			AIService:CreatePilot(mode.AIDifficulty or "Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)

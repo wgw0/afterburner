@@ -17,6 +17,7 @@ local Callsign = require(Shared.Callsign)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
 local KillMarkers = require(Shared.KillMarkers)
+local MatchRules = require(Shared.MatchRules)
 local WingArt = require(Shared.WingArt)
 local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
@@ -193,7 +194,8 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 		Skins.apply(model, airframeId, skin)
 	end
 	local gun = WeaponData.get(airframe.Gun)
-	model:SetAttribute("Ammo", if gun then gun.Ammo else 0)
+	local mode = MatchRules.get(ReplicatedStorage:GetAttribute("GameMode"))
+	model:SetAttribute("Ammo", if gun then MatchRules.gunRounds(mode, gun.Ammo) else 0)
 	model:SetAttribute("GunHeat", 0)
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
 

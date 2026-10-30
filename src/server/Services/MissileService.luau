@@ -1,6 +1,7 @@
 --!strict
 -- Missiles, loadouts and countermeasures, server-authoritative (DEVELOPMENT.md §13 and §15).
 --   Loadout: each jet carries its airframe's missiles, flares and chaff; the pilot picks a missile type.
+--   In Guns Only (MatchRules) the racks are empty: every count is 0 and nothing can be selected.
 --   IR lock: the server tracks what each IR missile's seeker would see from the shooter and how long
 --     it's been held (LockTime). Radar missiles need the shooter's radar lock (SensorService).
 --     Helmet cueing (MSL-09): with an advanced heat-seeker selected, the jet the pilot is looking at (sent
@@ -21,6 +22,7 @@ local Progression = require(Shared.Progression)
 local Countermeasures = require(Shared.Countermeasures)
 local Environment = require(Shared.Config.Environment)
 local Guidance = require(Shared.Guidance)
+local MatchRules = require(Shared.MatchRules)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Pack = require(Shared.Net.Pack)
@@ -48,7 +50,8 @@ type Slot = { weapon: WeaponData.Missile, id: string, count: number }
 type Loadout = {
 	jet: Jet,
 	slots: { Slot },
-	selected: number,
+	selected: number, -- 0 = none (Guns Only)
+	armed: boolean, -- false in Guns Only: nothing can be selected
 	flares: number,
 	chaff: number,
 	irTarget: number?,
@@ -114,11 +117,12 @@ local function onJetSpawned(jet: Jet)
 	if not airframe then
 		return
 	end
+	local armed = MatchRules.missiles(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")))
 	local slots = {}
 	for _, entry in airframe.Missiles or {} do
 		local weapon = WeaponData.getMissile(entry.Weapon)
 		if weapon then
-			table.insert(slots, { weapon = weapon, id = entry.Weapon, count = entry.Count })
+			table.insert(slots, { weapon = weapon, id = entry.Weapon, count = if armed then entry.Count else 0 })
 		end
 	end
 	local hardpoints = {}
@@ -132,7 +136,8 @@ local function onJetSpawned(jet: Jet)
 	local loadout: Loadout = {
 		jet = jet,
 		slots = slots,
-		selected = 1,
+		selected = if armed then 1 else 0,
+		armed = armed,
 		flares = cm.Flares,
 		chaff = cm.Chaff,
 		irTarget = nil,
@@ -312,7 +317,7 @@ end
 
 function MissileService:SelectSlot(jet: Jet, index: number)
 	local loadout = loadouts[jet.id]
-	if loadout and loadout.slots[index] and loadout.selected ~= index then
+	if loadout and loadout.armed and loadout.slots[index] and loadout.selected ~= index then
 		loadout.selected = index
 		setAttributes(loadout)
 	end
@@ -752,7 +757,7 @@ function MissileService:Init()
 	Net.Server.on("SelectWeapon", function(player: Player, index: number)
 		local jet = AircraftService:GetJet(player)
 		local loadout = jet and loadouts[jet.id]
-		if loadout and loadout.slots[index] then
+		if loadout and loadout.armed and loadout.slots[index] then
 			loadout.selected = index
 			setAttributes(loadout)
 		end

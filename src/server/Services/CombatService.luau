@@ -16,6 +16,7 @@ local AircraftData = require(Shared.AircraftData)
 local Callsign = require(Shared.Callsign)
 local Ballistics = require(Shared.Ballistics)
 local DamageModel = require(Shared.DamageModel)
+local MatchRules = require(Shared.MatchRules)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Units = require(Shared.Units)
@@ -310,7 +311,9 @@ local function onJetSpawned(jet: Jet)
 		gun = gun,
 		health = table.clone(maxHealth),
 		maxHealth = maxHealth,
-		ammo = if gun then gun.Ammo else 0,
+		ammo = if gun
+			then MatchRules.gunRounds(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")), gun.Ammo)
+			else 0,
 		heat = 0,
 		jammed = false,
 		firing = nil,

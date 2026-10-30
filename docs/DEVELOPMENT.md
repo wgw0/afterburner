@@ -1257,6 +1257,7 @@ type Mode = {
 | **Dogfight FFA** | Kills score, 15 kills or 10 min, random airborne spawns away from enemies | 4 |
 | **Team Deathmatch** | Team kill score, team spawns, balancing on join | 6 |
 | **Air Superiority** | 3 airspace zones (cylinders with altitude bands), capture by presence, ticket bleed | 6 |
+| **Guns Only** | Dogfight FFA rules, but no jet carries a missile of any kind (MissileService leaves every rack at 0 and nothing can be selected) and every gun carries 4× its rounds (`MatchRules.GUNS_ONLY_AMMO`). Queued for in multiplayer, in the rotation, and a Vs AI choice on training servers (Will, October 2026) | 7 |
 | **Strike Escort** | AI bomber group on a spline route, defenders score by bombers lost, attackers by bombers surviving | 8 (v1.1) |
 | **PvE Missions** | Wave spawner, scripted objectives, co-op revive tokens | 8 (v1.1) |
 | **Ranked Duels** | 1v1 merge start (head-on spawn 8 km apart), best of 3 rounds, Elo rating | 8 (v1.2) |
@@ -1698,6 +1699,7 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
   - Lobby: `QueueJoined`, `QueueLeft` and `QueueMatched` (value: the wait in s; mode). `MatchFormed` (value: the longest wait; mode, BR spread; players and AI seats in the log). `TeleportFailed` (a teleport that never started after 3 tries, or `TeleportInitFailed` after its retries).
   - Match server: `MatchArrived` when it stops waiting (value: % of the pilots sent who made it; mode, how many were sent). `MatchQuality` at the end (value: closeness 0–100, (second + 1) / (first + 1) of the two teams' kills, the tickets left in Air Superiority, or the top two pilots' kills: 100 is level, 1–0 is 50, 10–0 is 9; mode, humans).
   - Admin `matchmaking.stats` on a lobby: wait times (median, 90th percentile, longest) of the last 500 players matched and of those who gave up, who's queued now, and the matches formed while it held the matchmaker lease (average players and spread, AI seats, by mode). The Creator Dashboard has the same events across all servers.
+- **Vs AI jets** (training servers): the bots fly jets at the level of the one the player flies (Will): every jet within 0.3 BR of it, above or below, or the 3 closest where fewer are that close (`Matchmaking.vsAIAirframes`). When the player changes jets mid-match, bots in a jet from another level are swapped straight away (they respawn after the usual delay) instead of only once they're shot down.
 - **Scale**: one sorted map is read 200 at a time up to 2,000 queued players. Past that, shard the queue by BR bucket (§25.2).
 
 ---

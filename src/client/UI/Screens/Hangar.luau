@@ -35,6 +35,7 @@ local QUEUE_MODES = {
 	{ "Dogfight", "DOGFIGHT" },
 	{ "TeamDeathmatch", "TEAMS" },
 	{ "AirSuperiority", "ZONES" },
+	{ "GunsOnly", "GUNS ONLY" },
 }
 
 -- The mode PLAY queues for: Any (the fastest match) or one mode.
@@ -54,7 +55,7 @@ local function modePicker(props: any)
 		})
 	end
 	return e("Frame", {
-		Size = UDim2.fromOffset(460, 32),
+		Size = UDim2.fromOffset(570, 32),
 		Position = UDim2.new(0.5, 0, 1, -156),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,

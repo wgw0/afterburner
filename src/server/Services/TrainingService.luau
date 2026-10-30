@@ -3,7 +3,7 @@
 -- sends them, and brings them back with MULTIPLAYER). Lessons, Vs AI and free flight, with any jet and no
 -- rewards.
 --   TrainingSetup(mode, difficulty, count)  "FreeFlight", or a Vs AI match of Dogfight / TeamDeathmatch /
---                                           AirSuperiority against `count` AI of one difficulty
+--                                           AirSuperiority / GunsOnly against `count` AI of one difficulty
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +18,7 @@ local MatchService = require(script.Parent.MatchService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 
 local MAX_AI = 11
-local VS_AI_MODES = { Dogfight = true, TeamDeathmatch = true, AirSuperiority = true }
+local VS_AI_MODES = { Dogfight = true, TeamDeathmatch = true, AirSuperiority = true, GunsOnly = true }
 
 local TrainingService = {
 	Priority = 52, -- after MatchmakingService
