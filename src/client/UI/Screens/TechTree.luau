@@ -381,8 +381,9 @@ local function TechTreeScreen(props: any)
 			e("Frame", { Size = UDim2.new(0, COLUMN_W, 1, 0), BackgroundTransparency = 1, LayoutOrder = i }, cards)
 	end
 
-	-- Faint grey lines between the region columns (and the tier labels) and between the tier rows, behind
-	-- the cards: the same width as the columns' row, centred like it
+	-- Faint grey lines between the region columns (and the tier labels) and between the tier rows, in the
+	-- gaps between the cards: the same width as the columns' row, centred like it. Default ZIndex: at 0 they'd
+	-- sit under the menu's dark backdrop (ZIndexBehavior Global) and barely show.
 	local width = TIERS_W + #TechTree.BRANCHES * (COLUMN_W + GAP_X)
 	local lines: { [string]: any } = {}
 	local function line(name: string, position: UDim2, size: UDim2)
@@ -392,7 +393,6 @@ local function TechTreeScreen(props: any)
 			BackgroundColor3 = Theme.Stroke,
 			BackgroundTransparency = 0.35,
 			BorderSizePixel = 0,
-			ZIndex = 0,
 		})
 	end
 	for i = 0, #TechTree.BRANCHES - 1 do
@@ -428,7 +428,6 @@ local function TechTreeScreen(props: any)
 			Position = UDim2.new(0.5, 0, 0, top),
 			AnchorPoint = Vector2.new(0.5, 0),
 			BackgroundTransparency = 1,
-			ZIndex = 0,
 		}, lines),
 		Row = e("Frame", {
 			Size = UDim2.new(1, 0, 0, total),
