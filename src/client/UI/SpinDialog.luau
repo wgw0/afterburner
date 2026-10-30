@@ -23,6 +23,10 @@ local VIEW_W = 900
 local WIN_INDEX = 42 -- the prize's place in the reel
 local REEL_LENGTH = WIN_INDEX + 6
 local SPIN_SECONDS = 6
+local REEL_Y = 10 -- the cards' gap from the top of the window
+-- How often each rarity shows up among the reel's filler cards. Only the look: the prize is the server's,
+-- rolled with the real odds (Spin.TIERS, shown behind (i)); a reel of nothing but grey looked hopeless.
+local FILLER_WEIGHTS = { 45, 24, 15, 10, 6 }
 
 type Card = { Rarity: string, Kind: string, Title: string, Sub: string }
 
@@ -63,24 +67,53 @@ local function tierCard(index: number): Card
 	}
 end
 
+-- A filler card's tier: weighted by FILLER_WEIGHTS, never a third of the same rarity in a row.
+local function fillerTier(cards: { Card }, index: number): number
+	local function pick(): number
+		local total = 0
+		for _, w in FILLER_WEIGHTS do
+			total += w
+		end
+		local at = math.random() * total
+		for i, w in FILLER_WEIGHTS do
+			at -= w
+			if at < 0 then
+				return i
+			end
+		end
+		return 1
+	end
+	local a, b = cards[index - 1], cards[index - 2]
+	for _ = 1, 10 do
+		local tier = pick()
+		local rarity = Spin.TIERS[tier].Rarity
+		if not (a and b and a.Rarity == rarity and b.Rarity == rarity) then
+			return tier
+		end
+	end
+	return pick()
+end
+
 local function cardElement(card: Card, order: number)
 	local colour = Theme.Rarity[card.Rarity] or Theme.Text
 	local accent = if card.Kind == "Wings" then Theme.Wings elseif card.Kind == "Credits" then Theme.Text else colour
 	return e("Frame", {
 		Size = UDim2.fromOffset(CARD_W, CARD_H),
-		BackgroundColor3 = Theme.Panel,
+		BackgroundColor3 = Color3.new(1, 1, 1), -- coloured by the gradient
 		BorderSizePixel = 0,
 		LayoutOrder = order,
 	}, {
 		Corner = C.corner(),
 		Stroke = e("UIStroke", { Color = colour, Thickness = 3 }),
-		Glow = e("Frame", {
-			Size = UDim2.fromScale(1, 0.5),
-			Position = UDim2.fromScale(0, 0.5),
-			BackgroundColor3 = colour,
-			BackgroundTransparency = 0.8,
-			BorderSizePixel = 0,
-		}, { Corner = C.corner() }),
+		-- Dark behind the text, warming into the rarity's colour towards the bottom
+		Shade = e("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Theme.Panel),
+				ColorSequenceKeypoint.new(0.6, Theme.Panel),
+				ColorSequenceKeypoint.new(1, Theme.Panel:Lerp(colour, 0.45)),
+			}),
+		}),
 		Title = e(C.Label, {
 			Text = card.Title,
 			Size = UDim2.new(1, -10, 0, 40),
@@ -170,11 +203,11 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 		end
 		local jitter = (math.random() - 0.5) * (CARD_W * 0.7) -- stop somewhere on the card, not dead centre
 		local target = -(WIN_INDEX - 1) * (CARD_W + GAP) - CARD_W / 2 + VIEW_W / 2 + jitter
-		frame.Position = UDim2.fromOffset(0, 0)
+		frame.Position = UDim2.fromOffset(0, REEL_Y)
 		local tween = TweenService:Create(
 			frame,
 			TweenInfo.new(SPIN_SECONDS, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-			{ Position = UDim2.fromOffset(target, 0) }
+			{ Position = UDim2.fromOffset(target, REEL_Y) }
 		)
 		local done = tween.Completed:Connect(function()
 			setPhase("result")
@@ -198,7 +231,7 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 			end
 			local cards = {}
 			for i = 1, REEL_LENGTH do
-				cards[i] = if i == WIN_INDEX then prizeCard(won) else tierCard(Spin.tierFor(math.random()))
+				cards[i] = if i == WIN_INDEX then prizeCard(won) else tierCard(fillerTier(cards, i))
 			end
 			setPrize(won)
 			setReel(cards)
@@ -302,7 +335,7 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 				Corner = C.corner(),
 				Strip = e("Frame", {
 					Size = UDim2.fromOffset(REEL_LENGTH * (CARD_W + GAP), CARD_H),
-					Position = UDim2.fromOffset(if reel then 0 else (VIEW_W - 5 * CARD_W - 4 * GAP) / 2, 10),
+					Position = UDim2.fromOffset(if reel then 0 else (VIEW_W - 5 * CARD_W - 4 * GAP) / 2, REEL_Y),
 					BackgroundTransparency = 1,
 					ref = strip,
 				}, cards),
