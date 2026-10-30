@@ -84,7 +84,8 @@ function Components.Label(props: any)
 end
 
 -- A button. props: Text, OnClick, Size, Position, AnchorPoint, Style ("Primary" | "Secondary" |
--- "Ghost" | "Danger"), Disabled, Pending, TextSize, LayoutOrder, Selected.
+-- "Ghost" | "Danger"), Disabled, Pending, TextSize, LayoutOrder, Selected, Color and TextColor (instead of
+-- the style's).
 function Components.Button(props: any)
 	local style = props.Style or "Secondary"
 	local disabled = props.Disabled or props.Pending
@@ -93,6 +94,9 @@ function Components.Button(props: any)
 		elseif style == "Danger" then Theme.Bad
 		elseif style == "Ghost" then Theme.Panel
 		else Theme.PanelLight
+	if props.Color then
+		background = props.Color
+	end
 	if props.Selected then
 		background = Theme.AccentDark
 	end
@@ -107,7 +111,11 @@ function Components.Button(props: any)
 		AutoButtonColor = not disabled,
 		Font = Theme.FontBold,
 		TextSize = props.TextSize or 16,
-		TextColor3 = if style == "Primary" and not disabled then Color3.fromRGB(20, 14, 8) else Theme.Text,
+		TextColor3 = if disabled
+			then Theme.Text
+			elseif props.TextColor then props.TextColor
+			elseif style == "Primary" then Color3.fromRGB(20, 14, 8)
+			else Theme.Text,
 		TextTransparency = if disabled then 0.35 else 0,
 		LayoutOrder = props.LayoutOrder,
 		Selectable = not disabled,
@@ -159,11 +167,13 @@ function Components.Bar(props: any)
 	})
 end
 
--- A small rounded tag. props: Text, Color, LayoutOrder, Size.
+-- A small rounded tag. props: Text, Color, TextColor, LayoutOrder, Size, Position, AnchorPoint.
 function Components.Pill(props: any)
 	return e("TextLabel", {
 		Text = props.Text,
 		Size = props.Size or UDim2.fromOffset(90, 22),
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
 		BackgroundColor3 = props.Color or Theme.PanelLight,
 		BorderSizePixel = 0,
 		Font = Theme.FontBold,

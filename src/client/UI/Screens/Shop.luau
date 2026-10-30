@@ -1,6 +1,8 @@
 --!strict
--- Shop (UI-07, first pass; DESIGN §8). Your Wings, the Wings packs, cosmetics bought with Wings (SHP-07:
--- buy, equip, take off), the Tier Unlock and the game passes, each with its Robux price. A product or pass that isn't created on the dashboard yet says "Coming soon" instead
+-- Shop (UI-07; DESIGN §8; layout for conversion in DEVELOPMENT.md §27.9). Top to bottom: VIP Pilot as a
+-- banner (or a thank-you once owned), the game passes as big cards with their benefits, boosters, the Tier
+-- Unlock, Wings packs, cosmetics bought with Wings (SHP-07: buy, equip, take off), then what's coming. Every
+-- price is shown before the purchase window; nothing is random or on a fake timer. A product or pass that isn't created on the dashboard yet says "Coming soon" instead
 -- of a buy button. What's still to come (VIP, boosters, season pass, the starter bundle, premium jets) is
 -- listed at the bottom.
 -- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree(),
@@ -46,7 +48,8 @@ local function Card(
 		Action: string?,
 		Status: string?,
 		Highlight: Color3?,
-		Image: string?, -- a picture in the top right (nose art)
+		Image: string?, -- a picture in the top right (wing art)
+		Ribbon: string?, -- a tag in the top right ("BEST VALUE")
 		Order: number,
 		OnClick: (() -> (boolean, string?))?,
 	}
@@ -58,6 +61,16 @@ local function Card(
 		LayoutOrder = props.Order,
 		StrokeColor = props.Highlight,
 	}, {
+		Ribbon = if props.Ribbon
+			then e(C.Pill, {
+				Text = props.Ribbon,
+				Size = UDim2.fromOffset(92, 20),
+				Position = UDim2.fromScale(1, 0),
+				AnchorPoint = Vector2.new(1, 0),
+				Color = props.Highlight or Theme.Accent,
+				TextColor = Theme.Background,
+			})
+			else nil,
 		Picture = if props.Image
 			then e("ImageLabel", {
 				Image = props.Image,
@@ -107,6 +120,210 @@ local function Card(
 	})
 end
 
+local GOLD = Color3.fromRGB(255, 201, 60) -- the VIP gold
+local PASS_STYLE = {
+	VIP = { Icon = "★", Colour = GOLD },
+	ExtraLineupSlot = { Icon = "+", Colour = Color3.fromRGB(110, 205, 255) },
+	CustomCallsign = { Icon = "✎", Colour = Color3.fromRGB(120, 230, 180) },
+}
+local PASS_ORDER = { "VIP", "ExtraLineupSlot", "CustomCallsign" }
+local PASS_W, PASS_H = 300, 250
+
+-- A dark panel washed with a colour from the top, for the pass cards and the VIP banner
+local function wash(colour: Color3, strength: number)
+	return e("UIGradient", {
+		Color = ColorSequence.new(Theme.Panel:Lerp(colour, strength), Theme.Panel),
+		Rotation = 90,
+	})
+end
+
+local function bullets(list: { string }, colour: Color3, textSize: number)
+	local children: { [string]: any } = { Layout = C.List({ Gap = 4 }) }
+	for i, text in list do
+		children[`B{i}`] = e(C.Label, {
+			Text = `<font color="#{colour:ToHex()}">✓</font>  {text}`,
+			Rich = true,
+			Size = UDim2.new(1, 0, 0, textSize + 6),
+			TextSize = textSize,
+			Color = Theme.Text,
+			LayoutOrder = i,
+		})
+	end
+	return children
+end
+
+-- VIP Pilot across the top: the strongest offer, with its benefits and price. Once owned, a thank-you.
+local function VipBanner(props: { Owned: boolean, Buyable: boolean, OnBuy: () -> (boolean, string?), Order: number })
+	local pass = Passes.LIST.VIP
+	local message, setMessage = React.useState(nil :: string?)
+	if props.Owned then
+		return e(C.Panel, {
+			Size = UDim2.new(1, 0, 0, 56),
+			Padding = 14,
+			LayoutOrder = props.Order,
+			StrokeColor = GOLD,
+		}, {
+			Wash = wash(GOLD, 0.25),
+			Text = e(C.Label, {
+				Text = "★  YOU'RE A VIP PILOT  ·  +25% Credits on every match, gold tag and contrails, an extra reroll",
+				Size = UDim2.fromScale(1, 1),
+				Bold = true,
+				TextSize = 16,
+				Color = GOLD,
+			}),
+		})
+	end
+	return e(C.Panel, {
+		Size = UDim2.new(1, 0, 0, 190),
+		Padding = 20,
+		LayoutOrder = props.Order,
+		StrokeColor = GOLD,
+	}, {
+		Wash = wash(GOLD, 0.35),
+		Ribbon = e(C.Pill, {
+			Text = "OUR TOP PICK",
+			Size = UDim2.fromOffset(120, 22),
+			Position = UDim2.fromScale(1, 0),
+			AnchorPoint = Vector2.new(1, 0),
+			Color = GOLD,
+			TextColor = Theme.Background,
+		}),
+		Title = e(C.Label, {
+			Text = `★  {string.upper(pass.DisplayName)}`,
+			Size = UDim2.new(0.6, 0, 0, 36),
+			Heavy = true,
+			TextSize = 32,
+			Color = GOLD,
+		}),
+		Sub = e(C.Label, {
+			Text = "One payment. Yours forever, on every jet.",
+			Size = UDim2.new(0.6, 0, 0, 20),
+			Position = UDim2.fromOffset(0, 40),
+			TextSize = 15,
+			Color = Theme.Dim,
+		}),
+		Benefits = e("Frame", {
+			Size = UDim2.new(0.6, 0, 0, 90),
+			Position = UDim2.fromOffset(0, 68),
+			BackgroundTransparency = 1,
+		}, bullets(pass.Benefits, GOLD, 15)),
+		Buy = if props.Buyable
+			then e(C.Button, {
+				Text = `GET VIP  ·  R$ {pass.Price}`,
+				Style = "Primary",
+				Color = GOLD,
+				TextColor = Theme.Background,
+				Size = UDim2.fromOffset(260, 56),
+				Position = UDim2.fromScale(1, 1),
+				AnchorPoint = Vector2.new(1, 1),
+				TextSize = 20,
+				OnClick = function()
+					local ok, err = props.OnBuy()
+					setMessage(if ok then nil else err)
+				end,
+			})
+			else e(C.Label, {
+				Text = "Coming soon",
+				Size = UDim2.fromOffset(260, 56),
+				Position = UDim2.fromScale(1, 1),
+				AnchorPoint = Vector2.new(1, 1),
+				Align = "Center",
+				Color = Theme.Dim,
+			}),
+		Message = if message
+			then e(C.Label, {
+				Text = message,
+				Size = UDim2.fromOffset(260, 18),
+				Position = UDim2.new(1, 0, 1, -62),
+				AnchorPoint = Vector2.new(1, 1),
+				Align = "Center",
+				TextSize = 13,
+				Color = Theme.Warn,
+			})
+			else nil,
+	})
+end
+
+-- A game pass: a coloured card with a big icon, its benefits and the price, or OWNED.
+local function PassCard(props: {
+	Key: string,
+	Owned: boolean,
+	Buyable: boolean,
+	Order: number,
+	OnBuy: () -> (boolean, string?),
+})
+	local pass = Passes.LIST[props.Key] :: any
+	local style = PASS_STYLE[props.Key] or { Icon = "•", Colour = Theme.Accent }
+	local message, setMessage = React.useState(nil :: string?)
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(PASS_W, PASS_H),
+		Padding = 16,
+		LayoutOrder = props.Order,
+		StrokeColor = if props.Owned then Theme.Good else style.Colour,
+	}, {
+		Wash = wash(style.Colour, 0.3),
+		Icon = e(C.Label, {
+			Text = style.Icon,
+			Size = UDim2.fromOffset(44, 44),
+			Heavy = true,
+			TextSize = 38,
+			Align = "Center",
+			Color = style.Colour,
+		}),
+		Title = e(C.Label, {
+			Text = pass.DisplayName,
+			Size = UDim2.new(1, -52, 0, 26),
+			Position = UDim2.fromOffset(52, 0),
+			Heavy = true,
+			TextSize = 20,
+			Color = Theme.Text,
+		}),
+		Kind = e(C.Label, {
+			Text = "GAME PASS  ·  ONE-TIME",
+			Size = UDim2.new(1, -52, 0, 16),
+			Position = UDim2.fromOffset(52, 26),
+			Bold = true,
+			TextSize = 11,
+			Color = style.Colour,
+		}),
+		Benefits = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 100),
+			Position = UDim2.fromOffset(0, 58),
+			BackgroundTransparency = 1,
+		}, bullets(message and { message } or pass.Benefits, style.Colour, 14)),
+		Action = if props.Owned
+			then e(C.Label, {
+				Text = "OWNED  ✓",
+				Size = UDim2.new(1, 0, 0, 42),
+				Position = UDim2.new(0, 0, 1, -42),
+				Bold = true,
+				TextSize = 16,
+				Align = "Center",
+				Color = Theme.Good,
+			})
+			elseif props.Buyable then e(C.Button, {
+				Text = `R$ {pass.Price}`,
+				Style = "Primary",
+				Color = style.Colour,
+				TextColor = Theme.Background,
+				Size = UDim2.new(1, 0, 0, 42),
+				Position = UDim2.new(0, 0, 1, -42),
+				TextSize = 18,
+				OnClick = function()
+					local ok, err = props.OnBuy()
+					setMessage(if ok then nil else err)
+				end,
+			})
+			else e(C.Label, {
+				Text = "Coming soon",
+				Size = UDim2.new(1, 0, 0, 42),
+				Position = UDim2.new(0, 0, 1, -42),
+				Align = "Center",
+				Color = Theme.Dim,
+			}),
+	})
+end
+
 local function row(order: number, cards: { [string]: any })
 	cards.Layout = C.List({ Horizontal = true, Gap = 14 })
 	return e("Frame", {
@@ -135,7 +352,7 @@ local KIND_DETAIL = {
 	Trail = "Your contrails in this colour, and display smoke from the wingtips on afterburner.",
 	Marker = "Your kill markers painted like this.",
 	HUD = "Your HUD in this colour.",
-	NoseArt = "Painted on both sides of your jet's nose.",
+	WingArt = "Painted on top of both wings.",
 }
 
 -- One cosmetic: buy it, equip it, or take it off.
@@ -218,7 +435,7 @@ local function ShopScreen(props: any)
 			Size = UDim2.new(1, 0, 0, 18),
 			TextSize = 14,
 			Color = Theme.Dim,
-			LayoutOrder = 1,
+			LayoutOrder = 12,
 		}),
 	}
 
@@ -242,6 +459,7 @@ local function ShopScreen(props: any)
 		packCards[key] = e(Card, {
 			Title = `{C.number(product.Amount :: number)} Wings`,
 			Detail = if bonus > 0 then `{bonus}% more Wings per Robux` else "Enough for one skin",
+			Ribbon = if i == #packs then "BEST VALUE" else nil, -- the most Wings per Robux
 			Action = if Products.idFor(key) then `R$ {product.Price}` else nil,
 			Highlight = Theme.Wings,
 			Order = i,
@@ -264,7 +482,7 @@ local function ShopScreen(props: any)
 
 	-- Tier Unlock: the next one, if there is one
 	local offer = Shop.tierUnlockOffer(data)
-	children.UnlockTitle = section("SKIP AHEAD", 22)
+	children.UnlockTitle = section("SKIP AHEAD", 7)
 	local unlockCards = {}
 	if offer then
 		local key = Products.tierUnlockKey(offer.tier) :: string
@@ -286,10 +504,10 @@ local function ShopScreen(props: any)
 			Order = 1,
 		})
 	end
-	children.Unlock = row(23, unlockCards)
+	children.Unlock = row(8, unlockCards)
 
 	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
-	children.BoosterTitle = section("BOOSTERS", 25)
+	children.BoosterTitle = section("BOOSTERS", 5)
 	local boosterCards = {}
 	for i, key in { "CreditsBooster", "RPBooster" } do
 		local product = Products.LIST[key]
@@ -307,27 +525,36 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Boosters = row(26, boosterCards)
+	children.Boosters = row(6, boosterCards)
 
-	-- Game passes
-	children.PassTitle = section("PASSES", 30)
+	-- VIP Pilot up top, then every pass as a big card (owned ones last)
+	local function owns(key: string): boolean
+		return Players.LocalPlayer:GetAttribute(Passes.attribute(key)) == true
+	end
+	children.Vip = e(VipBanner, {
+		Owned = owns("VIP"),
+		Buyable = Passes.idFor("VIP") ~= nil,
+		Order = 2,
+		OnBuy = function()
+			return props.OnBuyPass("VIP")
+		end,
+	})
+	children.PassTitle = section("GAME PASSES  ·  BUY ONCE, KEEP FOREVER", 3)
 	local passCards = {}
-	local i = 0
-	for key, pass in Passes.LIST do
-		i += 1
-		local owned = Players.LocalPlayer:GetAttribute(Passes.attribute(key)) == true
-		passCards[key] = e(Card, {
-			Title = pass.DisplayName,
-			Detail = pass.Description,
-			Action = if not owned and Passes.idFor(key) then `R$ {pass.Price}` else nil,
-			Status = if owned then "Owned" else nil,
-			Order = i,
-			OnClick = function()
+	for i, key in PASS_ORDER do
+		passCards[key] = e(PassCard, {
+			Key = key,
+			Owned = owns(key),
+			Buyable = Passes.idFor(key) ~= nil,
+			Order = if owns(key) then 10 + i else i,
+			OnBuy = function()
 				return props.OnBuyPass(key)
 			end,
 		})
 	end
-	children.Passes = row(31, passCards)
+	passCards.Layout = C.List({ Horizontal = true, Gap = 14 })
+	children.Passes =
+		e("Frame", { Size = UDim2.new(1, 0, 0, PASS_H), BackgroundTransparency = 1, LayoutOrder = 4 }, passCards)
 
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)

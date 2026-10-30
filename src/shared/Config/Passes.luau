@@ -2,7 +2,7 @@
 -- Roblox game passes (DESIGN §8, DEVELOPMENT.md §27), per universe: a pass belongs to one experience, so the
 -- test and live experiences each have their own. Create the pass on the Creator Dashboard (Monetization →
 -- Passes) at the price below and put its id here. A pass with no id can't be bought yet, and nobody owns it
--- (test servers can grant it with the admin command give.pass).
+-- (test servers can grant it with the admin command give.pass). Benefits: the Shop card's bullet points.
 
 local Passes = {}
 
@@ -12,16 +12,24 @@ Passes.LIST = table.freeze({
 		DisplayName = "VIP Pilot",
 		Price = 399, -- Robux
 		Description = "+25% Credits from every match, a VIP tag by your name and an extra daily challenge reroll.",
+		Benefits = {
+			"+25% Credits from every match",
+			"Gold VIP tag by your name",
+			"VIP Gold contrails",
+			"An extra daily challenge reroll",
+		},
 	}),
 	ExtraLineupSlot = table.freeze({
 		DisplayName = "Extra Lineup Slot",
 		Price = 149,
 		Description = "One more jet in your lineup to spawn in.",
+		Benefits = { "One more jet in your lineup", "More choice every time you respawn" },
 	}),
 	CustomCallsign = table.freeze({
 		DisplayName = "Custom Callsign",
 		Price = 99, -- Robux
 		Description = "Fly under a callsign of your own instead of your username.",
+		Benefits = { "Your own name over your jet", "On the scoreboard and kill feed" },
 	}),
 })
 
