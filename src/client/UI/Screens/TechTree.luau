@@ -24,8 +24,8 @@ local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local BRANCH_NAMES = { NATO = "NATO / US", East = "SOVIET / RUSSIA", Europe = "EUROPE" }
 local CARD_H = 150
-local UNLOCK_H = 64 -- the Tier Unlock banner, closed
-local UNLOCK_OPEN_H = 150
+local UNLOCK_H = 76 -- the Tier Unlock banner, closed
+local UNLOCK_OPEN_H = 160
 
 -- RP available toward a node: the best owned prerequisite's RP plus the free pool.
 local function availableRP(data: any, node: TechTree.Node): number
