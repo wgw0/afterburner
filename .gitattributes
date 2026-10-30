@@ -11,3 +11,6 @@ tools/blender/out/**/*.png filter=lfs diff=lfs merge=lfs -text
 
 # Generated audio (tools/audio/ui_sounds.py), kept so it can be re-uploaded
 tools/audio/out/**/*.wav filter=lfs diff=lfs merge=lfs -text
+
+# Marketing video (tools/marketing/trailer_*.py)
+docs/art/marketing/*.mp4 filter=lfs diff=lfs merge=lfs -text
