@@ -529,6 +529,7 @@ local function marker(model: Model): Marker
 	corner.Parent = f
 	f.Parent = markerLayer
 	local l = text(markerLayer, 13)
+	l.RichText = true -- the VIP tag is gold
 	l.AnchorPoint = Vector2.new(0.5, 0)
 	l.Size = UDim2.fromOffset(160, 16)
 	l.TextColor3 = CONTACT
@@ -907,7 +908,7 @@ local function update(dt: number)
 		m.label.Text = string.format(
 			"%s%s%s %.1fkm",
 			if markerState == "Track" then "TWS · " else "",
-			if pilot and pilot:GetAttribute("Pass_VIP") == true then "VIP " else "", -- the VIP Pilot pass
+			if pilot and pilot:GetAttribute("Pass_VIP") == true then '<font color="#FFC93C"><b>VIP</b></font> ' else "", -- the VIP Pilot pass
 			(model:GetAttribute("PilotName") :: string?) or "?",
 			range / 1000
 		)
