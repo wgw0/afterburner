@@ -244,8 +244,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
   - Went further than planned: every one of the 27 jets has its own modelled, textured cockpit with live instrument faces (`AircraftAssembler.installCockpit`, `CockpitController`), so the shared kits are only the fallback. Flown hands-on in several jets by Will (MiG-21, Mirage F1, Typhoon, the Tier IV jets).
 - [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
-- [ ] **HUD-05** Era variants (analogue vs glass symbology)
-  - Built: analogue jets get a reflector-sight HUD (plain numbers, simple ladder, no flight path marker); early glass the full HUD; full glass adds a bank scale and speed trend; Tier VII–VIII draw it on the helmet, fixed to your view (DEVELOPMENT.md §9.4). Waiting on Will's test.
+- [x] **HUD-05** Era variants (analogue vs glass symbology)
+  - Built: analogue jets get a reflector-sight HUD (plain numbers, simple ladder, no flight path marker); early glass the full HUD; full glass adds a bank scale and speed trend; Tier VII–VIII draw it on the helmet, fixed to your view (DEVELOPMENT.md §9.4). Checked in Studio and by Will.
 - [x] **GUN-07** LCOS and EEGS sights
   - Built: Simple pipper (Tier I–II, 1.2 km), LCOS pipper leading the target's turn (Tier III–IV), and the EEGS bullet-stream funnel on top (Tier V+) (DEVELOPMENT.md §11.3). Each sight now looks different and the gun readout names it. Checked in Studio on the F-5E (ring), Su-27S (LCOS ring and range scale) and Tempest (funnel always on), and by Will.
 - [x] **DMG-05** Pilot damage diagram on the HUD
