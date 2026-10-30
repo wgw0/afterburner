@@ -20,11 +20,20 @@ return {
 	FuelBurnDry = 2.6,
 	FuelBurnAB = 11.0,
 
-	WingArea = 52.5, -- wings forward; the sweep is cosmetic for now
+	WingArea = 52.5, -- wings forward
+	-- Mid-sweep values; in flight VariableGeometry blends them with the sweep (FLT-08)
 	CD0 = 0.022,
 	InducedK = 0.09,
 	CLAlpha = 4.6,
 	CLMax = 1.7,
+	-- The Mach sweep programmer: 20° up to Mach 0.6, fully back (68°) by Mach 1.05
+	VariableGeometry = {
+		Schedule = { { 0.6, 20 }, { 0.75, 30 }, { 0.9, 55 }, { 1.05, 68 } },
+		Forward = { CLMax = 1.9, CLAlpha = 5.0, InducedK = 0.075, CD0 = 0.023, WaveDrag = 1.15 },
+		Back = { CLMax = 1.1, CLAlpha = 3.4, InducedK = 0.15, CD0 = 0.018, WaveDrag = 0.7 },
+		ModelSweep = 35,
+		Pivot = Vector3.new(-2.72, 0.7178, -0.9901),
+	},
 	CriticalAoA = 25,
 
 	MaxG = 7.5,

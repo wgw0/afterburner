@@ -57,6 +57,62 @@ function FlightModel.waveDrag(mach: number): number
 	return 0.03 + 0.02 * math.exp(-(mach - 1) / 0.3)
 end
 
+-- Swing wings (FLT-08). The sweep follows Mach along the airframe's VariableGeometry.Schedule (degrees),
+-- like the F-14's Mach sweep programmer: forward for lift and turning when slow, back for less drag when
+-- fast. Pure: the server, the pilot's client and the tests get the same answer from the same speed.
+function FlightModel.sweep(airframe: Airframe, mach: number): number?
+	local vg = airframe.VariableGeometry
+	if not vg then
+		return nil
+	end
+	local schedule = vg.Schedule
+	if mach <= schedule[1][1] then
+		return schedule[1][2]
+	end
+	for i = 2, #schedule do
+		local a, b = schedule[i - 1], schedule[i]
+		if mach <= b[1] then
+			return a[2] + (b[2] - a[2]) * (mach - a[1]) / (b[1] - a[1])
+		end
+	end
+	return schedule[#schedule][2]
+end
+
+-- Copies of swing-wing airframes at each whole degree of sweep, so a step allocates nothing. Weak keys:
+-- upgraded airframes are fresh tables and must not pile up here.
+local sweptCache: { [any]: { [number]: Airframe } } = setmetatable({}, { __mode = "k" }) :: any
+
+-- The airframe as it flies at this Mach: for a swing wing, a copy with its coefficients blended between
+-- Forward and Back for the scheduled sweep (to the nearest degree) and no VariableGeometry; any other
+-- airframe unchanged.
+function FlightModel.swept(airframe: Airframe, mach: number): Airframe
+	local vg = airframe.VariableGeometry
+	if not vg then
+		return airframe
+	end
+	local sweep = math.round(FlightModel.sweep(airframe, mach) :: number)
+	local byDegree = sweptCache[airframe]
+	if not byDegree then
+		byDegree = {}
+		sweptCache[airframe] = byDegree
+	end
+	local cached = byDegree[sweep]
+	if cached then
+		return cached
+	end
+	local schedule = vg.Schedule
+	local first, last = schedule[1][2], schedule[#schedule][2]
+	local t = if last > first then math.clamp((sweep - first) / (last - first), 0, 1) else 0
+	local copy = table.clone(airframe) :: any
+	for key, forward in vg.Forward do
+		copy[key] = forward + (vg.Back[key] - forward) * t
+	end
+	copy.VariableGeometry = nil
+	copy.Sweep = sweep
+	byDegree[sweep] = copy
+	return copy
+end
+
 -- Afterburner thrust multiplier from ram pressure at this Mach number.
 local function ramGain(mach: number): number
 	return 1 + Flight.AFTERBURNER_RAM_GAIN * math.max(mach - 0.9, 0)
@@ -101,6 +157,7 @@ function FlightModel.computeForces(
 	local density = Atmosphere.density(altitude)
 	local mach = speed / Atmosphere.speedOfSound(altitude)
 	local q = 0.5 * density * speed * speed
+	airframe = FlightModel.swept(airframe, mach) -- no change unless it has swing wings
 	local mass = totalMass(airframe, state.fuel)
 
 	local aoa = if speed > 1 then math.atan2(-v:Dot(up), v:Dot(forward)) else 0
@@ -162,6 +219,7 @@ local function substep(
 	h: number,
 	mods: Modifiers?
 ): FlightState
+	airframe = FlightModel.swept(airframe, s.mach) -- swing wings: this sub-step's sweep (FLT-08)
 	local f = FlightModel.computeForces(s, input, airframe, mods)
 	local cf = s.cframe
 	local forward, up, right = cf.LookVector, cf.UpVector, cf.RightVector
@@ -314,7 +372,17 @@ end
 function FlightModel.cornerSpeed(airframe: Airframe, altitude: number, fuel: number?): number
 	local mass = totalMass(airframe, fuel or airframe.Fuel)
 	local density = Atmosphere.density(altitude)
-	return math.sqrt(2 * airframe.MaxG * mass * G / (density * airframe.WingArea * airframe.CLMax))
+	local function corner(a: Airframe): number
+		return math.sqrt(2 * a.MaxG * mass * G / (density * a.WingArea * a.CLMax))
+	end
+	local speed = corner(airframe)
+	if airframe.VariableGeometry then
+		-- Swing wings: again with the wings where they'd be at that speed (twice, to settle)
+		for _ = 1, 2 do
+			speed = corner(FlightModel.swept(airframe, speed / Atmosphere.speedOfSound(altitude)))
+		end
+	end
+	return speed
 end
 
 -- Best sustained turn rate (rad/s) at a speed: thrust just balances drag. Full afterburner.
@@ -322,8 +390,9 @@ function FlightModel.maxSustainedTurnRate(airframe: Airframe, speed: number, alt
 	local mass = totalMass(airframe, fuel or airframe.Fuel)
 	local density = Atmosphere.density(altitude)
 	local q = 0.5 * density * speed * speed
-	local S = airframe.WingArea
 	local mach = speed / Atmosphere.speedOfSound(altitude)
+	airframe = FlightModel.swept(airframe, mach)
+	local S = airframe.WingArea
 	local thrust = airframe.MaxThrust
 		* airframe.AfterburnerMult
 		* ramGain(mach)

@@ -75,6 +75,19 @@ export type Airframe = {
 	ThrustVectoring: boolean?,
 	Stealth: number?,
 	WaveDrag: number?,
+	VariableGeometry: VariableGeometry?, -- swing wings (FLT-08)
+	Sweep: number?, -- set on the copy FlightModel.swept returns: the sweep it was made for (degrees)
+}
+
+-- Swing wings (FLT-08, FlightModel.swept): the sweep follows Mach along Schedule; the coefficients blend
+-- from Forward (the first entry's sweep) to Back (the last's). Pivot is the left wing's pivot in model
+-- space (studs from Root) and ModelSweep the sweep the model was built at, for the visual wings.
+export type VariableGeometry = {
+	Schedule: { { number } }, -- { { mach, sweep degrees }, ... } in rising Mach
+	Forward: { [string]: number }, -- CLMax, CLAlpha, InducedK, CD0, WaveDrag with the wings forward
+	Back: { [string]: number }, -- the same with the wings fully back
+	ModelSweep: number,
+	Pivot: Vector3,
 }
 
 return {}

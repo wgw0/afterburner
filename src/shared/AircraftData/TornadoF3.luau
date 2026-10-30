@@ -20,11 +20,20 @@ return {
 	FuelBurnDry = 1.8,
 	FuelBurnAB = 9.0,
 
-	WingArea = 30, -- wings at mid sweep (25.5 m² fully swept, 31 spread); the sweep is cosmetic for now
+	WingArea = 30, -- wings at mid sweep (25.5 m² fully swept, 31 spread)
 	CD0 = 0.021,
 	InducedK = 0.12,
 	CLAlpha = 4.0,
 	CLMax = 1.5,
+	-- Swing wings (FLT-08): 25° to 67°, following speed. The model wasn't built around its pivot, so the
+	-- visual pivot is the wing's inner leading corner (close to the real one inside the glove)
+	VariableGeometry = {
+		Schedule = { { 0.55, 25 }, { 0.8, 45 }, { 1.05, 67 } },
+		Forward = { CLMax = 1.6, CLAlpha = 4.3, InducedK = 0.11, CD0 = 0.022, WaveDrag = 1.1 },
+		Back = { CLMax = 1.05, CLAlpha = 3.1, InducedK = 0.16, CD0 = 0.018, WaveDrag = 0.7 },
+		ModelSweep = 25,
+		Pivot = Vector3.new(-2.2022, 0.361, -1.17),
+	},
 	CriticalAoA = 22,
 
 	MaxG = 7.5,

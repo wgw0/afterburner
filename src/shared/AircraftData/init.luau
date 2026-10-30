@@ -67,7 +67,56 @@ local OPTIONAL: { [string]: Rule } = {
 	Radar = TABLE, -- { Range = metres, Cone = degrees half-angle, CanNotch = boolean }
 	RWR = TABLE, -- { LaunchWarning = boolean (IR missile approach warner), Resolution = "Coarse" | "Fine" }
 	Countermeasures = TABLE, -- { Flares = n, Chaff = n }
+	VariableGeometry = TABLE, -- swing wings (FLT-08); checked in detail by validateSweep
 }
+
+-- The coefficients a swing wing may blend, with the range each must stay in.
+local SWEPT_FIELDS = {
+	CLMax = { 0.3, 3 },
+	CLAlpha = { 1, 8 },
+	InducedK = { 0.01, 0.5 },
+	CD0 = { 0.005, 0.1 },
+	WaveDrag = { 0.2, 1.5 },
+}
+
+local function validateSweep(vg: any, problems: { string }, id: string)
+	local schedule = vg.Schedule
+	if type(schedule) ~= "table" or #schedule < 2 then
+		table.insert(problems, `{id}: VariableGeometry.Schedule needs at least two {"{"} mach, sweep {"}"} points`)
+	else
+		for i, point in schedule do
+			local prev = schedule[i - 1]
+			if type(point) ~= "table" or type(point[1]) ~= "number" or type(point[2]) ~= "number" then
+				table.insert(problems, `{id}: VariableGeometry.Schedule[{i}] must be {"{"} mach, sweep {"}"}`)
+			elseif prev and type(prev) == "table" and (point[1] <= prev[1] or point[2] < prev[2]) then
+				table.insert(problems, `{id}: VariableGeometry.Schedule must rise in Mach and never sweep forward`)
+			end
+		end
+	end
+	for _, side in { "Forward", "Back" } do
+		local values = vg[side]
+		if type(values) ~= "table" then
+			table.insert(problems, `{id}: VariableGeometry.{side} must be a table`)
+			continue
+		end
+		for key, value in values do
+			local range = SWEPT_FIELDS[key]
+			if not range then
+				table.insert(problems, `{id}: VariableGeometry.{side}.{key} isn't a coefficient a wing can sweep`)
+			elseif type(value) ~= "number" or value < range[1] or value > range[2] then
+				table.insert(problems, `{id}: VariableGeometry.{side}.{key} must be {range[1]}..{range[2]}`)
+			elseif
+				type(vg[if side == "Forward" then "Back" else "Forward"]) == "table"
+				and vg[if side == "Forward" then "Back" else "Forward"][key] == nil
+			then
+				table.insert(problems, `{id}: VariableGeometry.{key} must be in both Forward and Back`)
+			end
+		end
+	end
+	if type(vg.ModelSweep) ~= "number" or typeof(vg.Pivot) ~= "Vector3" then
+		table.insert(problems, `{id}: VariableGeometry needs ModelSweep (degrees) and Pivot (Vector3)`)
+	end
+end
 
 local function check(field: string, value: any, rule: Rule): string?
 	if rule.kind == "string" then
@@ -126,6 +175,9 @@ function AircraftData.validate(id: string, data: any): { string }
 				table.insert(problems, `{id}: {problem}`)
 			end
 		end
+	end
+	if type(data.VariableGeometry) == "table" then
+		validateSweep(data.VariableGeometry, problems, id)
 	end
 	if data.Id ~= nil and data.Id ~= id then
 		table.insert(problems, `{id}: Id "{tostring(data.Id)}" must match the module name`)
