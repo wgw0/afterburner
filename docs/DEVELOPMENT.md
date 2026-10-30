@@ -487,7 +487,7 @@ Full list of remotes: [Appendix A](#appendix-a-remote-catalogue).
 | `MaxRollRate` | deg/s | |
 | `MaxPitchRate`, `MaxYawRate` | deg/s | |
 | `MaxMach` | number | |
-| `VariableGeometry` | table? | F-14 swing wing: speed→sweep→coefficient modifiers |
+| `VariableGeometry` | table? | Swing wings (F-14A, MiG-23MLD, Tornado F3): Mach→sweep schedule, wings-forward and wings-back coefficients, model sweep and pivot (§6.4) |
 | `ThrustVectoring` | boolean | Su-35, F-22: raises post-stall pitch authority |
 | `Stealth` | number 0–1 | RCS multiplier (1 = normal) |
 | `Radar` | table | `{ Type, Range, ConeDeg, CanNotch, CanTWS, DataLink }` |
@@ -601,7 +601,7 @@ Using constraints, rather than setting the CFrame directly, keeps the movement p
 - Supercruise: emerges naturally if the dry thrust beats the transonic drag. Validate it in tests for the Typhoon and F-22.
   - *As built:* `FlightModel.waveDrag` peaks at 0.05 at Mach 1 and settles to 0.03, strong enough that a typical jet tops out at Mach 0.9–1.0 on dry thrust. The optional airframe field `WaveDrag` (default 1) scales it: the Typhoon, F-22A and Tempest (0.5–0.55) supercruise at Mach 1.28 / 1.45 / 1.33 at 10 km. Thin Mach 2 deltas and area-ruled jets (MiG-21, the Mirages, F-5E, Gripen) also have a factor below 1 so afterburner still takes them through Mach 1, but lack the dry thrust to supercruise; the F-35A has 1.15. Afterburning thrust rises above Mach 0.9 (`Flight.AFTERBURNER_RAM_GAIN`, ram pressure), which brings reheat top speeds near the real ones and changes nothing in a dogfight. `FlightModel.spec` checks the Typhoon supercruises and the F-15C and Rafale don't. Measure changes with a level-flight loop (pitch holding 10 km for 2–3 minutes): a one-minute run only catches jets still slowing down.
 - Thrust vectoring (as built): `ThrustVectoring = true` raises the minimum control authority at low dynamic pressure (`Flight.THRUST_VECTORING_MIN_AUTHORITY`). Post-stall manoeuvres (FLT-09) are not built.
-- Variable geometry (as built): not yet. The F-14A and Tornado F3 models are posed at a fixed sweep and their data uses mid-sweep values (FLT-08).
+- Variable geometry (as built, FLT-08): the F-14A, MiG-23MLD and Tornado F3 carry `VariableGeometry`: a Mach `Schedule` of sweep angles (F-14A 20° to Mach 0.6, 68° by 1.05; MiG-23 16°–72°; Tornado 25°–67°, all automatic), `Forward` and `Back` values for `CLMax`, `CLAlpha`, `InducedK`, `CD0` and `WaveDrag`, the `ModelSweep` the model was built at and the left wing's `Pivot`. `FlightModel.swept(airframe, mach)` returns a copy blended for the scheduled sweep (cached per whole degree, weak-keyed), used by every step, `computeForces`, `cornerSpeed` and `maxSustainedTurnRate`, so the server, the pilot and the AI agree. The base fields stay at mid-sweep values. Measured: the F-14A sustains a harder turn at 170 m/s than the old fixed mid-sweep data and has less drag at Mach 1.3 (`SwingWings.spec`). On every client, `ControlSurfaceController` turns each wing's weld into a Motor6D at its pivot and swings it toward the scheduled sweep at 15°/s, re-hangs the flaps and slats on the wing, and moves the wingtip attachments (contrails, vapour) with the tips. The Tornado's model wasn't built around its pivot, so its visual pivot is the wing's inner leading corner. Checked in play: the F-14A's wings spread to 20° when slow and swept past 50° near Mach 0.9.
 
 ### 6.5 Debug tuning panel (test environment only)
 
