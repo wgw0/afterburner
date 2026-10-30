@@ -28,9 +28,13 @@ Passes.LIST = table.freeze({
 local BY_UNIVERSE: { [number]: { [string]: number } } = {
 	[10773135125] = { -- the test experience
 		CustomCallsign = 2061869361,
+		VIP = 2061545520,
+		ExtraLineupSlot = 2058366843,
 	},
 	[10773807904] = { -- the live experience (place 95037764806358)
 		CustomCallsign = 2062133118,
+		VIP = 2058336824,
+		ExtraLineupSlot = 2062883080,
 	},
 }
 
