@@ -18,6 +18,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Environment = require(Shared.Config.Environment)
 local Passes = require(Shared.Config.Passes)
+local Products = require(Shared.Config.Products)
+local Shop = require(Shared.Shop)
 local Mastery = require(Shared.Mastery)
 local Net = require(Shared.Net)
 local PlayerData = require(Shared.PlayerData)
@@ -31,6 +33,7 @@ local ConfigService = require(script.Parent.ConfigService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 local PassService = require(script.Parent.PassService)
+local ShopService = require(script.Parent.ShopService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local ReportService = require(script.Parent.ReportService)
 
@@ -269,6 +272,36 @@ local COMMANDS: { [string]: Command } = {
 			return true, `{who.Name} owns {name} this session`
 		end,
 	},
+	-- Developer products (test servers): grant one as if bought, through the real receipt path. A Tier
+	-- Unlock takes the two jets as jets = { "F16A", "MiG29A" } (else the first two of the tier). The same
+	-- purchase id twice shows a repeat receipt isn't granted again.
+	["shop.grant"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, key = target(admin, args), args.key
+			if not (who and type(key) == "string" and Products.LIST[key]) then
+				return false, 'Usage: shop.grant { key = "Wings100" | "TierUnlock3", jets = {...}?, purchaseId = ...? }'
+			end
+			if type(args.jets) == "table" then
+				local data = DataService:GetData(who)
+				if not data then
+					return false, "Save not loaded"
+				end
+				local tier, why = Shop.checkTierUnlockChoice(data, args.jets)
+				if not tier then
+					return false, why
+				end
+				DataService:Update(who, function(d)
+					d.PendingTierUnlock = { Tier = tier, Jets = { args.jets[1], args.jets[2] } }
+				end)
+			end
+			local purchaseId = if type(args.purchaseId) == "string"
+				then args.purchaseId
+				else `admin-{os.time()}-{math.random(1e6)}`
+			local result, why = ShopService:Grant(who, purchaseId, key)
+			return result ~= nil, if result then `{key}: {result} ({purchaseId})` else `Failed: {why}`
+		end,
+	},
 	["take.pass"] = {
 		testOnly = true,
 		run = function(admin, args)
@@ -292,6 +325,20 @@ local COMMANDS: { [string]: Command } = {
 				return true
 			end)
 			return ok == true, `-{n} Credits`
+		end,
+	},
+	["take.wings"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, n = target(admin, args), amount(args)
+			if not (who and n) then
+				return false, "Usage: take.wings { amount }"
+			end
+			local ok = DataService:Update(who, function(data)
+				data.Wings = math.max((data.Wings or 0) - n, 0)
+				return true
+			end)
+			return ok == true, `-{n} Wings`
 		end,
 	},
 	-- Mastery (PRG-07) testing: add kills in a jet as a match would (stars, Credits, title, toast)...

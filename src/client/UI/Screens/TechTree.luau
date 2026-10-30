@@ -1,8 +1,10 @@
 --!strict
 -- Tech tree (UI-03): three branch columns by tier. Each jet shows its state (locked, researchable,
 -- researched, owned), RP progress toward research, its costs, and Research / Buy buttons. Every action
--- waits for the server and shows its answer.
--- props: Data, OnResearch(id) -> (ok, err), OnBuy(id) -> (ok, err), OnDetails(id)
+-- waits for the server and shows its answer. Above the tree, the Tier Unlock (DESIGN §8.2): skip to the next
+-- tier for Robux by picking two of its jets.
+-- props: Data, OnResearch(id) -> (ok, err), OnBuy(id) -> (ok, err), OnDetails(id),
+--   OnChooseTierUnlock(picks) -> (ok, err)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,6 +13,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local TechTree = require(Shared.TechTree)
 local LiveConfig = require(Shared.LiveConfig)
+local Products = require(Shared.Config.Products)
+local Shop = require(Shared.Shop)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -20,6 +24,8 @@ local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local BRANCH_NAMES = { NATO = "NATO / US", East = "SOVIET / RUSSIA", Europe = "EUROPE" }
 local CARD_H = 150
+local UNLOCK_H = 64 -- the Tier Unlock banner, closed
+local UNLOCK_OPEN_H = 150
 
 -- RP available toward a node: the best owned prerequisite's RP plus the free pool.
 local function availableRP(data: any, node: TechTree.Node): number
@@ -186,8 +192,120 @@ local function NodeCard(props: any)
 	}, children)
 end
 
+-- The Tier Unlock: closed, a banner with the price; open, the next tier's jets to pick two from and BUY.
+local function TierUnlock(props: {
+	Data: any,
+	Offer: Shop.Offer,
+	Open: boolean,
+	SetOpen: (boolean) -> (),
+	OnChoose: ({ string }) -> (boolean, string?),
+})
+	local offer = props.Offer
+	local product = Products.LIST[Products.tierUnlockKey(offer.tier) :: string]
+	local open, setOpen = props.Open, props.SetOpen
+	local picks, setPicks = React.useState({} :: { string })
+	local pending, setPending = React.useState(false)
+	local message, setMessage = React.useState(nil :: string?)
+	local tierName = TIER_NAMES[offer.tier]
+
+	local children: { [string]: any } = {
+		Title = e(C.Label, {
+			Text = `SKIP AHEAD: UNLOCK TIER {tierName}`,
+			Size = UDim2.new(0.6, 0, 0, 22),
+			Heavy = true,
+			TextSize = 18,
+			Color = Theme.Accent,
+		}),
+		Text = e(C.Label, {
+			Text = `Pick {Products.UNLOCK_JETS} Tier {tierName} jets to own straight away, then carry on researching from there. One tier at a time, up to Tier V.`,
+			Size = UDim2.new(0.7, 0, 0, 18),
+			Position = UDim2.fromOffset(0, 26),
+			TextSize = 13,
+			Color = Theme.Dim,
+		}),
+		Toggle = e(C.Button, {
+			Text = if open then "CLOSE" else `CHOOSE JETS  ·  R$ {product.Price}`,
+			Style = if open then "Ghost" else "Primary",
+			Size = UDim2.fromOffset(220, 36),
+			Position = UDim2.new(1, -220, 0, 0),
+			TextSize = 14,
+			OnClick = function()
+				setOpen(not open)
+				setMessage(nil)
+			end,
+		}),
+	}
+	if open then
+		local row: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, AlignY = "Center" }) }
+		for i, id in offer.jets do
+			local airframe = AircraftData.get(id)
+			local chosen = table.find(picks, id) ~= nil
+			row[id] = e(C.Button, {
+				Text = if airframe then airframe.DisplayName else id,
+				Style = if chosen then "Primary" else "Ghost",
+				Size = UDim2.fromOffset(170, 36),
+				TextSize = 13,
+				LayoutOrder = i,
+				OnClick = function()
+					local nextPicks = table.clone(picks)
+					local at = table.find(nextPicks, id)
+					if at then
+						table.remove(nextPicks, at)
+					elseif #nextPicks < Products.UNLOCK_JETS then
+						table.insert(nextPicks, id)
+					end
+					setPicks(nextPicks)
+					setMessage(nil)
+				end,
+			})
+		end
+		row.Buy = e(C.Button, {
+			Text = `BUY  ·  R$ {product.Price}`,
+			Style = "Primary",
+			Size = UDim2.fromOffset(150, 36),
+			TextSize = 14,
+			Pending = pending,
+			Disabled = #picks ~= Products.UNLOCK_JETS,
+			LayoutOrder = 99,
+			OnClick = function()
+				setPending(true)
+				task.spawn(function()
+					local ok, err = props.OnChoose(picks)
+					setPending(false)
+					setMessage(
+						if ok then "Complete the purchase in the Roblox window" else err or "Try again in a moment."
+					)
+				end)
+			end,
+		})
+		children.Jets = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 40),
+			Position = UDim2.fromOffset(0, 54),
+			BackgroundTransparency = 1,
+		}, row)
+		children.Message = e(C.Label, {
+			Text = message
+				or `{#picks} of {Products.UNLOCK_JETS} picked. They're yours to fly and upgrade; the rest of the tier is researched as usual.`,
+			Size = UDim2.new(1, 0, 0, 18),
+			Position = UDim2.fromOffset(0, 102),
+			TextSize = 13,
+			Color = Theme.Dim,
+		})
+	end
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(1000, (if open then UNLOCK_OPEN_H else UNLOCK_H) - 10),
+		Position = UDim2.fromScale(0.5, 0),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Padding = 12,
+		StrokeColor = Theme.Accent,
+	}, children)
+end
+
 local function TechTreeScreen(props: any)
 	local data = props.Data
+	local offer = Shop.tierUnlockOffer(data)
+	local bannerOpen, setBannerOpen = React.useState(false)
+	local top = if offer then (if bannerOpen then UNLOCK_OPEN_H else UNLOCK_H) else 0
 	local columns: { [string]: any } = {
 		Layout = C.List({ Horizontal = true, Gap = 18, Align = "Center" }),
 	}
@@ -270,11 +388,24 @@ local function TechTreeScreen(props: any)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	}, {
 		Padding = e("UIPadding", { PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) }),
-		Row = e("Frame", { Size = UDim2.new(1, 0, 0, total), BackgroundTransparency = 1 }, columns),
+		Unlock = if offer
+			then e(TierUnlock, {
+				Data = data,
+				Offer = offer,
+				Open = bannerOpen,
+				SetOpen = setBannerOpen,
+				OnChoose = props.OnChooseTierUnlock,
+			})
+			else nil,
+		Row = e("Frame", {
+			Size = UDim2.new(1, 0, 0, total),
+			Position = UDim2.fromOffset(0, top),
+			BackgroundTransparency = 1,
+		}, columns),
 		Hint = e(C.Label, {
 			Text = `Free RP: {C.number(data.FreeRP)}  ·  Research spends RP from the best jet you own that leads to it, then free RP.`,
 			Size = UDim2.new(1, 0, 0, 20),
-			Position = UDim2.fromOffset(0, total + 16), -- below everything
+			Position = UDim2.fromOffset(0, top + total + 16), -- below everything
 			Align = "Center",
 			Color = Theme.Dim,
 			TextSize = 13,

@@ -397,6 +397,7 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 | **Cosmetics** | Developer Products (via Wings) | Camos 150–600 R$, contrail colours 200 R$, kill-marker styles 100 R$, cockpit trinkets 75 R$, nose art 250 R$, HUD themes 150 R$ | **The core earner.** Planes are huge on-screen billboards, so skins sell. Seasonal and limited-time camos create urgency without randomness. |
 | **Season Pass** | Developer Product (each season) | ~400–500 R$ | Free track plus premium track. Premium has about 30 cosmetic tiers plus some Wings back (enough to *almost* buy the next pass when completed, which drives engagement). |
 | **Premium jets** | Developer Product / Game Pass | 400–1,200 R$ | Unique variants (for example "F-4E Night Owl", "MiG-29 Display Team") **at the same BR and performance** as a researchable equivalent, plus a unique camo and a +25% RP bonus while flown. Gives a reason to buy without being stronger. |
+| **Tier Unlock** | Developer Product (one per tier) | Tier II 99 R$, III 199 R$, IV 299 R$, V 399 R$ | Skips the grind one tier at a time: always the tier directly above your highest owned jet, never past Tier V. You pick two jets of that tier and they're researched and owned (stock, no modules); the rest of the tier is researched as usual. A time-saver, not power: the jets are the same ones everyone flies (Will, 30 October 2026). |
 | **VIP Pilot** | Game Pass (one-off) | ~399 R$ | +25% Credits permanently, a VIP name tag, an extra daily-challenge reroll, and an exclusive camo. Gentle boost, big perceived value. |
 | **Boosters** | Developer Product | 2× RP for 1h: 75 R$; 2× Credits for 1h: 75 R$ | Time-limited. Cap stacking at 2× total so it can't trivialise the grind. |
 | **Convenience** | Game Passes | Extra lineup slot (149 R$), extra loadout presets (99 R$), custom callsign (99 R$) | Quality of life only. |
@@ -406,7 +407,7 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 
 ### 8.3 What not to sell
 
-- No directly purchasable Tier VI–VIII jets. They must be researched; only cosmetic variants of them can be sold.
+- No directly purchasable Tier VI–VIII jets. They must be researched; only cosmetic variants of them can be sold. (Tier Unlocks stop at Tier V for the same reason.)
 - No buying modules (performance upgrades) with Robux.
 - No ammo, missile or countermeasure purchases.
 - No "revive" or "skip respawn" in PvP.

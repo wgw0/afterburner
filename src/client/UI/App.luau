@@ -182,6 +182,7 @@ local function App(props: any)
 			Data = data,
 			OnResearch = props.OnResearch,
 			OnBuy = props.OnBuy,
+			OnChooseTierUnlock = props.OnChooseTierUnlock,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,

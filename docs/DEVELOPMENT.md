@@ -1764,7 +1764,7 @@ Follows DESIGN §8: **never pay-to-win.**
 | Type | Items |
 |---|---|
 | **Game Passes** | VIP Pilot, Extra Lineup Slot, Loadout Presets, Custom Callsign |
-| **Developer Products** | Wings packs (several sizes), Season Pass (per season), Starter Bundle, Boosters (RP 1h, Credits 1h), premium jets (or bought with Wings) |
+| **Developer Products** | Wings packs (several sizes), Tier Unlocks (Tiers II–V), Season Pass (per season), Starter Bundle, Boosters (RP 1h, Credits 1h), premium jets (or bought with Wings) |
 | **Private servers** | Enabled in experience settings with a monthly price |
 | **Subscription** (later) | "Squadron Leader", if Roblox experience subscriptions are available to the experience |
 
@@ -1803,6 +1803,7 @@ end
 
 - Premium jets must have a free equivalent with the **same BR and stats**. The airframe validator checks that a premium airframe's `StatsFrom` points to a free airframe and copies its stats.
 - Booster multipliers cap at ×2 total.
+- Tier Unlocks: only the tier directly above the buyer's highest owned jet, only up to Tier V, exactly two jets of that tier chosen by the buyer before the purchase prompt (stored as a pending choice, so the receipt knows what to grant).
 - No product grants modules, performance or top-tier jets. A unit test scans the product config and fails if a product grants anything in a blocked category.
 - Paid random items: none. If ever added, gate them with `PolicyService` (`ArePaidRandomItemsRestricted`) and show odds.
 

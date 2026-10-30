@@ -69,6 +69,14 @@ local function push(player: Player)
 	end
 end
 
+-- Writes a player's save to the DataStore now (after a purchase), instead of at the next autosave.
+function DataService:Save(player: Player)
+	local profile = profiles[player]
+	if profile and profile:IsActive() then
+		profile:Save()
+	end
+end
+
 -- Runs fn on a player's save and pushes what changed. Returns whatever fn returns (or nil, "not
 -- loaded" if the profile isn't loaded).
 function DataService:Update(player: Player, fn: (data: { [string]: any }) -> ...any): ...any
