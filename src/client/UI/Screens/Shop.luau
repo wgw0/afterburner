@@ -2,9 +2,9 @@
 -- Shop (UI-07; DESIGN §8; layout for conversion in DEVELOPMENT.md §27.9). Top to bottom: VIP Pilot as a
 -- banner (or a thank-you once owned), the game passes as big cards with their benefits, boosters, the Tier
 -- Unlock, Wings packs, cosmetics bought with Wings (SHP-07: buy, equip, take off), then what's coming. Every
--- price is shown before the purchase window; nothing is random or on a fake timer. A product or pass that isn't created on the dashboard yet says "Coming soon" instead
--- of a buy button. What's still to come (VIP, boosters, season pass, the starter bundle, premium jets) is
--- listed at the bottom.
+-- price is shown before the purchase window; nothing is random or on a fake timer. A product or pass that
+-- isn't created on the dashboard yet says "Coming soon" instead of a buy button. What's still to come (the
+-- season pass, the starter bundle, premium jets) is listed at the bottom.
 -- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree(),
 --   OnBuyCosmetic(id) -> (ok, err), OnEquipCosmetic(kind, id) -> (ok, err)
 
@@ -65,8 +65,8 @@ local function Card(
 			then e(C.Pill, {
 				Text = props.Ribbon,
 				Size = UDim2.fromOffset(92, 20),
-				Position = UDim2.fromScale(1, 0),
-				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 0, 0, -14), -- on the top edge, clear of the title
+				AnchorPoint = Vector2.new(1, 0.5),
 				Color = props.Highlight or Theme.Accent,
 				TextColor = Theme.Background,
 			})
@@ -124,12 +124,14 @@ local GOLD = Color3.fromRGB(255, 201, 60) -- the VIP gold
 local PASS_STYLE = {
 	VIP = { Icon = "★", Colour = GOLD },
 	ExtraLineupSlot = { Icon = "+", Colour = Color3.fromRGB(110, 205, 255) },
-	CustomCallsign = { Icon = "✎", Colour = Color3.fromRGB(120, 230, 180) },
+	CustomCallsign = { Icon = "Aa", Colour = Color3.fromRGB(120, 230, 180), TextSize = 28 }, -- letters read bigger
 }
 local PASS_ORDER = { "VIP", "ExtraLineupSlot", "CustomCallsign" }
 local PASS_W, PASS_H = 300, 250
 
--- A dark panel washed with a colour from the top, for the pass cards and the VIP banner
+-- A dark panel washed with a colour from the top, for the pass cards and the VIP banner. A UIGradient
+-- multiplies the panel's colour, so a washed panel is white underneath (Color = UNDER_WASH).
+local UNDER_WASH = Color3.new(1, 1, 1)
 local function wash(colour: Color3, strength: number)
 	return e("UIGradient", {
 		Color = ColorSequence.new(Theme.Panel:Lerp(colour, strength), Theme.Panel),
@@ -162,8 +164,9 @@ local function VipBanner(props: { Owned: boolean, Buyable: boolean, OnBuy: () ->
 			Padding = 14,
 			LayoutOrder = props.Order,
 			StrokeColor = GOLD,
+			Color = UNDER_WASH,
 		}, {
-			Wash = wash(GOLD, 0.25),
+			Wash = wash(GOLD, 0.2),
 			Text = e(C.Label, {
 				Text = "★  YOU'RE A VIP PILOT  ·  +25% Credits on every match, gold tag and contrails, an extra reroll",
 				Size = UDim2.fromScale(1, 1),
@@ -174,10 +177,11 @@ local function VipBanner(props: { Owned: boolean, Buyable: boolean, OnBuy: () ->
 		})
 	end
 	return e(C.Panel, {
-		Size = UDim2.new(1, 0, 0, 190),
+		Size = UDim2.new(1, 0, 0, 206),
 		Padding = 20,
 		LayoutOrder = props.Order,
 		StrokeColor = GOLD,
+		Color = UNDER_WASH,
 	}, {
 		Wash = wash(GOLD, 0.35),
 		Ribbon = e(C.Pill, {
@@ -253,20 +257,22 @@ local function PassCard(props: {
 	OnBuy: () -> (boolean, string?),
 })
 	local pass = Passes.LIST[props.Key] :: any
-	local style = PASS_STYLE[props.Key] or { Icon = "•", Colour = Theme.Accent }
+	local style: { Icon: string, Colour: Color3, TextSize: number? } = PASS_STYLE[props.Key]
+		or { Icon = "•", Colour = Theme.Accent }
 	local message, setMessage = React.useState(nil :: string?)
 	return e(C.Panel, {
 		Size = UDim2.fromOffset(PASS_W, PASS_H),
 		Padding = 16,
 		LayoutOrder = props.Order,
 		StrokeColor = if props.Owned then Theme.Good else style.Colour,
+		Color = UNDER_WASH,
 	}, {
-		Wash = wash(style.Colour, 0.3),
+		Wash = wash(style.Colour, if props.Owned then 0.1 else 0.25),
 		Icon = e(C.Label, {
 			Text = style.Icon,
 			Size = UDim2.fromOffset(44, 44),
 			Heavy = true,
-			TextSize = 38,
+			TextSize = style.TextSize or 38,
 			Align = "Center",
 			Color = style.Colour,
 		}),
