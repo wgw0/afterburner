@@ -340,6 +340,21 @@ local COMMANDS: { [string]: Command } = {
 			return banked ~= nil, `{who.Name} has {banked} spins ready`
 		end,
 	},
+	-- Boosters (test servers): stop any running boosters (they're bought with shop.grant)
+	["booster.clear"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who = target(admin, args)
+			if not who then
+				return false, "Usage: booster.clear"
+			end
+			local ok = DataService:Update(who, function(data)
+				data.Boosters = { Credits = 0, RP = 0 }
+				return true
+			end)
+			return ok == true, `{who.Name}'s boosters stopped`
+		end,
+	},
 	["take.wings"] = {
 		testOnly = true,
 		run = function(admin, args)
