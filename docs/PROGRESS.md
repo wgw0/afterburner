@@ -321,8 +321,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: `TextFilterService` (Roblox's filter, for broadcast, refusing text if the filter is down) and custom callsigns on the Career screen, shown on your jet, the scoreboard and the kill feed, filtered again on every join (DEVELOPMENT.md §32.2), behind the Custom Callsign game pass (99 R$; the pass itself still to be created on the dashboard). Checked in Studio (validation, pass gate with give.pass / take.pass) and by Will.
 - [x] **CMP-03** Report-cheater flow
   - REPORT in the hangar on match servers and on the results scoreboard; a report window (pilot, reason, a pointer to Roblox's own report). Each report is stored (UserIds only) with the target's anti-cheat record from that server; admin `reports.top` / `reports.show` to review (DEVELOPMENT.md §32.1). Checked in Studio (refusals, rate limit, storage and admin read-back) and by Will.
-- [ ] **TST-04** Headless unit tests in CI (if a suitable runner is available)
-  - Built: `scripts/run-tests.luau` runs the TestRunner in Lune on the committed place with the fresh build's code; CI runs it on every push (DEVELOPMENT.md §33.1). 594 pass and 1 terrain test is skipped headless; all 595 pass in Studio. Waiting on Will's test.
+- [x] **TST-04** Headless unit tests in CI (if a suitable runner is available)
+  - Built: `scripts/run-tests.luau` runs the TestRunner in Lune on the committed place with the fresh build's code; CI runs it on every push (DEVELOPMENT.md §33.1). 594 pass and 1 terrain test is skipped headless; all 595 pass in Studio. Passed on GitHub's CI (run 41041477687); merged on Will's go-ahead.
 - [ ] **PRF-03** Mobile performance pass
   - Post-launch (Will, 30 October 2026): only if players turn up on phones.
 - [x] **REL-03** Version module, changelog, tagging process
