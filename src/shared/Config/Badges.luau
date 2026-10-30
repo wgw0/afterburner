@@ -8,6 +8,8 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 	[10773135125] = { -- the test experience
 		-- FirstBlood = 0,
 	},
+	[10773807904] = { -- the live experience (place 95037764806358)
+	},
 }
 
 local Badges = {}
