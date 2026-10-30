@@ -6,6 +6,7 @@
 local AircraftData = require(script.Parent.AircraftData)
 local Economy = require(script.Parent.Config.Economy)
 local LevelRewards = require(script.Parent.Config.LevelRewards)
+local Perks = require(script.Parent.Perks)
 local PlayerData = require(script.Parent.PlayerData)
 local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
@@ -28,6 +29,7 @@ export type MatchSummary = {
 	Day: number, -- os.time() // 86400, for first win of the day
 	-- Live config multipliers (OPS-01), e.g. a double XP weekend; Label names the line on the results screen
 	Boost: { XP: number, Credits: number, RP: number, Label: string }?,
+	Personal: { Credits: number, RP: number, Label: string }?, -- VIP and boosters (Shared/Perks)
 }
 
 export type RewardLine = { Label: string, XP: number, RP: number, Credits: number }
@@ -148,6 +150,18 @@ function Progression.matchRewards(summary: MatchSummary, lastWinDay: number): Re
 		table.insert(rewards.Lines, boostLine)
 	end
 
+	-- The player's own perks (VIP, boosters): their own line
+	local personal = summary.Personal
+	if personal and (personal.Credits ~= 1 or personal.RP ~= 1) then
+		local perkLine = { Label = personal.Label, XP = 0, RP = 0, Credits = rewards.Credits * (personal.Credits - 1) }
+		for airframe, rp in rewards.RP do
+			perkLine.RP += rp * (personal.RP - 1)
+			rewards.RP[airframe] = rp * personal.RP
+		end
+		rewards.Credits *= personal.Credits
+		table.insert(rewards.Lines, perkLine)
+	end
+
 	-- Whole numbers only
 	rewards.XP = math.floor(rewards.XP + 0.5)
 	rewards.Credits = math.floor(rewards.Credits + 0.5)
@@ -221,6 +235,7 @@ end
 -- Lineup slots for a save (all of them with full access, see unlockEverything).
 function Progression.slotsFor(data: { [string]: any }): number
 	return Progression.lineupSlots(data.PilotLevel, data.Flags and data.Flags.AllUnlocked == true)
+		+ Perks.extraSlots(data) -- the Extra Lineup Slot pass
 end
 
 -- Applies match rewards to a save. Returns levels gained.

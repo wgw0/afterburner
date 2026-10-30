@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Challenges = require(Shared.Challenges)
+local Perks = require(Shared.Perks)
 
 local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
@@ -88,7 +89,8 @@ local function ChallengesPanel(props: any)
 		return nil
 	end
 	local untilDay, untilWeek = Challenges.untilReset(os.time())
-	local rerollLeft = (state.Rerolls or 0) < Challenges.REROLLS_PER_DAY and state.Day == Challenges.day(os.time())
+	local allowance = Perks.rerolls(props.Data, Challenges.REROLLS_PER_DAY) -- VIP gets one more
+	local rerollLeft = (state.Rerolls or 0) < allowance and state.Day == Challenges.day(os.time())
 
 	local children: { [string]: any } = {
 		Layout = C.List({ Gap = 4 }),

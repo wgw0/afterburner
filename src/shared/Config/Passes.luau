@@ -7,6 +7,17 @@
 local Passes = {}
 
 Passes.LIST = table.freeze({
+	-- What these give is in Shared/Perks (SHP-03)
+	VIP = table.freeze({
+		DisplayName = "VIP Pilot",
+		Price = 399, -- Robux
+		Description = "+25% Credits from every match, a VIP tag by your name and an extra daily challenge reroll.",
+	}),
+	ExtraLineupSlot = table.freeze({
+		DisplayName = "Extra Lineup Slot",
+		Price = 149,
+		Description = "One more jet in your lineup to spawn in.",
+	}),
 	CustomCallsign = table.freeze({
 		DisplayName = "Custom Callsign",
 		Price = 99, -- Robux

@@ -18,9 +18,9 @@ return function(ctx)
 	end
 
 	describe("products", function()
-		it("grant only Wings or Tier Unlocks (never modules, performance or top-tier jets)", function()
+		it("grant only Wings, Tier Unlocks or boosters (never modules, performance or top-tier jets)", function()
 			for key, product in Products.LIST do
-				expect(product.Kind == "Wings" or product.Kind == "TierUnlock").toBe(true)
+				expect(product.Kind == "Wings" or product.Kind == "TierUnlock" or product.Kind == "Booster").toBe(true)
 				expect(product.Price > 0).toBe(true)
 				if product.Kind == "TierUnlock" then
 					expect((product.Tier :: number) <= Products.MAX_UNLOCK_TIER).toBe(true)

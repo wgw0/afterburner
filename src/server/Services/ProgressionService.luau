@@ -26,6 +26,7 @@ local ServerRole = require(Shared.ServerRole)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local LiveConfig = require(Shared.LiveConfig)
 local Mastery = require(Shared.Mastery)
+local Perks = require(Shared.Perks)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
@@ -134,6 +135,7 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 			RP = LiveConfig.get("economy.rp"),
 			Label = if LiveConfig.get("event") ~= "" then LiveConfig.get("event") else "Event bonus",
 		},
+		Personal = Perks.boost(data, os.time()), -- VIP and boosters (SHP-03)
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
