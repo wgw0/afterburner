@@ -1,7 +1,8 @@
 --!strict
 -- The free-spin window (Shared/Spin): a CS:GO-style reel. SPIN asks the server, which rolls and grants the
 -- prize; the reel is then filled with random prize cards (each bordered in its rarity's colour) with the
--- prize at the stop, and slides to it, slowing down. The (i) button shows the odds. Spins are never sold.
+-- prize at the stop, and slides to it, slowing down; then NICE! closes it. The (i) button shows the odds.
+-- Spins are never sold.
 -- props: OnSpin() -> (prize?, err), OnClose()
 
 local Players = game:GetService("Players")
@@ -334,15 +335,19 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 				Align = "Center",
 				Color = if message then Theme.Warn else Theme.Text,
 			}),
+			-- After a win: NICE! closes the window (open it again from the hangar to use another spin)
 			Spin = e(C.Button, {
-				Text = if phase == "spinning" or phase == "asking" then "SPINNING…" else "SPIN",
+				Text = if phase == "result"
+					then "NICE!"
+					elseif phase == "spinning" or phase == "asking" then "SPINNING…"
+					else "SPIN",
 				Style = "Primary",
 				Size = UDim2.fromOffset(260, 56),
 				Position = UDim2.new(0.5, 0, 1, -56),
 				AnchorPoint = Vector2.new(0.5, 0),
 				TextSize = 24,
-				Disabled = banked < 1 or phase == "spinning" or phase == "asking",
-				OnClick = spin,
+				Disabled = phase == "spinning" or phase == "asking" or (phase ~= "result" and banked < 1),
+				OnClick = if phase == "result" then props.OnClose else spin,
 			}),
 		}),
 	})
