@@ -348,10 +348,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **UI-07** Shop screen
 - [ ] **UI-08** Season pass and challenges screens
 - [ ] **LIV-04** Season framework and pass progression
-- [ ] **SHP-01** Product config (test + prod IDs) and ShopService skeleton
-  - Built: `Config/Products` (Wings packs, Tier Unlocks II–V) with per-experience ids, `ShopService` (DEVELOPMENT.md §27.6). Waiting on Will's test; real purchases need the products created on the dashboard.
-- [ ] **SHP-02** ProcessReceipt with idempotency and failure safety
-  - Built: a purchase id is granted once; the grant works on a copy of the save and is kept only if it succeeds; the save is written straight away. Plus the Tier Unlock (pick two jets on the Tech Tree). Checked in play through `shop.grant`. Waiting on Will's test.
+- [x] **SHP-01** Product config (test + prod IDs) and ShopService skeleton
+  - Built: `Config/Products` (Wings packs, Tier Unlocks II–V) with per-experience ids, `ShopService` (DEVELOPMENT.md §27.6). Checked in Studio and by Will; real purchases need the products created on the dashboard.
+- [x] **SHP-02** ProcessReceipt with idempotency and failure safety
+  - Built: a purchase id is granted once; the grant works on a copy of the save and is kept only if it succeeds; the save is written straight away. Plus the Tier Unlock (pick two jets on the Tech Tree). Checked in play through `shop.grant` and by Will.
 - [ ] **SHP-03** Game pass ownership checks and benefits
 - [ ] **SHP-04** Wings transactions and cosmetics granting
   - Started: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6). Wings-only cosmetics come with SHP-07.
