@@ -267,6 +267,7 @@ local function App(props: any)
 			OnLineup = props.OnLineup,
 			PlayText = props.PlayText,
 			OnReroll = props.OnReroll,
+			OnSpin = props.OnSpin,
 			QueueMode = props.QueueMode,
 			OnQueueMode = props.OnQueueMode,
 		})

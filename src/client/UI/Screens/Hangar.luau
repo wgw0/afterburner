@@ -4,7 +4,8 @@
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), SideText and OnSide() (the button left of
 --   PLAY: TRAINING in a lobby, LEAVE MATCH on a match server), OnDetails(id),
 --   OnReport(userId?) (on a match server: the report-a-cheater window), OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
---   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right).
+--   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right),
+--   OnSpin() -> (prize?, err) (the free-spin button bottom right and its window).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -20,6 +21,8 @@ local UI = script.Parent.Parent
 local ChallengesPanel = require(UI.ChallengesPanel)
 local C = require(UI.Components)
 local JetPreview = require(UI.JetPreview)
+local SpinButton = require(UI.SpinButton)
+local SpinDialog = require(UI.SpinDialog)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
@@ -115,6 +118,7 @@ local function Hangar(props: any)
 	local data = props.Data
 	local lineupError, setLineupError = React.useState(nil :: string?)
 	local pending, setPending = React.useState(false)
+	local spinOpen, setSpinOpen = React.useState(false)
 	local selected = props.Selected
 	local airframe = selected and AircraftData.get(selected) :: any
 	local slots = Progression.slotsFor(data)
@@ -301,6 +305,21 @@ local function Hangar(props: any)
 			TextSize = 16,
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
+		SpinButton = if props.OnSpin
+			then e(SpinButton, {
+				OnOpen = function()
+					setSpinOpen(true)
+				end,
+			})
+			else nil,
+		SpinDialog = if spinOpen and props.OnSpin
+			then e(SpinDialog, {
+				OnSpin = props.OnSpin,
+				OnClose = function()
+					setSpinOpen(false)
+				end,
+			})
+			else nil,
 		Lineup = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),
 			Position = UDim2.fromOffset(20, 20),

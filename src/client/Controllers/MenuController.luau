@@ -433,6 +433,14 @@ render = function()
 			end
 			return result == true, message
 		end,
+		-- The free spin: the server rolls and grants the prize (Shared/Spin)
+		OnSpin = function(): (any, string?)
+			local ok, prize, why = pcall(Net.Client.invoke, "SpinWheel")
+			if not ok then
+				return nil, "No answer from the server. Try again in a moment."
+			end
+			return prize, why
+		end,
 		-- Robux purchases (SHP): Roblox's purchase window, once the product or pass exists on the dashboard
 		OnBuyProduct = function(key: string): (boolean, string?)
 			local id = Products.idFor(key)
