@@ -131,6 +131,8 @@ local definitions: { [string]: Definition } = {
 	LessonCompleted = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Pick the title shown next to your name (a Config/LevelRewards title id, or "" for none)
 	SetTitle = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	-- Use a banked free spin: (prize table, or nil and why not). The server rolls it (Shared/Spin)
+	SpinWheel = { direction = "Function", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Pick the two jets for your Tier Unlock and open its purchase (SHP, DESIGN §8.2): (ok, why not)
 	ChooseTierUnlock = { direction = "Function", args = { "table" }, rate = { burst = 3, perSecond = 0.5 } },
 	-- Your custom callsign ("" = your username); filtered by Roblox before anyone sees it (CMP-01)
