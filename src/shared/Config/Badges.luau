@@ -9,6 +9,12 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		-- FirstBlood = 0,
 	},
 	[10773807904] = { -- the live experience (place 95037764806358)
+		-- Roblox allows 5 free badges per experience per day (then 100 R$ each): the rest are added as made
+		FirstBlood = 3539253452079701,
+		Victor = 1811915741907712,
+		GunsOnly = 4067644470962128,
+		ZoneHunter = 858516138670573,
+		HatTrick = 139601879190386,
 	},
 }
 
