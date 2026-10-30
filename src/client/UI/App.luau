@@ -228,6 +228,8 @@ local function App(props: any)
 			Data = data,
 			OnBuyProduct = props.OnBuyProduct,
 			OnBuyPass = props.OnBuyPass,
+			OnBuyCosmetic = props.OnBuyCosmetic,
+			OnEquipCosmetic = props.OnEquipCosmetic,
 			OnTechTree = function()
 				props.Navigate("TechTree")
 			end,

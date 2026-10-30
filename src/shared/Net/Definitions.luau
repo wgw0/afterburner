@@ -97,6 +97,9 @@ local definitions: { [string]: Definition } = {
 	BuyModule = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
 	BuySkin = { direction = "Function", args = { "string", "string", "string?" }, rate = { burst = 4, perSecond = 2 } },
 	SetSkin = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
+	-- Cosmetics (SHP-07): buy one with Wings; equip one in its kind's slot ("" clears it)
+	BuyCosmetic = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
+	EquipCosmetic = { direction = "Function", args = { "string", "string" }, rate = { burst = 6, perSecond = 3 } },
 	-- Fit (true) or take off (false) a module the player already owns
 	SetModuleFitted = {
 		direction = "Function",

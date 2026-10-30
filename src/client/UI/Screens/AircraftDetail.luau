@@ -13,6 +13,7 @@ local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
+local Cosmetics = require(Shared.Cosmetics)
 local Progression = require(Shared.Progression)
 local Skins = require(Shared.Skins)
 local WeaponData = require(Shared.WeaponData)
@@ -411,6 +412,8 @@ local function AircraftDetail(props: any)
 		Preview = e(JetPreview, {
 			AirframeId = id,
 			Skin = Progression.skinFor(data, id),
+			Marker = Cosmetics.equipped(data, "Marker"),
+			NoseArt = Cosmetics.equipped(data, "NoseArt"),
 			Mastery = stars,
 			Size = UDim2.fromScale(0.36, 0.4),
 			Position = UDim2.fromOffset(20, 90),

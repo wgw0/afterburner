@@ -3,12 +3,15 @@
 -- vapour, and smoke / fire from a damaged engine (Smoking / OnFire attributes set by the server).
 -- Your own jet uses live flight state; other jets use the Throttle/Afterburner/GLoad attributes the
 -- server sets from each pilot's telemetry. Client-only; the server never creates effects. Follows the
--- effects quality (GraphicsController, FX-05) and the Contrails / Vapour settings.
+-- effects quality (GraphicsController, FX-05) and the Contrails / Vapour settings. A pilot's contrail
+-- cosmetic (the jet's Trail attribute, SHP-07) colours their contrails and streams display smoke from the
+-- wingtips while their afterburner's lit.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Cosmetics = require(Shared.Config.Cosmetics)
 local Flight = require(Shared.Config.Flight)
 local Trove = require(Shared.Util.Trove)
 local Units = require(Shared.Units)
@@ -31,6 +34,8 @@ type JetFx = {
 	lights: { PointLight },
 	contrails: { Trail },
 	vapour: { Trail },
+	display: { Trail }, -- coloured display smoke (a contrail cosmetic), while the afterburner's lit
+	coloured: boolean, -- the pilot has a contrail cosmetic
 	smoke: { ParticleEmitter },
 	fire: { ParticleEmitter },
 	trove: Trove.Trove,
@@ -73,8 +78,18 @@ local function setup(model: Model)
 		return
 	end
 	local trove = Trove.new()
-	local fx: JetFx =
-		{ model = model, flames = {}, lights = {}, contrails = {}, vapour = {}, smoke = {}, fire = {}, trove = trove }
+	local fx: JetFx = {
+		model = model,
+		flames = {},
+		lights = {},
+		contrails = {},
+		vapour = {},
+		display = {},
+		coloured = false,
+		smoke = {},
+		fire = {},
+		trove = trove,
+	}
 
 	for _, nozzle in root:GetChildren() do
 		if nozzle:IsA("Attachment") and string.match(nozzle.Name, "^Nozzle%d+$") then
@@ -151,8 +166,40 @@ local function setup(model: Model)
 			vapour.Transparency = NumberSequence.new(0.5, 1)
 			vapour.WidthScale = NumberSequence.new(0.3, 1)
 			table.insert(fx.vapour, vapour)
+
+			local display = trailPair(root, tip, side .. "Display", trove)
+			display.Lifetime = 2.5
+			display.Transparency = NumberSequence.new(0.15, 1)
+			display.WidthScale = NumberSequence.new(1, 4)
+			display.LightInfluence = 0.6
+			table.insert(fx.display, display)
 		end
 	end
+
+	-- The pilot's contrail colours (white without a cosmetic)
+	local function recolour()
+		local item = Cosmetics.get((model:GetAttribute("Trail") :: string?) or "")
+		local colours = if item and item.Kind == "Trail" and item.Colours then item.Colours else nil
+		local sequence = ColorSequence.new(Color3.new(1, 1, 1))
+		if colours and #colours == 1 then
+			sequence = ColorSequence.new(colours[1])
+		elseif colours then
+			local points = {}
+			for i, colour in colours do
+				table.insert(points, ColorSequenceKeypoint.new((i - 1) / (#colours - 1), colour))
+			end
+			sequence = ColorSequence.new(points)
+		end
+		fx.coloured = colours ~= nil
+		for _, trail in fx.contrails do
+			trail.Color = sequence
+		end
+		for _, trail in fx.display do
+			trail.Color = sequence
+		end
+	end
+	recolour()
+	trove:Add(model:GetAttributeChangedSignal("Trail"):Connect(recolour))
 
 	active[model] = fx
 	trove:Add(model.AncestryChanged:Connect(function()
@@ -205,6 +252,10 @@ local function update()
 		local vapourOn = vapourAllowed and gLoad > Flight.VAPOUR_G
 		for _, trail in fx.vapour do
 			trail.Enabled = vapourOn
+		end
+		local displayOn = contrailsAllowed and fx.coloured and afterburner
+		for _, trail in fx.display do
+			trail.Enabled = displayOn
 		end
 	end
 end

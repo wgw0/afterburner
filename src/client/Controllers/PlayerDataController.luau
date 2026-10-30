@@ -83,6 +83,15 @@ function PlayerDataController:SetSkin(airframeId: string, skinId: string): (bool
 	return ask("SetSkin", airframeId, skinId)
 end
 
+-- Cosmetics (SHP-07): buy one with Wings (it's equipped too), or equip one ("" clears the kind's slot)
+function PlayerDataController:BuyCosmetic(id: string): (boolean, string?)
+	return ask("BuyCosmetic", id)
+end
+
+function PlayerDataController:EquipCosmetic(kind: string, id: string): (boolean, string?)
+	return ask("EquipCosmetic", kind, id)
+end
+
 function PlayerDataController:SetModuleFitted(airframeId: string, moduleId: string, fitted: boolean): (boolean, string?)
 	return ask("SetModuleFitted", airframeId, moduleId, fitted)
 end

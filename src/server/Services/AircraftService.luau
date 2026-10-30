@@ -17,6 +17,7 @@ local Callsign = require(Shared.Callsign)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
 local KillMarkers = require(Shared.KillMarkers)
+local NoseArt = require(Shared.NoseArt)
 local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
@@ -67,6 +68,8 @@ local AircraftService = {
 	skinFor = nil :: ((Player, string) -> string?)?,
 	-- Set by ProgressionService: a player's mastery stars in a jet (its kill markers, PRG-07).
 	masteryFor = nil :: ((Player, string) -> number)?,
+	-- Set by ProgressionService: a player's equipped cosmetics (SHP-07) as { [kind] = id }.
+	cosmeticsFor = nil :: ((Player) -> { [string]: string })?,
 }
 
 local jets: { [number]: Jet } = {}
@@ -97,6 +100,15 @@ local function idleFocus(): BasePart?
 	local range = workspace:FindFirstChild("TestRange")
 	local strip = range and range:FindFirstChild("Runway") and range.Runway:FindFirstChild("Strip")
 	return if strip and strip:IsA("BasePart") then strip else nil
+end
+
+-- Puts a pilot's cosmetics on their jet (SHP-07): the Trail attribute (EffectsController colours the
+-- contrails for everyone), kill markers in their style for the jet's Mastery attribute, and nose art. Again
+-- whenever they change what's equipped mid-flight.
+function AircraftService.dress(model: Model, looks: { [string]: string })
+	model:SetAttribute("Trail", looks.Trail or "")
+	KillMarkers.apply(model, (model:GetAttribute("Mastery") :: number?) or 0, looks.Marker)
+	NoseArt.apply(model, looks.NoseArt)
 end
 
 function AircraftService:GetJet(player: Player): Jet?
@@ -215,7 +227,7 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	-- Kill markers for the pilot's mastery in this jet (needs the model in the world to find its skin)
 	local stars = if pilot and self.masteryFor then self.masteryFor(pilot, airframeId) else 0
 	model:SetAttribute("Mastery", stars)
-	KillMarkers.apply(model, stars)
+	AircraftService.dress(model, if pilot and self.cosmeticsFor then self.cosmeticsFor(pilot) else {})
 	root:SetNetworkOwner(pilot)
 	if pilot then
 		pilot.ReplicationFocus = root

@@ -40,6 +40,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Callsign",
 	"Passes",
 	"Boosters",
+	"Cosmetics",
 	"Lessons",
 	"Streak",
 	"Titles",
@@ -77,7 +78,7 @@ function PlayerData.template(): { [string]: any }
 		FreeRP = 0,
 		Aircraft = aircraft,
 		Lineup = { Economy.STARTERS[1] },
-		Cosmetics = { Camos = {}, Trails = {}, KillMarkers = {} },
+		Cosmetics = { Owned = {}, Equipped = {} }, -- Wings cosmetics (Shared/Cosmetics): [id] = true; [kind] = id
 		Passes = {}, -- [passKey] = true while owned: PassService mirrors Roblox's answer on every join and purchase
 		Boosters = { Credits = 0, RP = 0 }, -- unix time each booster runs out (Shared/Perks)
 		ProcessedReceipts = {},
