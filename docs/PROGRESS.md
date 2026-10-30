@@ -252,8 +252,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: Simple pipper (Tier I–II, 1.2 km), LCOS pipper leading the target's turn (Tier III–IV), and the EEGS bullet-stream funnel on top (Tier V+) (DEVELOPMENT.md §11.3). Each sight now looks different and the gun readout names it. Checked in Studio on the F-5E (ring), Su-27S (LCOS ring and range scale) and Tempest (funnel always on), and by Will.
 - [x] **DMG-05** Pilot damage diagram on the HUD
   - Built: a top-down jet outline above the fuel readout once you're damaged, each part coloured by its health (fine / damaged / critical / lost) and FIRE while the engine burns (DEVELOPMENT.md §12.3). Checked in Studio and by Will.
-- [ ] **MSL-08** Loft profile
-  - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude.
+- [x] **MSL-08** Loft profile
+  - Built: Tier IV+ radar missiles climb on shots of 8 km or more and dive onto the target (DEVELOPMENT.md §13.2). Simulated: faster arrival, longer reach, most at low altitude. Checked live by Will (30 October 2026).
 - [x] **MSL-09** Advanced IR (high off-boresight, flare resistance)
   - Built: the `IR_Adv` missiles (AIM-9X, IRIS-T, ASRAAM, MICA IR, R-74M) lock the jet you're looking at anywhere in their gimbal (helmet cueing, "HMD" circle on the HUD), and their imaging seekers ignore single flares: only a burst plus a hard break beats them, about half the time (DEVELOPMENT.md §15.5). Checked in Studio and by Will.
 - [x] **SNS-07** TWS
