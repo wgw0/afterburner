@@ -34,6 +34,7 @@ local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 local PassService = require(script.Parent.PassService)
 local ShopService = require(script.Parent.ShopService)
+local SpinService = require(script.Parent.SpinService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local ReportService = require(script.Parent.ReportService)
 
@@ -325,6 +326,18 @@ local COMMANDS: { [string]: Command } = {
 				return true
 			end)
 			return ok == true, `-{n} Credits`
+		end,
+	},
+	-- Free spins (test servers): bank some to try the spin (up to the bank's limit)
+	["spin.give"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who, n = target(admin, args), amount(args)
+			if not (who and n) then
+				return false, "Usage: spin.give { amount }"
+			end
+			local banked = SpinService:Give(who, n)
+			return banked ~= nil, `{who.Name} has {banked} spins ready`
 		end,
 	},
 	["take.wings"] = {

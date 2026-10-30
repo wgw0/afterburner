@@ -1741,6 +1741,15 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - Name and tag go through `TextService:FilterStringAsync` (§32).
 - Member limit 30 *(tune)*. Weekly squadron challenge. Leaderboard via `OrderedDataStore`.
 
+### 26.6 As built: the free spin (retention)
+
+- **Earning:** one spin per 20 minutes in the game (`Spin.INTERVAL`), banked up to 3 (`Spin.BANK`); a new account (and every existing save, through the template) starts with one ready. `SpinService` adds play time every 5 s and keeps two player attributes: `SpinsBanked`, and `SpinNextAt` (the server time the next spin is earned, 0 while the bank is full), refreshed whenever a spin is earned or used, so the client's countdown can't drift. Time doesn't build up while the bank is full.
+- **Prizes** (`Shared/Spin`, the achievements' five rarities and colours, CS:GO case odds): Common 79.92% 250 Credits · Uncommon 15.98% a free upgrade module for a jet you own (fitted) · Rare 3.20% 2,500 Credits · Epic 0.64% 75 Wings (half a skin) · Legendary 0.26% a base skin for a jet you own (Credits skins only, never default or level skins). **No dead prizes:** with no upgrade left, 750 Credits; with no skin left, 150 Wings.
+- **Rolling:** `SpinWheel` (server): the server's random generator picks the rarity then the prize, applied in the same save update. The client then fills a reel with random rarity-bordered cards with the prize at the stop and slides to it over 6 s (Quint ease-out); the result line names the prize in its rarity's colour. The odds are behind the (i) button.
+- **Hangar:** a gold FREE SPIN button bottom right with a sweeping shine and a pulsing border while a spin is ready, or "NEXT FREE SPIN" and a live countdown. The window renders in its own ScreenGui (the menu uses Global ZIndex, which put its backdrop over its own buttons).
+- **Never sold:** a paid random prize is gambling (DESIGN §8.1); spins are only earned by playing. Test servers: admin `spin.give { amount }`.
+- Tested in `Spin.spec` (timing, odds, prize rules, fallbacks) and in play (a Common spin: the reel, the result, the countdown carrying on).
+
 ### 26.5 Tasks
 
 | ID | Task | Phase |

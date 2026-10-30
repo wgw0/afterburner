@@ -47,6 +47,18 @@ function SpinService:Spin(player: Player): (Spin.Prize?, string?)
 	return prize, why
 end
 
+-- Test servers (admin spin.give): bank spins, up to the bank's limit. Returns how many are banked.
+function SpinService:Give(player: Player, count: number): number?
+	local banked, state = DataService:Update(player, function(data)
+		data.Spin.Banked = math.clamp(data.Spin.Banked + count, 0, Spin.BANK)
+		return data.Spin.Banked, data.Spin
+	end)
+	if state then
+		publish(player, state)
+	end
+	return banked
+end
+
 function SpinService:Init()
 	Net.Server.handle("SpinWheel", function(player: Player)
 		return self:Spin(player)

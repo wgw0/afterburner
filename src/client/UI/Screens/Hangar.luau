@@ -7,9 +7,11 @@
 --   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right),
 --   OnSpin() -> (prize?, err) (the free-spin button bottom right and its window).
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
+local ReactRoblox = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
@@ -312,13 +314,26 @@ local function Hangar(props: any)
 				end,
 			})
 			else nil,
+		-- Its own ScreenGui above the menu: the menu draws with Global ZIndex, which put the window's backdrop
+		-- over its own buttons
 		SpinDialog = if spinOpen and props.OnSpin
-			then e(SpinDialog, {
-				OnSpin = props.OnSpin,
-				OnClose = function()
-					setSpinOpen(false)
-				end,
-			})
+			then ReactRoblox.createPortal(
+				e("ScreenGui", {
+					Name = "AfterburnerSpin",
+					DisplayOrder = 30,
+					IgnoreGuiInset = true,
+					ResetOnSpawn = false,
+					ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+				}, {
+					Dialog = e(SpinDialog, {
+						OnSpin = props.OnSpin,
+						OnClose = function()
+							setSpinOpen(false)
+						end,
+					}),
+				}),
+				Players.LocalPlayer:WaitForChild("PlayerGui")
+			)
 			else nil,
 		Lineup = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),
