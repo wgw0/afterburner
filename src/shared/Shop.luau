@@ -3,6 +3,7 @@
 -- (DEVELOPMENT.md §27, SHP-01/02). Pure: ShopService wraps it around MarketplaceService.ProcessReceipt and
 -- the save; the tests drive it directly.
 
+local Perks = require(script.Parent.Perks)
 local Products = require(script.Parent.Config.Products)
 local PlayerData = require(script.Parent.PlayerData)
 local TechTree = require(script.Parent.TechTree)
@@ -92,7 +93,8 @@ local function unlockJets(data: { [string]: any }, tier: number): { string }
 end
 
 -- Applies a product to a save. Returns a short description of what was granted, or errors.
-function Shop.grant(data: { [string]: any }, key: string): string
+-- now: the unix time (boosters start from it); os.time() if not given.
+function Shop.grant(data: { [string]: any }, key: string, now: number?): string
 	local product = Products.LIST[key]
 	if not product then
 		error(`unknown product {key}`)
@@ -112,6 +114,9 @@ function Shop.grant(data: { [string]: any }, key: string): string
 		end
 		data.PendingTierUnlock = false
 		return `Tier {product.Tier}: {table.concat(jets, ", ")}`
+	elseif product.Kind == "Booster" then
+		Perks.extendBooster(data, product.Booster :: string, now or os.time())
+		return `{product.Booster} booster, +1 hour`
 	end
 	error(`no grant for {product.Kind}`)
 end
@@ -122,12 +127,17 @@ export type ReceiptResult = "Granted" | "AlreadyGranted"
 -- granted again never; otherwise the product is applied to a copy of the save, and only if that works is
 -- the copy written back with the purchase id remembered. An error leaves the save untouched (the caller
 -- answers NotProcessedYet and Roblox retries). Returns the result and what was granted.
-function Shop.processReceipt(data: { [string]: any }, purchaseId: string, key: string): (ReceiptResult, string?)
+function Shop.processReceipt(
+	data: { [string]: any },
+	purchaseId: string,
+	key: string,
+	now: number?
+): (ReceiptResult, string?)
 	if table.find(data.ProcessedReceipts, purchaseId) then
 		return "AlreadyGranted", nil
 	end
 	local copy = PlayerData.deepCopy(data)
-	local detail = Shop.grant(copy, key)
+	local detail = Shop.grant(copy, key, now)
 	for field in data do
 		if copy[field] == nil then
 			data[field] = nil

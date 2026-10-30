@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Passes = require(Shared.Config.Passes)
+local Perks = require(Shared.Perks)
 local Products = require(Shared.Config.Products)
 local Shop = require(Shared.Shop)
 local Skins = require(Shared.Skins)
@@ -100,8 +101,26 @@ local function row(order: number, cards: { [string]: any })
 	}, cards)
 end
 
+local function clock(seconds: number): string
+	return string.format("%d:%02d", seconds // 60, seconds % 60)
+end
+
 local function ShopScreen(props: any)
 	local data = props.Data
+	-- Tick once a second so running boosters count down
+	local now, setNow = React.useState(os.time())
+	React.useEffect(function()
+		local running = true
+		task.spawn(function()
+			while running do
+				task.wait(1)
+				setNow(os.time())
+			end
+		end)
+		return function()
+			running = false
+		end
+	end, {})
 	local children: { [string]: any } = {
 		Layout = C.List({ Gap = 14 }),
 		Padding = e("UIPadding", {
@@ -183,6 +202,27 @@ local function ShopScreen(props: any)
 	end
 	children.Unlock = row(21, unlockCards)
 
+	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
+	children.BoosterTitle = section("BOOSTERS", 25)
+	local boosterCards = {}
+	for i, key in { "CreditsBooster", "RPBooster" } do
+		local product = Products.LIST[key]
+		local left = Perks.boosterLeft(data, product.Booster :: string, now)
+		boosterCards[key] = e(Card, {
+			Title = if product.Booster == "Credits" then "2x Credits" else "2x RP",
+			Detail = if left > 0
+				then `Running: {clock(left)} left. Another adds an hour.`
+				else `Double the {if product.Booster == "Credits" then "Credits" else "research points"} from every match for an hour.`,
+			Action = if Products.idFor(key) then `R$ {product.Price}` else nil,
+			Highlight = if left > 0 then Theme.Good else nil,
+			Order = i,
+			OnClick = function()
+				return props.OnBuyProduct(key)
+			end,
+		})
+	end
+	children.Boosters = row(26, boosterCards)
+
 	-- Game passes
 	children.PassTitle = section("PASSES", 30)
 	local passCards = {}
@@ -206,11 +246,6 @@ local function ShopScreen(props: any)
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)
 	children.Soon = row(41, {
-		VIP = e(
-			Card,
-			{ Title = "VIP Pilot", Detail = "+25% Credits, a VIP name tag and an exclusive camo.", Order = 1 }
-		),
-		Boosters = e(Card, { Title = "Boosters", Detail = "Double RP or Credits for an hour.", Order = 2 }),
 		Season = e(Card, { Title = "Season Pass", Detail = "A free and a premium track of rewards.", Order = 3 }),
 		Starter = e(Card, { Title = "Starter Bundle", Detail = "A camo, a booster and Wings, once.", Order = 4 }),
 		Premium = e(Card, { Title = "Premium Jets", Detail = "Named variants with a unique camo.", Order = 5 }),

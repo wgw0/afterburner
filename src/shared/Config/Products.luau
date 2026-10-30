@@ -9,13 +9,16 @@
 --   Wings: adds Amount Wings (the premium currency for cosmetics).
 --   TierUnlock: two jets of Tier, chosen by the buyer, researched and owned (Shop.tierUnlockOffer has the
 --     rules: only the tier above your highest owned jet, never past Tier V).
+--   Booster: doubles Credits or RP from matches for an hour (Shared/Perks: another adds an hour; capped at
+--     ×2 with VIP).
 
 export type Product = {
-	Kind: "Wings" | "TierUnlock",
+	Kind: "Wings" | "TierUnlock" | "Booster",
 	DisplayName: string,
 	Price: number, -- Robux, as set on the dashboard
 	Amount: number?, -- Wings
 	Tier: number?, -- TierUnlock
+	Booster: string?, -- Booster: "Credits" | "RP"
 }
 
 local Products = {}
@@ -33,6 +36,13 @@ Products.LIST = table.freeze({
 	TierUnlock3 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier III", Price = 199, Tier = 3 }),
 	TierUnlock4 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier IV", Price = 299, Tier = 4 }),
 	TierUnlock5 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier V", Price = 399, Tier = 5 }),
+	CreditsBooster = table.freeze({
+		Kind = "Booster",
+		DisplayName = "2x Credits (1 hour)",
+		Price = 75,
+		Booster = "Credits",
+	}),
+	RPBooster = table.freeze({ Kind = "Booster", DisplayName = "2x RP (1 hour)", Price = 75, Booster = "RP" }),
 }) :: { [string]: Product }
 
 local BY_UNIVERSE: { [number]: { [string]: number } } = {

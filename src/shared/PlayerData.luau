@@ -38,6 +38,8 @@ PlayerData.REPLICATED = table.freeze({
 	"Achievements",
 	"Title",
 	"Callsign",
+	"Passes",
+	"Boosters",
 	"Lessons",
 	"Streak",
 	"Titles",
@@ -76,7 +78,8 @@ function PlayerData.template(): { [string]: any }
 		Aircraft = aircraft,
 		Lineup = { Economy.STARTERS[1] },
 		Cosmetics = { Camos = {}, Trails = {}, KillMarkers = {} },
-		Passes = {}, -- cache only; always re-verify with UserOwnsGamePassAsync
+		Passes = {}, -- [passKey] = true while owned: PassService mirrors Roblox's answer on every join and purchase
+		Boosters = { Credits = 0, RP = 0 }, -- unix time each booster runs out (Shared/Perks)
 		ProcessedReceipts = {},
 		Settings = Settings.defaults(),
 		Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },

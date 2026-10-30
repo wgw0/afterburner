@@ -114,7 +114,10 @@ return function(ctx)
 			local replica = PlayerData.replica(PlayerData.template())
 			expect(replica.Credits ~= nil).toBe(true)
 			expect(replica.ProcessedReceipts).toBe(nil)
-			expect(replica.Passes).toBe(nil)
+			-- Passes is on the client since SHP-03: just which passes you own (already public as player
+			-- attributes), needed for the lineup slot count
+			expect(replica.Passes ~= nil).toBe(true)
+			expect(replica.LevelRewardsClaimed).toBe(nil)
 			expect(replica.Version).toBe(nil)
 		end)
 

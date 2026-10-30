@@ -147,8 +147,9 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		-- A player's title (Config/LevelRewards) after their name
 		local player = if score.userId ~= 0 then Players:GetPlayerByUserId(score.userId) else nil
 		local title = player and player:GetAttribute("Title") :: string?
+		local vip = if player and player:GetAttribute("Pass_VIP") == true then "VIP " else "" -- the VIP Pilot pass
 		local values = {
-			if title and title ~= "" then `{rank}. {score.name} · {title}` else `{rank}. {score.name}`,
+			if title and title ~= "" then `{rank}. {vip}{score.name} · {title}` else `{rank}. {vip}{score.name}`,
 			tostring(score.kills),
 			tostring(score.assists),
 			tostring(score.deaths),

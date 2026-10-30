@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
+local Perks = require(Shared.Perks)
 
 local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
@@ -38,6 +39,43 @@ local function useTopbarLeft(): number
 		end
 	end, {})
 	return left
+end
+
+-- While a booster runs: "2x CREDITS 54:10" (and/or RP) under the wallet, counting down.
+local function BoosterChip(props: { Data: any })
+	local now, setNow = React.useState(os.time())
+	React.useEffect(function()
+		local running = true
+		task.spawn(function()
+			while running do
+				task.wait(1)
+				setNow(os.time())
+			end
+		end)
+		return function()
+			running = false
+		end
+	end, {})
+	local parts = {}
+	for _, kind in { "Credits", "RP" } do
+		local left = Perks.boosterLeft(props.Data, kind, now)
+		if left > 0 then
+			table.insert(parts, string.format("2x %s %d:%02d", string.upper(kind), left // 60, left % 60))
+		end
+	end
+	if #parts == 0 then
+		return nil
+	end
+	return e(C.Label, {
+		Text = table.concat(parts, "   "),
+		Size = UDim2.fromOffset(320, 16),
+		Position = UDim2.new(1, -20, 1, -2),
+		AnchorPoint = Vector2.new(1, 1),
+		Bold = true,
+		TextSize = 12,
+		Align = "Right",
+		Color = Theme.Good,
+	})
 end
 
 local function TopBar(props: any)
@@ -83,6 +121,7 @@ local function TopBar(props: any)
 			Shop = tab("Shop", "SHOP", 4),
 			Settings = tab("Settings", "SETTINGS", 5),
 		}),
+		Boosters = e(BoosterChip, { Data = data }),
 		Wallet = e("Frame", {
 			Size = UDim2.fromOffset(640, Theme.TopBar),
 			Position = UDim2.new(1, -20, 0, 0),

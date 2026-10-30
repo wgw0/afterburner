@@ -903,9 +903,11 @@ local function update(dt: number)
 			end
 		end
 		styleMarker(m, markerState)
+		local pilot = Players:GetPlayerByUserId((model:GetAttribute("PilotUserId") :: number?) or 0)
 		m.label.Text = string.format(
-			"%s%s %.1fkm",
+			"%s%s%s %.1fkm",
 			if markerState == "Track" then "TWS · " else "",
+			if pilot and pilot:GetAttribute("Pass_VIP") == true then "VIP " else "", -- the VIP Pilot pass
 			(model:GetAttribute("PilotName") :: string?) or "?",
 			range / 1000
 		)
