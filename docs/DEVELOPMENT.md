@@ -1838,6 +1838,13 @@ end
 - **Spending Wings** (first part of SHP-04): every skin sold for Credits can also be bought for `Skins.WINGS_PRICE` (150) Wings, or a skin's own `Wings` price: a second button on its row on the jet's page (`BuySkin` takes a currency; Wings spending is logged as an economy sink). Default and level skins aren't sold. The smallest pack (150 Wings) always buys at least one skin (tested).
 - **Testing without Robux** (test servers): admin `shop.grant { key, jets?, purchaseId? }` grants through the same receipt path (the same `purchaseId` twice shows `AlreadyGranted`), `take.wings { amount }` undoes Wings. Checked in play: 100 Wings granted once, the repeated receipt refused, both undone. `Shop.spec` covers the rules, the copy-or-nothing grant and that products only grant Wings or Tier Unlocks.
 
+### 27.7 As built: passes and boosters (SHP-03)
+
+- **What they give** (`Shared/Perks`): **VIP Pilot** (399 R$) +25% Credits from every match, a VIP tag before the name (scoreboard and jet labels) and one more daily challenge reroll; **Extra Lineup Slot** (149 R$) one more lineup slot; **boosters** (75 R$ developer products, `CreditsBooster` / `RPBooster`) double Credits or RP from matches for an hour, and another adds an hour. A player's own perks never multiply rewards past ×2 (VIP with a Credits booster is ×2, not ×2.5); they show as their own line in the match rewards ("VIP + Booster"). The VIP camo comes with the cosmetics batch (SHP-07).
+- **Ownership:** `PassService` checks Roblox on every join and purchase, keeps the `Pass_<name>` player attributes, and mirrors ownership into the save as `data.Passes` (replicated, so the client's lineup slot count matches). The experience's creator owns every pass. Boosters are `data.Boosters` (unix time each runs out). The top bar shows running boosters with a countdown; the Shop has a Boosters section.
+- **Ids:** both experiences have all three passes and both boosters (`Config/Passes`, `Config/Products`), managed pricing off. Test servers: admin `booster.clear`.
+- Tested in `Perks.spec` (each perk, the ×2 cap, booster time adding up, the reward line) and in play.
+
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
 
 ---

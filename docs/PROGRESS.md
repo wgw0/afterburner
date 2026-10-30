@@ -356,6 +356,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **SHP-02** ProcessReceipt with idempotency and failure safety
   - Built: a purchase id is granted once; the grant works on a copy of the save and is kept only if it succeeds; the save is written straight away. Plus the Tier Unlock (pick two jets on the Tech Tree). Checked in play through `shop.grant` and by Will.
 - [ ] **SHP-03** Game pass ownership checks and benefits
+  - Built: VIP Pilot (+25% Credits, VIP tag, extra reroll), Extra Lineup Slot and Custom Callsign passes, and 2x Credits / RP boosters, created in both experiences (DEVELOPMENT.md §27.7). The VIP camo waits for SHP-07. Waiting on Will's test.
 - [ ] **SHP-04** Wings transactions and cosmetics granting
   - Started: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6). Wings-only cosmetics come with SHP-07.
 - [ ] **SHP-05** Weekly rotation, bundles, first-purchase offer
