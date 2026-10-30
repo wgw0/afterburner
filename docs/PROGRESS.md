@@ -238,6 +238,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - 2 of 15: the MiG-21bis, from `tools/blender/mig21_generate.py`. It is measured from the MiG-21PF three-view, scaled to the bis's 7.154 m span, with the bis's larger dorsal spine taken from photos. 29 parts, 10.4k triangles. Three skins from `tools/blender/mig21_paint.py`: Natural Metal (the free default), Interceptor Grey and Tactical Camouflage at 5,000 Credits. Checked in play: AI MiGs spawned in the skins, and their ailerons, flaps, stabilators and rudder moved.
   - Next: the Mirage IIIE, then the rest of the launch roster.
 - [ ] **FLT-08** Variable geometry (F-14)
+  - Built: the F-14A, MiG-23MLD and Tornado F3 sweep their wings with Mach: forward for lift and turning when slow, back for less drag when fast, and the wings, flaps and wingtip trails swing on the model to match (DEVELOPMENT.md §6.4). Waiting on Will's test.
   - Not started. The F-14A and Tornado F3 fly with fixed mid-sweep figures and models posed at a fixed sweep.
 - [x] **INP-05** Rebinding UI and persisted bindings
   - Every control is an action in `Config/Bindings` with keyboard and gamepad defaults; `BindingsController` serves every controller. Settings has a KEY BINDINGS panel (click, press a key or button; a key in use swaps; reset to defaults); only changes are saved, validated on the server (`Bindings.spec`, 14 tests). The HUD key line and lesson hints show the player's keys. Checked in play (fire missile moved to G, flares and chaff swapped, saved, reset) and by Will with a controller.
