@@ -1,5 +1,5 @@
 --!strict
--- The menu root (UI-01): a top bar (pilot level, Credits, free RP, navigation) and the current screen.
+-- The menu root (UI-01): a top bar (pilot level, Credits, free RP, Wings, navigation) and the current screen.
 -- MenuController owns the state and re-renders this with fresh props; screens only send intents back.
 -- props: Data, Screen ("Hangar" | "TechTree" | "Settings" | "Detail" | "Results"), DetailId, Navigate(screen, id?),
 --   plus everything the screens need (see MenuController).
@@ -18,6 +18,7 @@ local AircraftDetail = require(Screens.AircraftDetail)
 local Career = require(Screens.Career)
 local Hangar = require(Screens.Hangar)
 local Results = require(Screens.Results)
+local ShopScreen = require(Screens.Shop)
 local SettingsScreen = require(Screens.Settings)
 local Training = require(Screens.Training)
 local TechTree = require(Screens.TechTree)
@@ -47,7 +48,7 @@ local function TopBar(props: any)
 		return e(C.Button, {
 			Text = label,
 			Style = if props.Screen == name then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(140, 40),
+			Size = UDim2.fromOffset(124, 40),
 			TextSize = 14,
 			LayoutOrder = order,
 			OnClick = function()
@@ -70,7 +71,7 @@ local function TopBar(props: any)
 			Color = Theme.Accent,
 		}),
 		Tabs = e("Frame", {
-			Size = UDim2.fromOffset(620, 40),
+			Size = UDim2.fromOffset(668, 40),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
@@ -79,10 +80,11 @@ local function TopBar(props: any)
 			Hangar = tab("Hangar", "HANGAR", 1),
 			Tree = tab("TechTree", "TECH TREE", 2),
 			Career = tab("Career", "CAREER", 3),
-			Settings = tab("Settings", "SETTINGS", 4),
+			Shop = tab("Shop", "SHOP", 4),
+			Settings = tab("Settings", "SETTINGS", 5),
 		}),
 		Wallet = e("Frame", {
-			Size = UDim2.fromOffset(520, Theme.TopBar),
+			Size = UDim2.fromOffset(640, Theme.TopBar),
 			Position = UDim2.new(1, -20, 0, 0),
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundTransparency = 1,
@@ -110,6 +112,21 @@ local function TopBar(props: any)
 				TextSize = 18,
 				Align = "Right",
 				LayoutOrder = 2,
+			}),
+			-- Wings (the premium currency): a click opens the shop
+			Wings = e("TextButton", {
+				Text = `{C.number(data.Wings or 0)} Wings`,
+				Size = UDim2.fromOffset(110, 40),
+				BackgroundTransparency = 1,
+				Font = Theme.FontBold,
+				TextSize = 16,
+				TextColor3 = Theme.Wings,
+				TextXAlignment = Enum.TextXAlignment.Right,
+				AutoButtonColor = false,
+				LayoutOrder = 4,
+				[React.Event.Activated] = function()
+					props.Navigate("Shop")
+				end,
 			}),
 			FreeRP = e(C.Label, {
 				Text = `{C.number(data.FreeRP)} free RP`,
@@ -167,6 +184,15 @@ local function App(props: any)
 	local body
 	if screen == "Results" and props.Match then
 		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data, OnReport = props.OnReport })
+	elseif screen == "Shop" then
+		body = e(ShopScreen, {
+			Data = data,
+			OnBuyProduct = props.OnBuyProduct,
+			OnBuyPass = props.OnBuyPass,
+			OnTechTree = function()
+				props.Navigate("TechTree")
+			end,
+		})
 	elseif screen == "Career" then
 		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle, OnSetCallsign = props.OnSetCallsign })
 	elseif screen == "Settings" then

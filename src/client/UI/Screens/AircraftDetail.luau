@@ -3,7 +3,7 @@
 -- their costs and Fit buttons, the loadout, camo, and adding the jet to your lineup.
 -- props: Data, AirframeId, OnBack(), OnBuyModule(id, moduleId) -> (ok, err),
 --   OnSetModuleFitted(id, moduleId, fitted) -> (ok, err), OnLineup(ids) -> (ok, err),
---   OnBuySkin(id, skinId) -> (ok, err), OnSetSkin(id, skinId) -> (ok, err)
+--   OnBuySkin(id, skinId, currency?) -> (ok, err), OnSetSkin(id, skinId) -> (ok, err)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -142,7 +142,7 @@ local function ModuleRow(props: any)
 	})
 end
 
--- One paint scheme: in use, owned (USE), or for sale (BUY).
+-- One paint scheme: in use, owned (USE), or for sale for Credits (BUY) or Wings.
 local function SkinRow(props: any)
 	local skin, data, airframeId = props.Skin, props.Data, props.AirframeId
 	local pending, setPending = React.useState(false)
@@ -151,23 +151,36 @@ local function SkinRow(props: any)
 	local owned = Progression.ownsSkin(data, airframeId, skin.Id)
 	local inUse = Progression.skinFor(data, airframeId) == skin.Id
 	local canBuy, reason = Progression.canBuySkin(data, airframeId, skin.Id)
+	local wingsPrice = Skins.wingsPrice(skin)
+	local canBuyWings = Progression.canBuySkin(data, airframeId, skin.Id, "Wings")
+	local showWings = wingsPrice ~= nil and not owned and entry ~= nil and entry.Owned == true
+	local function buy(currency: string?)
+		setPending(true)
+		setMessage(nil)
+		task.spawn(function()
+			local done, err = props.OnBuySkin(airframeId, skin.Id, currency)
+			setPending(false)
+			setMessage(if done then nil else err)
+		end)
+	end
 	local status = if message
 		then message
 		elseif inUse then "In use"
 		elseif owned then "Owned"
 		elseif not (entry and entry.Owned) then "Buy the jet first"
 		elseif canBuy then `{C.number(skin.Credits or 0)} Cr`
+		elseif showWings and canBuyWings then `{C.number(wingsPrice :: number)} Wings`
 		else reason
 	return e("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1, LayoutOrder = props.Order }, {
 		Name = e(C.Label, {
 			Text = skin.DisplayName,
-			Size = UDim2.new(1, -100, 0, 20),
+			Size = UDim2.new(1, if showWings then -196 else -100, 0, 20),
 			Bold = inUse,
 			TextSize = 14,
 		}),
 		Status = e(C.Label, {
 			Text = status,
-			Size = UDim2.new(1, -100, 0, 16),
+			Size = UDim2.new(1, if showWings then -196 else -100, 0, 16),
 			Position = UDim2.fromOffset(0, 22),
 			TextSize = 12,
 			Color = if message then Theme.Warn elseif inUse then Theme.Good else Theme.Dim,
@@ -181,16 +194,44 @@ local function SkinRow(props: any)
 			Pending = pending,
 			Disabled = inUse or (not owned and not canBuy),
 			OnClick = function()
+				if not owned then
+					buy(nil)
+					return
+				end
 				setPending(true)
 				setMessage(nil)
 				task.spawn(function()
-					local fn = if owned then props.OnSetSkin else props.OnBuySkin
-					local done, err = fn(airframeId, skin.Id)
+					local done, err = props.OnSetSkin(airframeId, skin.Id)
 					setPending(false)
 					setMessage(if done then nil else err)
 				end)
 			end,
 		}),
+		-- Or straight away with Wings (SHP-04)
+		Wings = if showWings
+			then e("TextButton", {
+				Text = `{wingsPrice} W`,
+				Size = UDim2.fromOffset(88, 36),
+				Position = UDim2.new(1, -184, 0, 4),
+				BackgroundColor3 = Theme.Wings,
+				BackgroundTransparency = if canBuyWings then 0 else 0.6,
+				Font = Theme.FontBold,
+				TextSize = 13,
+				TextColor3 = Theme.Background,
+				AutoButtonColor = canBuyWings,
+				[React.Event.Activated] = function()
+					if pending then
+						return
+					end
+					if not canBuyWings then
+						local _, why = Progression.canBuySkin(data, airframeId, skin.Id, "Wings")
+						setMessage(why)
+						return
+					end
+					buy("Wings")
+				end,
+			}, { Corner = C.corner() })
+			else nil,
 	})
 end
 

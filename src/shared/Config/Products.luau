@@ -24,7 +24,8 @@ Products.MAX_UNLOCK_TIER = 5 -- Tiers VI–VIII are only ever researched (DESIGN
 Products.UNLOCK_JETS = 2 -- jets a Tier Unlock grants
 
 Products.LIST = table.freeze({
-	Wings100 = table.freeze({ Kind = "Wings", DisplayName = "100 Wings", Price = 99, Amount = 100 }),
+	-- The smallest pack buys at least one skin (Skins.WINGS_PRICE): no pack leaves you just short
+	Wings150 = table.freeze({ Kind = "Wings", DisplayName = "150 Wings", Price = 149, Amount = 150 }),
 	Wings550 = table.freeze({ Kind = "Wings", DisplayName = "550 Wings", Price = 499, Amount = 550 }),
 	Wings1200 = table.freeze({ Kind = "Wings", DisplayName = "1,200 Wings", Price = 999, Amount = 1200 }),
 	Wings2500 = table.freeze({ Kind = "Wings", DisplayName = "2,500 Wings", Price = 1999, Amount = 2500 }),
@@ -36,7 +37,7 @@ Products.LIST = table.freeze({
 
 local BY_UNIVERSE: { [number]: { [string]: number } } = {
 	[10773135125] = { -- the test experience
-		-- Wings100 = 0,
+		-- Wings150 = 0,
 	},
 }
 

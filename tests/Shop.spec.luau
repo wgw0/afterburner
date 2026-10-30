@@ -29,6 +29,17 @@ return function(ctx)
 			end
 		end)
 
+		it("the smallest Wings pack buys at least one skin", function()
+			local Skins = require(ctx.Shared.Skins)
+			local smallest = math.huge
+			for _, product in Products.LIST do
+				if product.Kind == "Wings" then
+					smallest = math.min(smallest, product.Amount :: number)
+				end
+			end
+			expect(smallest >= Skins.WINGS_PRICE).toBe(true)
+		end)
+
 		it("Tier Unlocks exist for Tiers II to V and cost more each tier", function()
 			local last = 0
 			for tier = 2, 5 do
@@ -74,8 +85,8 @@ return function(ctx)
 			expect(data.Wings).toBe(550)
 			expect((Shop.processReceipt(data, "p1", "Wings550"))).toBe("AlreadyGranted")
 			expect(data.Wings).toBe(550)
-			expect((Shop.processReceipt(data, "p2", "Wings100"))).toBe("Granted")
-			expect(data.Wings).toBe(650)
+			expect((Shop.processReceipt(data, "p2", "Wings150"))).toBe("Granted")
+			expect(data.Wings).toBe(700)
 		end)
 
 		it("an error mid-grant leaves the save untouched and the receipt unprocessed (so Roblox retries)", function()
@@ -111,6 +122,32 @@ return function(ctx)
 				end
 			end
 			expect(count).toBe(Products.UNLOCK_JETS)
+		end)
+	end)
+
+	describe("spending Wings (SHP-04)", function()
+		local Progression = require(ctx.Shared.Progression)
+		local Skins = require(ctx.Shared.Skins)
+
+		it("a skin sold for Credits can be bought for Wings instead; default and level skins can't", function()
+			local data = fresh()
+			data.Wings = Skins.WINGS_PRICE + 10
+			local credits = data.Credits
+			expect((Progression.buySkin(data, "F5E", "Desert", "Wings"))).toBe(true)
+			expect(data.Wings).toBe(10)
+			expect(data.Credits).toBe(credits)
+			expect(Progression.ownsSkin(data, "F5E", "Desert")).toBe(true)
+			expect((Progression.canBuySkin(data, "F5E", "Ghost", "Wings"))).toBe(false)
+		end)
+
+		it("not without enough Wings, and nothing changes", function()
+			local data = fresh()
+			data.Wings = Skins.WINGS_PRICE - 1
+			local ok, why = Progression.buySkin(data, "F5E", "Pacific", "Wings")
+			expect(ok).toBe(false)
+			expect(string.find(why :: string, "Wings", 1, true) ~= nil).toBe(true)
+			expect(data.Wings).toBe(Skins.WINGS_PRICE - 1)
+			expect(Progression.ownsSkin(data, "F5E", "Pacific")).toBe(false)
 		end)
 	end)
 end

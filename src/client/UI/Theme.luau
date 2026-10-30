@@ -15,6 +15,7 @@ return table.freeze({
 	Text = Color3.fromRGB(240, 244, 250),
 	Dim = Color3.fromRGB(150, 162, 186),
 	Locked = Color3.fromRGB(90, 100, 120),
+	Wings = Color3.fromRGB(110, 205, 255), -- the premium currency (SHP)
 	-- Achievement rarity (Achievements.RARITIES), loot-style
 	Rarity = table.freeze({
 		Common = Color3.fromRGB(176, 190, 210),
