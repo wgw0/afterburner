@@ -89,7 +89,7 @@ LIP_TOP, LIP_BOTTOM = 500, 560
 CANARD_ROOT, CANARD_TIP = (70, 290, 470), (230, 455, 515)
 CANARD_Z = Z(418)
 
-WING_Z = Z(470)
+WING_Z = Z(440)  # a third of the way up the body's side (the bottom, 474, put it under the body)
 
 
 def wing_le_y(x):
@@ -101,8 +101,9 @@ def wing_te_y(x):
 
 
 kit.WING_Z = WING_Z
-kit.WING_ROOT_X, kit.WING_TIP_X = W(140), W(630)
-kit.WING_ROOT_LE, kit.WING_ROOT_TE = wing_le_y(W(140)), wing_te_y(W(140))
+# The root is carried in from the drawing's 140 px along the edges so its front meets the narrower forebody
+kit.WING_ROOT_X, kit.WING_TIP_X = W(110), W(630)
+kit.WING_ROOT_LE, kit.WING_ROOT_TE = wing_le_y(W(110)), wing_te_y(W(110))
 kit.WING_SWEEP_LE = math.atan((wing_le_y(W(140)) - wing_le_y(W(630))) / (W(630) - W(140)))
 kit.WING_TIP_CHORD = wing_le_y(W(630)) - wing_te_y(W(630))
 kit.WING_THICKNESS = 0.04

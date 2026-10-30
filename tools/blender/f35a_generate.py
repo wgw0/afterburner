@@ -52,12 +52,13 @@ def W(px):
 
 # (xd, half width px, bottom row, shoulder row, top row, spine half width m, exponent). The forebody is
 # chined (a flatter section); under the canopy the top is the sill, behind it the spine rises over the
-# wide body.
+# wide body. Without a spine the section's top is its shoulder row, so ahead of the windscreen the shoulder is
+# the top line: the nose rises into the windscreen.
 _BODY = [
     (0, 0.5, 368, 362, 362, 0.0, 2.0),  # radome tip
-    (100, 53, 395, 345, 330, 0.0, 1.8),
-    (200, 78, 430, 345, 310, 0.0, 1.8),
-    (230, 82, 432, 340, 300, 0.0, 1.9),  # windscreen base
+    (100, 53, 395, 330, 330, 0.0, 1.8),
+    (200, 78, 430, 310, 310, 0.0, 1.8),
+    (230, 82, 432, 300, 300, 0.0, 1.9),  # windscreen base
     (400, 103, 440, 320, 300, 0.0, 2.2),
     (560, 125, 445, 310, 250, 0.40, 2.6),  # the spine rises inside the canopy's rear
     (700, 155, 455, 310, 240, 0.50, 3.0),

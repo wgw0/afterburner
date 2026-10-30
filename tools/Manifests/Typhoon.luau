@@ -4,7 +4,7 @@
 return {
 	airframe = "Typhoon",
 	units = "metres (Roblox axes: x right, y up, z aft)",
-	studsPerMetre = 3.5714,
+	studsPerMetre = 1,
 	length = 15.96,
 	triangles = 9528,
 	parts = {
@@ -69,8 +69,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 3.2599, -0.2371, 0.5476 },
-				size = { 4.149, 0.2732, 6.1613 },
+				centre = { 3.1329, 0.0169, 0.4104 },
+				size = { 4.403, 0.2865, 6.4613 },
 			},
 			triangles = 568,
 		},
@@ -78,10 +78,10 @@ return {
 			name = "LEFlapR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 3.1927, -0.2371, -0.2632 },
+			pivot = { 3.0657, 0.0169, -0.4068 },
 			bounds = {
-				centre = { 3.1927, -0.2371, -0.6055 },
-				size = { 4.0146, 0.2137, 5.2243 },
+				centre = { 3.0657, 0.0169, -0.7658 },
+				size = { 4.2686, 0.2241, 5.5448 },
 			},
 			hinge = {
 				axis = { 0.6625, 0, 0.7491 },
@@ -95,9 +95,9 @@ return {
 			name = "FlapR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 2.25, -0.2371, 2.4852 },
+			pivot = { 2.25, 0.0169, 2.4852 },
 			bounds = {
-				centre = { 2.25, -0.2371, 2.953 },
+				centre = { 2.25, 0.0169, 2.953 },
 				size = { 1.9, 0.1148, 1.3391 },
 			},
 			hinge = {
@@ -112,9 +112,9 @@ return {
 			name = "AileronR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 4.225, -0.2371, 2.9047 },
+			pivot = { 4.225, 0.0169, 2.9047 },
 			bounds = {
-				centre = { 4.225, -0.2371, 3.1113 },
+				centre = { 4.225, 0.0169, 3.1113 },
 				size = { 1.95, 0.0709, 0.8274 },
 			},
 			hinge = {
@@ -131,7 +131,7 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 5.3745, -0.2371, 2.7196 },
+				centre = { 5.3745, 0.0169, 2.7196 },
 				size = { 0.08, 0.1, 1.5 },
 			},
 			triangles = 12,
@@ -142,8 +142,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { -3.2599, -0.2371, 0.5476 },
-				size = { 4.149, 0.2732, 6.1613 },
+				centre = { -3.1329, 0.0169, 0.4104 },
+				size = { 4.403, 0.2865, 6.4613 },
 			},
 			triangles = 568,
 		},
@@ -151,10 +151,10 @@ return {
 			name = "LEFlapL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -3.1927, -0.2371, -0.2632 },
+			pivot = { -3.0657, 0.0169, -0.4068 },
 			bounds = {
-				centre = { -3.1927, -0.2371, -0.6055 },
-				size = { 4.0146, 0.2137, 5.2243 },
+				centre = { -3.0657, 0.0169, -0.7658 },
+				size = { 4.2686, 0.2241, 5.5448 },
 			},
 			hinge = {
 				axis = { -0.6625, 0, 0.7491 },
@@ -168,9 +168,9 @@ return {
 			name = "FlapL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -2.25, -0.2371, 2.4852 },
+			pivot = { -2.25, 0.0169, 2.4852 },
 			bounds = {
-				centre = { -2.25, -0.2371, 2.953 },
+				centre = { -2.25, 0.0169, 2.953 },
 				size = { 1.9, 0.1148, 1.3391 },
 			},
 			hinge = {
@@ -185,9 +185,9 @@ return {
 			name = "AileronL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -4.225, -0.2371, 2.9047 },
+			pivot = { -4.225, 0.0169, 2.9047 },
 			bounds = {
-				centre = { -4.225, -0.2371, 3.1113 },
+				centre = { -4.225, 0.0169, 3.1113 },
 				size = { 1.95, 0.0709, 0.8274 },
 			},
 			hinge = {
@@ -204,7 +204,7 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { -5.3745, -0.2371, 2.7196 },
+				centre = { -5.3745, 0.0169, 2.7196 },
 				size = { 0.08, 0.1, 1.5 },
 			},
 			triangles = 12,
@@ -517,17 +517,17 @@ return {
 		GunMuzzle = { 0.7, -0.3218, -0.9907 },
 		Nozzle1 = { -0.508, 0, 5.6562 },
 		Nozzle2 = { 0.508, 0, 5.6562 },
-		WingtipL = { -5.3945, -0.2371, 2.7196 },
-		WingtipR = { 5.3945, -0.2371, 2.7196 },
+		WingtipL = { -5.3945, 0.0169, 2.7196 },
+		WingtipR = { 5.3945, 0.0169, 2.7196 },
 		FlareDispenser = { -0.4, -0.3218, 4.5131 },
 		ChaffDispenser = { 0.4, -0.3218, 4.5131 },
 		ChaseCam = { 0, 3.6, 19.5 },
-		Hardpoint1 = { -4.4, -0.4371, 1.7392 },
-		Hardpoint2 = { 4.4, -0.4371, 1.7392 },
-		Hardpoint3 = { -3.3, -0.4871, 0.651 },
-		Hardpoint4 = { 3.3, -0.4871, 0.651 },
-		Hardpoint5 = { -2.2, -0.4871, -0.4372 },
-		Hardpoint6 = { 2.2, -0.4871, -0.4372 },
+		Hardpoint1 = { -4.4, -0.1831, 1.7392 },
+		Hardpoint2 = { 4.4, -0.1831, 1.7392 },
+		Hardpoint3 = { -3.3, -0.2331, 0.651 },
+		Hardpoint4 = { 3.3, -0.2331, 0.651 },
+		Hardpoint5 = { -2.2, -0.2331, -0.4372 },
+		Hardpoint6 = { 2.2, -0.2331, -0.4372 },
 		Hardpoint7 = { -0.7, -0.8975, -2.6842 },
 		Hardpoint8 = { 0.7, -0.8975, -2.6842 },
 		Hardpoint9 = { -0.7, -0.8298, 0.2794 },
@@ -553,11 +553,11 @@ return {
 		},
 		WingL = {
 			size = { 4.2, 0.3, 4.6 },
-			at = { -3, -0.24, 2.2 },
+			at = { -3, 0.02, 2.2 },
 		},
 		WingR = {
 			size = { 4.2, 0.3, 4.6 },
-			at = { 3, -0.24, 2.2 },
+			at = { 3, 0.02, 2.2 },
 		},
 		Tail = {
 			size = { 0.6, 2.8, 3.4 },
