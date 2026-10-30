@@ -1,6 +1,6 @@
 --!strict
 -- A jet on a slow turntable (UI-02): a copy of the aircraft model in a ViewportFrame.
--- props: AirframeId, Skin (optional), Mastery (stars, for kill markers; optional), Marker and NoseArt (equipped
+-- props: AirframeId, Skin (optional), Mastery (stars, for kill markers; optional), Marker and WingArt (equipped
 -- cosmetics, optional), Size, Position, AnchorPoint.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local KillMarkers = require(Shared:WaitForChild("KillMarkers"))
-local NoseArt = require(Shared:WaitForChild("NoseArt"))
+local WingArt = require(Shared:WaitForChild("WingArt"))
 local Skins = require(Shared:WaitForChild("Skins"))
 local Theme = require(script.Parent.Theme)
 
@@ -40,7 +40,7 @@ local function JetPreview(props: any)
 		world.Parent = viewport
 		-- Once the world is in the game (rays don't work in a detached one): they're cast onto the skin
 		KillMarkers.apply(model, props.Mastery or 0, props.Marker)
-		NoseArt.apply(model, props.NoseArt)
+		WingArt.apply(model, props.WingArt)
 		local _, size = model:GetBoundingBox()
 		local distance = math.max(size.X, size.Z) * 1.45 + 2.8
 		local camera = Instance.new("Camera")
@@ -58,7 +58,7 @@ local function JetPreview(props: any)
 			world:Destroy()
 			camera:Destroy()
 		end
-	end, { props.AirframeId, props.Skin, props.Mastery, props.Marker, props.NoseArt })
+	end, { props.AirframeId, props.Skin, props.Mastery, props.Marker, props.WingArt })
 
 	return e("ViewportFrame", {
 		ref = viewportRef,

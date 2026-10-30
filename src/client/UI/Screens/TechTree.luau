@@ -25,6 +25,7 @@ local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local BRANCH_NAMES = { NATO = "NATO / US", East = "SOVIET / RUSSIA", Europe = "EUROPE" }
 local CARD_H = 150
 local UNLOCK_H = 76 -- the Tier Unlock banner, closed
+local TIERS_W, COLUMN_W, GAP_X = 90, 290, 18 -- the tier labels, each region's column, the gap between them
 local UNLOCK_OPEN_H = 160
 
 -- RP available toward a node: the best owned prerequisite's RP plus the free pool.
@@ -307,7 +308,7 @@ local function TechTreeScreen(props: any)
 	local bannerOpen, setBannerOpen = React.useState(false)
 	local top = if offer then (if bannerOpen then UNLOCK_OPEN_H else UNLOCK_H) else 0
 	local columns: { [string]: any } = {
-		Layout = C.List({ Horizontal = true, Gap = 18, Align = "Center" }),
+		Layout = C.List({ Horizontal = true, Gap = GAP_X, Align = "Center" }),
 	}
 	-- Each tier's row is as tall as its tallest branch (several jets in a tier stack in one row)
 	local rowHeight: { [number]: number } = {}
@@ -340,7 +341,8 @@ local function TechTreeScreen(props: any)
 			LayoutOrder = tier,
 		})
 	end
-	columns.Tiers = e("Frame", { Size = UDim2.new(0, 90, 1, 0), BackgroundTransparency = 1, LayoutOrder = 0 }, tiers)
+	columns.Tiers =
+		e("Frame", { Size = UDim2.new(0, TIERS_W, 1, 0), BackgroundTransparency = 1, LayoutOrder = 0 }, tiers)
 	for i, branch in TechTree.BRANCHES do
 		local cards: { [string]: any } = { Layout = C.List({ Gap = 14 }) }
 		cards.Head = e(C.Label, {
@@ -376,7 +378,31 @@ local function TechTreeScreen(props: any)
 			}, row)
 		end
 		columns[branch] =
-			e("Frame", { Size = UDim2.new(0, 290, 1, 0), BackgroundTransparency = 1, LayoutOrder = i }, cards)
+			e("Frame", { Size = UDim2.new(0, COLUMN_W, 1, 0), BackgroundTransparency = 1, LayoutOrder = i }, cards)
+	end
+
+	-- Faint grey lines between the region columns (and the tier labels) and between the tier rows, behind
+	-- the cards: the same width as the columns' row, centred like it
+	local width = TIERS_W + #TechTree.BRANCHES * (COLUMN_W + GAP_X)
+	local lines: { [string]: any } = {}
+	local function line(name: string, position: UDim2, size: UDim2)
+		lines[name] = e("Frame", {
+			Position = position,
+			Size = size,
+			BackgroundColor3 = Theme.Stroke,
+			BackgroundTransparency = 0.35,
+			BorderSizePixel = 0,
+			ZIndex = 0,
+		})
+	end
+	for i = 0, #TechTree.BRANCHES - 1 do
+		local x = TIERS_W + GAP_X / 2 + i * (COLUMN_W + GAP_X)
+		line(`V{i}`, UDim2.fromOffset(x - 1, 30), UDim2.fromOffset(2, total - 30))
+	end
+	local y = 30
+	for tier = 1, TechTree.MAX_TIER - 1 do
+		y += 14 + rowHeight[tier]
+		line(`H{tier}`, UDim2.fromOffset(0, y + 6), UDim2.fromOffset(width, 2))
 	end
 
 	return e("ScrollingFrame", {
@@ -397,6 +423,13 @@ local function TechTreeScreen(props: any)
 				OnChoose = props.OnChooseTierUnlock,
 			})
 			else nil,
+		Grid = e("Frame", {
+			Size = UDim2.fromOffset(width, total),
+			Position = UDim2.new(0.5, 0, 0, top),
+			AnchorPoint = Vector2.new(0.5, 0),
+			BackgroundTransparency = 1,
+			ZIndex = 0,
+		}, lines),
 		Row = e("Frame", {
 			Size = UDim2.new(1, 0, 0, total),
 			Position = UDim2.fromOffset(0, top),

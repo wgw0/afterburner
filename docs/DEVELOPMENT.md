@@ -1848,18 +1848,31 @@ end
 ### 27.8 As built: cosmetics (SHP-07)
 
 - **Catalogue** (`Config/Cosmetics`), bought with Wings, never random, account-wide (one of each kind equipped, on every jet):
-  - **Contrails** (200 Wings; Tricolour and Sunset 300): colour your contrails, and stream display smoke from the wingtips while the afterburner's lit (the Contrails setting turns both off). VIP Gold comes free with the VIP Pilot pass and stops if the pass does.
+  - **Contrails** (200 Wings; Tricolour 300): colour your contrails, and stream display smoke from the wingtips while the afterburner's lit (the Contrails setting turns both off). VIP Gold comes free with the VIP Pilot pass and stops if the pass does.
   - **Kill markers** (100; Gold Stars 150): the mastery kill markers painted as bars, roundels, jet silhouettes or gold stars.
   - **HUD themes** (150): Amber, Gold, Ice and Mint, colours the free HUD colour presets don't have. They override the HUDColour setting while equipped. The free presets stay free (they're also the colour-blind options).
-  - **Nose art** (250): Shark Mouth, Ace of Spades, Lightning Bolt and Lucky Eight, on both sides of the nose. `tools/cosmetics/nose_art.py` draws them (right side, mirrored for the left), uploaded with the Studio MCP like skin textures; the ids are in the catalogue. An item with no uploaded images shows "Coming soon" and can't be bought.
+  - **Wing art** (250): Shark Mouth, Ace of Spades, Lightning Bolt and Lucky Eight, on top of both wings, mid-span. `tools/cosmetics/wing_art.py` draws them (pointing right for the right wing, mirrored for the left, so both point outboard), uploaded with the Studio MCP like skin textures; the ids are in the catalogue. An item with no uploaded images shows "Coming soon" and can't be bought. (It started as nose art, but noses taper too much for a flat decal: Will's test, November 2026.) Sunset contrails were dropped: too close to VIP Gold.
 - **Rules** (`Shared/Cosmetics`): `buy` (spends Wings, owns it, equips it), `equip` (`""` takes it off), `equipped` (only if still owned: pass items lapse). Saved as `data.Cosmetics = { Owned, Equipped }` (replicated). Full access owns everything.
-- **On the jet:** `ProgressionService` gives `AircraftService.cosmeticsFor` the equipped set; `AircraftService.dress` sets the jet's `Trail` attribute, paints kill markers in their style and lays the nose art, at spawn and again when the pilot buys or equips something mid-flight. Everyone sees contrails (`EffectsController` reads `Trail`), kill markers and nose art; HUD themes are only on your own HUD. The hangar and aircraft page previews show your markers and nose art.
-- **Decals:** `Shared/HullDecal` lays a thin invisible plate on the visible skin by casting in from each side at a point relative to the pilot's eye (`CockpitEye`); `KillMarkers` and `NoseArt` use it. Nose art goes 60% of the way from the eye to the nose tip, found by rays back along the centreline at several heights (the radome sits below the eye line).
+- **On the jet:** `ProgressionService` gives `AircraftService.cosmeticsFor` the equipped set; `AircraftService.dress` sets the jet's `Trail` attribute, paints kill markers in their style and lays the wing art, at spawn and again when the pilot buys or equips something mid-flight. Everyone sees contrails (`EffectsController` reads `Trail`), kill markers and wing art; HUD themes are only on your own HUD. The hangar and aircraft page previews show your markers and wing art.
+- **Decals:** `Shared/HullDecal` lays a thin invisible plate on the visible skin by ray-casting onto it, and `fits` checks that a plate's corners and edge midpoints all land on the skin, so paint never hangs off a curve. `KillMarkers` casts in from each side under the canopy (`CockpitEye`). `WingArt` casts down onto each wing from the `WingtipL` / `WingtipR` attachments, trying spots across the span and along the chord, and uses the biggest decal that fits both wings.
 - **Shop:** a section per kind under the Wings packs: the price, EQUIP, or EQUIPPED (TAKE OFF).
 - **Not yet:** Wings-only camos and the VIP camo need new paint on every jet (`tools/blender/livery_paint.py`) and about 300 texture uploads into the place.
-- Tested in `Cosmetics.spec` (buying, equipping, pass items lapsing, old saves, the catalogue) and in Studio (the remotes, the save, decal placement on the F-16A, MiG-29A and F-14A).
+- Tested in `Cosmetics.spec` (buying, equipping, pass items lapsing, old saves, the catalogue) and in Studio (the remotes, the save).
 
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
+
+### 27.9 Shop layout for conversion (UI-07)
+
+What sells best on Roblox, and what we most want to sell, goes first and gets the most room. Everything stays honest: real prices before the purchase window, no fake timers, no invented "most popular" counts, nothing random (DESIGN §8).
+
+1. **VIP Pilot banner** across the top: gold, its four benefits, "One payment. Yours forever", and a big GET VIP · R$ 399 button. It's the best long-term value and Roblox players already know what a VIP pass is. Once owned it shrinks to a one-line thank-you, so owners aren't sold to.
+2. **Game passes** as big cards, each with its own colour, icon, ✓ benefits and the price on the button ("GAME PASS · ONE-TIME"). Owned passes move to the end and say OWNED ✓.
+3. **Boosters** (75 R$, the cheapest buy: the impulse purchase), with a live countdown while running.
+4. **Skip ahead** (the Tier Unlock), only while there's a next tier.
+5. **Wings packs**, with the per-Robux bonus on each and BEST VALUE on the biggest (true: the most Wings per Robux).
+6. **Cosmetics** by kind, then what's coming.
+
+Outside the Shop, the match results say what VIP would have added this match ("★ VIP Pilot would have added +N Cr", worked out from the real Credits) with SEE VIP. It isn't shown to VIP owners, or while a Credits booster runs (VIP adds nothing past the ×2 cap). Worth tracking once live: purchase-window opens per Shop visit and per results-screen view, and conversion per pass (Roblox's monetization analytics).
 
 ---
 

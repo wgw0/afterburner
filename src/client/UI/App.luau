@@ -222,7 +222,15 @@ local function App(props: any)
 	local screen = props.Screen
 	local body
 	if screen == "Results" and props.Match then
-		body = e(Results, { Match = props.Match, Rewards = props.Rewards, Data = data, OnReport = props.OnReport })
+		body = e(Results, {
+			Match = props.Match,
+			Rewards = props.Rewards,
+			Data = data,
+			OnReport = props.OnReport,
+			OnShop = function()
+				props.Navigate("Shop")
+			end,
+		})
 	elseif screen == "Shop" then
 		body = e(ShopScreen, {
 			Data = data,

@@ -1,7 +1,9 @@
 --!strict
 -- Match results (UI-06): who won, your reward lines counting up, your pilot level bar filling, and the
--- top of the scoreboard, with REPORT on other human pilots (CMP-03). props: Match (MatchState), Rewards
--- (MatchRewards payload or nil), Data, OnReport(userId).
+-- top of the scoreboard, with REPORT on other human pilots (CMP-03). Without VIP (and no Credits booster
+-- running, which VIP wouldn't add to), a line says what VIP would have added this match, with a way to the
+-- Shop (DEVELOPMENT.md §27.9). props: Match (MatchState), Rewards (MatchRewards payload or nil), Data,
+-- OnReport(userId), OnShop().
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +15,8 @@ local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
+local Passes = require(Shared.Config.Passes)
+local Perks = require(Shared.Perks)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -165,6 +169,41 @@ local function Results(props: any)
 				Bold = true,
 				Color = Theme.Rarity.Legendary,
 				LayoutOrder = 102 + i,
+			})
+		end
+		-- What VIP would have added: its +25% on this match's Credits (a running Credits booster already
+		-- reaches the ×2 cap, so then it adds nothing and the line isn't shown)
+		local vip = Players.LocalPlayer:GetAttribute(Passes.attribute("VIP")) == true
+		local extra = math.floor(rewards.Credits * (Perks.VIP_CREDITS - 1))
+		if
+			not vip
+			and extra > 0
+			and Passes.idFor("VIP")
+			and Perks.boosterLeft(data, "Credits", os.time()) == 0
+			and props.OnShop
+		then
+			rewardChildren.Vip = e("Frame", {
+				Size = UDim2.new(1, 0, 0, 34),
+				BackgroundTransparency = 1,
+				LayoutOrder = 108,
+			}, {
+				Label = e(C.Label, {
+					Text = `★ VIP Pilot would have added +{C.number(extra)} Cr this match`,
+					Size = UDim2.new(1, -110, 1, 0),
+					TextSize = 13,
+					Bold = true,
+					Color = Color3.fromRGB(255, 201, 60),
+				}),
+				Button = e(C.Button, {
+					Text = "SEE VIP",
+					Style = "Primary",
+					Color = Color3.fromRGB(255, 201, 60),
+					Size = UDim2.fromOffset(100, 30),
+					Position = UDim2.fromScale(1, 0.5),
+					AnchorPoint = Vector2.new(1, 0.5),
+					TextSize = 13,
+					OnClick = props.OnShop,
+				}),
 			})
 		end
 		if rewards.Afk then

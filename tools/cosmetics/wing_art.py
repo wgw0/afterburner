@@ -1,9 +1,9 @@
 """
-Afterburner: the nose-art decals (Config/Cosmetics "NoseArt", SHP-07). Each is 512 x 256 with a transparent
-background, drawn for the jet's right side (the nose is to the right) and mirrored for the left, so both
-point forward. Upload both and put the ids in Config/Cosmetics as Images = { right, left }.
+Afterburner: the wing-art decals (Config/Cosmetics "WingArt", SHP-07), painted on top of each wing. Each is
+512 x 256 with a transparent background, drawn pointing right for the right wing and mirrored for the left, so
+both point outboard. Upload both and put the ids in Config/Cosmetics as Images = { right, left }.
 
-  python tools/cosmetics/nose_art.py [--out tools/cosmetics/out]
+  python tools/cosmetics/wing_art.py [--out tools/cosmetics/out]
 """
 
 import argparse
@@ -103,7 +103,7 @@ def eight():
     return img
 
 
-ART = {"NoseShark": shark, "NoseAce": ace, "NoseBolt": bolt, "NoseEight": eight}
+ART = {"WingShark": shark, "WingAce": ace, "WingBolt": bolt, "WingEight": eight}
 
 
 def main():

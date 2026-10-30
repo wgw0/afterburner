@@ -14,13 +14,13 @@ local function state(data: { [string]: any }): { Owned: { [string]: boolean }, E
 	return data.Cosmetics
 end
 
--- Nose art is only for sale once its decals are uploaded.
+-- Wing art is only for sale once its decals are uploaded.
 function Cosmetics.ready(id: string): boolean
 	local item = Catalogue.get(id)
 	if not item then
 		return false
 	end
-	return item.Kind ~= "NoseArt" or (item.Images ~= nil and item.Images[1] ~= "" and item.Images[2] ~= "")
+	return item.Kind ~= "WingArt" or (item.Images ~= nil and item.Images[1] ~= "" and item.Images[2] ~= "")
 end
 
 function Cosmetics.owns(data: { [string]: any }, id: string): boolean

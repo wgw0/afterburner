@@ -224,7 +224,7 @@ local function Hangar(props: any)
 				AirframeId = selected,
 				Skin = Progression.skinFor(data, selected),
 				Marker = Cosmetics.equipped(data, "Marker"),
-				NoseArt = Cosmetics.equipped(data, "NoseArt"),
+				WingArt = Cosmetics.equipped(data, "WingArt"),
 				Mastery = Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0),
 				Size = UDim2.fromScale(0.5, 0.62),
 				Position = UDim2.fromScale(0.5, 0.36),

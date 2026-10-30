@@ -17,7 +17,7 @@ local Callsign = require(Shared.Callsign)
 local Contract = require(Shared.AircraftModelContract)
 local Flight = require(Shared.Config.Flight)
 local KillMarkers = require(Shared.KillMarkers)
-local NoseArt = require(Shared.NoseArt)
+local WingArt = require(Shared.WingArt)
 local Scale = require(Shared.Config.Scale)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
@@ -103,12 +103,12 @@ local function idleFocus(): BasePart?
 end
 
 -- Puts a pilot's cosmetics on their jet (SHP-07): the Trail attribute (EffectsController colours the
--- contrails for everyone), kill markers in their style for the jet's Mastery attribute, and nose art. Again
+-- contrails for everyone), kill markers in their style for the jet's Mastery attribute, and wing art. Again
 -- whenever they change what's equipped mid-flight.
 function AircraftService.dress(model: Model, looks: { [string]: string })
 	model:SetAttribute("Trail", looks.Trail or "")
 	KillMarkers.apply(model, (model:GetAttribute("Mastery") :: number?) or 0, looks.Marker)
-	NoseArt.apply(model, looks.NoseArt)
+	WingArt.apply(model, looks.WingArt)
 end
 
 function AircraftService:GetJet(player: Player): Jet?

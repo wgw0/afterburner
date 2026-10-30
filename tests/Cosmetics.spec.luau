@@ -29,7 +29,7 @@ return function(ctx)
 			expect(ok).toBe(false)
 			expect(err).toBe("You already own that")
 			data.Wings = 10
-			expect((Cosmetics.buy(data, "NoseShark"))).toBe(false)
+			expect((Cosmetics.buy(data, "WingShark"))).toBe(false)
 			expect(data.Wings).toBe(10)
 			expect((Cosmetics.buy(data, "Nope"))).toBe(false)
 		end)
@@ -91,7 +91,7 @@ return function(ctx)
 					expect(item.Colours ~= nil and #item.Colours >= 1).toBe(true)
 				elseif item.Kind == "Marker" then
 					expect(item.Glyph ~= nil and item.Colour ~= nil).toBe(true)
-				elseif item.Kind == "NoseArt" then
+				elseif item.Kind == "WingArt" then
 					expect(item.Images ~= nil and #item.Images == 2).toBe(true)
 					expect(Cosmetics.ready(id)).toBe(true)
 				end
