@@ -317,9 +317,8 @@ local function Hangar(props: any)
 		-- Its own ScreenGui above the menu: the menu draws with Global ZIndex, which put the window's backdrop
 		-- over its own buttons
 		SpinDialog = if spinOpen and props.OnSpin
-			then ReactRoblox.createPortal(
-				e("ScreenGui", {
-					Name = "AfterburnerSpin",
+			then ReactRoblox.createPortal({
+				AfterburnerSpin = e("ScreenGui", {
 					DisplayOrder = 30,
 					IgnoreGuiInset = true,
 					ResetOnSpawn = false,
@@ -332,8 +331,7 @@ local function Hangar(props: any)
 						end,
 					}),
 				}),
-				Players.LocalPlayer:WaitForChild("PlayerGui")
-			)
+			}, Players.LocalPlayer:WaitForChild("PlayerGui"))
 			else nil,
 		Lineup = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),
