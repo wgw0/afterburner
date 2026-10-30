@@ -1819,6 +1819,14 @@ end
 | SHP-06 | Premium jet validator and blocked-category test | 7 |
 | SHP-07 | Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets | 7 |
 
+### 27.6 As built: products, receipts and Tier Unlocks (SHP-01/02)
+
+- **`Config/Products`** (shared, so the client shows prices): each developer product's kind, Robux price and what it grants, and its id per experience (`idFor` / `keyFor`; none created yet). Wings packs: 100 for 99 R$, 550 for 499, 1,200 for 999, 2,500 for 1,999. Tier Unlocks II–V: 99, 199, 299, 399 R$. Game passes stay in `Config/Passes` (`PassService`, CMP-01).
+- **`Shared/Shop`** (pure): `grant` applies a product to a save; `processReceipt` is the exactly-once rule: a purchase id already in `ProcessedReceipts` is never granted again; otherwise the grant runs on a deep copy of the save, which replaces the save (with the id remembered) only if the grant succeeded, so an error leaves the save untouched.
+- **`ShopService`** sets the one `MarketplaceService.ProcessReceipt`: no loaded save, an unknown product id or any error → `NotProcessedYet`; a grant → `DataService:Save` straight away (ProfileStore's `Profile:Save`), an analytics economy event and a `Purchase` telemetry event, then `PurchaseGranted`.
+- **Tier Unlock:** `Shop.tierUnlockOffer` is the tier above the player's highest owned jet (none from Tier V up). The Tech Tree shows a "SKIP AHEAD: UNLOCK TIER N" banner; CHOOSE JETS lists that tier's jets, the player picks two and BUY calls `ChooseTierUnlock`, which checks the pick (`Shop.checkTierUnlockChoice`), saves it as `PendingTierUnlock` and prompts the purchase (the receipt can't carry a choice). The grant makes the two jets researched and owned (stock) and clears the choice; if the choice was lost, the first two unowned jets of the tier.
+- **Testing without Robux** (test servers): admin `shop.grant { key, jets?, purchaseId? }` grants through the same receipt path (the same `purchaseId` twice shows `AlreadyGranted`), `take.wings { amount }` undoes Wings. Checked in play: 100 Wings granted once, the repeated receipt refused, both undone. `Shop.spec` covers the rules, the copy-or-nothing grant and that products only grant Wings or Tier Unlocks.
+
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
 
 ---
