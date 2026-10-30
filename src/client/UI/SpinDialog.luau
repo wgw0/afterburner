@@ -118,6 +118,18 @@ local function cardElement(card: Card, order: number)
 	})
 end
 
+-- "Next free spin in 12:34", from the server's SpinNextAt (one every 20 minutes you play).
+local function nextSpinText(now: number): string
+	local nextAt = (Players.LocalPlayer:GetAttribute("SpinNextAt") :: number?) or 0
+	if nextAt == 0 then
+		return "One free spin every 20 minutes you play"
+	end
+	local left = math.max(math.ceil(nextAt - now), 0)
+	return if left > 0
+		then string.format("Next free spin in %d:%02d", left // 60, left % 60)
+		else "Your next free spin is nearly ready"
+end
+
 local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose: () -> () })
 	local reel, setReel = React.useState(nil :: { Card }?)
 	local phase, setPhase = React.useState("idle") -- idle | asking | spinning | result
@@ -126,6 +138,19 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 	local showOdds, setShowOdds = React.useState(false)
 	local banked, setBanked = React.useState((Players.LocalPlayer:GetAttribute("SpinsBanked") :: number?) or 0)
 	local strip = React.useRef(nil)
+	local now, setNow = React.useState(workspace:GetServerTimeNow())
+	React.useEffect(function()
+		local running = true
+		task.spawn(function()
+			while running do
+				task.wait(0.5)
+				setNow(workspace:GetServerTimeNow())
+			end
+		end)
+		return function()
+			running = false
+		end
+	end, {})
 
 	React.useEffect(function()
 		local connection = Players.LocalPlayer:GetAttributeChangedSignal("SpinsBanked"):Connect(function()
@@ -221,9 +246,10 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 		then `<font color="#{(Theme.Rarity[prize.Rarity] :: Color3):ToHex()}"><b>{string.upper(prize.Rarity)}</b></font>  You won {prize.Label}{if prize.Airframe
 			then " for the " .. ((AircraftData.get(prize.Airframe) :: any) or { DisplayName = prize.Airframe }).DisplayName
 			else ""}!`
+		elseif phase == "spinning" or phase == "asking" then "Good luck…"
 		else message or (if banked > 0
 			then `{banked} spin{if banked == 1 then "" else "s"} ready`
-			else "No spin ready: one every 20 minutes you play")
+			else nextSpinText(now))
 
 	return e("TextButton", {
 		Text = "",
@@ -231,7 +257,6 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 0.35,
-		ZIndex = 50,
 	}, {
 		Panel = e(C.Panel, {
 			Size = UDim2.fromOffset(VIEW_W + 60, 420),
