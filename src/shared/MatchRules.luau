@@ -21,6 +21,7 @@ export type ModeConfig = {
 	Teams: { string }?, -- team modes: the team ids (ScoreLimit is then team kills)
 	Objective: "Zones"?, -- Air Superiority: zones and tickets decide it (AirSuperiority.luau)
 	AIDifficulty: string?, -- AI pilots' profile (AIBrain.PROFILES; default Normal). Set for Vs AI matches.
+	GunsOnly: boolean?, -- no missiles at all, and every gun carries GUNS_ONLY_AMMO times its rounds
 }
 
 export type Score = {
@@ -33,6 +34,8 @@ export type Score = {
 	score: number,
 	team: string?,
 }
+
+MatchRules.GUNS_ONLY_AMMO = 4 -- Guns Only: times the gun's usual rounds (Will)
 
 MatchRules.POINTS = table.freeze({ Kill = 100, Assist = 50, ForcedCrashKill = 100, Capture = 150 })
 
@@ -88,6 +91,20 @@ MatchRules.MODES = table.freeze({
 		Teams = table.freeze({ "West", "East" }),
 		Objective = "Zones",
 	} :: ModeConfig),
+	-- Guns Only (Will): a free-for-all where no jet carries a missile of any kind, only its gun, with four
+	-- times the rounds in it.
+	GunsOnly = table.freeze({
+		Id = "GunsOnly",
+		DisplayName = "Guns Only",
+		ScoreLimit = 15,
+		TimeLimit = 600,
+		Respawn = { Type = "Timer", Delay = 5 },
+		AIFill = 6,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 12,
+		GunsOnly = true,
+	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({
 		Id = "Stress",
@@ -104,12 +121,28 @@ MatchRules.MODES = table.freeze({
 
 -- Public servers take turns between these modes, one match each, until a mode-select screen exists (UI-05).
 -- A server set to a mode outside the list (Free Flight, the stress test) stays on it.
-MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority" })
+MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
 
 -- The mode after this one in the rotation, or the same mode if it isn't in the rotation.
 function MatchRules.nextMode(modeId: string): string
 	local index = table.find(MatchRules.ROTATION, modeId)
 	return if index then MatchRules.ROTATION[index % #MatchRules.ROTATION + 1] else modeId
+end
+
+-- The mode with this id (the server publishes the current one as ReplicatedStorage's GameMode attribute),
+-- or nil.
+function MatchRules.get(modeId: any): ModeConfig?
+	return if type(modeId) == "string" then (MatchRules.MODES :: any)[modeId] else nil
+end
+
+-- Rounds in a gun that normally carries `rounds`, in this mode.
+function MatchRules.gunRounds(mode: ModeConfig?, rounds: number): number
+	return if mode and mode.GunsOnly then rounds * MatchRules.GUNS_ONLY_AMMO else rounds
+end
+
+-- Whether jets carry missiles in this mode.
+function MatchRules.missiles(mode: ModeConfig?): boolean
+	return not (mode and mode.GunsOnly)
 end
 
 function MatchRules.newScore(name: string, isAI: boolean, userId: number): Score

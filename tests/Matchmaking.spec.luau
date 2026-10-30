@@ -51,4 +51,34 @@ return function(ctx)
 			expect(br(jets[1]) < 14).toBe(true)
 		end)
 	end)
+
+	describe("Vs AI", function()
+		it("the bots fly jets at the level of the player's, above or below", function()
+			for _, id in { "F5E", "F14A", "Su27S", "F22A", "Tempest" } do
+				local jets = Matchmaking.vsAIAirframes(br(id))
+				expect(#jets >= Matchmaking.VS_AI_MIN).toBe(true)
+				expect(table.find(jets, id) ~= nil).toBe(true)
+				local close = 0
+				for _, other in jets do
+					if math.abs(br(other) - br(id)) <= Matchmaking.VS_AI_SPREAD + 1e-6 then
+						close += 1
+					end
+				end
+				-- Only jets that close, unless there are too few: then just the closest few
+				expect(close == #jets or #jets == Matchmaking.VS_AI_MIN).toBe(true)
+			end
+		end)
+
+		it("a lone jet still gets the closest few, never the whole tree", function()
+			local jets = Matchmaking.vsAIAirframes(br("Tempest"))
+			local all = 0
+			for _ in AircraftData.getAll() do
+				all += 1
+			end
+			expect(#jets < all).toBe(true)
+			for i = 2, #jets do
+				expect(br(jets[i]) >= br(jets[i - 1])).toBe(true) -- sorted by BR
+			end
+		end)
+	end)
 end

@@ -20,12 +20,26 @@ return function(ctx)
 			}
 		end
 
-		it("the rotation runs Dogfight, Team Deathmatch, Air Superiority; other modes stay put", function()
+		it("the rotation runs Dogfight, Team Deathmatch, Air Superiority, Guns Only; other modes stay put", function()
 			expect(MatchRules.nextMode("Dogfight")).toBe("TeamDeathmatch")
 			expect(MatchRules.nextMode("TeamDeathmatch")).toBe("AirSuperiority")
-			expect(MatchRules.nextMode("AirSuperiority")).toBe("Dogfight")
+			expect(MatchRules.nextMode("AirSuperiority")).toBe("GunsOnly")
+			expect(MatchRules.nextMode("GunsOnly")).toBe("Dogfight")
 			expect(MatchRules.nextMode("FreeFlight")).toBe("FreeFlight")
 			expect(MatchRules.nextMode("Stress")).toBe("Stress")
+		end)
+
+		it("Guns Only: no missiles, four times the rounds; other modes are unchanged", function()
+			local guns = MatchRules.get("GunsOnly")
+			expect(guns ~= nil and guns.Scored and guns.Teams == nil).toBe(true)
+			expect(MatchRules.missiles(guns)).toBe(false)
+			expect(MatchRules.gunRounds(guns, 150)).toBe(600)
+			for _, id in { "Dogfight", "TeamDeathmatch", "AirSuperiority", "FreeFlight" } do
+				expect(MatchRules.missiles(MatchRules.get(id))).toBe(true)
+				expect(MatchRules.gunRounds(MatchRules.get(id), 150)).toBe(150)
+			end
+			expect(MatchRules.get(nil)).toBe(nil)
+			expect(MatchRules.missiles(nil)).toBe(true)
 		end)
 
 		describe("Team Deathmatch (MCH-05)", function()

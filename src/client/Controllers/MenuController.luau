@@ -49,6 +49,7 @@ local MODE_NAMES = {
 	Dogfight = " Dogfight",
 	TeamDeathmatch = " Team Deathmatch",
 	AirSuperiority = " Air Superiority",
+	GunsOnly = " Guns Only",
 }
 
 local LESSON_NAMES = {

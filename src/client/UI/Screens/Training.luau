@@ -21,7 +21,9 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
-local VS_MODES = { { "Dogfight", "FREE-FOR-ALL" }, { "TeamDeathmatch", "TEAMS" }, { "AirSuperiority", "ZONES" } }
+-- Two rows of two: four buttons in one row are too narrow for their names
+local VS_MODES = { { "Dogfight", "FREE-FOR-ALL" }, { "TeamDeathmatch", "TEAMS" } }
+local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS ONLY" } }
 local DIFFICULTIES = { "Easy", "Normal", "Hard", "Ace" }
 local MAX_AI = 11
 
@@ -196,8 +198,9 @@ local function Training(props: any)
 			end,
 		})
 	end
-	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 20 })
-	side.Mode = choices(VS_MODES, vsMode, 252, 21, setVsMode)
+	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 19 })
+	side.Mode = choices(VS_MODES, vsMode, 252, 20, setVsMode)
+	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 21, setVsMode)
 	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 22, setDifficulty)
 	side.Count = e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 23 }, {
 		Layout = C.List({ Horizontal = true, Gap = 8, AlignY = "Center" }),

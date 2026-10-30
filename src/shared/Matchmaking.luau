@@ -13,6 +13,8 @@ local Matchmaking = {}
 
 Matchmaking.BAND_WIDTH = 1.0
 Matchmaking.DEFAULT_BR = 1.7 -- with nobody to measure, a starter-jet match
+Matchmaking.VS_AI_SPREAD = 0.3 -- Vs AI: the bots' jets are within this of the player's (Will: the same level)
+Matchmaking.VS_AI_MIN = 3 -- ...or, where few jets are that close, the closest this many
 
 export type Band = { br: number, min: number, max: number }
 
@@ -75,6 +77,34 @@ function Matchmaking.aiAirframes(band: Band): { string }
 	end
 	table.sort(below, byBR)
 	return if #below > 0 then { below[#below] } else { "F5E" }
+end
+
+-- Jets for AI pilots in a Vs AI match against a jet of BR `br`: every jet within VS_AI_SPREAD of it, above
+-- or below, or the VS_AI_MIN closest if fewer are that close. Sorted by BR.
+function Matchmaking.vsAIAirframes(br: number): { string }
+	local all = {}
+	for id in AircraftData.getAll() do
+		table.insert(all, id)
+	end
+	local function gap(id: string): number
+		return math.abs((brOf(id) or 0) - br)
+	end
+	table.sort(all, function(a: string, b: string): boolean
+		if gap(a) ~= gap(b) then
+			return gap(a) < gap(b)
+		end
+		return a < b
+	end)
+	local chosen = {}
+	for i, id in all do
+		if gap(id) <= Matchmaking.VS_AI_SPREAD + 1e-6 or i <= Matchmaking.VS_AI_MIN then
+			table.insert(chosen, id)
+		end
+	end
+	table.sort(chosen, function(a: string, b: string): boolean
+		return (brOf(a) or 0) < (brOf(b) or 0)
+	end)
+	return chosen
 end
 
 return Matchmaking

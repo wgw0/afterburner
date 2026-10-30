@@ -16,7 +16,7 @@ Queue.FILL_AFTER = 30 -- seconds before a match starts short-handed, with AI in 
 Queue.SPREAD_MIN = 1.0
 Queue.SPREAD_MAX = 1.7
 Queue.SPREAD_GROW_SECONDS = 60
-Queue.MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority" })
+Queue.MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
 
 export type Entry = {
 	userId: number,
