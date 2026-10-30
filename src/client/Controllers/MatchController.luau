@@ -34,6 +34,7 @@ local board: Frame
 local boardRows: Frame
 local localPlayer = Players.LocalPlayer
 
+local VIP_GOLD = "FFC93C" -- the VIP tag on the scoreboard
 local function label(parent: Instance, text: string, size: number, colour: Color3?): TextLabel
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
@@ -147,7 +148,10 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		-- A player's title (Config/LevelRewards) after their name
 		local player = if score.userId ~= 0 then Players:GetPlayerByUserId(score.userId) else nil
 		local title = player and player:GetAttribute("Title") :: string?
-		local vip = if player and player:GetAttribute("Pass_VIP") == true then "VIP " else "" -- the VIP Pilot pass
+		-- The VIP Pilot pass: a bold gold VIP (names are letters, digits and _ only, so rich text is safe)
+		local vip = if player and player:GetAttribute("Pass_VIP") == true
+			then `<font color="#{VIP_GOLD}"><b>VIP</b></font> `
+			else ""
 		local values = {
 			if title and title ~= "" then `{rank}. {vip}{score.name} · {title}` else `{rank}. {vip}{score.name}`,
 			tostring(score.kills),
@@ -162,6 +166,7 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 			l.Position = UDim2.fromScale(column[2] :: number, 0)
 			l.Size = UDim2.fromScale(column[3] :: number, 1)
 			l.TextXAlignment = if c == 1 then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
+			l.RichText = c == 1
 		end
 	end
 end
