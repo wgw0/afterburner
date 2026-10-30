@@ -9,6 +9,7 @@
 -- play), and PLAY flies again after that; on a training server PLAY flies.
 
 local GuiService = game:GetService("GuiService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
@@ -20,6 +21,8 @@ local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local LiveConfig = require(Shared.LiveConfig)
+local Passes = require(Shared.Config.Passes)
+local Products = require(Shared.Config.Products)
 local ServerRole = require(Shared.ServerRole)
 local Streak = require(Shared.Streak)
 local Net = require(Shared.Net)
@@ -374,8 +377,8 @@ render = function()
 		OnBuy = function(id)
 			return confirmed(PlayerDataController:Buy(id))
 		end,
-		OnBuySkin = function(id, skinId)
-			return confirmed(PlayerDataController:BuySkin(id, skinId))
+		OnBuySkin = function(id, skinId, currency)
+			return confirmed(PlayerDataController:BuySkin(id, skinId, currency))
 		end,
 		OnSetSkin = function(id, skinId)
 			return PlayerDataController:SetSkin(id, skinId)
@@ -430,6 +433,23 @@ render = function()
 			end
 			return result == true, message
 		end,
+		-- Robux purchases (SHP): Roblox's purchase window, once the product or pass exists on the dashboard
+		OnBuyProduct = function(key: string): (boolean, string?)
+			local id = Products.idFor(key)
+			if not id then
+				return false, "Coming soon"
+			end
+			MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
+			return true, nil
+		end,
+		OnBuyPass = function(key: string): (boolean, string?)
+			local id = Passes.idFor(key)
+			if not id then
+				return false, "Coming soon"
+			end
+			MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, id)
+			return true, nil
+		end,
 		OnChooseTierUnlock = function(picks: { string }): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "ChooseTierUnlock", picks)
 			if not ok then
@@ -465,7 +485,7 @@ end
 
 -- Gamepad (UI-09): keep a button selected while the menu is up: PLAY (or FLY), else the first one. Run after
 -- renders and device changes, since a screen change can remove the selected button.
-local TABS = { "Hangar", "TechTree", "Career", "Settings" }
+local TABS = { "Hangar", "TechTree", "Career", "Shop", "Settings" }
 
 local function gamepadSelect()
 	if not (MenuController.visible and InputController.device == "Gamepad") then

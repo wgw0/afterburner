@@ -74,8 +74,9 @@ function PlayerDataController:BuyModule(airframeId: string, moduleId: string): (
 	return ask("BuyModule", airframeId, moduleId)
 end
 
-function PlayerDataController:BuySkin(airframeId: string, skinId: string): (boolean, string?)
-	return ask("BuySkin", airframeId, skinId)
+-- currency: "Credits" (default) or "Wings"
+function PlayerDataController:BuySkin(airframeId: string, skinId: string, currency: string?): (boolean, string?)
+	return ask("BuySkin", airframeId, skinId, currency)
 end
 
 function PlayerDataController:SetSkin(airframeId: string, skinId: string): (boolean, string?)

@@ -280,7 +280,7 @@ local COMMANDS: { [string]: Command } = {
 		run = function(admin, args)
 			local who, key = target(admin, args), args.key
 			if not (who and type(key) == "string" and Products.LIST[key]) then
-				return false, 'Usage: shop.grant { key = "Wings100" | "TierUnlock3", jets = {...}?, purchaseId = ...? }'
+				return false, 'Usage: shop.grant { key = "Wings150" | "TierUnlock3", jets = {...}?, purchaseId = ...? }'
 			end
 			if type(args.jets) == "table" then
 				local data = DataService:GetData(who)

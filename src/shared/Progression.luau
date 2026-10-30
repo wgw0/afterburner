@@ -560,7 +560,13 @@ function Progression.skinFor(data: { [string]: any }, airframeId: string): strin
 	return Skins.default(airframeId)
 end
 
-function Progression.canBuySkin(data: { [string]: any }, airframeId: string, skinId: string): (boolean, string?)
+-- currency: "Credits" (the default) or "Wings" (SHP-04).
+function Progression.canBuySkin(
+	data: { [string]: any },
+	airframeId: string,
+	skinId: string,
+	currency: string?
+): (boolean, string?)
 	local entry = data.Aircraft[airframeId]
 	if not (entry and entry.Owned) then
 		return false, "You don't own this jet"
@@ -575,6 +581,19 @@ function Progression.canBuySkin(data: { [string]: any }, airframeId: string, ski
 	if skin.Level then
 		return false, `Unlocks at pilot level {skin.Level}`
 	end
+	if currency == "Wings" then
+		local price = Skins.wingsPrice(skin)
+		if not price then
+			return false, "Not sold for Wings"
+		end
+		local wings = data.Wings or 0
+		if wings < price then
+			return false, `Needs {price - wings} more Wings`
+		end
+		return true, nil
+	elseif currency ~= nil and currency ~= "Credits" then
+		return false, "Unknown currency"
+	end
 	local price = skin.Credits or 0
 	if data.Credits < price then
 		return false, `Needs {price - data.Credits} more Credits`
@@ -583,13 +602,23 @@ function Progression.canBuySkin(data: { [string]: any }, airframeId: string, ski
 end
 
 -- Buys a skin and puts it on.
-function Progression.buySkin(data: { [string]: any }, airframeId: string, skinId: string): (boolean, string?)
-	local ok, err = Progression.canBuySkin(data, airframeId, skinId)
+function Progression.buySkin(
+	data: { [string]: any },
+	airframeId: string,
+	skinId: string,
+	currency: string?
+): (boolean, string?)
+	local ok, err = Progression.canBuySkin(data, airframeId, skinId, currency)
 	if not ok then
 		return false, err
 	end
 	local entry = data.Aircraft[airframeId]
-	data.Credits -= (Skins.get(airframeId, skinId) :: any).Credits or 0
+	local skin = Skins.get(airframeId, skinId) :: any
+	if currency == "Wings" then
+		data.Wings -= Skins.wingsPrice(skin) :: number
+	else
+		data.Credits -= skin.Credits or 0
+	end
 	entry.Skins = entry.Skins or {}
 	entry.Skins[skinId] = true
 	entry.Camo = skinId

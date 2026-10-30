@@ -95,7 +95,7 @@ local definitions: { [string]: Definition } = {
 	ResearchAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
 	BuyAircraft = { direction = "Function", args = { "string" }, rate = { burst = 4, perSecond = 2 } },
 	BuyModule = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
-	BuySkin = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
+	BuySkin = { direction = "Function", args = { "string", "string", "string?" }, rate = { burst = 4, perSecond = 2 } },
 	SetSkin = { direction = "Function", args = { "string", "string" }, rate = { burst = 4, perSecond = 2 } },
 	-- Fit (true) or take off (false) a module the player already owns
 	SetModuleFitted = {

@@ -74,4 +74,15 @@ function Skins.apply(model: Model, airframeId: string, skinId: string): boolean
 	return true
 end
 
+-- Wings for a skin that's sold for Credits, unless it sets its own price (DESIGN §8.2: 75-600 R$ worth; SHP-04)
+Skins.WINGS_PRICE = 150
+
+-- A skin's price in Wings, or nil if it isn't sold (it comes with the jet, or with a pilot level).
+function Skins.wingsPrice(skin: SkinConfig.Skin): number?
+	if skin.Default or skin.Level then
+		return nil
+	end
+	return skin.Wings or (if skin.Credits then Skins.WINGS_PRICE else nil)
+end
+
 return Skins

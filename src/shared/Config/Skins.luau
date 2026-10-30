@@ -2,12 +2,14 @@
 -- Paint schemes per airframe (art pipeline §2). The textures are SurfaceAppearances in
 -- ReplicatedStorage.Assets.Skins.<Airframe>.<Id>, one per texture set; the paint script
 -- (tools/blender/f5e_paint.py) makes them. The Default skin comes with the jet; others are bought with
--- Credits (Robux and season-pass skins come with the shop, Phase 7).
+-- Credits, or straight away with Wings (Skins.WINGS_PRICE unless a skin sets its own; SHP-04). Season-pass and
+-- Wings-only skins come with the cosmetics batch.
 
 export type Skin = {
 	Id: string,
 	DisplayName: string,
 	Credits: number?, -- price; nil = free with the jet
+	Wings: number?, -- price in Wings, if not Skins.WINGS_PRICE (skins with a Credits price can always be bought with Wings)
 	Default: boolean?,
 	Level: number?, -- a level skin (Config/LevelRewards): free at this pilot level, on every jet
 }

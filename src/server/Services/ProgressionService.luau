@@ -80,7 +80,8 @@ local function economyEvent(
 	amount: number,
 	balance: number,
 	kind: string,
-	sku: string
+	sku: string,
+	currency: string?
 )
 	if amount <= 0 then
 		return
@@ -89,9 +90,9 @@ local function economyEvent(
 		local flowType = if flow == "Source"
 			then Enum.AnalyticsEconomyFlowType.Source
 			else Enum.AnalyticsEconomyFlowType.Sink
-		AnalyticsService:LogEconomyEvent(player, flowType, "Credits", amount, balance, kind, sku)
+		AnalyticsService:LogEconomyEvent(player, flowType, currency or "Credits", amount, balance, kind, sku)
 	end)
-	Telemetry.event(`Economy{flow}`, amount, { kind = kind, item = sku }, player)
+	Telemetry.event(`Economy{flow}`, amount, { kind = kind, item = sku, currency = currency or "Credits" }, player)
 end
 
 -- Logs mastery stars reached (PRG-07) and, if the player is staying, shows a toast for each.
@@ -276,7 +277,28 @@ function ProgressionService:Init()
 			return Progression.setModuleFitted(data, airframeId, moduleId, fitted)
 		end, false, `{airframeId}:{moduleId}`)
 	end)
-	Net.Server.handle("BuySkin", function(player: Player, airframeId: string, skinId: string)
+	-- currency: "Credits" (default) or "Wings" (SHP-04)
+	Net.Server.handle("BuySkin", function(player: Player, airframeId: string, skinId: string, currency: string?)
+		if currency == "Wings" then
+			local before = DataService:GetData(player)
+			local wingsBefore = before and before.Wings or 0
+			local ok, err = handleIntent(player, "BuySkin", function(data)
+				return Progression.buySkin(data, airframeId, skinId, "Wings")
+			end, false, `{airframeId}:{skinId}`)
+			local data = DataService:GetData(player)
+			if ok and data then
+				economyEvent(
+					player,
+					"Sink",
+					wingsBefore - data.Wings,
+					data.Wings,
+					"BuySkin",
+					`{airframeId}:{skinId}`,
+					"Wings"
+				)
+			end
+			return ok, err
+		end
 		return handleIntent(player, "BuySkin", function(data)
 			return Progression.buySkin(data, airframeId, skinId)
 		end, true, `{airframeId}:{skinId}`)
