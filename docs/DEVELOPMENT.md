@@ -2150,7 +2150,7 @@ same work against the task IDs.
    what's kept). A fresh clone needs `git lfs install` once; CI checks out without LFS and doesn't need the files.
    Point Will at the main checkout's `tools/blender/out/`; hidden `.claude` folders are awkward to browse to.
 2. Will imports with Merge Meshes off, Anchored on, Meter, Upload on.
-3. Textures: serve the PNGs from a scratch folder with `python -m http.server 8765` and upload them with the Studio
+3. Textures: serve the PNGs from a scratch folder with `python -m http.server 8765 --bind 127.0.0.1` (this machine only) and upload them with the Studio
    MCP `upload_image` tool in batches of 24. A small temporary ModuleScript in ServerStorage can record the returned
    ids by filename and write `Assets.Skins.<Jet>.<Skin>.<Set>` SurfaceAppearances; delete it afterwards (Place.spec
    fails on stray scripts).
