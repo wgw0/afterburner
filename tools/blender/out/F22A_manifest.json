@@ -1,7 +1,7 @@
 {
   "airframe": "F22A",
   "units": "metres (Roblox axes: x right, y up, z aft)",
-  "studsPerMetre": 3.5714,
+  "studsPerMetre": 1.0,
   "length": 18.92,
   "triangles": 10812,
   "parts": [
@@ -109,12 +109,12 @@
       "bounds": {
         "centre": [
           0.0,
-          0.6111,
+          0.7325,
           -6.7848
         ],
         "size": [
           0.96,
-          1.4662,
+          1.2234,
           3.4138
         ]
       },

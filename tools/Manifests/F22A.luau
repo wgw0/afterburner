@@ -4,7 +4,7 @@
 return {
 	airframe = "F22A",
 	units = "metres (Roblox axes: x right, y up, z aft)",
-	studsPerMetre = 3.5714,
+	studsPerMetre = 1,
 	length = 18.92,
 	triangles = 10812,
 	parts = {
@@ -58,8 +58,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 0, 0.6111, -6.7848 },
-				size = { 0.96, 1.4662, 3.4138 },
+				centre = { 0, 0.7325, -6.7848 },
+				size = { 0.96, 1.2234, 3.4138 },
 			},
 			triangles = 544,
 		},

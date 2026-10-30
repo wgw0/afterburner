@@ -92,8 +92,9 @@ NACELLE = [
 ]
 LIP_TOP, LIP_BOTTOM = 650, 700
 
-# Canards: root and tip (half width px, leading-edge xd, trailing-edge xd)
-CANARD_ROOT, CANARD_TIP = (180, 676, 836), (335, 806, 886)
+# Canards: root and tip (half width px, leading-edge xd, trailing-edge xd). The drawing's root (180 px) is
+# outside the body's side (about 160 px at this height), so the root is carried in to 150 px along its edges.
+CANARD_ROOT, CANARD_TIP = (150, 651, 826), (335, 806, 886)
 CANARD_Z = Z(425)
 
 WING_Z = Z(465)
@@ -108,8 +109,10 @@ def wing_te_y(x):
 
 
 kit.WING_Z = WING_Z
-kit.WING_ROOT_X, kit.WING_TIP_X = W(200), W(690)
-kit.WING_ROOT_LE, kit.WING_ROOT_TE = wing_le_y(W(200)), wing_te_y(W(200))
+# The drawing's root (200 px) is outside the body's side (about 167 px at the wing), so the root is carried in
+# to 150 px along the leading and trailing edges
+kit.WING_ROOT_X, kit.WING_TIP_X = W(150), W(690)
+kit.WING_ROOT_LE, kit.WING_ROOT_TE = wing_le_y(W(150)), wing_te_y(W(150))
 kit.WING_SWEEP_LE = math.atan((wing_le_y(W(200)) - wing_le_y(W(690))) / (W(690) - W(200)))
 kit.WING_TIP_CHORD = wing_le_y(W(690)) - wing_te_y(W(690))
 kit.WING_THICKNESS = 0.04

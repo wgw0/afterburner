@@ -4,7 +4,7 @@
 return {
 	airframe = "RafaleC",
 	units = "metres (Roblox axes: x right, y up, z aft)",
-	studsPerMetre = 3.5714,
+	studsPerMetre = 1,
 	length = 15.27,
 	triangles = 9864,
 	parts = {
@@ -69,8 +69,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 3.4902, -0.1412, 0.515 },
-				size = { 3.8431, 0.2195, 4.9465 },
+				centre = { 3.2941, -0.1412, 0.3455 },
+				size = { 4.2353, 0.237, 5.3397 },
 			},
 			triangles = 568,
 		},
@@ -78,10 +78,10 @@ return {
 			name = "LEFlapR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 3.4343, -0.1412, -0.2165 },
+			pivot = { 3.2382, -0.1412, -0.3995 },
 			bounds = {
-				centre = { 3.4343, -0.1412, -0.4913 },
-				size = { 3.7314, 0.1716, 4.0332 },
+				centre = { 3.2382, -0.1412, -0.6962 },
+				size = { 4.1235, 0.1852, 4.443 },
 			},
 			hinge = {
 				axis = { 0.731, 0, 0.6824 },
@@ -142,8 +142,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { -3.4902, -0.1412, 0.515 },
-				size = { 3.8431, 0.2195, 4.9465 },
+				centre = { -3.2941, -0.1412, 0.3455 },
+				size = { 4.2353, 0.237, 5.3397 },
 			},
 			triangles = 568,
 		},
@@ -151,10 +151,10 @@ return {
 			name = "LEFlapL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -3.4343, -0.1412, -0.2165 },
+			pivot = { -3.2382, -0.1412, -0.3995 },
 			bounds = {
-				centre = { -3.4343, -0.1412, -0.4913 },
-				size = { 3.7314, 0.1716, 4.0332 },
+				centre = { -3.2382, -0.1412, -0.6962 },
+				size = { 4.1235, 0.1852, 4.443 },
 			},
 			hinge = {
 				axis = { -0.731, 0, 0.6824 },
@@ -213,10 +213,10 @@ return {
 			name = "CanardR",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { 1.4118, 0.1725, -4.0941 },
+			pivot = { 1.1765, 0.1725, -4.2373 },
 			bounds = {
-				centre = { 2.0196, 0.1725, -3.8353 },
-				size = { 1.2157, 0.0561, 1.6471 },
+				centre = { 1.902, 0.1725, -3.9333 },
+				size = { 1.451, 0.0613, 1.8431 },
 			},
 			hinge = {
 				axis = { 1, 0, 0 },
@@ -230,10 +230,10 @@ return {
 			name = "CanardL",
 			set = "Wings",
 			kind = "ControlSurface",
-			pivot = { -1.4118, 0.1725, -4.0941 },
+			pivot = { -1.1765, 0.1725, -4.2373 },
 			bounds = {
-				centre = { -2.0196, 0.1725, -3.8353 },
-				size = { 1.2157, 0.0561, 1.6471 },
+				centre = { -1.902, 0.1725, -3.9333 },
+				size = { 1.451, 0.0613, 1.8431 },
 			},
 			hinge = {
 				axis = { 1, 0, 0 },

@@ -69,8 +69,8 @@ return {
 			kind = "Static",
 			pivot = { 0, 0, 0 },
 			bounds = {
-				centre = { 0, 0.9211, -5.8592 },
-				size = { 0.92, 1.0241, 3.1852 },
+				centre = { 0, 0.9768, -5.8592 },
+				size = { 0.92, 0.9126, 3.1852 },
 			},
 			triangles = 544,
 		},

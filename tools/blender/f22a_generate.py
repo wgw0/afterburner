@@ -63,12 +63,13 @@ def Z(row):
 
 # (side xd, half width px (top view), bottom row, shoulder row, top row, spine half width m, exponent). The
 # forebody is chined (a wide, flat section); under the canopy the top is the sill, behind it the wide, flat
-# centre body bridges the intakes with the spine on top.
+# centre body bridges the intakes with the spine on top. Without a spine the section's top is its shoulder row,
+# so ahead of the windscreen the shoulder is the top line: the nose rises into the windscreen.
 _BODY = [
     (0, 0.5, 345, 341, 341, 0.0, 2.0),  # radome tip
-    (100, 47, 380, 330, 300, 0.0, 1.6),
-    (200, 70, 395, 330, 268, 0.0, 1.6),
-    (250, 74, 398, 330, 255, 0.0, 1.7),  # windscreen base
+    (100, 47, 380, 300, 300, 0.0, 1.6),
+    (200, 70, 395, 268, 268, 0.0, 1.6),
+    (250, 74, 398, 255, 255, 0.0, 1.7),  # windscreen base
     (350, 80, 400, 300, 250, 0.0, 2.0),
     (500, 95, 402, 300, 240, 0.0, 2.4),
     (560, 120, 404, 300, 228, 0.42, 2.8),  # the spine rises inside the canopy's rear
