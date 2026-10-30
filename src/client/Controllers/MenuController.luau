@@ -430,6 +430,13 @@ render = function()
 			end
 			return result == true, message
 		end,
+		OnChooseTierUnlock = function(picks: { string }): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "ChooseTierUnlock", picks)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
 		OnSetCallsign = function(text: string): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "SetCallsign", text)
 			if not ok then
