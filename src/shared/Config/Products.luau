@@ -37,9 +37,24 @@ Products.LIST = table.freeze({
 
 local BY_UNIVERSE: { [number]: { [string]: number } } = {
 	[10773135125] = { -- the test experience
-		-- Wings150 = 0,
+		Wings150 = 3723989018,
+		Wings550 = 3723989234,
+		Wings1200 = 3723989437,
+		Wings2500 = 3723989686,
+		TierUnlock2 = 3723989940,
+		TierUnlock3 = 3723990190,
+		TierUnlock4 = 3723990459,
+		TierUnlock5 = 3723990665,
 	},
 	[10773807904] = { -- the live experience (place 95037764806358)
+		Wings150 = 3723986676,
+		Wings550 = 3723986944,
+		Wings1200 = 3723987123,
+		Wings2500 = 3723987371,
+		TierUnlock2 = 3723987579,
+		TierUnlock3 = 3723987793,
+		TierUnlock4 = 3723988148,
+		TierUnlock5 = 3723988280,
 	},
 }
 
