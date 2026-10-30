@@ -18,6 +18,8 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 	[10773135125] = { -- the test experience
 		-- CustomCallsign = 0,
 	},
+	[10773807904] = { -- the live experience (place 95037764806358)
+	},
 }
 
 -- The pass's id in this experience, or nil if it hasn't been created here yet.
