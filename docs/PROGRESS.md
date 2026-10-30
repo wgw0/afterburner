@@ -244,7 +244,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Every control is an action in `Config/Bindings` with keyboard and gamepad defaults; `BindingsController` serves every controller. Settings has a KEY BINDINGS panel (click, press a key or button; a key in use swaps; reset to defaults); only changes are saved, validated on the server (`Bindings.spec`, 14 tests). The HUD key line and lesson hints show the player's keys. Checked in play (fire missile moved to G, flares and chaff swapped, saved, reset) and by Will with a controller.
 - [x] **CAM-07** Final art for all four cockpit kits, plus overrides for the launch jets
   - Went further than planned: every one of the 27 jets has its own modelled, textured cockpit with live instrument faces (`AircraftAssembler.installCockpit`, `CockpitController`), so the shared kits are only the fallback. Flown hands-on in several jets by Will (MiG-21, Mirage F1, Typhoon, the Tier IV jets).
-- [ ] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
+- [x] **CAM-08** Third-person chase as a player-facing option (if playtests call for it)
+  - Already there: V switches to the chase camera at any time and Settings → Default camera (Cockpit / Chase) picks the view you spawn in; the HUD, padlock and free look all work in it (DEVELOPMENT.md §8.1). Will flies in it (the F-14A checks were in chase).
 - [x] **HUD-05** Era variants (analogue vs glass symbology)
   - Built: analogue jets get a reflector-sight HUD (plain numbers, simple ladder, no flight path marker); early glass the full HUD; full glass adds a bank scale and speed trend; Tier VII–VIII draw it on the helmet, fixed to your view (DEVELOPMENT.md §9.4). Checked in Studio and by Will.
 - [x] **GUN-07** LCOS and EEGS sights
@@ -273,6 +274,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Grass from the air: `tools/blender/terrain_paint.py` paints a patchwork of fields with mowing stripes and hedgerows, used as MaterialVariants on Grass and LeafyGrass at 2,048 studs per tile. Terrain only draws variants with the Regular pattern. The grass decoration is off.
   - Signed off by Will ("happy with the sky").
 - [ ] **MAP-04** Streaming and fog tuning for mobile
+  - Post-launch (Will, 30 October 2026): tune for phones if players turn up on them.
   - Streaming was turned off for a while (it unloaded the map on death and under memory pressure), then back on after the world-scale rework: the map is a twentieth of its old size in cells, loads in about 10 s, PLAY waits for `MapReady`, and it stays loaded through deaths (60 fps in Studio). Still to do: mobile memory, join time and fog on a real phone.
 - [x] **FX-05** Quality settings and pooling audit
   - Built: Effects quality (Auto / Low / Medium / High) plus contrails and vapour toggles in a GRAPHICS settings section; every effect follows the profile (`Config/Graphics`, `GraphicsController`); missiles, flares, chaff and muzzle flashes pooled (DEVELOPMENT.md §20.1). Checked in Studio and by Will: Low turns off flare lights and smoke and cuts particle rates; 13 effects reused 5 parts. *Frame-rate effect to measure in the mobile pass (PRF-03).*
@@ -320,7 +322,9 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **CMP-03** Report-cheater flow
   - REPORT in the hangar on match servers and on the results scoreboard; a report window (pilot, reason, a pointer to Roblox's own report). Each report is stored (UserIds only) with the target's anti-cheat record from that server; admin `reports.top` / `reports.show` to review (DEVELOPMENT.md §32.1). Checked in Studio (refusals, rate limit, storage and admin read-back) and by Will.
 - [ ] **TST-04** Headless unit tests in CI (if a suitable runner is available)
+  - Built: `scripts/run-tests.luau` runs the TestRunner in Lune on the committed place with the fresh build's code; CI runs it on every push (DEVELOPMENT.md §33.1). 594 pass and 1 terrain test is skipped headless; all 595 pass in Studio. Waiting on Will's test.
 - [ ] **PRF-03** Mobile performance pass
+  - Post-launch (Will, 30 October 2026): only if players turn up on phones.
 - [x] **REL-03** Version module, changelog, tagging process
   - `Shared/Version` (0.6.0, the soft-launch build) shown in Settings with the server's build, `CHANGELOG.md` (CI fails without a section for the version), and `scripts/release.sh` to date the changelog, commit and tag (tried end to end in a throwaway clone). Admin `server.info`. Checked in Studio and by Will. *No release tagged yet: the first tag is v0.6.0 at the soft launch.*
 - [ ] **REL-04** Release checklist and rollback drill

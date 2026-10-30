@@ -1983,7 +1983,7 @@ end
 
 | Layer | Tool | What |
 |---|---|---|
-| **Unit** | In-house TestRunner in Studio Edit mode: `require(game.ServerStorage.Tests.TestRunner).run()` (headless CI later, if a suitable runner is available) | FlightModel, Instructor, Ballistics, Guidance, Signature, Economy, TechTree rules, Validate, Pack, migrations |
+| **Unit** | In-house TestRunner in Studio Edit mode: `require(game.ServerStorage.Tests.TestRunner).run()`, and headless in CI on every push (§33.1) | FlightModel, Instructor, Ballistics, Guidance, Signature, Economy, TechTree rules, Validate, Pack, migrations |
 | **Integration** | Studio **Test → Clients and Servers** (2–4 clients) | Spawning, combat, missiles, damage, match flow |
 | **Network** | Studio network simulation (replication lag, packet loss) | Gun hits at 150 ms, missile smoothness, anti-cheat false positives |
 | **Device** | Studio Device Emulator plus real phones and a console if possible | HUD scaling, touch, performance |
@@ -1999,6 +1999,12 @@ end
 | TST-02 | Network simulation test checklist | 2 |
 | TST-03 | Playtest template and log folder | 1 |
 | TST-04 | Headless unit tests in CI (if a suitable runner is available) | 6 |
+
+### 33.1 As built: headless unit tests (TST-04)
+
+- `scripts/run-tests.luau` (Lune) loads the committed `Afterburner.rbxl` (for its models and assets), replaces the seven Rojo-managed code subtrees with a fresh `rojo build`, and runs the same `ServerStorage.Tests.TestRunner` Studio runs. ModuleScripts load from their `Source` with their own `script` and an instance-aware `require`. It exits non-zero on any failure. CI runs it after the Rojo build: `lune run scripts/run-tests.luau build/Afterburner.rbxl Afterburner.rbxl` (about 30 s). Locally, `rojo build -o build/Afterburner.rbxl` first; a third argument filters spec names.
+- **Shims for what Lune lacks:** `WaitForChild` (the child must already exist), `RunService:IsStudio()` (false), `game.GameId` / `PlaceId` (0, so the environment resolves to Prod), `CFrame.lookAt` and the two-point `CFrame.new` (Lune 0.10.5 builds them pointing the wrong way along Z), and `Random`, a seeded generator with Roblox's API but not its exact sequence (seeds and outputs go through MurmurHash3's finalizer, because `Countermeasures.roll` seeds a fresh generator per roll). So the statistical tests (Engagement, Dogfight) see different samples than in Studio and still pass inside their bands (for example idle + break + flares: 85% defeated in Studio, 70% headless).
+- **Engine-only tests:** a test that needs physics or terrain calls `ctx.engineOnly()` first; headless it counts as *skipped* (shown in the summary), in Studio it runs. Only Place.spec's terrain raycast does so far. Result: 594 passed, 1 skipped headless; 595 passed in Studio.
 
 ---
 

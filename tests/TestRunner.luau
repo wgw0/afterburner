@@ -11,7 +11,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local TestRunner = {}
 
-export type Result = { passed: number, failed: number, failures: { string } }
+export type Result = { passed: number, failed: number, skipped: number, failures: { string } }
+
+-- Headless runs (scripts/run-tests.luau, TST-04) have no physics or terrain: a test that needs them calls
+-- ctx.engineOnly() first and is counted as skipped there.
+local SKIP = "[engine-only test skipped]"
 
 local function deepEqual(a: any, b: any): boolean
 	if a == b then
@@ -97,7 +101,13 @@ end
 
 -- Runs every *.spec module under the Tests folder. Optional filter matches spec names.
 function TestRunner.run(filter: string?): Result
-	local result: Result = { passed = 0, failed = 0, failures = {} }
+	local result: Result = { passed = 0, failed = 0, skipped = 0, failures = {} }
+	local headless = game:GetAttribute("TestsHeadless") == true
+	local function engineOnly()
+		if headless then
+			error(SKIP, 0)
+		end
+	end
 	local sandbox = Instance.new("Folder")
 	sandbox.Name = "TestSandbox"
 	local shared = ReplicatedStorage:WaitForChild("Shared"):Clone()
@@ -132,6 +142,8 @@ function TestRunner.run(filter: string?): Result
 			end)
 			if ok then
 				result.passed += 1
+			elseif string.find(err, SKIP, 1, true) then
+				result.skipped += 1
 			else
 				result.failed += 1
 				table.insert(result.failures, `{fullName}\n    {err}`)
@@ -144,7 +156,8 @@ function TestRunner.run(filter: string?): Result
 			table.insert(result.failures, `{spec.Name}: failed to load ({specFn})`)
 			continue
 		end
-		local ran, err = pcall(specFn, { describe = describe, it = it, expect = expect, Shared = shared })
+		local ran, err =
+			pcall(specFn, { describe = describe, it = it, expect = expect, Shared = shared, engineOnly = engineOnly })
 		if not ran then
 			result.failed += 1
 			table.insert(result.failures, `{spec.Name}: error outside a test ({err})`)
@@ -153,7 +166,10 @@ function TestRunner.run(filter: string?): Result
 
 	sandbox:Destroy()
 
-	print(`[Tests] {result.passed} passed, {result.failed} failed`)
+	print(
+		`[Tests] {result.passed} passed, {result.failed} failed`
+			.. (if result.skipped > 0 then `, {result.skipped} skipped (need the engine)` else "")
+	)
 	for _, failure in result.failures do
 		warn(`[Tests] FAIL {failure}`)
 	end
