@@ -15,6 +15,7 @@ local ReactRoblox = require(ReplicatedStorage:WaitForChild("Packages"):WaitForCh
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Economy = require(Shared.Config.Economy)
+local Cosmetics = require(Shared.Cosmetics)
 local Progression = require(Shared.Progression)
 local Mastery = require(Shared.Mastery)
 local LiveConfig = require(Shared.LiveConfig)
@@ -222,6 +223,8 @@ local function Hangar(props: any)
 			then e(JetPreview, {
 				AirframeId = selected,
 				Skin = Progression.skinFor(data, selected),
+				Marker = Cosmetics.equipped(data, "Marker"),
+				NoseArt = Cosmetics.equipped(data, "NoseArt"),
 				Mastery = Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0),
 				Size = UDim2.fromScale(0.5, 0.62),
 				Position = UDim2.fromScale(0.5, 0.36),

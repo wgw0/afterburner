@@ -1845,6 +1845,20 @@ end
 - **Ids:** both experiences have all three passes and both boosters (`Config/Passes`, `Config/Products`), managed pricing off. Test servers: admin `booster.clear`.
 - Tested in `Perks.spec` (each perk, the ×2 cap, booster time adding up, the reward line) and in play.
 
+### 27.8 As built: cosmetics (SHP-07)
+
+- **Catalogue** (`Config/Cosmetics`), bought with Wings, never random, account-wide (one of each kind equipped, on every jet):
+  - **Contrails** (200 Wings; Tricolour and Sunset 300): colour your contrails, and stream display smoke from the wingtips while the afterburner's lit (the Contrails setting turns both off). VIP Gold comes free with the VIP Pilot pass and stops if the pass does.
+  - **Kill markers** (100; Gold Stars 150): the mastery kill markers painted as bars, roundels, jet silhouettes or gold stars.
+  - **HUD themes** (150): Amber, Gold, Ice and Mint, colours the free HUD colour presets don't have. They override the HUDColour setting while equipped. The free presets stay free (they're also the colour-blind options).
+  - **Nose art** (250): Shark Mouth, Ace of Spades, Lightning Bolt and Lucky Eight, on both sides of the nose. `tools/cosmetics/nose_art.py` draws them (right side, mirrored for the left), uploaded with the Studio MCP like skin textures; the ids are in the catalogue. An item with no uploaded images shows "Coming soon" and can't be bought.
+- **Rules** (`Shared/Cosmetics`): `buy` (spends Wings, owns it, equips it), `equip` (`""` takes it off), `equipped` (only if still owned: pass items lapse). Saved as `data.Cosmetics = { Owned, Equipped }` (replicated). Full access owns everything.
+- **On the jet:** `ProgressionService` gives `AircraftService.cosmeticsFor` the equipped set; `AircraftService.dress` sets the jet's `Trail` attribute, paints kill markers in their style and lays the nose art, at spawn and again when the pilot buys or equips something mid-flight. Everyone sees contrails (`EffectsController` reads `Trail`), kill markers and nose art; HUD themes are only on your own HUD. The hangar and aircraft page previews show your markers and nose art.
+- **Decals:** `Shared/HullDecal` lays a thin invisible plate on the visible skin by casting in from each side at a point relative to the pilot's eye (`CockpitEye`); `KillMarkers` and `NoseArt` use it. Nose art goes 60% of the way from the eye to the nose tip, found by rays back along the centreline at several heights (the radome sits below the eye line).
+- **Shop:** a section per kind under the Wings packs: the price, EQUIP, or EQUIPPED (TAKE OFF).
+- **Not yet:** Wings-only camos and the VIP camo need new paint on every jet (`tools/blender/livery_paint.py`) and about 300 texture uploads into the place.
+- Tested in `Cosmetics.spec` (buying, equipping, pass items lapsing, old saves, the catalogue) and in Studio (the remotes, the save, decal placement on the F-16A, MiG-29A and F-14A).
+
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
 
 ---
@@ -2082,7 +2096,7 @@ On every push and PR:
 2. Playtest in the **test universe** with the release build.
 3. Check data migrations against a copy of real data shapes.
 4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). The environment follows the experience (§0.6), so production picks the production save store and turns off debug and admin data tools by itself.
-5. Store art: the experience icon is [`docs/art/marketing/icon.png`](art/marketing/icon.png) (512 × 512, rendered by `tools/marketing/icon_render.py` from the game's F-22A and composed with the wordmark by `icon_compose.py`; set on the live experience by Will, 30 October 2026). The experience thumbnail is [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg). Upload it in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. The file is 1376×768 (the largest the generator exports), above Roblox's 768×432 minimum; Roblox recommends 1920×1080 for new thumbnails. The test experience keeps its default thumbnail.
+5. Store art: the experience icon is [`docs/art/marketing/icon.png`](art/marketing/icon.png) (512 × 512, rendered by `tools/marketing/icon_render.py` from the game's F-22A and composed with the wordmark by `icon_compose.py`; set on the live experience by Will, 30 October 2026). The experience thumbnail is [`docs/art/marketing/cover.png`](art/marketing/cover.png) (1920 × 1080, rendered by `tools/marketing/cover_render.py`, which builds the scene from `scene.py` and `dogfight.py`, and finished by `cover_compose.py`; it replaces the older `thumbnail.jpg`). A 15-second trailer, [`docs/art/marketing/trailer.mp4`](art/marketing/trailer.mp4), comes from the same scene (`trailer_render.py`, then `trailer_compose.py`, which encodes the MP4 with Blender). Upload the thumbnail in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. The test experience keeps its default thumbnail.
 6. First launch only: badges. Create one badge per achievement in `Achievements.LIST` on the production experience (Creator Dashboard → Monetization → Badges) and put their ids under the production universe in `Config/Badges`. Players who already hold an achievement get its badge on their next join. The test experience has none (Will's call, November 2026).
 7. Tag the commit, update the changelog.
 8. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).

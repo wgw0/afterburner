@@ -1,15 +1,18 @@
 --!strict
--- Shop (UI-07, first pass; DESIGN §8). Your Wings, the Wings packs, the Tier Unlock and the game passes, each
--- with its Robux price. A product or pass that isn't created on the dashboard yet says "Coming soon" instead
+-- Shop (UI-07, first pass; DESIGN §8). Your Wings, the Wings packs, cosmetics bought with Wings (SHP-07:
+-- buy, equip, take off), the Tier Unlock and the game passes, each with its Robux price. A product or pass that isn't created on the dashboard yet says "Coming soon" instead
 -- of a buy button. What's still to come (VIP, boosters, season pass, the starter bundle, premium jets) is
 -- listed at the bottom.
--- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree()
+-- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree(),
+--   OnBuyCosmetic(id) -> (ok, err), OnEquipCosmetic(kind, id) -> (ok, err)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Catalogue = require(Shared.Config.Cosmetics)
+local Cosmetics = require(Shared.Cosmetics)
 local Passes = require(Shared.Config.Passes)
 local Perks = require(Shared.Perks)
 local Products = require(Shared.Config.Products)
@@ -36,15 +39,18 @@ local function section(title: string, order: number)
 end
 
 -- A card with a title, a line of detail and an action (or "Coming soon" / a status).
-local function Card(props: {
-	Title: string,
-	Detail: string,
-	Action: string?,
-	Status: string?,
-	Highlight: Color3?,
-	Order: number,
-	OnClick: (() -> (boolean, string?))?,
-})
+local function Card(
+	props: {
+		Title: string,
+		Detail: string,
+		Action: string?,
+		Status: string?,
+		Highlight: Color3?,
+		Image: string?, -- a picture in the top right (nose art)
+		Order: number,
+		OnClick: (() -> (boolean, string?))?,
+	}
+)
 	local message, setMessage = React.useState(nil :: string?)
 	return e(C.Panel, {
 		Size = UDim2.fromOffset(CARD_W, CARD_H),
@@ -52,9 +58,18 @@ local function Card(props: {
 		LayoutOrder = props.Order,
 		StrokeColor = props.Highlight,
 	}, {
+		Picture = if props.Image
+			then e("ImageLabel", {
+				Image = props.Image,
+				Size = UDim2.fromOffset(64, 32),
+				Position = UDim2.fromScale(1, 0),
+				AnchorPoint = Vector2.new(1, 0),
+				BackgroundTransparency = 1,
+			})
+			else nil,
 		Title = e(C.Label, {
 			Text = props.Title,
-			Size = UDim2.new(1, 0, 0, 24),
+			Size = UDim2.new(1, if props.Image then -68 else 0, 0, 24),
 			Heavy = true,
 			TextSize = 20,
 			Color = props.Highlight or Theme.Text,
@@ -101,6 +116,67 @@ local function row(order: number, cards: { [string]: any })
 	}, cards)
 end
 
+-- Cards that wrap onto as many lines as they need
+local function grid(order: number, cards: { [string]: any })
+	cards.Layout = e("UIGridLayout", {
+		CellSize = UDim2.fromOffset(CARD_W, CARD_H),
+		CellPadding = UDim2.fromOffset(14, 14),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	})
+	return e("Frame", {
+		Size = UDim2.fromScale(1, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = order,
+	}, cards)
+end
+
+local KIND_DETAIL = {
+	Trail = "Your contrails in this colour, and display smoke from the wingtips on afterburner.",
+	Marker = "Your kill markers painted like this.",
+	HUD = "Your HUD in this colour.",
+	NoseArt = "Painted on both sides of your jet's nose.",
+}
+
+-- One cosmetic: buy it, equip it, or take it off.
+local function cosmeticCard(props: any, data: any, id: string, order: number)
+	local item = Catalogue.LIST[id]
+	local owned = Cosmetics.owns(data, id)
+	local equipped = Cosmetics.equipped(data, item.Kind) == id
+	local action, status, onClick
+	if not Cosmetics.ready(id) then
+		status = "Coming soon"
+	elseif equipped then
+		action = "EQUIPPED (TAKE OFF)"
+		onClick = function()
+			return props.OnEquipCosmetic(item.Kind, "")
+		end
+	elseif owned then
+		action = "EQUIP"
+		onClick = function()
+			return props.OnEquipCosmetic(item.Kind, id)
+		end
+	elseif item.Wings then
+		action = `{C.number(item.Wings)} WINGS`
+		onClick = function()
+			return props.OnBuyCosmetic(id)
+		end
+	else
+		status = if item.Pass == "VIP" then "Free with VIP Pilot" else "Not for sale"
+	end
+	local colour = if item.Colours then item.Colours[1] else item.Colour
+	return e(Card, {
+		Title = if item.Glyph then `{item.DisplayName}  {string.rep(item.Glyph, 3)}` else item.DisplayName,
+		Detail = KIND_DETAIL[item.Kind],
+		Action = action,
+		Status = status,
+		Highlight = if equipped then Theme.Good else colour,
+		Image = if item.Images then item.Images[1] else nil,
+		Order = order,
+		OnClick = onClick,
+	})
+end
+
 local function clock(seconds: number): string
 	return string.format("%d:%02d", seconds // 60, seconds % 60)
 end
@@ -138,7 +214,7 @@ local function ShopScreen(props: any)
 			LayoutOrder = 0,
 		}),
 		Explain = e(C.Label, {
-			Text = `Wings buy cosmetics. Every skin sold for Credits can also be bought straight away for {Skins.WINGS_PRICE} Wings on its jet's page.`,
+			Text = `Wings buy the cosmetics below. Every skin sold for Credits can also be bought straight away for {Skins.WINGS_PRICE} Wings on its jet's page.`,
 			Size = UDim2.new(1, 0, 0, 18),
 			TextSize = 14,
 			Color = Theme.Dim,
@@ -176,9 +252,19 @@ local function ShopScreen(props: any)
 	end
 	children.Packs = row(11, packCards)
 
+	-- Cosmetics (SHP-07), a section per kind
+	for k, kind in Catalogue.KINDS do
+		children[kind .. "Title"] = section(string.upper(Catalogue.KIND_NAMES[kind]), 12 + k * 2)
+		local cards = {}
+		for i, id in Catalogue.ofKind(kind) do
+			cards[id] = cosmeticCard(props, data, id, i)
+		end
+		children[kind] = grid(13 + k * 2, cards)
+	end
+
 	-- Tier Unlock: the next one, if there is one
 	local offer = Shop.tierUnlockOffer(data)
-	children.UnlockTitle = section("SKIP AHEAD", 20)
+	children.UnlockTitle = section("SKIP AHEAD", 22)
 	local unlockCards = {}
 	if offer then
 		local key = Products.tierUnlockKey(offer.tier) :: string
@@ -200,7 +286,7 @@ local function ShopScreen(props: any)
 			Order = 1,
 		})
 	end
-	children.Unlock = row(21, unlockCards)
+	children.Unlock = row(23, unlockCards)
 
 	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
 	children.BoosterTitle = section("BOOSTERS", 25)

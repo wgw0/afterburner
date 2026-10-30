@@ -19,6 +19,8 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Callsign = require(Shared.Callsign)
+local Cosmetics = require(Shared.Cosmetics)
+local CosmeticsCatalogue = require(Shared.Config.Cosmetics)
 local Economy = require(Shared.Config.Economy)
 local Net = require(Shared.Net)
 local Progression = require(Shared.Progression)
@@ -225,6 +227,24 @@ local function handleIntent(
 	return ok == true, err
 end
 
+-- What a player has equipped and still owns, { [kind] = id } (SHP-07).
+local function looksFor(data: { [string]: any }): { [string]: string }
+	local looks = {}
+	for _, kind in CosmeticsCatalogue.KINDS do
+		looks[kind] = Cosmetics.equipped(data, kind)
+	end
+	return looks
+end
+
+-- Re-dresses a player's jet if they're flying (after they buy or equip something).
+local function redress(player: Player)
+	local jet = AircraftService:GetJet(player)
+	local data = DataService:GetData(player)
+	if jet and data then
+		AircraftService.dress(jet.model, looksFor(data))
+	end
+end
+
 -- Shows a callsign (already filtered) as the player's name, on their jet too if they're flying ("" = username).
 local function showCallsign(player: Player, callsign: string)
 	player:SetAttribute("Callsign", callsign)
@@ -309,6 +329,28 @@ function ProgressionService:Init()
 		return handleIntent(player, "SetSkin", function(data)
 			return Progression.setSkin(data, airframeId, skinId)
 		end, false, `{airframeId}:{skinId}`)
+	end)
+	Net.Server.handle("BuyCosmetic", function(player: Player, id: string)
+		local before = DataService:GetData(player)
+		local wingsBefore = before and before.Wings or 0
+		local ok, err = handleIntent(player, "BuyCosmetic", function(data)
+			return Cosmetics.buy(data, id)
+		end, false, id)
+		local data = DataService:GetData(player)
+		if ok and data then
+			economyEvent(player, "Sink", wingsBefore - data.Wings, data.Wings, "BuyCosmetic", id, "Wings")
+			redress(player)
+		end
+		return ok, err
+	end)
+	Net.Server.handle("EquipCosmetic", function(player: Player, kind: string, id: string)
+		local ok, err = handleIntent(player, "EquipCosmetic", function(data)
+			return Cosmetics.equip(data, kind, id)
+		end, false, `{kind}:{id}`)
+		if ok then
+			redress(player)
+		end
+		return ok, err
 	end)
 	Net.Server.handle("SetLineup", function(player: Player, ids: { any })
 		return handleIntent(player, "SetLineup", function(data)
@@ -423,6 +465,10 @@ function ProgressionService:Start()
 	AircraftService.skinFor = function(player: Player, airframeId: string): string?
 		local data = DataService:GetData(player)
 		return data and Progression.skinFor(data, airframeId)
+	end
+	AircraftService.cosmeticsFor = function(player: Player): { [string]: string }
+		local data = DataService:GetData(player)
+		return if data then looksFor(data) else {}
 	end
 	AircraftService.masteryFor = function(player: Player, airframeId: string): number
 		local data = DataService:GetData(player)

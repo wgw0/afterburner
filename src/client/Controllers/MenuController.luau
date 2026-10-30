@@ -450,6 +450,12 @@ render = function()
 			MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
 			return true, nil
 		end,
+		OnBuyCosmetic = function(id: string): (boolean, string?)
+			return PlayerDataController:BuyCosmetic(id)
+		end,
+		OnEquipCosmetic = function(kind: string, id: string): (boolean, string?)
+			return PlayerDataController:EquipCosmetic(kind, id)
+		end,
 		OnBuyPass = function(key: string): (boolean, string?)
 			local id = Passes.idFor(key)
 			if not id then
