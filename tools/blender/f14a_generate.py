@@ -98,10 +98,17 @@ NACELLE = [(790, 0.39, 0.16, 0.60), (1000, 0.42, 0.10, 0.58), (1400, 0.45, 0.0, 
 NOZZLE_X, NOZZLE_Z, NOZZLE_R = 1.25, 0.0, 0.48
 NOZZLE_Y0, NOZZLE_Y1 = Y(2190), Y(2240)
 
-# Gloves: (half width m, xd), the outline of each fixed glove from its nose to its trailing edge
+# Gloves: (half width m, xd), the outline of each fixed glove from its nose to its trailing edge. Aft of the
+# measured glove (station 1369) it carries on as the overwing fairing: out along the swing wing's root edge
+# (as set at 35 degrees, so the wing comes out of the fairing instead of leaving a notch), then in to the
+# taileron roots (Will: the wings looked unconnected).
 GLOVE_Z = ZI(410)
-GLOVE = [(0.92, 790), (W(207), 809), (W(282), 1129), (W(352), 1250), (W(427), 1369), (3.40, 1500), (2.30, 1700),
-         (0.92, 1700)]
+GLOVE = [(0.92, 790), (W(207), 809), (W(282), 1129), (W(352), 1250), (W(427), 1369), (3.62, 1500), (4.42, 1680),
+         (5.08, 1815), (3.20, 1840), (2.00, 1860), (0.92, 1860)]
+# The glove is deep where it meets the body and thin at its edge, so it closes onto the nacelle tops (which
+# fall away aft): its underside drops GLOVE_DEPTH[0] m at |x| <= GLOVE_DEPTH_X[0], GLOVE_DEPTH[1] m from
+# GLOVE_DEPTH_X[1] out.
+GLOVE_DEPTH, GLOVE_DEPTH_X = (0.58, 0.06), (1.0, 2.3)
 
 # Swing wing: measured fully swept, turned forward to 35 degrees about the pivot
 WING_Z = GLOVE_Z
@@ -120,14 +127,16 @@ def turned(p):
     return (px + (x - px) * c + (y - py) * s, py - (x - px) * s + (y - py) * c, z)
 
 
-STAB_ROOT_X, STAB_TIP_X = 2.0, W(600)
+STAB_ROOT_X, STAB_TIP_X = 1.74, W(600)  # root just inside the nacelle side, so the taileron meets it
 STAB_ROOT_LE, STAB_ROOT_TE = Y(1850), Y(2269)
 STAB_TIP_LE, STAB_TIP_TE = Y(2204), Y(2314)
 STAB_Z = ZI(478)
 STAB_THICKNESS = 0.05
 
 FIN_X, FIN_CANT = W(200), math.radians(5)
-FIN_ROOT_Z, FIN_TIP_Z = ZI(385), ZI(90)
+# The drawing's fin root (row 385) is the centre body's height; the round nacelles under the fins are lower
+# there, so the root goes down into them (Will: the fins didn't connect). The tip stays where it was.
+FIN_ROOT_Z, FIN_TIP_Z = 0.44, ZI(90)
 FIN_ROOT_LE, FIN_ROOT_TE = Y(1862), Y(2222)
 FIN_TIP_LE, FIN_TIP_TE = Y(2172), Y(2317)
 FIN_THICKNESS = 0.05
@@ -230,6 +239,12 @@ def build_nacelles(col):
     kit.make_object("IntakeDucts", v, f, col, "Body")
 
 
+def glove_depth(x):
+    (d0, d1), (x0, x1) = GLOVE_DEPTH, GLOVE_DEPTH_X
+    t = min(max((abs(x) - x0) / (x1 - x0), 0.0), 1.0)
+    return d0 + (d1 - d0) * t
+
+
 def build_gloves(col):
     parts = []
     th = 0.10
@@ -239,9 +254,9 @@ def build_gloves(col):
             outline = list(reversed(outline))
         n = len(outline)
         top = [(x, y, GLOVE_Z + th / 2) for x, y in outline]
-        bottom = [(x, y, GLOVE_Z - th / 2) for x, y in outline]
+        bottom = [(x, y, GLOVE_Z + th / 2 - glove_depth(x)) for x, y in outline]
         centre_t = (sum(p[0] for p in top) / n, sum(p[1] for p in top) / n, GLOVE_Z + th / 2)
-        centre_b = (centre_t[0], centre_t[1], GLOVE_Z - th / 2)
+        centre_b = (centre_t[0], centre_t[1], GLOVE_Z + th / 2 - glove_depth(centre_t[0]))
         verts = top + bottom + [centre_t, centre_b]
         faces = [(2 * n, i, (i + 1) % n) for i in range(n)]
         faces += [(2 * n + 1, n + (i + 1) % n, n + i) for i in range(n)]
