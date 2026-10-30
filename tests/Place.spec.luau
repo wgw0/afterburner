@@ -105,6 +105,7 @@ return function(ctx)
 		end)
 
 		it("the map has airborne spawn points inside the play area, clear of terrain", function()
+			ctx.engineOnly() -- raycasts against the terrain
 			local CollectionService = game:GetService("CollectionService")
 			local Scale = require(ReplicatedStorage.Shared.Config.Scale)
 			local params = RaycastParams.new()

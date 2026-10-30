@@ -50,3 +50,7 @@ jobs:
         run: |
           mkdir -p build
           rojo build default.project.json -o build/Afterburner.rbxl
+
+      # TST-04: the unit tests (tests/*.spec) headless in Lune, on the committed place with the fresh build's code
+      - name: Unit tests (headless)
+        run: lune run scripts/run-tests.luau build/Afterburner.rbxl Afterburner.rbxl
