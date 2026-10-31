@@ -107,7 +107,7 @@ Cosmetics.LIST = table.freeze({
 		Pass = "VIP",
 		Skin = "VIPGold",
 		Colours = { GOLD },
-		Images = { "" },
+		Images = { "rbxassetid://125674333100654" },
 		Order = 1,
 	},
 	CamoArctic = {
@@ -116,7 +116,7 @@ Cosmetics.LIST = table.freeze({
 		Wings = 400,
 		Skin = "ArcticSplinter",
 		Colours = { rgb(146, 174, 200) },
-		Images = { "" },
+		Images = { "rbxassetid://95443903567285" },
 		Order = 2,
 	},
 	CamoTiger = {
@@ -125,7 +125,7 @@ Cosmetics.LIST = table.freeze({
 		Wings = 400,
 		Skin = "TigerStripe",
 		Colours = { rgb(232, 142, 40) },
-		Images = { "" },
+		Images = { "rbxassetid://130275013707024" },
 		Order = 3,
 	},
 
