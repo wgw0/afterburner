@@ -6,7 +6,7 @@ Open it at **Creator Hub → Creations → Afterburner → Analytics** (the left
 
 ## Before you start
 
-- **Events only come from the published game.** Roblox records nothing from Studio or from the client. We read analytics on the **live (prod) experience, Afterburner** only. The TEST experience has a dashboard of its own, so test play never mixes with live numbers; ignore it. Custom events also carry `env=Test` or `env=Prod` in Custom Field 3.
+- **Events only come from the published game.** Roblox records nothing from Studio or from the client. We read analytics on the **live (prod) experience, Afterburner** only. The TEST experience sends no analytics at all (its events stay in the server's `telemetry.recent` log), so its dashboard stays empty. Custom events carry `env=Prod` in Custom Field 3.
 - **Charts lag by about a day.** Each analytics page has a **View Events** button that lists the latest events within minutes. Use it to check that something is arriving.
 - **Small games see less.** Funnels, Economy and Custom events appear once events arrive. The full set of KPIs needs more than 10 daily active users and 10 hours of play a day for 7 days in a row.
 

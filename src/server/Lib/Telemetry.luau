@@ -1,7 +1,8 @@
 --!strict
 -- Analytics wrapper (DEVELOPMENT.md §30, ANL-01). Every analytics call goes through here:
 --   * pcall'd: analytics must never break gameplay
---   * tagged with the environment, so test traffic is easy to filter out
+--   * sent to Roblox from the live (prod) experience only: the TEST experience and Studio keep events in
+--     the in-memory log but send nothing, so the dashboard we read holds live play alone
 --   * kept in a small in-memory log for tests and the admin panel
 -- AnalyticsService custom events need a player; server-wide events attach to the first player present.
 
@@ -21,6 +22,14 @@ local function remember(name: string, value: number?, fields: { [string]: any })
 	if #Telemetry.recent > RECENT_LIMIT then
 		table.remove(Telemetry.recent, 1)
 	end
+end
+
+-- Calls AnalyticsService (fn), live only and never letting it error.
+local function send(fn: () -> ())
+	if Environment.isTest() then
+		return
+	end
+	pcall(fn)
 end
 
 local function anyPlayer(): Player?
@@ -44,7 +53,7 @@ function Telemetry.event(
 	if not who then
 		return
 	end
-	pcall(function()
+	send(function()
 		-- Custom fields are limited to three; send the most useful ones.
 		local custom = {}
 		local keys = {}
@@ -73,7 +82,7 @@ end
 -- first time each step is logged per session (and keeps a player's 10 latest sessions).
 function Telemetry.funnel(player: Player, funnel: string, sessionId: string, step: number, stepName: string)
 	remember(`funnel:{funnel}`, step, { step = stepName })
-	pcall(function()
+	send(function()
 		AnalyticsService:LogFunnelStepEvent(player, funnel, sessionId, step, stepName)
 	end)
 end
@@ -82,7 +91,7 @@ end
 -- (Shared/Funnels.reach decides which).
 function Telemetry.onboarding(player: Player, step: number, stepName: string)
 	remember("onboarding", step, { step = stepName })
-	pcall(function()
+	send(function()
 		AnalyticsService:LogOnboardingFunnelStepEvent(player, step, stepName)
 	end)
 end
@@ -90,7 +99,7 @@ end
 -- A progression milestone, e.g. the highest tier a player has reached.
 function Telemetry.progression(player: Player, path: string, level: number, levelName: string?)
 	remember(`progression:{path}`, level, { name = levelName })
-	pcall(function()
+	send(function()
 		AnalyticsService:LogProgressionEvent(player, path, Enum.AnalyticsProgressionType.Complete, level, levelName)
 	end)
 end
@@ -123,7 +132,7 @@ function Telemetry.economy(
 		return
 	end
 	remember(`Economy{flow}`, amount, { kind = transactionType, item = sku, currency = currency })
-	pcall(function()
+	send(function()
 		local flowType = if flow == "Source"
 			then Enum.AnalyticsEconomyFlowType.Source
 			else Enum.AnalyticsEconomyFlowType.Sink
