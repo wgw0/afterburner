@@ -158,6 +158,40 @@ return function(ctx)
 			return table.find(list, id) ~= nil
 		end
 
+		it("the hangar and bank: every jet, upgrades, Credits, RP and skins owned", function()
+			local some = Achievements.earned({
+				kind = "Career",
+				ownedJets = 5,
+				totalJets = 27,
+				fullyKitted = 1,
+				credits = 60000,
+				rp = 9000,
+				skins = 25,
+			})
+			expect(has(some, "FullHangar")).toBe(false)
+			expect(has(some, "FullyKitted")).toBe(true)
+			expect(has(some, "MasterMechanic")).toBe(false)
+			expect(has(some, "Savings")).toBe(true)
+			expect(has(some, "HighRoller")).toBe(false)
+			expect(has(some, "Researcher")).toBe(false)
+			expect(has(some, "SharpDresser") and has(some, "FashionIcon")).toBe(true)
+			expect(has(some, "Wardrobe")).toBe(false)
+			local all = Achievements.earned({
+				kind = "Career",
+				ownedJets = 27,
+				totalJets = 27,
+				fullyKitted = 27,
+				credits = 1000000,
+				rp = 100000,
+				skins = 50,
+			})
+			for _, id in { "FullHangar", "MasterMechanic", "Tycoon", "Boffin", "Wardrobe" } do
+				expect(has(all, id)).toBe(true)
+			end
+			-- A save without the totals earns none of them
+			expect(has(Achievements.earned({ kind = "Career", ownedJets = 3 }), "FullHangar")).toBe(false)
+		end)
+
 		it("kills", function()
 			local first = Achievements.earned({ kind = "Kill", weapon = "IR", lifeKills = 1 })
 			expect(has(first, "FirstBlood")).toBe(true)

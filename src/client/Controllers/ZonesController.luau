@@ -2,7 +2,10 @@
 -- Air Superiority zones on screen (DEVELOPMENT.md §17.3, MCH-06). From MatchState.zones:
 --   * each zone as a faint upright cylinder in its owner's colour (grey when neutral), with its letter
 --     floating above it, visible from anywhere on the map;
---   * when your jet is inside a zone, a line under the banner: who's taking it and how far along.
+--   * a ring of glowing posts round its edge: a part is only drawn from outside, so from inside the
+--     cylinder can't be seen, but the posts can;
+--   * when your jet is inside a zone, a line under the banner: who's taking it, how far along, and how far
+--     to the edge.
 -- Zone geometry and the rules are in shared AirSuperiority; the server decides everything.
 
 local Players = game:GetService("Players")
@@ -11,18 +14,21 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TeamConfig = require(Shared.Config.Teams)
+local Units = require(Shared.Units)
 
 local FlightController = require(script.Parent.FlightController)
 local MatchController = require(script.Parent.MatchController)
 
 local NEUTRAL = Color3.fromRGB(200, 205, 215)
 local LETTER_HEIGHT = 900 -- studs above the sea, where the fighting is
+local POSTS = 32 -- round each zone's edge
+local POST_WIDTH = 6 -- studs
 
 local ZonesController = {
 	Priority = 86,
 }
 
-type Marker = { cylinder: Part, billboard: BillboardGui, letter: TextLabel }
+type Marker = { cylinder: Part, billboard: BillboardGui, letter: TextLabel, posts: { Part } }
 
 local folder: Folder
 local markers: { [string]: Marker } = {}
@@ -49,6 +55,25 @@ local function makeMarker(zone: any): Marker
 	cylinder.CFrame = CFrame.new(zone.position + Vector3.new(0, zone.top / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	cylinder.Parent = folder
 
+	local posts = {}
+	for i = 1, POSTS do
+		local angle = (i / POSTS) * 2 * math.pi
+		local post = Instance.new("Part")
+		post.Name = "EdgePost"
+		post.Anchored = true
+		post.CanCollide = false
+		post.CanQuery = false
+		post.CanTouch = false
+		post.CastShadow = false
+		post.Material = Enum.Material.Neon
+		post.Transparency = 0.55
+		post.Size = Vector3.new(POST_WIDTH, zone.top, POST_WIDTH)
+		local edge = Vector3.new(math.cos(angle) * zone.radius, zone.top / 2, math.sin(angle) * zone.radius)
+		post.CFrame = CFrame.new(zone.position + edge)
+		post.Parent = cylinder
+		table.insert(posts, post)
+	end
+
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size = UDim2.fromOffset(60, 60)
 	billboard.AlwaysOnTop = true
@@ -65,7 +90,7 @@ local function makeMarker(zone: any): Marker
 	letter.TextStrokeTransparency = 0.3
 	letter.Text = zone.id
 	letter.Parent = billboard
-	return { cylinder = cylinder, billboard = billboard, letter = letter }
+	return { cylinder = cylinder, billboard = billboard, letter = letter, posts = posts }
 end
 
 local function clear()
@@ -87,6 +112,9 @@ local function render(s: any)
 		local colour = colourOf(zone.owner)
 		marker.cylinder.Color = colour
 		marker.letter.TextColor3 = colour
+		for _, post in marker.posts do
+			post.Color = colour
+		end
 	end
 end
 
@@ -120,7 +148,8 @@ local function updateCapture()
 			else
 				text = `ZONE {zone.id}  ·  NEUTRAL`
 			end
-			captureLabel.Text = text
+			local edge = Units.toMetres(zone.radius - flat.Magnitude) / 1000
+			captureLabel.Text = `{text}  ·  EDGE {string.format("%.1f", edge)} km`
 			captureLabel.TextColor3 = colourOf(zone.owner or towards)
 			captureLabel.Visible = true
 			return

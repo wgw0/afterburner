@@ -10,9 +10,11 @@
 --   HUD: your HUD's colour (over the HUDColour setting while equipped).
 --   WingArt: a decal on top of each wing, mid-span (Images: the right and left wing, mirrored so both point
 --     outboard).
+--   Camo: paints every jet you fly in it, over each jet's own skin (Skin: the skin folder in
+--     Assets.Skins.<Jet>, painted for every jet by tools/blender/livery_paint.py; Images: the shop preview).
 -- Pass: free with that game pass, and can't be bought (VIP Gold).
 
-export type Kind = "Trail" | "Marker" | "HUD" | "WingArt"
+export type Kind = "Trail" | "Marker" | "HUD" | "WingArt" | "Camo"
 
 export type Cosmetic = {
 	Kind: Kind,
@@ -22,14 +24,16 @@ export type Cosmetic = {
 	Colours: { Color3 }?, -- Trail (along the trail), HUD (the first)
 	Glyph: string?, -- Marker
 	Colour: Color3?, -- Marker
-	Images: { string }?, -- WingArt: { right wing, left wing } asset ids ("" until uploaded)
+	Images: { string }?, -- WingArt: { right wing, left wing } asset ids ("" until uploaded); Camo: { preview }
+	Skin: string?, -- Camo: the skin it paints
 	Order: number, -- in the shop
 }
 
 local Cosmetics = {}
 
-Cosmetics.KINDS = table.freeze({ "Trail", "Marker", "HUD", "WingArt" }) :: { Kind }
+Cosmetics.KINDS = table.freeze({ "Camo", "Trail", "Marker", "HUD", "WingArt" }) :: { Kind }
 Cosmetics.KIND_NAMES = table.freeze({
+	Camo = "Camos",
 	Trail = "Contrails",
 	Marker = "Kill markers",
 	HUD = "HUD themes",
@@ -95,6 +99,35 @@ Cosmetics.LIST = table.freeze({
 	HUDGold = { Kind = "HUD", DisplayName = "Gold", Wings = 150, Colours = { GOLD }, Order = 2 },
 	HUDIce = { Kind = "HUD", DisplayName = "Ice", Wings = 150, Colours = { rgb(190, 235, 255) }, Order = 3 },
 	HUDMint = { Kind = "HUD", DisplayName = "Mint", Wings = 150, Colours = { rgb(150, 255, 210) }, Order = 4 },
+
+	-- Camos (DESIGN: 150-600 R$): bought once, on every jet (Will). VIP Gold comes with the VIP Pilot pass.
+	CamoVIP = {
+		Kind = "Camo",
+		DisplayName = "VIP Gold",
+		Pass = "VIP",
+		Skin = "VIPGold",
+		Colours = { GOLD },
+		Images = { "" },
+		Order = 1,
+	},
+	CamoArctic = {
+		Kind = "Camo",
+		DisplayName = "Arctic Splinter",
+		Wings = 400,
+		Skin = "ArcticSplinter",
+		Colours = { rgb(146, 174, 200) },
+		Images = { "" },
+		Order = 2,
+	},
+	CamoTiger = {
+		Kind = "Camo",
+		DisplayName = "Tiger Stripe",
+		Wings = 400,
+		Skin = "TigerStripe",
+		Colours = { rgb(232, 142, 40) },
+		Images = { "" },
+		Order = 3,
+	},
 
 	-- Wing art (DESIGN: 250 R$). Made by tools/cosmetics/wing_art.py; Images = { right wing, left wing }.
 	WingShark = {

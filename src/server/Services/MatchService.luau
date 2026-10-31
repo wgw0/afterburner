@@ -92,6 +92,11 @@ local function ensureScore(identity: any, name: string, isAI: boolean, userId: n
 		local score = MatchRules.newScore(name, isAI, userId)
 		-- Team modes: humans spread evenly over the teams (AI fill then evens the numbers)
 		score.team = MatchRules.pickTeam(mode, scores, not isAI)
+		for _, jet in AircraftService:GetJets() do
+			if jet.identity == identity then
+				score.airframe = jet.airframeId -- already flying when they joined the board
+			end
+		end
 		scores[identity] = score
 		Teams.set(identity, score.team)
 	elseif not isAI then
@@ -691,6 +696,13 @@ function MatchService:GetState(): string
 end
 
 function MatchService:Init()
+	-- The scoreboard shows the jet each pilot is flying
+	AircraftService.JetSpawned:Connect(function(jet)
+		local score = scores[jet.identity]
+		if score then
+			score.airframe = jet.airframeId
+		end
+	end)
 	local configured = ReplicatedStorage:GetAttribute("GameMode")
 	if type(configured) == "string" and (MatchRules.MODES :: any)[configured] then
 		mode = (MatchRules.MODES :: any)[configured]

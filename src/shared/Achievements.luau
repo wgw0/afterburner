@@ -47,6 +47,23 @@ Achievements.LIST = table.freeze({
 	{ id = "Centurion", rarity = "Epic", name = "Centurion", text = "Shoot down 100 jets." },
 	{ id = "Collector", rarity = "Rare", name = "Collector", text = "Own 10 jets." },
 	{ id = "HighFlyer", rarity = "Legendary", name = "High Flyer", text = "Reach pilot level 25." },
+	-- The hangar and the bank (Will): jets, upgrades, Credits, RP and skins owned
+	{ id = "FullHangar", rarity = "Legendary", name = "Full Hangar", text = "Own every jet." },
+	{ id = "FullyKitted", rarity = "Uncommon", name = "Fully Kitted", text = "Own every upgrade for one jet." },
+	{
+		id = "MasterMechanic",
+		rarity = "Legendary",
+		name = "Master Mechanic",
+		text = "Own every upgrade for every jet.",
+	},
+	{ id = "Savings", rarity = "Uncommon", name = "Rainy Day Fund", text = "Have 50,000 Credits at once." },
+	{ id = "HighRoller", rarity = "Rare", name = "High Roller", text = "Have 250,000 Credits at once." },
+	{ id = "Tycoon", rarity = "Epic", name = "Tycoon", text = "Have 1,000,000 Credits at once." },
+	{ id = "Researcher", rarity = "Uncommon", name = "Researcher", text = "Have 10,000 RP banked." },
+	{ id = "Boffin", rarity = "Rare", name = "Boffin", text = "Have 100,000 RP banked." },
+	{ id = "SharpDresser", rarity = "Uncommon", name = "Sharp Dresser", text = "Own 5 skins." },
+	{ id = "FashionIcon", rarity = "Rare", name = "Fashion Icon", text = "Own 25 skins." },
+	{ id = "Wardrobe", rarity = "Epic", name = "Walk-in Wardrobe", text = "Own 50 skins." },
 	-- Secret: not shown in Career until earned
 	{
 		id = "ThreadTheNeedle",
@@ -67,6 +84,11 @@ Achievements.VETERAN_MATCHES = 50
 Achievements.CENTURION_KILLS = 100
 Achievements.COLLECTOR_JETS = 10
 Achievements.HIGH_FLYER_LEVEL = 25
+-- Credits and RP (banked: Free RP plus every jet's RP) at once, and skins owned (bought or earned, not the
+-- ones jets come with): { id, amount }, lowest first
+Achievements.CREDITS = table.freeze({ { "Savings", 50000 }, { "HighRoller", 250000 }, { "Tycoon", 1000000 } })
+Achievements.RP = table.freeze({ { "Researcher", 10000 }, { "Boffin", 100000 } })
+Achievements.SKINS = table.freeze({ { "SharpDresser", 5 }, { "FashionIcon", 25 }, { "Wardrobe", 50 } })
 
 local BY_ID: { [string]: Def } = {}
 for _, def in Achievements.LIST do
@@ -93,6 +115,11 @@ export type Event = {
 	lifeDefeats: number?, -- MissileDefeated: missiles defeated this life, this one included
 	totalKills: number?, -- Career: lifetime kills (players and AI)
 	ownedJets: number?, -- Career
+	totalJets: number?, -- Career: jets in the game
+	fullyKitted: number?, -- Career: owned jets with every upgrade
+	credits: number?, -- Career
+	rp: number?, -- Career: Free RP plus every jet's RP
+	skins: number?, -- Career: skins owned, bought or earned
 	level: number?, -- Career: pilot level
 	airframe: string?, -- Spawn
 }
@@ -165,6 +192,29 @@ function Achievements.earned(event: Event): { string }
 		end
 		if (event.level or 0) >= Achievements.HIGH_FLYER_LEVEL then
 			table.insert(ids, "HighFlyer")
+		end
+		local jets = event.totalJets or math.huge
+		if (event.ownedJets or 0) >= jets then
+			table.insert(ids, "FullHangar")
+		end
+		if (event.fullyKitted or 0) >= 1 then
+			table.insert(ids, "FullyKitted")
+		end
+		if (event.fullyKitted or 0) >= jets then
+			table.insert(ids, "MasterMechanic")
+		end
+		for _, list in
+			{
+				{ Achievements.CREDITS, event.credits },
+				{ Achievements.RP, event.rp },
+				{ Achievements.SKINS, event.skins },
+			}
+		do
+			for _, step in list[1] do
+				if (list[2] or 0) >= step[2] then
+					table.insert(ids, step[1])
+				end
+			end
 		end
 	end
 	return ids

@@ -355,6 +355,7 @@ local function grid(order: number, cards: { [string]: any })
 end
 
 local KIND_DETAIL = {
+	Camo = "Paints every jet you fly. Take it off to go back to each jet's own skin.",
 	Trail = "Your contrails in this colour, and display smoke from the wingtips on afterburner.",
 	Marker = "Your kill markers painted like this.",
 	HUD = "Your HUD in this colour.",
