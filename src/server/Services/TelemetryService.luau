@@ -4,8 +4,9 @@
 --     2 Onboarded (MatchmakingService), 3 First match finished, 4 First kill, 5 First research.
 --   Training funnel (one run per player): 1 Arrived on a training server, 2–7 lessons 1–6 done.
 --   Progression: the highest tier a player has owned a jet of (path "Tier").
---   Balance (scored matches only: not training, the stress test or free flight). Each event sends two
---   fields; the value is 1 unless said:
+--   Balance (scored matches only: not training, the stress test or free flight; human pilots only, so AI
+--   seats don't skew the numbers: kills and missiles between two humans, deaths of humans to a human or to
+--   no one). Each event sends two fields; the value is 1 unless said:
 --     Spawn          airframe, mode                    which jets get flown
 --     Kill           airframe (the killer's), victim   kills per jet and who beats whom
 --     ShotDown       airframe, cause                   deaths per jet and what caused them
@@ -101,6 +102,10 @@ local function checkTier(player: Player)
 		end)
 		Telemetry.progression(player, "Tier", top, `Tier {top}`)
 	end
+end
+
+local function isHuman(identity: any): boolean
+	return typeof(identity) == "Instance" and identity:IsA("Player")
 end
 
 local function airframeOf(jet: any): string
@@ -204,20 +209,20 @@ function TelemetryService:Init()
 				end
 			end
 		end
-		local isPlayer = typeof(killer) == "Instance" and killer:IsA("Player")
-		if killer and killer ~= victimJet.identity then
-			Telemetry.event(
-				"Kill",
-				1,
-				{ airframe = airframeOf(killerJet), victim = airframeOf(victimJet), weapon = credit.weapon },
-				if isPlayer then killer else victimJet.pilot,
-				{ "airframe", "victim" }
-			)
-			if isPlayer then
-				onboarding(killer, "FirstKill")
+		local humanVictim = isHuman(victimJet.identity)
+		if killer and killer ~= victimJet.identity and isHuman(killer) then
+			if humanVictim then
+				Telemetry.event(
+					"Kill",
+					1,
+					{ airframe = airframeOf(killerJet), victim = airframeOf(victimJet), weapon = credit.weapon },
+					killer,
+					{ "airframe", "victim" }
+				)
 			end
+			onboarding(killer, "FirstKill")
 		end
-		if not (QUIET_CAUSES[cause] and killer == nil) then
+		if humanVictim and (killer == nil or isHuman(killer)) and not (QUIET_CAUSES[cause] and killer == nil) then
 			Telemetry.event(
 				"ShotDown",
 				1,
@@ -228,8 +233,8 @@ function TelemetryService:Init()
 		end
 	end)
 
-	MissileService.MissileLaunched:Connect(function(jet, weaponId: string)
-		if live() then
+	MissileService.MissileLaunched:Connect(function(jet, weaponId: string, target: any)
+		if live() and isHuman(jet.identity) and (target == nil or isHuman(target)) then
 			Telemetry.event(
 				"MissileFired",
 				1,
@@ -239,14 +244,13 @@ function TelemetryService:Init()
 			)
 		end
 	end)
-	MissileService.MissileEnded:Connect(function(owner, weaponId: string, hit: boolean)
-		if live() then
-			local player = if typeof(owner) == "Instance" and owner:IsA("Player") then owner else nil
+	MissileService.MissileEnded:Connect(function(owner, weaponId: string, hit: boolean, target: any)
+		if live() and isHuman(owner) and (target == nil or isHuman(target)) then
 			Telemetry.event(
 				"MissileResult",
 				if hit then 1 else 0,
 				{ class = missileClass(weaponId), weapon = weaponId },
-				player,
+				owner,
 				{ "class", "weapon" }
 			)
 		end

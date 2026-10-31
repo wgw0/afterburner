@@ -77,7 +77,7 @@ All of these are in **Custom events**. Pick the event, choose the aggregation (A
 - **Missile hit rate:** `MissileResult`, average value, by Field 2 (`weapon`).
 - **Popularity:** `Spawn`, count by `airframe`.
 
-AI fliers in matches count in `Kill`, `ShotDown`, `MissileFired` and `MissileResult` too.
+Only human pilots count: `Kill` and the missile events are human vs human, and `ShotDown` is a human downed by a human or by nothing (a crash). AI seats in matches never move these numbers. Missiles fired with no target (an IR shot without a lock) still count.
 
 ## Economy: where do Credits and Wings come from and go?
 
