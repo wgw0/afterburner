@@ -11,7 +11,8 @@
 --   WingArt: a decal on top of each wing, mid-span (Images: the right and left wing, mirrored so both point
 --     outboard).
 --   Camo: paints every jet you fly in it, over each jet's own skin (Skin: the skin folder in
---     Assets.Skins.<Jet>, painted for every jet by tools/blender/livery_paint.py; Images: the shop preview).
+--     Assets.Skins.<Jet>, painted for every jet by tools/blender/livery_paint.py; Images: the shop picture, the
+--     F-16A in it on a transparent background, from tools/blender/camo_cards.py).
 -- Pass: free with that game pass, and can't be bought (VIP Gold).
 
 export type Kind = "Trail" | "Marker" | "HUD" | "WingArt" | "Camo"
@@ -24,7 +25,7 @@ export type Cosmetic = {
 	Colours: { Color3 }?, -- Trail (along the trail), HUD (the first)
 	Glyph: string?, -- Marker
 	Colour: Color3?, -- Marker
-	Images: { string }?, -- WingArt: { right wing, left wing } asset ids ("" until uploaded); Camo: { preview }
+	Images: { string }?, -- WingArt: { right wing, left wing } asset ids ("" until uploaded); Camo: { shop picture }
 	Skin: string?, -- Camo: the skin it paints
 	Order: number, -- in the shop
 }
@@ -107,7 +108,7 @@ Cosmetics.LIST = table.freeze({
 		Pass = "VIP",
 		Skin = "VIPGold",
 		Colours = { GOLD },
-		Images = { "rbxassetid://125674333100654" },
+		Images = { "rbxassetid://129560111295874" },
 		Order = 1,
 	},
 	CamoArctic = {
@@ -116,7 +117,7 @@ Cosmetics.LIST = table.freeze({
 		Wings = 400,
 		Skin = "ArcticSplinter",
 		Colours = { rgb(146, 174, 200) },
-		Images = { "rbxassetid://95443903567285" },
+		Images = { "rbxassetid://82029926019152" },
 		Order = 2,
 	},
 	CamoTiger = {
@@ -125,7 +126,7 @@ Cosmetics.LIST = table.freeze({
 		Wings = 400,
 		Skin = "TigerStripe",
 		Colours = { rgb(232, 142, 40) },
-		Images = { "rbxassetid://130275013707024" },
+		Images = { "rbxassetid://89266408369552" },
 		Order = 3,
 	},
 
