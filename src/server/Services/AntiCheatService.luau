@@ -14,6 +14,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local MovementCheck = require(Shared.MovementCheck)
+local Progression = require(Shared.Progression)
 
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local AircraftService = require(script.Parent.AircraftService)
@@ -156,7 +157,8 @@ function AntiCheatService:Init()
 	publish()
 	AircraftService.JetSpawned:Connect(function(jet)
 		if jet.pilot then
-			local airframe = AircraftData.get(jet.airframeId) :: any
+			-- With its fitted modules: an upgraded engine is faster than the stock jet (Progression.applyModules)
+			local airframe = Progression.airframeForModel(jet.model) or AircraftData.get(jet.airframeId) :: any
 			watches[jet.id] = {
 				limits = MovementCheck.limits(airframe),
 				previous = nil,

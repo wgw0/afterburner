@@ -1563,7 +1563,8 @@ All of these are server-side. The client calls them through remotes with IDs onl
 
 ### 23.5 Upgrade modules
 
-- Per airframe: Engine I/II, Airframe I/II, Avionics I and Countermeasures I are built. Avionics II and a Weapons module (unlocking specific missiles) are planned.
+- Per airframe, 18 modules (`Economy.MODULES`). The first six: Engine I/II, Airframe I/II, Avionics I, Countermeasures I. The second wave (October 2026, Will: more upgrades per jet), smaller steps so stock stays close to upgraded: Engine III (+2% thrust), Afterburner Tuning (+3% afterburner thrust), Fuel System (-10% fuel burn), Extra Fuel (+15% fuel), Airframe III (+0.25 G, +3% roll), Aerodynamic Refinement (-4% drag), High-Lift Devices (+4% max lift, +1° stall angle), Weight Reduction (-3% weight), Flight Controls (+4% pitch, +8% yaw rate), Avionics II (+10% radar range), Countermeasures II (+33% flares and chaff) and Ammunition Belt (+25% gun rounds: the jet carries `GunAmmoMult`, which `CombatService` applies). Fully upgraded is under +10% thrust and +0.75 G over stock (`Progression.spec`). *(Tune in playtests.)* A Weapons module (unlocking specific missiles) is still only planned.
+- The movement check (`AntiCheatService`) uses the jet's upgraded figures, so a fully upgraded engine never reads as a speed hack.
 - Each module has an RP cost (from that jet) and a Credit cost, and effects passed into the FlightModel or the loadout. Buying a module fits it (`BuyModule`). An owned module can be taken off and refitted for free (`SetModuleFitted`); one can't come off while a module that requires it is fitted, or go back on without its prerequisite.
 - Stock is about 85–90% of fully upgraded performance (DESIGN §7.4).
 

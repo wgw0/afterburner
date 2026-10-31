@@ -17,6 +17,7 @@ local Callsign = require(Shared.Callsign)
 local Ballistics = require(Shared.Ballistics)
 local DamageModel = require(Shared.DamageModel)
 local MatchRules = require(Shared.MatchRules)
+local Progression = require(Shared.Progression)
 local Net = require(Shared.Net)
 local Reload = require(Shared.Reload)
 local Signal = require(Shared.Util.Signal)
@@ -319,8 +320,14 @@ local function onJetSpawned(jet: Jet)
 	local airframe = AircraftData.get(jet.airframeId)
 	local gun = airframe and WeaponData.get(airframe.Gun)
 	local maxHealth = DamageModel.maxHealth(airframe)
+	-- Rounds: the gun's, times Guns Only's ×4 and the Ammunition Belt module (Progression.applyModules)
+	local upgraded = Progression.airframeForModel(jet.model)
 	local ammo = if gun
-		then MatchRules.gunRounds(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")), gun.Ammo)
+		then math.floor(
+			MatchRules.gunRounds(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")), gun.Ammo)
+					* (upgraded and upgraded.GunAmmoMult or 1)
+				+ 0.5
+		)
 		else 0
 	local state: CombatState = {
 		jet = jet,

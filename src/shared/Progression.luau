@@ -502,6 +502,9 @@ function Progression.applyModules(airframe: { [string]: any }, modules: { [strin
 				if field == "RadarRange" and result.Radar then
 					result.Radar = table.clone(result.Radar)
 					result.Radar.Range *= value
+				elseif field == "GunAmmo" then
+					-- The gun's rounds live in WeaponData: the jet carries a multiplier (CombatService)
+					result.GunAmmoMult = (result.GunAmmoMult or 1) * value
 				elseif (field == "Flares" or field == "Chaff") and result.Countermeasures then
 					result.Countermeasures = table.clone(result.Countermeasures)
 					result.Countermeasures[field] = math.floor(result.Countermeasures[field] * value + 0.5)
