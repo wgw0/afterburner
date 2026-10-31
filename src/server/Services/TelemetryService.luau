@@ -1,7 +1,8 @@
 --!strict
 -- What we learn from play (DEVELOPMENT.md §30, ANL-02/04). Everything goes through Lib/Telemetry.
---   Onboarding funnel (once per player, saved in data.Onboarding): 1 Joined, 2 Lesson 1 done (Basic flight),
---     3 Lesson 3 done (Guns), 4 First match finished, 5 First kill, 6 First research.
+--   Onboarding funnel (Shared/Funnels; once per player and in order, saved in data.Onboarding): 1 Joined,
+--     2 Onboarded (MatchmakingService), 3 First match finished, 4 First kill, 5 First research.
+--   Training funnel (one run per player): 1 Arrived on a training server, 2–7 lessons 1–6 done.
 --   Progression: the highest tier a player has owned a jet of (path "Tier").
 --   Balance (scored matches only: not training, the stress test or free flight). Each event sends two
 --   fields; the value is 1 unless said:
@@ -21,6 +22,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Funnels = require(Shared.Funnels)
 local Net = require(Shared.Net)
 local ServerRole = require(Shared.ServerRole)
 local WeaponData = require(Shared.WeaponData)
@@ -33,7 +35,6 @@ local MatchService = require(script.Parent.MatchService)
 local MissileService = require(script.Parent.MissileService)
 local ProgressionService = require(script.Parent.ProgressionService)
 
-local ONBOARDING = { "Joined", "Lesson1", "Lesson3", "FirstMatch", "FirstKill", "FirstResearch" }
 local LESSONS = { Flight = true, Energy = true, Guns = true, Missiles = true, Defend = true, Fight = true }
 local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
 local TUTORIAL_CREDITS = 2000 -- for finishing lessons 1–3 (once)
@@ -60,21 +61,24 @@ local function missileClass(weaponId: string?): string
 	return if missile then missile.Class else "Gun"
 end
 
--- Logs onboarding step `name` once per player.
-local function onboarding(player: Player, name: string)
-	local step = table.find(ONBOARDING, name)
-	if not step then
-		return
+-- Marks onboarding step `name` reached and logs the steps that are now due (once per player, in order).
+function TelemetryService:Onboarding(player: Player, name: string)
+	local steps = DataService:Update(player, function(data)
+		return Funnels.reach(data.Onboarding, name)
+	end) or {}
+	for _, step in steps do
+		Telemetry.onboarding(player, step, Funnels.ONBOARDING[step])
 	end
-	local fresh = false
-	DataService:Update(player, function(data)
-		if not data.Onboarding[name] then
-			data.Onboarding[name] = true
-			fresh = true
-		end
-	end)
-	if fresh then
-		Telemetry.onboarding(player, step, name)
+end
+local function onboarding(player: Player, name: string)
+	TelemetryService:Onboarding(player, name)
+end
+
+-- A step of the player's training funnel (one run per player; the dashboard counts each step once).
+local function training(player: Player, name: string)
+	local step = table.find(Funnels.TRAINING, name)
+	if step then
+		Telemetry.funnel(player, Funnels.TRAINING_NAME, `u{player.UserId}`, step, name)
 	end
 end
 
@@ -108,17 +112,18 @@ function TelemetryService:Init()
 		if not (LESSONS[lessonId] and ServerRole.isTraining()) then
 			return
 		end
+		local first = false
 		DataService:Update(player, function(data)
+			first = not data.Lessons[lessonId]
 			data.Lessons[lessonId] = true
 		end)
 		Telemetry.event("LessonCompleted", 1, { lesson = lessonId }, player)
-		if lessonId == "Flight" then
-			onboarding(player, "Lesson1")
-		elseif lessonId == "Guns" then
-			onboarding(player, "Lesson3")
+		if first then
+			training(player, lessonId)
 		end
 		-- Lessons 1–3 all done, the first time: the training reward (TUT-04)
 		local rewarded = false
+		local balance = 0
 		DataService:Update(player, function(data)
 			local done = data.Lessons
 			if done.Flight and done.Energy and done.Guns and not data.Flags.TutorialComplete then
@@ -126,8 +131,18 @@ function TelemetryService:Init()
 				data.Credits += TUTORIAL_CREDITS
 				rewarded = true
 			end
+			balance = data.Credits
 		end)
 		if rewarded then
+			Telemetry.economy(
+				player,
+				"Source",
+				"Credits",
+				TUTORIAL_CREDITS,
+				balance,
+				Telemetry.SOURCES.Training,
+				"TrainingComplete"
+			)
 			Telemetry.event("TutorialComplete", TUTORIAL_CREDITS, {}, player)
 			Net.Server.fire("ChallengeNotice", player, {
 				kind = "Bonus",
@@ -140,6 +155,15 @@ function TelemetryService:Init()
 
 	DataService.ProfileLoaded:Connect(function(player)
 		onboarding(player, "Joined")
+		task.spawn(function()
+			-- a reserved server may still be reading its role
+			while ServerRole.get() == "Pending" and player.Parent == Players do
+				ReplicatedStorage:GetAttributeChangedSignal("ServerRole"):Wait()
+			end
+			if ServerRole.isTraining() and player.Parent == Players then
+				training(player, "Arrived")
+			end
+		end)
 		checkTier(player)
 	end)
 

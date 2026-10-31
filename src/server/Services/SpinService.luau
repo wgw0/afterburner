@@ -42,6 +42,19 @@ function SpinService:Spin(player: Player): (Spin.Prize?, string?)
 	end)
 	if prize then
 		publish(player, state)
+		if prize.Kind == "Credits" or prize.Kind == "Wings" then
+			local data = DataService:GetData(player)
+			local balance = if data then (if prize.Kind == "Credits" then data.Credits else data.Wings) else 0
+			Telemetry.economy(
+				player,
+				"Source",
+				prize.Kind :: any,
+				prize.Amount :: number,
+				balance,
+				Telemetry.SOURCES.Spin,
+				prize.Rarity
+			)
+		end
 		Telemetry.event("Spin", 1, { rarity = prize.Rarity, kind = prize.Kind, item = prize.Item or "" }, player)
 	end
 	return prize, why
