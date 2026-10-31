@@ -28,6 +28,7 @@ local Theme = require(UI.Theme)
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V" }
 local CARD_W, CARD_H = 230, 150
+local BANNER_H = 112 -- a camo card's picture, across the top
 
 local function section(title: string, order: number)
 	return e(C.Label, {
@@ -49,14 +50,16 @@ local function Card(
 		Status: string?,
 		Highlight: Color3?,
 		Image: string?, -- a picture in the top right (wing art)
+		Banner: string?, -- a big picture across the top (camos: the jet in it, on a transparent background)
 		Ribbon: string?, -- a tag in the top right ("BEST VALUE")
 		Order: number,
 		OnClick: (() -> (boolean, string?))?,
 	}
 )
 	local message, setMessage = React.useState(nil :: string?)
+	local top = if props.Banner then BANNER_H + 8 else 0 -- everything else moves down under the banner
 	return e(C.Panel, {
-		Size = UDim2.fromOffset(CARD_W, CARD_H),
+		Size = UDim2.fromOffset(CARD_W, CARD_H + top),
 		Padding = 14,
 		LayoutOrder = props.Order,
 		StrokeColor = props.Highlight,
@@ -80,8 +83,38 @@ local function Card(
 				BackgroundTransparency = 1,
 			})
 			else nil,
+		Banner = if props.Banner
+			then e("Frame", {
+				Size = UDim2.new(1, 0, 0, BANNER_H),
+				BackgroundColor3 = Theme.Background,
+			}, {
+				Corner = C.corner(8),
+				-- A soft glow in the card's colour behind the jet, so pale camos stand off the dark
+				Glow = e("Frame", {
+					Size = UDim2.fromScale(1, 1),
+					BackgroundColor3 = props.Highlight or Theme.Accent,
+					BackgroundTransparency = 0.82,
+				}, {
+					Corner = C.corner(8),
+					Gradient = e("UIGradient", {
+						Transparency = NumberSequence.new({
+							NumberSequenceKeypoint.new(0, 0.2),
+							NumberSequenceKeypoint.new(1, 1),
+						}),
+						Rotation = 90,
+					}),
+				}),
+				Jet = e("ImageLabel", {
+					Image = props.Banner,
+					Size = UDim2.fromScale(1, 1),
+					BackgroundTransparency = 1,
+					ScaleType = Enum.ScaleType.Fit,
+				}),
+			})
+			else nil,
 		Title = e(C.Label, {
 			Text = props.Title,
+			Position = UDim2.fromOffset(0, top),
 			Size = UDim2.new(1, if props.Image then -68 else 0, 0, 24),
 			Heavy = true,
 			TextSize = 20,
@@ -90,7 +123,7 @@ local function Card(
 		Detail = e(C.Label, {
 			Text = message or props.Detail,
 			Size = UDim2.new(1, 0, 0, 52),
-			Position = UDim2.fromOffset(0, 30),
+			Position = UDim2.fromOffset(0, top + 30),
 			TextSize = 13,
 			Wrap = true,
 			AlignY = "Top",
@@ -339,10 +372,10 @@ local function row(order: number, cards: { [string]: any })
 	}, cards)
 end
 
--- Cards that wrap onto as many lines as they need
-local function grid(order: number, cards: { [string]: any })
+-- Cards that wrap onto as many lines as they need (taller ones for camos, which carry a banner)
+local function grid(order: number, cards: { [string]: any }, height: number?)
 	cards.Layout = e("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CARD_W, CARD_H),
+		CellSize = UDim2.fromOffset(CARD_W, height or CARD_H),
 		CellPadding = UDim2.fromOffset(14, 14),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	})
@@ -395,7 +428,8 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 		Action = action,
 		Status = status,
 		Highlight = if equipped then Theme.Good else colour,
-		Image = if item.Images then item.Images[1] else nil,
+		Image = if item.Images and item.Kind ~= "Camo" then item.Images[1] else nil,
+		Banner = if item.Images and item.Kind == "Camo" then item.Images[1] else nil,
 		Order = order,
 		OnClick = onClick,
 	})
@@ -499,7 +533,7 @@ local function ShopScreen(props: any)
 		for i, id in Catalogue.ofKind(kind) do
 			cards[id] = cosmeticCard(props, data, id, i)
 		end
-		children[kind] = grid(13 + k * 2, cards)
+		children[kind] = grid(13 + k * 2, cards, if kind == "Camo" then CARD_H + BANNER_H + 8 else nil)
 	end
 
 	-- Tier Unlock: the next one, if there is one
