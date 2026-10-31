@@ -361,8 +361,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6); Wings-only cosmetics are bought, granted, saved and equipped through BuyCosmetic / EquipCosmetic, each spend logged as an economy sink (§27.8). Checked in play (saved data read back through `data.inspect`) and by Will.
 - [ ] **SHP-05** Weekly rotation, bundles, first-purchase offer
 - [ ] **SHP-06** Premium jet validator and blocked-category test
-- [ ] **SHP-07** Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets
-  - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos built (October 2026): VIP Gold (with the VIP pass), Arctic Splinter and Tiger Stripe (400 Wings each), painted on all 27 jets; checked in Studio (shop, equip, hangar, spawn, mid-flight repaint), waiting for Will's check before ticking.
+- [x] **SHP-07** Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets
+  - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos built (October 2026): VIP Gold (with the VIP pass), Arctic Splinter and Tiger Stripe (400 Wings each), painted on all 27 jets; checked in Studio (shop, equip, hangar, spawn, mid-flight repaint) and by Will.
 - [ ] **CMP-02** Policy checks wrapper
 
 ## Phase 8: Launch and live ops
