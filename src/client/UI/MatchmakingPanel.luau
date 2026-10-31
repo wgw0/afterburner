@@ -15,7 +15,7 @@ local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
-local HEIGHT = 150
+local HEIGHT = 176
 
 local function rating(br: number): string
 	return string.format("%.1f", math.max(br, 0))
@@ -75,9 +75,9 @@ local function MatchmakingPanel(props: { AirframeId: string? })
 			Text = `You're matched by the jet you click PLAY with, against jets near its level (after a long wait, up to {rating(
 				Queue.SPREAD_MAX
 			)} BR away). In the match you can fly it or a lower jet. Empty seats get AI pilots at that level.`,
-			Size = UDim2.new(1, 0, 0, 60),
+			Size = UDim2.new(1, 0, 0, 86),
 			Position = UDim2.fromOffset(0, 64),
-			TextSize = 11,
+			TextSize = 13,
 			Wrap = true,
 			Color = Theme.Dim,
 		}),
