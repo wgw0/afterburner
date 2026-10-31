@@ -85,7 +85,7 @@ end
 
 -- A button. props: Text, OnClick, Size, Position, AnchorPoint, Style ("Primary" | "Secondary" |
 -- "Ghost" | "Danger"), Disabled, Pending, TextSize, LayoutOrder, Selected, Color and TextColor (instead of
--- the style's).
+-- the style's), StrokeColor (a coloured border, e.g. what kind of action it is).
 function Components.Button(props: any)
 	local style = props.Style or "Secondary"
 	local disabled = props.Disabled or props.Pending
@@ -128,7 +128,10 @@ function Components.Button(props: any)
 		end,
 	}, {
 		Corner = corner(),
-		Stroke = if style == "Ghost" or props.Selected then stroke(Theme.Accent, 1.5) else nil,
+		Stroke = if props.StrokeColor and not disabled
+			then stroke(props.StrokeColor, 2)
+			elseif style == "Ghost" or props.Selected then stroke(Theme.Accent, 1.5)
+			else nil,
 	})
 end
 
