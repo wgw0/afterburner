@@ -362,7 +362,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **SHP-05** Weekly rotation, bundles, first-purchase offer
 - [ ] **SHP-06** Premium jet validator and blocked-category test
 - [ ] **SHP-07** Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets
-  - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos (Wings-only and VIP) still to do: they need new paint on every jet.
+  - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos built (October 2026): VIP Gold (with the VIP pass), Arctic Splinter and Tiger Stripe (400 Wings each), painted on all 27 jets; checked in Studio (shop, equip, hangar, spawn, mid-flight repaint), waiting for Will's check before ticking.
 - [ ] **CMP-02** Policy checks wrapper
 
 ## Phase 8: Launch and live ops
