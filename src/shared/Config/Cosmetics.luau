@@ -130,6 +130,16 @@ Cosmetics.LIST = table.freeze({
 		Order = 3,
 	},
 
+	CamoMidnight = {
+		Kind = "Camo",
+		DisplayName = "Midnight Digital",
+		Wings = 400,
+		Skin = "MidnightDigital",
+		Colours = { rgb(104, 130, 172) },
+		Images = { "rbxassetid://86462251013488" },
+		Order = 4,
+	},
+
 	-- Wing art (DESIGN: 250 R$). Made by tools/cosmetics/wing_art.py; Images = { right wing, left wing }.
 	WingShark = {
 		Kind = "WingArt",
