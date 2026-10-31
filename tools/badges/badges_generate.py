@@ -56,6 +56,18 @@ EMBLEMS = {
     "Collector": ("number", "10"),
     "HighFlyer": ("number", "25"),
     "ThreadTheNeedle": ("bridge", None),
+    # The hangar and the bank (October 2026)
+    "FullHangar": ("hangar", None),
+    "FullyKitted": ("wrench", None),
+    "MasterMechanic": ("wrench", "star"),
+    "Savings": ("coins", "50K"),
+    "HighRoller": ("coins", "250K"),
+    "Tycoon": ("coins", "1M"),
+    "Researcher": ("flask", "10K"),
+    "Boffin": ("flask", "100K"),
+    "SharpDresser": ("brush", "5"),
+    "FashionIcon": ("brush", "25"),
+    "Wardrobe": ("brush", "50"),
 }
 
 
@@ -97,6 +109,35 @@ def star(d, cx, cy, r, fill):
         rr = r if i % 2 == 0 else r * 0.42
         pts.append((math.cos(a) * rr, math.sin(a) * rr))
     poly(d, pts, cx, cy, 1, fill)
+
+
+def amount(d, text, x, y, size, fill):
+    """A figure beside an emblem (50K, 25): Impact, shrunk to fit."""
+    font = ImageFont.truetype(FONT_HEAVY, S(size))
+    while d.textlength(text, font=font) > S(150) and size > 40:
+        size -= 6
+        font = ImageFont.truetype(FONT_HEAVY, S(size))
+    d.text((S(x), S(y)), text, font=font, fill=fill, anchor="mm")
+
+
+def wrench(d, cx, cy, scale, angle, fill):
+    """A spanner: a handle with an open jaw at the top end."""
+    c, s = math.cos(angle), math.sin(angle)
+
+    def at(x, y):
+        return (S(cx + (x * c - y * s) * scale), S(cy + (x * s + y * c) * scale))
+
+    d.polygon([at(-0.13, -0.55), at(0.13, -0.55), at(0.13, 0.9), at(-0.13, 0.9)], fill=fill)
+    hx, hy = at(0, -0.72)
+    r = S(0.36 * scale)
+    d.ellipse([hx - r, hy - r, hx + r, hy + r], fill=fill)
+    jx, jy = at(0, -0.92)
+    jr = S(0.17 * scale)
+    d.ellipse([jx - jr, jy - jr, jx + jr, jy + jr], fill=NAVY)
+    d.polygon([at(-0.17, -0.92), at(0.17, -0.92), at(0.17, -1.2), at(-0.17, -1.2)], fill=NAVY)
+    ex, ey = at(0, 0.9)
+    er = S(0.19 * scale)
+    d.ellipse([ex - er, ey - er, ex + er, ey + er], fill=fill)
 
 
 def emblem(d, kind, arg, cx, cy, accent):
@@ -150,6 +191,42 @@ def emblem(d, kind, arg, cx, cy, accent):
         d.rectangle([S(cx - 60), S(cy + 75), S(cx + 60), S(cy + 100)], fill=WHITE)
         font = ImageFont.truetype(FONT_HEAVY, S(70))
         d.text((S(cx), S(cy - 50)), "1", font=font, fill=accent, anchor="mm")
+    elif kind == "hangar":
+        # An arched hangar, open at the front, a jet inside
+        d.pieslice([S(cx - 130), S(cy - 110), S(cx + 130), S(cy + 150)], 180, 360, fill=WHITE)
+        d.rectangle([S(cx - 130), S(cy + 18), S(cx + 130), S(cy + 92)], fill=WHITE)
+        d.pieslice([S(cx - 100), S(cy - 70), S(cx + 100), S(cy + 130)], 180, 360, fill=NAVY_DARK)
+        d.rectangle([S(cx - 100), S(cy + 28), S(cx + 100), S(cy + 92)], fill=NAVY_DARK)
+        poly(d, JET, cx, cy + 40, 50, accent)
+    elif kind == "wrench":
+        if arg == "star":
+            wrench(d, cx, cy + 6, 100, math.radians(40), WHITE)
+            wrench(d, cx, cy + 6, 100, math.radians(-40), WHITE)
+            star(d, cx, cy - 2, 42, accent)
+        else:
+            wrench(d, cx, cy + 6, 112, math.radians(35), WHITE)
+    elif kind == "coins":
+        # A stack of coins with the amount beside it
+        for i in range(4):
+            y = cy + 70 - i * 30
+            d.ellipse([S(cx - 135), S(y - 22), S(cx - 30), S(y + 22)], fill=accent, outline=NAVY_DARK, width=S(4))
+        d.ellipse([S(cx - 123), S(cy - 30), S(cx - 42), S(cy - 2)], outline=NAVY_DARK, width=S(3))
+        amount(d, arg, cx + 58, cy + 10, 110, WHITE)
+    elif kind == "flask":
+        # A lab flask (research), its liquid in the ring colour
+        neck = [(-0.18, -1.0), (0.18, -1.0), (0.18, -0.35), (0.62, 0.7), (0.62, 0.9), (-0.62, 0.9), (-0.62, 0.7),
+                (-0.18, -0.35)]
+        poly(d, neck, cx - 58, cy + 8, 100, WHITE)
+        poly(d, [(-0.5, 0.25), (0.5, 0.25), (0.55, 0.72), (0.55, 0.82), (-0.55, 0.82), (-0.55, 0.72)], cx - 58, cy + 8, 100,
+             accent)
+        amount(d, arg, cx + 66, cy + 10, 110, WHITE)
+    elif kind == "brush":
+        # A paintbrush, wet with the ring colour, and how many skins
+        poly(d, [(-0.09, -1.0), (0.09, -1.0), (0.11, 0.1), (-0.11, 0.1)], cx - 55, cy, 105, WHITE, math.radians(25))
+        poly(d, [(-0.2, 0.1), (0.2, 0.1), (0.2, 0.32), (-0.2, 0.32)], cx - 55, cy, 105, NAVY_DARK, math.radians(25))
+        poly(d, [(-0.22, 0.32), (0.22, 0.32), (0.16, 0.85), (0, 1.0), (-0.16, 0.85)], cx - 55, cy, 105, accent,
+             math.radians(25))
+        amount(d, arg, cx + 62, cy + 10, 130, WHITE)
     elif kind == "bridge":
         w = S(9)
         d.line([S(cx - 130), S(cy + 20), S(cx + 130), S(cy + 20)], fill=WHITE, width=S(12))
