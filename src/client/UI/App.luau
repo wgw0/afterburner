@@ -294,6 +294,9 @@ local function App(props: any)
 			ModeName = props.ModeName,
 			OnVsAI = props.OnVsAI,
 			OnFreeFlight = props.OnFreeFlight,
+			OnDetails = function(id)
+				props.Navigate("Detail", id)
+			end,
 		})
 	else
 		body = e(Hangar, {
