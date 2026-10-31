@@ -40,6 +40,8 @@ local QUEUE_MODES = {
 }
 
 -- The mode PLAY queues for: Any (the fastest match) or one mode.
+local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
+
 local function modePicker(props: any)
 	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, Align = "Center" }) }
 	for i, item in QUEUE_MODES do
@@ -132,7 +134,10 @@ local function Hangar(props: any)
 	local lineupChildren: { [string]: any } = { Layout = C.List({ Gap = 8 }) }
 	lineupChildren.Title =
 		e(C.Label, { Text = "LINEUP", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
-	for i = 1, 3 do
+	-- Every slot you have (the Extra Lineup Slot pass makes a fourth), and at least the three levels unlock
+	local lineupRows = math.max(3, slots)
+	local lineupHeight = 26 + lineupRows * 72 -- the title, then each slot card (64) and its gap
+	for i = 1, lineupRows do
 		local id = data.Lineup[i]
 		local lockedText = nil
 		if i > slots then
@@ -194,6 +199,8 @@ local function Hangar(props: any)
 			}),
 			Toggle = e(C.Button, {
 				Text = if index then "Remove" elseif full then "Swap" else "Add",
+				-- What it does at a glance: red takes a jet out, blue swaps it in, green adds it
+				StrokeColor = if index then Theme.Bad elseif full then SWAP_BLUE else Theme.Good,
 				Size = UDim2.fromOffset(88, 36),
 				Position = UDim2.new(1, -88, 0.5, -18),
 				TextSize = 13,
@@ -347,12 +354,12 @@ local function Hangar(props: any)
 		}, {
 			Layout = C.List({ Gap = 14 }),
 			Lineup = e("Frame", {
-				Size = UDim2.new(1, 0, 0, 240),
+				Size = UDim2.new(1, 0, 0, lineupHeight),
 				BackgroundTransparency = 1,
 				LayoutOrder = 1,
 			}, lineupChildren),
 			Owned = e("ScrollingFrame", {
-				Size = UDim2.new(1, 0, 1, -260),
+				Size = UDim2.new(1, 0, 1, -(lineupHeight + 20)),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ScrollBarThickness = 4,
