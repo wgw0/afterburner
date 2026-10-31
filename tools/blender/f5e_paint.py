@@ -385,7 +385,8 @@ def make_on(part, ids):
 def camouflage(P, scheme):
     """Hard-edged, wavy camouflage bands from 3D noise, so they wrap continuously over the airframe.
     The two thresholds split the noise into three roughly equal areas. camo_style "splinter" cuts angular,
-    straight-edged patches instead; "tiger" paints stripes of the second colour across the first."""
+    straight-edged patches instead; "tiger" paints stripes of the second colour across the first; "digital"
+    cuts the bands into square pixels (the noise is sampled at the centre of each pixel cube)."""
     scale = scheme["camo_scale"]
     style = scheme.get("camo_style", "bands")
     c0, c1, c2 = scheme["camo"]
@@ -399,6 +400,17 @@ def camouflage(P, scheme):
             d /= np.linalg.norm(d)
             n += np.sign(P @ d - rng.uniform(-5, 5)) * rng.uniform(0.5, 1.5)
         lo, hi = np.quantile(n, [1 / 3, 2 / 3])
+        a = (n > lo)[..., None].astype(np.float32)
+        b = (n > hi)[..., None].astype(np.float32)
+        return c0 * (1 - a) + c1 * (a - b) + c2 * b
+    if style == "digital":
+        # Pixel camo: snap each texel to a cube of camo_pixel metres, then split the noise into three
+        pixel = scheme.get("camo_pixel", 0.22)
+        snapped = (np.floor(P / pixel) + 0.5) * pixel
+        n = fbm(snapped, 1.0 / scale, 4, seed=91)
+        # camo_scatter: pixel-sized noise on top, so single pixels break up the patches (a busier mix)
+        n = n + scheme.get("camo_scatter", 0.0) * (fbm(snapped, 1.0 / pixel, 1, seed=97) - 0.5)
+        lo, hi = np.quantile(n, list(scheme.get("camo_split", (0.4, 0.72))))
         a = (n > lo)[..., None].astype(np.float32)
         b = (n > hi)[..., None].astype(np.float32)
         return c0 * (1 - a) + c1 * (a - b) + c2 * b

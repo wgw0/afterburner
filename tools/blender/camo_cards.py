@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import f16a_paint  # noqa: E402,F401  (sets the shared generator module to the F-16A)
 import f5e_paint as paint  # noqa: E402
 
-CAMOS = ("VIPGold", "ArcticSplinter", "TigerStripe")
+CAMOS = ("VIPGold", "ArcticSplinter", "TigerStripe", "MidnightDigital")
 SETS = ("Body", "Wings", "Details")
 WIDTH, HEIGHT = 1024, 512
 MARGIN = 0.06  # of the picture, round the jet
@@ -87,11 +87,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--textures", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--camos", default=",".join(CAMOS), help="comma list (default: all)")
     args = parser.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     scene = bpy.context.scene
     setup(scene)
-    for camo in CAMOS:
+    for camo in args.camos.split(","):
         for set_name in SETS:
             paths = {m: os.path.join(args.textures, f"F16A_{camo}_{set_name}_{m}.png") for m in ("Color", "Roughness", "Metalness", "Normal")}
             paint.apply_preview_material(set_name, paths)
