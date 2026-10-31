@@ -391,4 +391,5 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **OPS-03** Event flags (double XP etc.)
 - [ ] **OPS-04** Message of the day and announcements
 - [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
+  - Includes the Right to Erasure webhook in Creator Hub and a way to delete a player's data when asked (DEVELOPMENT.md §32.3: what to delete and the setup steps).
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI

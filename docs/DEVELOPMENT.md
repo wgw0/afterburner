@@ -2018,14 +2018,14 @@ Outside the Shop, the match results say what VIP would have added this match ("�
 | **Naming** | The naming policy (DESIGN §6.4): no manufacturer logos. Review names before launch. |
 | **Audio/assets** | Only assets we own or have the rights to. |
 | **Reporting** | Roblox's built-in report flow. Plus an in-game "report cheater" button that logs the target's recent anti-cheat data for review. |
-| **Privacy** | No collection of personal data. Only Roblox UserIds stored. |
+| **Privacy** | No collection of personal data. Only Roblox UserIds stored. Right to Erasure requests deleted within 30 days (§32.3). |
 
 | ID | Task | Phase |
 |---|---|---|
 | CMP-01 | Text filtering service for callsigns and squadron names | 6 |
 | CMP-02 | Policy checks wrapper | 7 |
 | CMP-03 | Report-cheater flow | 6 |
-| CMP-04 | Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions) | 8 |
+| CMP-04 | Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions, Right to Erasure webhook, §32.3) | 8 |
 
 ### 32.1 As built: reporting a cheater (CMP-03)
 
@@ -2041,6 +2041,31 @@ Outside the Shop, the match results say what VIP would have added this match ("�
 - **Behind the Custom Callsign game pass** (99 R$, Will: not for everyone): `Config/Passes` holds each pass's id per experience (none created yet, so nobody owns it and the Career row says it's coming); `PassService` checks ownership with Roblox on join and after an in-game purchase, shows it as the `Pass_CustomCallsign` attribute, and fires `Changed`. Without the pass `SetCallsign` refuses and a saved callsign isn't shown (it comes back if the pass is bought); clearing is always allowed. With an id set, the Career row offers the pass (`PromptGamePassPurchase`). Test servers: admin `give.pass { name = "CustomCallsign" }` / `take.pass`. SHP-03 builds on `PassService` for the other passes.
 - **To go live:** create the pass on the Creator Dashboard (Monetization → Passes) in each experience at 99 R$ and put its id in `Config/Passes`.
 - **Studio doesn't filter:** `FilterStringAsync` returns text unchanged in Studio, so a refusal can only be seen on a live server. The rule that refuses changed text is unit-tested (`Callsign.spec`).
+
+
+### 32.3 Right to Erasure requests (CMP-04, to do before launch)
+
+Under GDPR a player can ask Roblox to erase their data. Roblox passes the request to every experience the player has played, through a **Creator Hub webhook**, and expects the experience's own stored data for that UserId to be deleted (within 30 days). Analytics needs no webhook; this one is for compliance.
+
+**What Afterburner stores by UserId** (all of it must go for an erasure request):
+
+| Store | Key | Contents |
+|---|---|---|
+| `PlayerData_Prod_v<N>` (ProfileStore, `DataService:StoreName()`; also any older `_v` stores still holding data) | `Player_<UserId>` | the save |
+| `Reports` (`ReportService`) | `u<UserId>` | reports against the player |
+| `ReportCounts` (OrderedDataStore) | the player's entry | how often they've been reported |
+| `Reports`, other players' records | the reporter's UserId inside `reporters` and `entries` | reports the player made |
+
+MemoryStore entries (the queue, match records) expire by themselves within minutes, and the analytics are Roblox's own, so neither needs anything. The `LiveConfig` audit only holds admins' UserIds.
+
+**Setting up the webhook (Will, on the live experience's owner account or group):**
+
+1. Make somewhere for the notifications to land. The simplest is a private Discord channel: Channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.
+2. Creator Hub → the account or group that owns Afterburner → **Webhooks** (in the account/group settings, not the experience) → **Add Webhook**.
+3. Paste the URL, give it a name ("Afterburner erasure requests"), optionally a secret, and tick the **Right to erasure request** trigger. Save, then use **Test Response** if offered, to see a test message arrive.
+4. Each request lists the UserId(s) and the universe id(s). For each one on the live Afterburner, delete the stores above (by hand in Studio's command bar or the DataStore manager, or with an admin command, still to be written), then note the date done.
+
+*Still to build (optional): an `erasure.run { userId }` admin command that removes all four in one go, so step 4 is one line.*
 
 ---
 
