@@ -327,7 +327,7 @@ return function(ctx)
 			expect(f5.MaxThrust).toBe(31000)
 		end)
 
-		it("a fully upgraded jet is 10–18% better on thrust and turn, never more", function()
+		it("a fully upgraded jet is under 10% better on thrust and at most 0.75 G, never more", function()
 			local f5 = AircraftData.get("F5E") :: any
 			local all = {}
 			for _, def in Economy.MODULES do
@@ -336,7 +336,8 @@ return function(ctx)
 			local upgraded = Progression.applyModules(f5, all)
 			local thrust = upgraded.MaxThrust / f5.MaxThrust
 			expect(thrust > 1.05 and thrust < 1.1).toBe(true)
-			expect(upgraded.MaxG - f5.MaxG <= 0.5).toBe(true)
+			expect(upgraded.MaxG - f5.MaxG <= 0.75 + 1e-6).toBe(true)
+			expect(upgraded.GunAmmoMult).toBe(1.25) -- the Ammunition Belt, carried for CombatService
 		end)
 	end)
 

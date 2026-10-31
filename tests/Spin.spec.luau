@@ -5,6 +5,7 @@ return function(ctx)
 	local PlayerData = require(ctx.Shared.PlayerData)
 	local Spin = require(ctx.Shared.Spin)
 	local Skins = require(ctx.Shared.Skins)
+	local Economy = require(ctx.Shared.Config.Economy)
 
 	local function fresh()
 		return PlayerData.template()
@@ -106,9 +107,10 @@ return function(ctx)
 			local data = fresh()
 			for id, entry in data.Aircraft do
 				if entry.Owned then
-					entry.Modules = { Engine1 = true, Engine2 = true, Airframe1 = true, Airframe2 = true }
-					entry.Modules.Avionics1 = true
-					entry.Modules.Countermeasures1 = true
+					entry.Modules = {}
+					for _, def in Economy.MODULES do
+						entry.Modules[def.Id] = true
+					end
 					entry.Skins = {}
 					for _, skin in Skins.list(id) do
 						entry.Skins[skin.Id] = true

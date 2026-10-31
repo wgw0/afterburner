@@ -46,16 +46,30 @@ local function effectText(def: Economy.ModuleDef): string
 		local field = plus or string.match(effect, "^(.+)X$") or effect
 		local label = ({
 			MaxThrust = "thrust",
+			AfterburnerMult = "afterburner thrust",
+			FuelBurnDry = "fuel burn",
+			FuelBurnAB = "",
+			Fuel = "fuel",
 			MaxG = "max G",
 			MaxRollRate = "roll rate",
+			MaxPitchRate = "pitch rate",
+			MaxYawRate = "yaw rate",
+			CD0 = "drag",
+			CLMax = "max lift",
+			CriticalAoA = "° stall angle",
+			Mass = "weight",
 			RadarRange = "radar range",
 			Flares = "flares",
 			Chaff = "chaff",
+			GunAmmo = "gun rounds",
 		})[field] or field
-		if plus then
-			table.insert(parts, `+{value} {label}`)
+		if label == "" then
+			continue -- said by its partner (fuel burn covers dry and afterburner)
+		elseif plus then
+			table.insert(parts, if string.sub(label, 1, 2) == "°" then `+{value}{label}` else `+{value} {label}`)
 		else
-			table.insert(parts, `+{math.floor((value - 1) * 100 + 0.5)}% {label}`)
+			local percent = math.floor(math.abs(value - 1) * 100 + 0.5)
+			table.insert(parts, `{if value < 1 then "-" else "+"}{percent}% {label}`)
 		end
 	end
 	table.sort(parts)
