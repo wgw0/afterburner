@@ -24,6 +24,7 @@ local UI = script.Parent.Parent
 local ChallengesPanel = require(UI.ChallengesPanel)
 local C = require(UI.Components)
 local JetPreview = require(UI.JetPreview)
+local MatchmakingPanel = require(UI.MatchmakingPanel)
 local SpinButton = require(UI.SpinButton)
 local SpinDialog = require(UI.SpinDialog)
 local Theme = require(UI.Theme)
@@ -311,6 +312,8 @@ local function Hangar(props: any)
 			TextSize = 16,
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
+		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet
+		Matchmaking = if props.QueueMode then e(MatchmakingPanel, { AirframeId = selected }) else nil,
 		SpinButton = if props.OnSpin
 			then e(SpinButton, {
 				OnOpen = function()

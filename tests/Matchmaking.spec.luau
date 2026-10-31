@@ -25,6 +25,17 @@ return function(ctx)
 		it("with nobody to measure, it's a starter-jet match", function()
 			expect(Matchmaking.band({}).max).toBe(Matchmaking.DEFAULT_BR)
 		end)
+
+		it("in the queue, the jet you clicked PLAY with sets your BR, not your lineup's best", function()
+			local lineup = { "F5E", "F22A" }
+			expect(Matchmaking.queueBR(lineup, "F5E")).toBe(br("F5E"))
+			expect(Matchmaking.queueBR(lineup, "F22A")).toBe(br("F22A"))
+			-- A jet that isn't in your lineup, or none, falls back to the lineup's best
+			expect(Matchmaking.queueBR(lineup, "Tempest")).toBe(br("F22A"))
+			expect(Matchmaking.queueBR(lineup, nil)).toBe(br("F22A"))
+			-- ...and queueing in the F-5E keeps the F-22 out of that match
+			expect(Matchmaking.allowed("F22A", Matchmaking.bandFor(br("F5E")))).toBe(false)
+		end)
 	end)
 
 	describe("who may fly", function()

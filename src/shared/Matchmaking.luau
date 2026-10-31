@@ -34,6 +34,19 @@ function Matchmaking.lineupBR(lineup: { string }): number?
 	return best
 end
 
+-- A player's BR in the matchmaking queue: the jet they clicked PLAY with, if it's in their lineup (the hangar
+-- only lets you fly lineup jets); else the lineup's best. In the match nothing above the band may fly, so
+-- queueing with a low jet can't bring a high one in.
+function Matchmaking.queueBR(lineup: { string }, airframeId: string?): number?
+	if airframeId and table.find(lineup, airframeId) then
+		local br = brOf(airframeId)
+		if br then
+			return br
+		end
+	end
+	return Matchmaking.lineupBR(lineup)
+end
+
 -- The band for a match from the lineups of the pilots present.
 function Matchmaking.band(lineups: { { string } }): Band
 	local top: number? = nil

@@ -28,6 +28,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
+local AdaptiveAI = require(Shared.AdaptiveAI)
 local AirSuperiority = require(Shared.AirSuperiority)
 local Callsign = require(Shared.Callsign)
 local MatchRules = require(Shared.MatchRules)
@@ -66,6 +67,7 @@ local flying: { [Player]: string } = {} -- training servers: the jet each player
 local state = "Waiting"
 local stateSince = 0
 local scores: { [any]: MatchRules.Score } = {}
+local aiOffset = 0 -- Vs AI: levels the bots are eased off (negative) or sharpened from the one picked
 local pilotStates: { [any]: MatchRules.PilotState } = {}
 local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
@@ -274,12 +276,39 @@ local function syncAIFill()
 		local choices = aiChoices()
 		local pilot =
 			AIService:CreatePilot(mode.AIDifficulty or "Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
+		if ServerRole.isTraining() then
+			pilot.profile = AdaptiveAI.profile(mode.AIDifficulty or "Normal", aiOffset)
+		end
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
+	end
+end
+
+-- Vs AI: the bots ease off or sharpen up with the player's kills, assists and deaths (AdaptiveAI)
+local function adaptAI()
+	local player = humans()[1]
+	local score = player and scores[player]
+	if not (ServerRole.isTraining() and mode.AIDifficulty and score) then
+		return
+	end
+	local offset = AdaptiveAI.offset(score.kills, score.deaths, score.assists)
+	if offset == aiOffset then
+		return
+	end
+	aiOffset = offset
+	local profile = AdaptiveAI.profile(mode.AIDifficulty, offset)
+	for _, pilot in AIService:GetMatchPilots() do
+		pilot.profile = profile
 	end
 end
 
 local function startMatch()
 	scores = {}
+	aiOffset = 0
+	if ServerRole.isTraining() and mode.AIDifficulty then
+		for _, pilot in AIService:GetMatchPilots() do
+			pilot.profile = AdaptiveAI.profile(mode.AIDifficulty, 0)
+		end
+	end
 	pilotStates = {}
 	results = nil
 	Teams.clear()
@@ -357,6 +386,7 @@ local function onKill(jet: Jet, credit: any, cause: string)
 		return -- leaving or respawning with nobody's damage on you isn't a death
 	end
 	MatchRules.recordKill(scores, victim, credit.killer, credit.assists, credit.forcedCrash)
+	adaptAI()
 	if zoneState then
 		AirSuperiority.jetLost(zoneState, Teams.of(victim))
 	end
@@ -638,7 +668,8 @@ function MatchService:StartFromRecord(matchRecord: any)
 	band = record.band
 end
 
--- Training servers: a match of `modeId` against `count` AI pilots of one difficulty (no rewards there).
+-- Training servers: a match of `modeId` against `count` AI pilots of one difficulty (pilot XP only, and the
+-- bots adapt to how the player is doing: AdaptiveAI).
 function MatchService:StartVsAI(modeId: string, difficulty: string, count: number)
 	local base = (MatchRules.MODES :: any)[modeId]
 	if not base then

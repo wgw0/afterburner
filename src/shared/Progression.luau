@@ -178,6 +178,29 @@ function Progression.matchRewards(summary: MatchSummary, lastWinDay: number): Re
 	return rewards
 end
 
+-- Vs AI on a training server: pilot XP only, Economy.VS_AI_XP of what the match would pay, so a pilot with
+-- nobody to play can still level up. No Credits or RP (the jet flown there needn't be yours) and no first
+-- win of the day (that's for multiplayer).
+function Progression.vsAIRewards(summary: MatchSummary): Rewards
+	local full = Progression.matchRewards(summary, summary.Day) -- today counts as already won: no first win
+	local share = Economy.VS_AI_XP
+	local rewards: Rewards = { XP = 0, Credits = 0, RP = {}, FreeRP = 0, Lines = {}, FirstWin = false }
+	for _, line in full.Lines do
+		local xp = math.floor(line.XP * share + 0.5)
+		if xp > 0 then
+			table.insert(rewards.Lines, { Label = line.Label, XP = xp, RP = 0, Credits = 0 })
+			rewards.XP += xp
+		end
+	end
+	table.insert(rewards.Lines, {
+		Label = `Vs AI: pilot XP only, at {math.round(share * 100)}%`,
+		XP = 0,
+		RP = 0,
+		Credits = 0,
+	})
+	return rewards
+end
+
 -- Pilot level -----------------------------------------------------------------------------------
 
 -- Pays the Credits and Free RP milestones (Config/LevelRewards) for every level reached and not yet paid,

@@ -41,7 +41,9 @@ local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
 local DailyReward = require(UI:WaitForChild("DailyReward"))
 local ReportDialog = require(UI:WaitForChild("ReportDialog"))
+local WelcomeDialog = require(UI:WaitForChild("WelcomeDialog"))
 local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
+local MenuBackdrop = require(UI:WaitForChild("MenuBackdrop"))
 local Sounds = require(UI:WaitForChild("Sounds"))
 
 local MODE_NAMES = {
@@ -68,9 +70,11 @@ local MenuController = {
 
 local gui: ScreenGui
 local root: any
-local modalGui: ScreenGui -- the daily reward and report windows, above the menu (LIV-03, CMP-03)
+local backdrop: ScreenGui -- the prerendered Strait behind the menus (not over the results: the match is there)
+local modalGui: ScreenGui -- the welcome, daily reward and report windows, above the menu (TUT-04, LIV-03, CMP-03)
 local modalRoot: any
 local daily = { dismissed = false, pending = false, result = nil :: any }
+local welcomeDone = false -- the welcome window was answered this visit
 -- The report window while it's open: { target, reason, pending, message, sent }
 local report: any = nil
 local state = {
@@ -138,7 +142,8 @@ local function play(airframeId: string?)
 		Net.Client.fire("QueueLeave")
 	elseif queue.state == "Idle" then
 		queue.message = nil
-		Net.Client.fire("QueueJoin", SettingsController:Get("QueueMode") or "Any")
+		-- the jet you click PLAY with sets your BR in the queue (Queue, MMK-03)
+		Net.Client.fire("QueueJoin", SettingsController:Get("QueueMode") or "Any", airframeId or state.selected)
 	end
 end
 
@@ -261,14 +266,48 @@ local function renderReport()
 	}))
 end
 
+-- A brand-new pilot in the lobby: the welcome window, recommending training (TUT-04). Pilots who have
+-- played or done a lesson are marked onboarded by the server.
+local function needsWelcome(data: any): boolean
+	return not welcomeDone
+		and ServerRole.isLobby()
+		and data ~= nil
+		and not data.Flags.Onboarded
+		and data.Stats.Matches == 0
+		and next(data.Lessons) == nil
+end
+
+local function renderWelcome()
+	modalRoot:render(React.createElement(WelcomeDialog, {
+		OnTraining = function()
+			welcomeDone = true
+			render()
+			local text = "Heading to a training server…"
+			setStatus(text)
+			showTeleportScreen(text)
+			Net.Client.fire("Travel", "Training")
+		end,
+		OnClose = function()
+			welcomeDone = true
+			Net.Client.fire("SkipOnboarding")
+			render()
+		end,
+	}))
+end
+
 -- The daily login reward window: once a day, while the menu is up (not over the results screen). The report
--- window takes its place while open.
+-- window takes its place while open, and the welcome window comes first.
 local function renderDaily(resultsUp: boolean)
 	if report and MenuController.visible then
 		renderReport()
 		return
 	end
 	local data = PlayerDataController.data
+	if MenuController.visible and not resultsUp and needsWelcome(data) then
+		modalGui.Enabled = true
+		renderWelcome()
+		return
+	end
 	local today = os.time() // 86400
 	local show = MenuController.visible
 		and not resultsUp
@@ -314,6 +353,7 @@ render = function()
 	if not root then
 		return
 	end
+	backdrop.Enabled = MenuController.visible and state.screen ~= "Results"
 	fixSelection()
 	local match = MatchController.state
 	local resultsUp = match ~= nil and match.state == "Results"
@@ -369,7 +409,7 @@ render = function()
 		OnQueueMode = function(mode: string)
 			SettingsController:Set("QueueMode", mode)
 			if state.queue.state == "Searching" then
-				Net.Client.fire("QueueJoin", mode) -- keeps your place, changes the mode
+				Net.Client.fire("QueueJoin", mode, state.selected) -- keeps your place, changes the mode
 			end
 		end,
 		OnResearch = function(id)
@@ -539,6 +579,7 @@ local function setVisible(visible: boolean)
 	end
 	MenuController.visible = visible
 	gui.Enabled = visible
+	backdrop.Enabled = visible and state.screen ~= "Results"
 	if not visible then
 		modalGui.Enabled = false
 		report = nil
@@ -585,6 +626,8 @@ function MenuController:Start()
 	gui.Enabled = false
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	root = ReactRoblox.createRoot(gui)
+	backdrop = MenuBackdrop.build(19)
+	backdrop.Parent = gui.Parent
 	modalGui = Instance.new("ScreenGui")
 	modalGui.Name = "AfterburnerDailyReward"
 	modalGui.IgnoreGuiInset = true

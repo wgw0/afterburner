@@ -7,7 +7,8 @@
 --   Leaving mid-match still saves the rewards earned so far (DataService.BeforeRelease).
 --   Research / buy / modules / lineup / settings arrive as remotes and go through the Progression rules.
 --   Spawning is limited to jets in your lineup; fitted modules ride on the jet (AircraftService.modulesFor).
---   Training servers (ServerRole): any jet, owned or not, and no rewards at all (the results show why).
+--   Training servers (ServerRole): any jet, owned or not. Vs AI pays pilot XP only (Progression.vsAIRewards);
+--   Free Flight and lessons pay nothing (the results show why).
 --   Economy events (sources and sinks) go to analytics.
 
 local AnalyticsService = game:GetService("AnalyticsService")
@@ -108,7 +109,8 @@ local function announceMastery(player: Player, data: { [string]: any }, gains: {
 			Net.Server.fire("ChallengeNotice", player, {
 				kind = "Mastery",
 				heading = `MASTERY  {Mastery.starText(gain.Stars)}`,
-				text = `{airframe and airframe.DisplayName or gain.Airframe}: {gain.Stars} star{if gain.Stars == 1
+				text = `{airframe and airframe.DisplayName or gain.Airframe}: {gain.Stars} star{if gain.Stars
+						== 1
 					then ""
 					else "s"}`,
 				credits = gain.Credits,
@@ -166,6 +168,47 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 		Level = data.PilotLevel,
 		Afk = summary.Afk,
 		Mastery = mastery,
+	}
+end
+
+-- Vs AI on a training server: pilot XP only. Returns the results screen's payload, or nil (never flew).
+local function awardVsAI(player: Player, data: { [string]: any }, won: boolean): { [string]: any }?
+	local tally = tallies[player]
+	tallies[player] = nil
+	if not (tally and tally.lastAirframe) then
+		return nil
+	end
+	local afk = os.clock() - tally.lastActive > Economy.AFK_SECONDS
+	local rewards = Progression.vsAIRewards({
+		Events = tally.events,
+		LastAirframe = tally.lastAirframe,
+		Survived = tally.alive,
+		Won = won,
+		Afk = afk,
+		Day = os.time() // 86400,
+		Boost = {
+			XP = LiveConfig.get("economy.xp"),
+			Credits = 1,
+			RP = 1,
+			Label = if LiveConfig.get("event") ~= "" then LiveConfig.get("event") else "Event bonus",
+		},
+	})
+	local levels = 0
+	DataService:Update(player, function(d)
+		levels = Progression.addXP(d, rewards.XP)
+	end)
+	Telemetry.event("VsAIRewards", rewards.XP, { won = won, afk = afk }, player)
+	return {
+		XP = rewards.XP,
+		Credits = 0,
+		RP = {},
+		FreeRP = 0,
+		Lines = rewards.Lines,
+		FirstWin = false,
+		LevelsGained = levels,
+		Level = data.PilotLevel,
+		Afk = afk,
+		Training = true,
 	}
 end
 
@@ -537,7 +580,19 @@ function ProgressionService:Start()
 		local winner = ranking[1]
 		for _, player in Players:GetPlayers() do
 			local data = DataService:GetData(player)
-			if data and ServerRole.isTraining() then
+			if data and ServerRole.isTraining() and MatchService:GetMode().AIDifficulty then
+				-- Vs AI: pilot XP only (Progression.vsAIRewards)
+				local payload = awardVsAI(
+					player,
+					data,
+					if winnerTeam
+						then player:GetAttribute("Team") == winnerTeam
+						else winner ~= nil and not winner.isAI and winner.userId == player.UserId
+				)
+				if payload then
+					Net.Server.fire("MatchRewards", player, payload)
+				end
+			elseif data and ServerRole.isTraining() then
 				-- Training: nothing is earned, but the results screen still gets a payload to say so
 				tallies[player] = nil
 				Net.Server.fire("MatchRewards", player, {
