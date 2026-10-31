@@ -26,6 +26,7 @@ local MatchRules = require(Shared.MatchRules)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Pack = require(Shared.Net.Pack)
+local Reload = require(Shared.Reload)
 local Signature = require(Shared.Signature)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
@@ -45,7 +46,7 @@ local BLAST_MULTIPLIER = 3 -- blast radius = proximity fuse × this
 local EJECT_SPEED = 6 -- m/s downward off the rail
 local FLARE_RANGE = 4000 -- real metres: flares further than this from a missile are ignored
 
-type Slot = { weapon: WeaponData.Missile, id: string, count: number }
+type Slot = { weapon: WeaponData.Missile, id: string, count: number, full: number }
 
 type Loadout = {
 	jet: Jet,
@@ -54,6 +55,9 @@ type Loadout = {
 	armed: boolean, -- false in Guns Only: nothing can be selected
 	flares: number,
 	chaff: number,
+	flaresFull: number,
+	chaffFull: number,
+	reloads: { [string]: number }, -- Reload: key -> server time the reload finishes
 	irTarget: number?,
 	irSince: number,
 	cueId: number, -- the jet the pilot is looking at (helmet cueing), 0 = none
@@ -124,7 +128,8 @@ local function onJetSpawned(jet: Jet)
 	for _, entry in airframe.Missiles or {} do
 		local weapon = WeaponData.getMissile(entry.Weapon)
 		if weapon then
-			table.insert(slots, { weapon = weapon, id = entry.Weapon, count = if armed then entry.Count else 0 })
+			local count = if armed then entry.Count else 0
+			table.insert(slots, { weapon = weapon, id = entry.Weapon, count = count, full = count })
 		end
 	end
 	local hardpoints = {}
@@ -142,6 +147,9 @@ local function onJetSpawned(jet: Jet)
 		armed = armed,
 		flares = cm.Flares,
 		chaff = cm.Chaff,
+		flaresFull = cm.Flares,
+		chaffFull = cm.Chaff,
+		reloads = {},
 		irTarget = nil,
 		irSince = 0,
 		cueId = 0,
@@ -151,6 +159,37 @@ local function onJetSpawned(jet: Jet)
 	}
 	loadouts[jet.id] = loadout
 	setAttributes(loadout)
+end
+
+-- Reloading (Reload): an empty missile type, flares or chaff refill after a timer. Guns Only has no missiles
+-- to reload (their full count is 0).
+local function stepReloads(loadout: Loadout, now: number)
+	local changed = false
+	local function store(key: string, count: number, full: number, refill: () -> ())
+		local doneAt, refillNow = Reload.step(count, full, loadout.reloads[key], now, Reload.secondsFor(key))
+		if refillNow then
+			refill()
+			changed = true
+		end
+		if loadout.reloads[key] ~= doneAt then
+			loadout.reloads[key] = doneAt
+			loadout.jet.model:SetAttribute(Reload.PREFIX .. key, doneAt)
+		end
+	end
+	for _, slot in loadout.slots do
+		store(`Msl_{slot.id}`, slot.count, slot.full, function()
+			slot.count = slot.full
+		end)
+	end
+	store("Flares", loadout.flares, loadout.flaresFull, function()
+		loadout.flares = loadout.flaresFull
+	end)
+	store("Chaff", loadout.chaff, loadout.chaffFull, function()
+		loadout.chaff = loadout.chaffFull
+	end)
+	if changed then
+		setAttributes(loadout)
+	end
 end
 
 local function throttleOf(jet: Jet): (number, boolean)
@@ -789,6 +828,10 @@ function MissileService:Start()
 		debug.profilebegin("MissileService.tick")
 		updateIRTracking()
 		stepMissiles(dt)
+		local now = workspace:GetServerTimeNow()
+		for _, loadout in loadouts do
+			stepReloads(loadout, now)
+		end
 		stateTimer += dt
 		if stateTimer >= STATE_INTERVAL then
 			stateTimer = 0

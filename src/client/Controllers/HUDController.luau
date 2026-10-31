@@ -25,6 +25,7 @@ local CosmeticsCatalogue = require(Shared.Config.Cosmetics)
 local Ballistics = require(Shared.Ballistics)
 local HUDStyles = require(Shared.Config.HUDStyles)
 local Net = require(Shared.Net)
+local Reload = require(Shared.Reload)
 local Units = require(Shared.Units)
 local Guidance = require(Shared.Guidance)
 local WeaponData = require(Shared.WeaponData)
@@ -94,6 +95,8 @@ local aimReticle: Frame
 local fuelLabel: TextLabel
 local damageDiagram: DamageDiagram.Diagram -- above the fuel readout once you're damaged (DMG-05)
 local helpLabel: TextLabel
+local reloadList: Frame -- bottom left, above the fuel readout: a bar for each store reloading (Reload)
+local reloadRows: { [string]: { row: Frame, label: TextLabel, fill: Frame } } = {}
 -- HUD-02: guns
 local leadMarker: Frame
 local hitMarker: TextLabel
@@ -351,6 +354,18 @@ local function build(): ScreenGui
 	fuelLabel.Size = UDim2.fromOffset(320, 18)
 	damageDiagram = DamageDiagram.create(gui)
 
+	reloadList = Instance.new("Frame")
+	reloadList.Name = "Reloads"
+	reloadList.AnchorPoint = Vector2.new(0, 1)
+	reloadList.Size = UDim2.fromOffset(200, 140)
+	reloadList.BackgroundTransparency = 1
+	reloadList.Parent = gui
+	local reloadLayout = Instance.new("UIListLayout")
+	reloadLayout.SortOrder = Enum.SortOrder.Name
+	reloadLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	reloadLayout.Padding = UDim.new(0, 6)
+	reloadLayout.Parent = reloadList
+
 	helpLabel = text(gui, 13, Enum.TextXAlignment.Right)
 	helpLabel.AnchorPoint = Vector2.new(1, 1)
 	helpLabel.Position = UDim2.new(1, -20, 1, -20)
@@ -582,6 +597,59 @@ end
 local function project(camera: Camera, direction: Vector3): (Vector2, boolean)
 	local p, onScreen = camera:WorldToViewportPoint(camera.CFrame.Position + direction * 5000)
 	return Vector2.new(p.X, p.Y), onScreen and p.Z > 0
+end
+
+-- What a reload key is called on the HUD
+local function reloadName(jetModel: Model, key: string): string
+	if key == "Gun" then
+		local gun = WeaponData.get((jetModel:GetAttribute("Gun") :: string?) or "")
+		return if gun then string.upper(gun.DisplayName) else "GUN"
+	elseif key == "Flares" or key == "Chaff" then
+		return string.upper(key)
+	end
+	local missile = WeaponData.getMissile(string.sub(key, 5)) -- "Msl_<id>"
+	return if missile then string.upper(missile.DisplayName) else key
+end
+
+-- The reload bars (Reload): one per store reloading, its name over a thin bar that fills, in the HUD colour
+local function updateReloads(jetModel: Model?)
+	local now = workspace:GetServerTimeNow()
+	local active: { [string]: number } = {}
+	if jetModel then
+		for name, value in jetModel:GetAttributes() do
+			if string.sub(name, 1, #Reload.PREFIX) == Reload.PREFIX and type(value) == "number" then
+				active[string.sub(name, #Reload.PREFIX + 1)] = value
+			end
+		end
+	end
+	for key, entry in reloadRows do
+		if not active[key] then
+			entry.row:Destroy()
+			reloadRows[key] = nil
+		end
+	end
+	for key, doneAt in active do
+		local entry = reloadRows[key]
+		if not entry then
+			local row = Instance.new("Frame")
+			row.Name = key
+			row.Size = UDim2.fromOffset(200, 24)
+			row.BackgroundTransparency = 1
+			row.Parent = reloadList
+			local label = text(row, 13, Enum.TextXAlignment.Left)
+			label.Size = UDim2.fromOffset(200, 16)
+			local track = line(row, 160, 3)
+			track.Position = UDim2.fromOffset(0, 19)
+			track.BackgroundTransparency = 0.75
+			local fill = line(row, 0, 3)
+			fill.Position = UDim2.fromOffset(0, 19)
+			entry = { row = row, label = label, fill = fill }
+			reloadRows[key] = entry
+		end
+		local seconds = Reload.secondsFor(key)
+		entry.label.Text = `RELOADING {reloadName(jetModel :: Model, key)}  {math.max(0, math.ceil(doneAt - now))}s`
+		entry.fill.Size = UDim2.fromOffset(math.round(160 * Reload.progress(doneAt, now, seconds)), 3)
+	end
 end
 
 local function update(dt: number)
@@ -1155,6 +1223,10 @@ local function update(dt: number)
 		then UDim2.new(0, 20, 1, -230)
 		else UDim2.new(0, 20, 1, -20)
 	damageDiagram.frame.Position = fuelLabel.Position - UDim2.fromOffset(0, 24)
+	-- The reload bars sit above the fuel readout, and above the damage diagram while it shows
+	reloadList.Position = damageDiagram.frame.Position
+		- UDim2.fromOffset(0, if damageDiagram.frame.Visible then damageDiagram.frame.Size.Y.Offset + 8 else 0)
+	updateReloads(FlightController.jet)
 	local jet = FlightController.jet
 	DamageDiagram.update(
 		damageDiagram,
