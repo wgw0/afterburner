@@ -2070,6 +2070,14 @@ MemoryStore entries (the queue, match records) expire by themselves within minut
 
 ---
 
+### 32.4 As built: report a bug (Will's request)
+
+- **Where:** REPORT BUG under DETAILS in the hangar, and a REPORT A BUG row at the bottom of Settings. Both open `UI/FeedbackDialog` in the menu's modal window: a type (BUG / LAG / IDEA / OTHER), a text box held to 500 characters with a counter, a note that device info goes with it, SEND, and X. The server's answer shows under the box; after sending, SEND becomes DONE.
+- **Device info (`MenuController`, cleaned by `Shared/Feedback.cleanInfo` on the server, every field clamped):** average frame rate over the last 30 s, memory (MB), the saved graphics level (0 = automatic), input device, screen size, ping (ms), server role, game mode, the selected jet and the version label.
+- **Rules (`Shared/Feedback`, tested):** a known type, 3–500 characters of readable text, 2 minutes between a player's reports, 5 a day. The `SendFeedback` remote is also rate-limited (2 burst, then 1 per 20 s).
+- **What's stored (`FeedbackService`):** DataStore `Feedback`, key `day:<n>` (days since 1970): that day's reports, oldest first, up to 500, each with the time, UserId, type, text, device info, place and job. Key `n:<UserId>:<day>` counts a player's reports that day, so the daily limit holds across servers. Only UserIds are stored. Telemetry `Feedback` (type).
+- **Reading them:** admin command `feedback.recent { count?, kind? }` (today's and yesterday's, newest first, up to 100). Older days can be read in Studio from the `Feedback` store.
+
 ## 33. Testing strategy (TST)
 
 | Layer | Tool | What |
@@ -2323,6 +2331,7 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `SaveSettings` | C→S | Reliable | `settings: table` (validated per field) | 1/s | §29 |
 | `TutorialProgress` | C→S | Reliable | `lessonId, step` | 2/s | §28 |
 | `ReportPlayer` | C→S | Reliable | `targetUserId, reason` | 1/30s | §32 |
+| `SendFeedback` | C→S | Function | `kind, text, deviceInfo: table` (cleaned) | 1/20s | §32.4 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

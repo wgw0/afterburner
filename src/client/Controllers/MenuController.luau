@@ -11,8 +11,10 @@
 local GuiService = game:GetService("GuiService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
+local Stats = game:GetService("Stats")
 local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage:WaitForChild("Packages")
@@ -20,12 +22,14 @@ local React = require(Packages:WaitForChild("React")) :: any
 local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Environment = require(Shared.Config.Environment)
 local LiveConfig = require(Shared.LiveConfig)
 local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
 local ServerRole = require(Shared.ServerRole)
 local Streak = require(Shared.Streak)
 local Net = require(Shared.Net)
+local Version = require(Shared.Version)
 
 local BindingsController = require(script.Parent.BindingsController)
 local CameraController = require(script.Parent.CameraController)
@@ -40,6 +44,7 @@ local TutorialController = require(script.Parent.TutorialController)
 local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
 local DailyReward = require(UI:WaitForChild("DailyReward"))
+local FeedbackDialog = require(UI:WaitForChild("FeedbackDialog"))
 local ReportDialog = require(UI:WaitForChild("ReportDialog"))
 local WelcomeDialog = require(UI:WaitForChild("WelcomeDialog"))
 local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
@@ -77,6 +82,8 @@ local daily = { dismissed = false, pending = false, result = nil :: any }
 local welcomeDone = false -- the welcome window was answered this visit
 -- The report window while it's open: { target, reason, pending, message, sent }
 local report: any = nil
+local feedback: any = nil -- the report-a-bug window, while open
+local fpsSamples: { number } = {} -- frames per second over the last 30 s, in 5 s steps (sent with a bug report)
 local state = {
 	screen = "Hangar",
 	detailId = nil :: string?,
@@ -270,6 +277,78 @@ local function renderReport()
 	}))
 end
 
+-- What a bug report carries about the device (Shared/Feedback cleans it on the server)
+local function deviceInfo(): { [string]: any }
+	local fps = 0
+	for _, sample in fpsSamples do
+		fps += sample / #fpsSamples
+	end
+	local camera = workspace.CurrentCamera
+	local okQuality, quality = pcall(function()
+		return (UserSettings():GetService("UserGameSettings") :: any).SavedQualityLevel.Value
+	end)
+	local okPing, ping = pcall(Players.LocalPlayer.GetNetworkPing, Players.LocalPlayer)
+	return {
+		fps = if #fpsSamples > 0 then fps else nil,
+		memory = Stats:GetTotalMemoryUsageMb(),
+		graphics = if okQuality then quality else nil,
+		input = InputController.device,
+		screen = if camera then `{math.round(camera.ViewportSize.X)}x{math.round(camera.ViewportSize.Y)}` else nil,
+		ping = if okPing then ping * 1000 else nil,
+		role = ServerRole.get(),
+		mode = ReplicatedStorage:GetAttribute("GameMode"),
+		jet = state.lastAirframe or state.selected,
+		version = Version.label(Environment.get()),
+	}
+end
+
+local function renderFeedback()
+	modalGui.Enabled = true
+	modalRoot:render(React.createElement(FeedbackDialog, {
+		Kind = feedback.kind,
+		Text = feedback.text,
+		Pending = feedback.pending,
+		Message = feedback.message,
+		Sent = feedback.sent,
+		OnKind = function(kind: string)
+			feedback.kind = kind
+			feedback.message = nil
+			render()
+		end,
+		OnText = function(text: string)
+			if feedback and feedback.text ~= text then
+				feedback.text = text
+				render()
+			end
+		end,
+		OnSend = function()
+			local sending = feedback
+			sending.pending = true
+			sending.message = nil
+			render()
+			task.spawn(function()
+				local ok, result, message =
+					pcall(Net.Client.invoke, "SendFeedback", sending.kind, sending.text, deviceInfo())
+				sending.pending = false
+				if ok and result == true then
+					sending.sent = true
+					sending.message = message
+					Sounds.play("UIConfirm")
+				elseif ok and result == false then
+					sending.message = message
+				else
+					sending.message = "Couldn't send that just now. Try again in a moment."
+				end
+				render()
+			end)
+		end,
+		OnClose = function()
+			feedback = nil
+			render()
+		end,
+	}))
+end
+
 -- A brand-new pilot in the lobby: the welcome window, recommending training (TUT-04). Pilots who have
 -- played or done a lesson are marked onboarded by the server.
 local function needsWelcome(data: any): boolean
@@ -302,6 +381,10 @@ end
 -- The daily login reward window: once a day, while the menu is up (not over the results screen). The report
 -- window takes its place while open, and the welcome window comes first.
 local function renderDaily(resultsUp: boolean)
+	if feedback and MenuController.visible then
+		renderFeedback()
+		return
+	end
 	if report and MenuController.visible then
 		renderReport()
 		return
@@ -442,6 +525,10 @@ render = function()
 		Role = ServerRole.get(),
 		OnReport = function(userId: number?)
 			report = { target = userId }
+			render()
+		end,
+		OnFeedback = function()
+			feedback = feedback or { kind = "Bug", text = "" }
 			render()
 		end,
 		OnTravel = function(target: string)
@@ -589,6 +676,7 @@ local function setVisible(visible: boolean)
 	if not visible then
 		modalGui.Enabled = false
 		report = nil
+		feedback = nil
 	end
 	if visible then
 		if state.screen == "Results" then
@@ -624,6 +712,19 @@ local function deathMessage(killerUserId: number, cause: string, killerJetId: nu
 end
 
 function MenuController:Start()
+	-- Frame rate for bug reports: 6 samples of 5 s each
+	local frames, elapsed = 0, 0
+	RunService.Heartbeat:Connect(function(dt)
+		frames += 1
+		elapsed += dt
+		if elapsed >= 5 then
+			table.insert(fpsSamples, frames / elapsed)
+			if #fpsSamples > 6 then
+				table.remove(fpsSamples, 1)
+			end
+			frames, elapsed = 0, 0
+		end
+	end)
 	gui = Instance.new("ScreenGui")
 	gui.Name = "AfterburnerMenu"
 	gui.IgnoreGuiInset = true

@@ -153,6 +153,13 @@ local definitions: { [string]: Definition } = {
 	-- Report a pilot on this server for cheating (ReportService, CMP-03): targetUserId, reason id (Reports) ->
 	-- (ok, message). The server also allows one report per 30 s.
 	ReportPlayer = { direction = "Function", args = { "integer", "string" }, rate = { burst = 2, perSecond = 1 / 30 } },
+	-- Report a bug (FeedbackService, Shared/Feedback): kind (Bug / Lag / Idea / Other), text, device info table
+	-- -> (ok, message). The server also allows one per 2 minutes and 5 a day.
+	SendFeedback = {
+		direction = "Function",
+		args = { "string", "string", "table" },
+		rate = { burst = 2, perSecond = 1 / 20 },
+	},
 	-- Go to a training server ("Training") or back to a lobby ("Lobby") (MatchmakingService)
 	Travel = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.2 } },
 	-- On a training server: "FreeFlight", or a Vs AI match: mode id, AI difficulty, number of AI pilots
