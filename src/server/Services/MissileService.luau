@@ -70,6 +70,7 @@ type Missile = {
 	ownerIdentity: any?, -- who gets credit (Player or AI record)
 	targetId: number?,
 	launchTargetId: number?, -- who it was fired at (for "missile defeated" rewards)
+	launchTargetIdentity: any?, -- and who was flying it (for the balance numbers)
 	state: Guidance.MissileState,
 	seeker: Guidance.IRSeeker?,
 	guiding: boolean,
@@ -88,8 +89,9 @@ local MissileService = {
 	Priority = 34,
 	-- A missile ended without damaging the jet it was fired at: (targetJet, ownerIdentity, weaponId)
 	MissileDefeated = Signal.new(),
-	-- For the balance numbers (ANL-04): a missile left the rail (jet, weaponId), and how it ended
-	-- (ownerIdentity, weaponId, hit: whether it damaged the jet it was fired at)
+	-- For the balance numbers (ANL-04): a missile left the rail (jet, weaponId, targetIdentity), and how it
+	-- ended (ownerIdentity, weaponId, hit: whether it damaged the jet it was fired at, targetIdentity).
+	-- targetIdentity: who was flying the jet it was fired at, nil if fired without a target.
 	MissileLaunched = Signal.new(),
 	MissileEnded = Signal.new(),
 }
@@ -204,6 +206,7 @@ local function spawnMissile(
 ): Missile
 	nextMissileId += 1
 	local id = nextMissileId
+	local launchTarget = if targetId then AircraftService:GetJetById(targetId) :: any else nil
 	local missile: Missile = {
 		id = id,
 		weaponId = weaponId,
@@ -212,6 +215,7 @@ local function spawnMissile(
 		ownerIdentity = owner and owner.identity,
 		targetId = targetId,
 		launchTargetId = targetId,
+		launchTargetIdentity = launchTarget and launchTarget.identity,
 		state = Guidance.launch(position, velocity),
 		seeker = if WeaponData.isIR(spec) then Guidance.newIRSeeker(targetId, id * 7 + 13) else nil,
 		guiding = false,
@@ -293,7 +297,7 @@ local function launch(jet: Jet, targetId: number): boolean
 		missile.twsSeen = true
 		missile.twsChecked = now
 	end
-	MissileService.MissileLaunched:Fire(jet, slot.id)
+	MissileService.MissileLaunched:Fire(jet, slot.id, missile.launchTargetIdentity)
 	setAttributes(loadout)
 	return true
 end
@@ -522,7 +526,7 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 	if target and not hitTarget then
 		MissileService.MissileDefeated:Fire(target, missile.ownerIdentity, missile.weaponId)
 	end
-	MissileService.MissileEnded:Fire(missile.ownerIdentity, missile.weaponId, hitTarget)
+	MissileService.MissileEnded:Fire(missile.ownerIdentity, missile.weaponId, hitTarget, missile.launchTargetIdentity)
 end
 
 -- What the missile is steering at this tick (position, velocity) or nil.
