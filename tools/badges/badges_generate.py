@@ -210,23 +210,26 @@ def emblem(d, kind, arg, cx, cy, accent):
         for i in range(4):
             y = cy + 70 - i * 30
             d.ellipse([S(cx - 135), S(y - 22), S(cx - 30), S(y + 22)], fill=accent, outline=NAVY_DARK, width=S(4))
-        d.ellipse([S(cx - 123), S(cy - 30), S(cx - 42), S(cy - 2)], outline=NAVY_DARK, width=S(3))
+        d.ellipse([S(cx - 123), S(cy - 34), S(cx - 42), S(cy - 6)], outline=NAVY_DARK, width=S(3))
         amount(d, arg, cx + 58, cy + 10, 110, WHITE)
     elif kind == "flask":
         # A lab flask (research), its liquid in the ring colour
         neck = [(-0.18, -1.0), (0.18, -1.0), (0.18, -0.35), (0.62, 0.7), (0.62, 0.9), (-0.62, 0.9), (-0.62, 0.7),
                 (-0.18, -0.35)]
         poly(d, neck, cx - 58, cy + 8, 100, WHITE)
-        poly(d, [(-0.5, 0.25), (0.5, 0.25), (0.55, 0.72), (0.55, 0.82), (-0.55, 0.82), (-0.55, 0.72)], cx - 58, cy + 8, 100,
-             accent)
+        # The liquid follows the flask's sloping sides, inset from the glass
+        liquid = [(-0.38, 0.3), (0.38, 0.3), (0.55, 0.7), (0.55, 0.82), (-0.55, 0.82), (-0.55, 0.7)]
+        poly(d, liquid, cx - 58, cy + 8, 100, accent)
         amount(d, arg, cx + 66, cy + 10, 110, WHITE)
     elif kind == "brush":
-        # A paintbrush, wet with the ring colour, and how many skins
-        poly(d, [(-0.09, -1.0), (0.09, -1.0), (0.11, 0.1), (-0.11, 0.1)], cx - 55, cy, 105, WHITE, math.radians(25))
-        poly(d, [(-0.2, 0.1), (0.2, 0.1), (0.2, 0.32), (-0.2, 0.32)], cx - 55, cy, 105, NAVY_DARK, math.radians(25))
-        poly(d, [(-0.22, 0.32), (0.22, 0.32), (0.16, 0.85), (0, 1.0), (-0.16, 0.85)], cx - 55, cy, 105, accent,
-             math.radians(25))
-        amount(d, arg, cx + 62, cy + 10, 130, WHITE)
+        # A paint roller (the roller in the ring colour) on its bent wire frame, and how many skins
+        w = S(9)
+        d.rounded_rectangle([S(cx - 140), S(cy - 100), S(cx - 30), S(cy - 52)], radius=S(16), fill=accent)
+        d.rounded_rectangle([S(cx - 140), S(cy - 100), S(cx - 30), S(cy - 52)], radius=S(16), outline=WHITE, width=S(5))
+        frame = [(cx - 30, cy - 76), (cx - 12, cy - 76), (cx - 12, cy - 28), (cx - 72, cy - 14), (cx - 72, cy + 12)]
+        d.line([(S(x), S(y)) for x, y in frame], fill=WHITE, width=w, joint="curve")
+        d.rounded_rectangle([S(cx - 86), S(cy + 8), S(cx - 58), S(cy + 92)], radius=S(12), fill=WHITE)
+        amount(d, arg, cx + 66, cy + 10, 130, WHITE)
     elif kind == "bridge":
         w = S(9)
         d.line([S(cx - 130), S(cy + 20), S(cx + 130), S(cy + 20)], fill=WHITE, width=S(12))
