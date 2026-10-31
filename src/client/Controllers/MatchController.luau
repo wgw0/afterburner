@@ -9,6 +9,7 @@ local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local TeamConfig = require(Shared.Config.Teams)
@@ -115,13 +116,21 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 	header.Size = UDim2.new(1, 0, 0, 20)
 	header.LayoutOrder = 0
 	header.Parent = container
-	local columns =
-		{ { "PILOT", 0, 0.52 }, { "K", 0.52, 0.12 }, { "A", 0.64, 0.12 }, { "D", 0.76, 0.12 }, { "SCORE", 0.88, 0.12 } }
+	local columns = {
+		{ "PILOT", 0, 0.42 },
+		{ "JET", 0.42, 0.22 },
+		{ "K", 0.64, 0.08 },
+		{ "A", 0.72, 0.08 },
+		{ "D", 0.8, 0.08 },
+		{ "SCORE", 0.88, 0.12 },
+	}
 	for _, c in columns do
 		local l = label(header, c[1] :: string, 12, DIM)
 		l.Position = UDim2.fromScale(c[2] :: number, 0)
 		l.Size = UDim2.fromScale(c[3] :: number, 1)
-		l.TextXAlignment = if c[1] == "PILOT" then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
+		l.TextXAlignment = if c[1] == "PILOT" or c[1] == "JET"
+			then Enum.TextXAlignment.Left
+			else Enum.TextXAlignment.Center
 	end
 	local rank = 0
 	for i, score in ranking do
@@ -152,8 +161,16 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 		local vip = if player and player:GetAttribute("Pass_VIP") == true
 			then `<font color="#{VIP_GOLD}"><b>VIP</b></font> `
 			else ""
+		-- A custom callsign shows the Roblox username after it
+		local username = if player and player.Name ~= score.name
+			then ` <font color="#8C96A8">@{player.Name}</font>`
+			else ""
+		local airframe = score.airframe and AircraftData.get(score.airframe) :: any
 		local values = {
-			if title and title ~= "" then `{rank}. {vip}{score.name} · {title}` else `{rank}. {vip}{score.name}`,
+			if title and title ~= ""
+				then `{rank}. {vip}{score.name}{username} · {title}`
+				else `{rank}. {vip}{score.name}{username}`,
+			if airframe then airframe.DisplayName else "",
 			tostring(score.kills),
 			tostring(score.assists),
 			tostring(score.deaths),
@@ -165,7 +182,8 @@ local function fillRows(container: Frame, ranking: { any }, limit: number)
 			l.Font = Enum.Font.Gotham
 			l.Position = UDim2.fromScale(column[2] :: number, 0)
 			l.Size = UDim2.fromScale(column[3] :: number, 1)
-			l.TextXAlignment = if c == 1 then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
+			l.TextXAlignment = if c <= 2 then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
+			l.TextTruncate = Enum.TextTruncate.AtEnd
 			l.RichText = c == 1
 		end
 	end
@@ -252,7 +270,7 @@ function MatchController:Init()
 	banner.TextStrokeTransparency = 0.5
 	banner.RichText = true -- zone letters in their owners' colours
 
-	board = panel("Scoreboard", UDim2.fromOffset(520, 440))
+	board = panel("Scoreboard", UDim2.fromOffset(680, 440))
 	local boardTitle = label(board, "SCOREBOARD", 20, ORANGE)
 	boardTitle.Position = UDim2.fromOffset(0, 10)
 	boardTitle.Size = UDim2.new(1, 0, 0, 24)

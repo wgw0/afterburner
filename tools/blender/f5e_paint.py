@@ -384,10 +384,32 @@ def make_on(part, ids):
 
 def camouflage(P, scheme):
     """Hard-edged, wavy camouflage bands from 3D noise, so they wrap continuously over the airframe.
-    The two thresholds split the noise into three roughly equal areas."""
+    The two thresholds split the noise into three roughly equal areas. camo_style "splinter" cuts angular,
+    straight-edged patches instead; "tiger" paints stripes of the second colour across the first."""
     scale = scheme["camo_scale"]
-    n = fbm(P, 1.0 / scale, 3, seed=61) + 0.12 * (fbm(P, 5.0 / scale, 2, seed=67) - 0.5)
+    style = scheme.get("camo_style", "bands")
     c0, c1, c2 = scheme["camo"]
+    if style == "splinter":
+        # Random planes through the airframe: each texel's side of every plane picks its patch, so every
+        # edge is straight. Thresholds at the thirds give three equal areas.
+        rng = np.random.default_rng(83)
+        n = np.zeros(P.shape[:-1], np.float32)
+        for _ in range(int(150 / scale)):
+            d = rng.normal(size=3)
+            d /= np.linalg.norm(d)
+            n += np.sign(P @ d - rng.uniform(-5, 5)) * rng.uniform(0.5, 1.5)
+        lo, hi = np.quantile(n, [1 / 3, 2 / 3])
+        a = (n > lo)[..., None].astype(np.float32)
+        b = (n > hi)[..., None].astype(np.float32)
+        return c0 * (1 - a) + c1 * (a - b) + c2 * b
+    if style == "tiger":
+        # Stripes across the length, swept back like chevrons and wavy, each one thick or thin along it
+        warp = fbm(P, 1.0 / scale, 2, seed=71)
+        s = np.sin(2 * np.pi * ((P[..., 1] + 0.5 * np.abs(P[..., 0])) / scale + 1.4 * warp))
+        width = 0.42 + 0.6 * (fbm(P, 0.7 / scale, 2, seed=73) - 0.5)
+        stripe = smooth(1 - width - 0.04, 1 - width + 0.04, s)[..., None]
+        return c0 * (1 - stripe) + c1 * stripe
+    n = fbm(P, 1.0 / scale, 3, seed=61) + 0.12 * (fbm(P, 5.0 / scale, 2, seed=67) - 0.5)
     edge = 0.006
     a = smooth(0.452 - edge, 0.452 + edge, n)[..., None]
     b = smooth(0.548 - edge, 0.548 + edge, n)[..., None]

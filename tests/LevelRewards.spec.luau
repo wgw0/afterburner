@@ -155,7 +155,7 @@ return function(ctx)
 					visible += 1
 				end
 			end
-			expect(visible).toBe(20)
+			expect(visible).toBe(31)
 			expect(table.find(Achievements.earned({ kind = "BridgeRun" }), "ThreadTheNeedle") ~= nil).toBe(true)
 		end)
 	end)

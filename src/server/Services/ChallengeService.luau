@@ -21,6 +21,8 @@ local BridgeRun = require(Shared.BridgeRun)
 local AircraftData = require(Shared.AircraftData)
 local Badges = require(Shared.Config.Badges)
 local Challenges = require(Shared.Challenges)
+local Economy = require(Shared.Config.Economy)
+local LevelRewards = require(Shared.Config.LevelRewards)
 local Net = require(Shared.Net)
 local Perks = require(Shared.Perks)
 local Progression = require(Shared.Progression)
@@ -98,19 +100,54 @@ local function tierOf(airframeId: string?): number?
 	return airframe and airframe.Tier
 end
 
--- Lifetime totals for the career achievements (Veteran, Centurion, Collector, High Flyer).
+-- Lifetime totals for the career achievements (Veteran, Centurion, Collector, High Flyer, and the hangar and
+-- bank ones: jets, upgrades, Credits, RP, skins).
 local function careerEvent(data: { [string]: any }): Achievements.Event
-	local owned = 0
+	local owned, kitted, skins, totalJets = 0, 0, 0, 0
+	local rp = data.FreeRP or 0
+	for _ in AircraftData.getAll() do
+		totalJets += 1
+	end
 	for _, entry in data.Aircraft do
+		rp += entry.RP or 0
 		if entry.Owned then
 			owned += 1
+			local all = true
+			for _, def in Economy.MODULES do
+				if entry.Modules == nil or entry.Modules[def.Id] == nil then
+					all = false
+					break
+				end
+			end
+			if all then
+				kitted += 1
+			end
 		end
+		for _, bought in entry.Skins or {} do
+			if bought then
+				skins += 1
+			end
+		end
+	end
+	for _, skin in LevelRewards.SKINS do -- the level liveries count, on every jet you own
+		if data.PilotLevel >= skin.Level then
+			skins += owned
+		end
+	end
+	if data.Flags and data.Flags.AllUnlocked == true then
+		-- Full access (testing) owns everything without earning it: no hangar or bank achievements
+		totalJets, kitted, rp, skins = math.huge, 0, 0, 0
 	end
 	return {
 		kind = "Career",
 		matches = data.Stats.Matches,
 		totalKills = data.Stats.Kills + data.Stats.AIKills,
 		ownedJets = owned,
+		totalJets = totalJets,
+		fullyKitted = kitted,
+		credits = if data.Flags and data.Flags.AllUnlocked == true then 0 else data.Credits,
+		rp = rp,
+		skins = skins,
 		level = data.PilotLevel,
 	}
 end
@@ -392,6 +429,30 @@ function ChallengeService:Init()
 		end
 	end)
 
+	-- The hangar and bank achievements can come from buying something or a balance going up outside a match:
+	-- check the career totals a moment after the save changes (once, however many changes come together)
+	local pending: { [Player]: boolean } = {}
+	DataService.Changed:Connect(function(player)
+		if pending[player] then
+			return
+		end
+		pending[player] = true
+		task.delay(1, function()
+			pending[player] = nil
+			local data = player.Parent and DataService:GetData(player)
+			if not data then
+				return
+			end
+			-- Only when there's something new: record() saves, which would come straight back here
+			local event = careerEvent(data)
+			for _, id in Achievements.earned(event) do
+				if not data.Achievements[id] then
+					record(player, {}, { event })
+					return
+				end
+			end
+		end)
+	end)
 	-- On joining: today's challenges, achievements already earned by the lifetime stats (for pilots who
 	-- played before achievements existed), and any badges still owed
 	DataService.ProfileLoaded:Connect(function(player, data)

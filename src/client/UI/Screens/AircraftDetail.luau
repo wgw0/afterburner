@@ -14,6 +14,7 @@ local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
 local Cosmetics = require(Shared.Cosmetics)
+local CosmeticsCatalogue = require(Shared.Config.Cosmetics)
 local Progression = require(Shared.Progression)
 local Skins = require(Shared.Skins)
 local WeaponData = require(Shared.WeaponData)
@@ -332,6 +333,18 @@ local function AircraftDetail(props: any)
 	local skinChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
 	skinChildren.Title =
 		e(C.Label, { Text = "SKINS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
+	-- An equipped camo paints every jet over these (SHP-07)
+	local camo = CosmeticsCatalogue.get(Cosmetics.equipped(data, "Camo") or "")
+	if camo and camo.Skin and Skins.installed(id, camo.Skin) then
+		skinChildren.Camo = e(C.Label, {
+			Text = `{camo.DisplayName} camo is on, on every jet. Take it off in the Shop to use these.`,
+			Size = UDim2.new(1, 0, 0, 30),
+			Color = Theme.Good,
+			TextSize = 12,
+			Wrap = true,
+			LayoutOrder = 0,
+		})
+	end
 	for i, skin in Skins.list(id) do
 		skinChildren[skin.Id] = e(SkinRow, {
 			Skin = skin,

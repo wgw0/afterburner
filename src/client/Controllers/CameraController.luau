@@ -23,6 +23,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AircraftData = require(Shared.AircraftData)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Spring = require(Shared.Util.Spring)
@@ -73,6 +74,7 @@ local deathPosition = Vector3.zero
 local killerJetId = 0
 local spectateIndex = 1
 local spectateLabel: TextLabel
+local deathLabel: TextLabel -- "You were killed by ..." in the middle while the death cam runs
 
 local function jetById(id: number): Model?
 	for _, m in workspace.Jets:GetChildren() do
@@ -81,6 +83,35 @@ local function jetById(id: number): Model?
 		end
 	end
 	return nil
+end
+
+-- The message in the middle when you're destroyed: who got you (their name or callsign, title and level)
+-- and in which jet, or how you died when nobody did.
+local function deathText(cause: string, killerJet: Model?): string
+	if not killerJet then
+		return if cause == "OutOfBounds"
+			then "You flew out of the combat area"
+			elseif cause == "Collision" then "You collided"
+			else "You crashed"
+	end
+	local name = (killerJet:GetAttribute("PilotName") :: string?) or "?"
+	local userId = (killerJet:GetAttribute("PilotUserId") :: number?) or 0
+	local player = if userId ~= 0 then Players:GetPlayerByUserId(userId) else nil
+	local title = player and player:GetAttribute("Title") :: string?
+	local level = player and player:GetAttribute("PilotLevel") :: number?
+	local who = name
+	if title and title ~= "" then
+		who ..= ` · {title}`
+	end
+	if level then
+		who ..= ` (level {level})`
+	elseif userId == 0 then
+		who ..= " (AI)"
+	end
+	local airframe = AircraftData.get((killerJet:GetAttribute("AirframeId") :: string?) or "") :: any
+	local jet = if airframe then ` in their {airframe.DisplayName}` else ""
+	local verb = if cause == "Shot" then "You were killed by" else "You were forced down by"
+	return `{verb} {who}{jet}`
 end
 
 -- A follow camera behind any jet (kill cam, spectating).
@@ -231,6 +262,7 @@ local function update(dt: number)
 
 	local root = FlightController.root
 	spectateLabel.Visible = false
+	deathLabel.Visible = os.clock() < deathUntil
 	if os.clock() < deathUntil then
 		local killer = if killerJetId ~= 0 then jetById(killerJetId) else nil
 		local follow = killer
@@ -320,6 +352,18 @@ function CameraController:Init()
 	spectateLabel.TextStrokeTransparency = 0.4
 	spectateLabel.Visible = false
 	spectateLabel.Parent = gui
+	deathLabel = Instance.new("TextLabel")
+	deathLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	deathLabel.Position = UDim2.fromScale(0.5, 0.4)
+	deathLabel.Size = UDim2.new(0.8, 0, 0, 40)
+	deathLabel.BackgroundTransparency = 1
+	deathLabel.Font = Enum.Font.GothamBold
+	deathLabel.TextSize = 28
+	deathLabel.TextColor3 = Color3.new(1, 1, 1)
+	deathLabel.TextStrokeTransparency = 0.3
+	deathLabel.TextWrapped = true
+	deathLabel.Visible = false
+	deathLabel.Parent = gui
 	gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
 	UserInputService.InputBegan:Connect(function(input, processed)
@@ -341,6 +385,7 @@ function CameraController:Init()
 				deathUntil = os.clock() + DEATH_CAM_SECONDS
 				deathPosition = position
 				killerJetId = killerJet or 0
+				deathLabel.Text = deathText(cause, if killerJetId ~= 0 then jetById(killerJetId) else nil)
 			end
 		end
 	)

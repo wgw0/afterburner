@@ -4,6 +4,8 @@
 -- source of truth. Every action validates first and only changes the data when it's allowed.
 
 local AircraftData = require(script.Parent.AircraftData)
+local Cosmetics = require(script.Parent.Cosmetics)
+local CosmeticsCatalogue = require(script.Parent.Config.Cosmetics)
 local Economy = require(script.Parent.Config.Economy)
 local LevelRewards = require(script.Parent.Config.LevelRewards)
 local Perks = require(script.Parent.Perks)
@@ -588,8 +590,13 @@ function Progression.ownsSkin(data: { [string]: any }, airframeId: string, skinI
 	return skinId == Skins.default(airframeId) or (entry.Skins ~= nil and entry.Skins[skinId] == true)
 end
 
--- The skin a player's jet spawns in: their choice if they own it, otherwise the default.
+-- The skin a player's jet spawns in: an equipped camo (on every jet, SHP-07), else their choice for this jet
+-- if they own it, otherwise the default.
 function Progression.skinFor(data: { [string]: any }, airframeId: string): string
+	local camo = CosmeticsCatalogue.get(Cosmetics.equipped(data, "Camo") or "")
+	if camo and camo.Skin and Skins.installed(airframeId, camo.Skin) then
+		return camo.Skin
+	end
 	local entry = data.Aircraft[airframeId]
 	local chosen = entry and entry.Camo
 	if type(chosen) == "string" and Progression.ownsSkin(data, airframeId, chosen) then
