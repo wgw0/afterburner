@@ -15,6 +15,11 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		GunsOnly = 4067644470962128,
 		ZoneHunter = 858516138670573,
 		HatTrick = 139601879190386,
+		AceInADay = 2437927528297019,
+		Untouchable = 1802830480582760,
+		Notched = 382988331028907,
+		Veteran = 3249765653485432,
+		TestPilot = 4020009935250881,
 	},
 }
 
