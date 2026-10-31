@@ -457,6 +457,20 @@ local function ShopScreen(props: any)
 	table.sort(packs, function(a, b)
 		return Products.LIST[a].Price < Products.LIST[b].Price
 	end)
+	-- The cheapest camo, so the smallest pack that covers one can say so
+	local camoPrice = math.huge
+	for _, item in Catalogue.LIST do
+		if item.Kind == "Camo" and item.Wings then
+			camoPrice = math.min(camoPrice, item.Wings)
+		end
+	end
+	local camoPack = nil
+	for _, key in packs do
+		if (Products.LIST[key].Amount :: number) >= camoPrice then
+			camoPack = key
+			break
+		end
+	end
 	local packCards = {}
 	for i, key in packs do
 		local product = Products.LIST[key]
@@ -465,7 +479,8 @@ local function ShopScreen(props: any)
 		local bonus = math.round((perRobux / ((base.Amount :: number) / base.Price) - 1) * 100)
 		packCards[key] = e(Card, {
 			Title = `{C.number(product.Amount :: number)} Wings`,
-			Detail = if bonus > 0 then `{bonus}% more Wings per Robux` else "Enough for one skin",
+			Detail = (if bonus > 0 then `{bonus}% more Wings per Robux` else "Enough for one jet's skin")
+				.. (if key == camoPack then "\nEnough for a camo on every jet" else ""),
 			Ribbon = if i == #packs then "BEST VALUE" else nil, -- the most Wings per Robux
 			Action = if Products.idFor(key) then `R$ {product.Price}` else nil,
 			Highlight = Theme.Wings,
