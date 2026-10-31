@@ -520,6 +520,11 @@ local function detonate(missile: Missile, position: Vector3, hitJet: Jet?)
 			end
 			CombatService:ApplyDamage(jet, nearest, damage, missile.ownerIdentity, missile.spec.DisplayName)
 			CombatService:ApplyDamage(jet, "Fuselage", damage * 0.5, missile.ownerIdentity, missile.spec.DisplayName)
+			-- The shooter's hit marker and its sound, as for a gun hit
+			local shooter = missile.owner
+			if shooter and shooter.pilot and jet ~= shooter then
+				Net.Server.fire("HitConfirm", shooter.pilot, jet.id, nearest)
+			end
 		end
 	end
 	local target = missile.launchTargetId and AircraftService:GetJetById(missile.launchTargetId)
