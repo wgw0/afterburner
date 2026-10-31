@@ -78,6 +78,126 @@ local function BoosterChip(props: { Data: any })
 	})
 end
 
+-- What each currency is, what it's for and how to get more: the card under its chip on hover
+local CURRENCY_INFO = {
+	Credits = {
+		Title = "CREDITS",
+		Body = "The game's main money. Buy jets you've researched, upgrade modules and skins.\n\n"
+			.. "Earn them in every match (kills, assists, wins, finishing), from challenges, levelling up, the "
+			.. "daily reward and the free spin.",
+	},
+	FreeRP = {
+		Title = "FREE RP",
+		Body = "Research points you can put towards any jet in the tech tree.\n\n"
+			.. "Every match pays RP into the jet you flew, and a tenth of it lands here too. Pilot levels 12 and "
+			.. "30 pay a big chunk.",
+	},
+	Wings = {
+		Title = "WINGS",
+		Body = "The premium currency, for looks only: camos, skins, contrails, kill markers, HUD themes and wing "
+			.. "art. Never power.\n\nGet them from Wings packs in the Shop (press +), and now and then from the "
+			.. "free spin.",
+	},
+}
+local TOOLTIP_Z = 50 -- the menu draws by absolute ZIndex: the card sits over every screen
+
+-- A currency in the top bar: its own border, an "i" to say there's more, the info card on hover, and an
+-- optional + (Wings: straight to the packs in the Shop).
+local function CurrencyChip(props: {
+	Text: string,
+	Colour: Color3,
+	Info: string,
+	Width: number,
+	Order: number,
+	OnPlus: (() -> ())?,
+})
+	local hover, setHover = React.useState(false)
+	local info = CURRENCY_INFO[props.Info]
+	local right = if props.OnPlus then 62 else 30 -- room for the i (and the +)
+	return e("Frame", {
+		Size = UDim2.fromOffset(props.Width, 34),
+		BackgroundColor3 = Theme.Panel,
+		BackgroundTransparency = if hover then 0 else 0.35,
+		LayoutOrder = props.Order,
+		[React.Event.MouseEnter] = function()
+			setHover(true)
+		end,
+		[React.Event.MouseLeave] = function()
+			setHover(false)
+		end,
+	}, {
+		Corner = C.corner(8),
+		Stroke = e("UIStroke", {
+			Color = props.Colour,
+			Thickness = if hover then 2 else 1.25,
+			Transparency = if hover then 0 else 0.3,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		}),
+		Amount = e(C.Label, {
+			Text = props.Text,
+			Size = UDim2.new(1, -(right + 10), 1, 0),
+			Position = UDim2.fromOffset(10, 0),
+			Bold = true,
+			TextSize = 16,
+			Color = props.Colour,
+			Align = "Right",
+		}),
+		Hint = e(C.Label, {
+			Text = "ⓘ",
+			Size = UDim2.fromOffset(20, 34),
+			Position = UDim2.new(1, -(right - 4), 0, 0),
+			TextSize = 14,
+			Align = "Center",
+			Color = props.Colour,
+			Transparency = if hover then 0 else 0.4,
+		}),
+		Plus = if props.OnPlus
+			then e(C.Button, {
+				Text = "+",
+				Size = UDim2.fromOffset(26, 26),
+				Position = UDim2.new(1, -30, 0.5, -13),
+				TextSize = 20,
+				Color = props.Colour,
+				TextColor = Theme.Background,
+				OnClick = props.OnPlus,
+			})
+			else nil,
+		Info = if hover and info
+			then e(C.Panel, {
+				Size = UDim2.fromOffset(300, 158), -- fixed: wrapped text doesn't grow an auto-sized card
+				Position = UDim2.new(1, 0, 1, 8),
+				AnchorPoint = Vector2.new(1, 0),
+				Padding = 14,
+				Color = Theme.Background,
+				Transparency = 0,
+				StrokeColor = props.Colour,
+				StrokeThickness = 1.5,
+				ZIndex = TOOLTIP_Z,
+			}, {
+				Layout = C.List({ Gap = 6 }),
+				Title = e(C.Label, {
+					Text = info.Title,
+					Bold = true,
+					TextSize = 14,
+					Color = props.Colour,
+					LayoutOrder = 1,
+					ZIndex = TOOLTIP_Z,
+				}),
+				Body = e(C.Label, {
+					Text = info.Body,
+					Size = UDim2.new(1, 0, 0, 100),
+					Wrap = true,
+					AlignY = "Top",
+					TextSize = 13,
+					Color = Theme.Text,
+					LayoutOrder = 2,
+					ZIndex = TOOLTIP_Z,
+				}),
+			})
+			else nil,
+	})
+end
+
 local function TopBar(props: any)
 	local data = props.Data
 	local need = Economy.xpToNext(data.PilotLevel)
@@ -123,12 +243,12 @@ local function TopBar(props: any)
 		}),
 		Boosters = e(BoosterChip, { Data = data }),
 		Wallet = e("Frame", {
-			Size = UDim2.fromOffset(640, Theme.TopBar),
+			Size = UDim2.fromOffset(720, Theme.TopBar),
 			Position = UDim2.new(1, -20, 0, 0),
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundTransparency = 1,
 		}, {
-			Layout = C.List({ Horizontal = true, Gap = 22, Align = "Right", AlignY = "Center" }),
+			Layout = C.List({ Horizontal = true, Gap = 12, Align = "Right", AlignY = "Center" }),
 			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
 				Label = e(C.Label, {
 					Text = `PILOT LEVEL {data.PilotLevel}`,
@@ -144,36 +264,30 @@ local function TopBar(props: any)
 					Text = `{data.PilotXP} / {need}`,
 				}),
 			}),
-			Credits = e(C.Label, {
+			Credits = e(CurrencyChip, {
 				Text = `{C.number(data.Credits)} Cr`,
-				Size = UDim2.fromOffset(130, 40),
-				Bold = true,
-				TextSize = 18,
-				Align = "Right",
-				LayoutOrder = 2,
+				Colour = Theme.Text,
+				Info = "Credits",
+				Width = 150,
+				Order = 2,
 			}),
-			-- Wings (the premium currency): a click opens the shop
-			Wings = e("TextButton", {
-				Text = `{C.number(data.Wings or 0)} Wings`,
-				Size = UDim2.fromOffset(110, 40),
-				BackgroundTransparency = 1,
-				Font = Theme.FontBold,
-				TextSize = 16,
-				TextColor3 = Theme.Wings,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				AutoButtonColor = false,
-				LayoutOrder = 4,
-				[React.Event.Activated] = function()
-					props.Navigate("Shop")
-				end,
-			}),
-			FreeRP = e(C.Label, {
+			FreeRP = e(CurrencyChip, {
 				Text = `{C.number(data.FreeRP)} free RP`,
-				Size = UDim2.fromOffset(130, 40),
-				TextSize = 14,
-				Color = Theme.Good,
-				Align = "Right",
-				LayoutOrder = 3,
+				Colour = Theme.Good,
+				Info = "FreeRP",
+				Width = 160,
+				Order = 3,
+			}),
+			-- Wings (the premium currency): the + opens the Shop at the Wings packs
+			Wings = e(CurrencyChip, {
+				Text = `{C.number(data.Wings or 0)} Wings`,
+				Colour = Theme.Wings,
+				Info = "Wings",
+				Width = 160,
+				Order = 4,
+				OnPlus = function()
+					props.Navigate("Shop", "Wings")
+				end,
 			}),
 		}),
 	})
@@ -234,6 +348,8 @@ local function App(props: any)
 	elseif screen == "Shop" then
 		body = e(ShopScreen, {
 			Data = data,
+			Focus = props.ShopFocus,
+			FocusKey = props.ShopFocusKey,
 			OnBuyProduct = props.OnBuyProduct,
 			OnBuyPass = props.OnBuyPass,
 			OnBuyCosmetic = props.OnBuyCosmetic,

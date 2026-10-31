@@ -52,6 +52,7 @@ function Components.Panel(props: any)
 		ClipsDescendants = props.Clip,
 		Visible = props.Visible,
 		ZIndex = props.ZIndex,
+		AutomaticSize = props.AutomaticSize,
 	}, children)
 end
 
