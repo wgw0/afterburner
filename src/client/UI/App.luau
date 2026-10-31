@@ -164,7 +164,7 @@ local function CurrencyChip(props: {
 			else nil,
 		Info = if hover and info
 			then e(C.Panel, {
-				Size = UDim2.fromOffset(300, 158), -- fixed: wrapped text doesn't grow an auto-sized card
+				Size = UDim2.fromOffset(380, 210), -- fixed: wrapped text doesn't grow an auto-sized card
 				Position = UDim2.new(1, 0, 1, 8),
 				AnchorPoint = Vector2.new(1, 0),
 				Padding = 14,
@@ -178,17 +178,17 @@ local function CurrencyChip(props: {
 				Title = e(C.Label, {
 					Text = info.Title,
 					Bold = true,
-					TextSize = 14,
+					TextSize = 18,
 					Color = props.Colour,
 					LayoutOrder = 1,
 					ZIndex = TOOLTIP_Z,
 				}),
 				Body = e(C.Label, {
 					Text = info.Body,
-					Size = UDim2.new(1, 0, 0, 100),
+					Size = UDim2.new(1, 0, 0, 146),
 					Wrap = true,
 					AlignY = "Top",
-					TextSize = 13,
+					TextSize = 16,
 					Color = Theme.Text,
 					LayoutOrder = 2,
 					ZIndex = TOOLTIP_Z,
