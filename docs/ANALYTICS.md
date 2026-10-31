@@ -6,7 +6,7 @@ Open it at **Creator Hub → Creations → Afterburner → Analytics** (the left
 
 ## Before you start
 
-- **Events only come from the published game.** Roblox records nothing from Studio or from the client. The TEST experience (Afterburner (TEST)) has its own dashboard, separate from the live game's, so test play never mixes with live numbers. Custom events also carry `env=Test` or `env=Prod` in Custom Field 3.
+- **Events only come from the published game.** Roblox records nothing from Studio or from the client. We read analytics on the **live (prod) experience, Afterburner** only. The TEST experience has a dashboard of its own, so test play never mixes with live numbers; ignore it. Custom events also carry `env=Test` or `env=Prod` in Custom Field 3.
 - **Charts lag by about a day.** Each analytics page has a **View Events** button that lists the latest events within minutes. Use it to check that something is arriving.
 - **Small games see less.** Funnels, Economy and Custom events appear once events arrive. The full set of KPIs needs more than 10 daily active users and 10 hours of play a day for 7 days in a row.
 
@@ -112,13 +112,13 @@ Robux sales themselves are on the **Monetization** pages, not Economy. Credits a
 Nothing has to be configured by hand. Funnels, the Economy page and Custom events build themselves from the events once they arrive. The one-off checks:
 
 1. **Analytics access.** Your account needs a verified email and 2-step verification. If the Analytics pages ask you to accept their terms, do so once on the experience's overview page.
-2. **Check the events arrive (TEST experience first).** Publish this build to Afterburner (TEST), then play it from the Roblox app, not Studio:
+2. **Check the events arrive on the live game.** Once this build is published to Afterburner (prod), play it from the Roblox app, not Studio:
    - finish a lesson;
    - go to a lobby;
    - play a match to the end;
    - research or buy something.
 
-   Then, in Creator Hub → Afterburner (TEST) → Analytics:
+   Then, in Creator Hub → Afterburner → Analytics:
    - **Funnels → View Events:** look for an `Onboarding` step and a `Training` step.
    - **Economy → View Events:** look for a `Gameplay` source and your purchase as a sink.
    - **Custom events → View Events:** look for `MatchEnded`, `MatchQuality`, `Onboarded` and `LessonCompleted`.
