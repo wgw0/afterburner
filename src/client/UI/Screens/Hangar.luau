@@ -41,14 +41,14 @@ local QUEUE_MODES = {
 
 -- The mode PLAY queues for: Any (the fastest match) or one mode.
 local function modePicker(props: any)
-	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 6, Align = "Center" }) }
+	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, Align = "Center" }) }
 	for i, item in QUEUE_MODES do
 		local id, label = item[1], item[2]
 		buttons[id] = e(C.Button, {
 			Text = label,
 			Style = if props.Value == id then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(if id == "Any" then 118 else 104, 32),
-			TextSize = 12,
+			Size = UDim2.fromOffset(if id == "Any" then 180 else 160, 50),
+			TextSize = 17,
 			LayoutOrder = i,
 			OnClick = function()
 				props.OnPick(id)
@@ -56,8 +56,8 @@ local function modePicker(props: any)
 		})
 	end
 	return e("Frame", {
-		Size = UDim2.fromOffset(570, 32),
-		Position = UDim2.new(0.5, 0, 1, -156),
+		Size = UDim2.fromOffset(852, 50),
+		Position = UDim2.new(0.5, 0, 1, -224),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 	}, buttons)
@@ -259,9 +259,9 @@ local function Hangar(props: any)
 		Play = e(C.Button, {
 			Text = props.PlayText or "PLAY",
 			Style = "Primary",
-			TextSize = 26,
-			Size = UDim2.fromOffset(260, 60),
-			Position = UDim2.new(0.5, 0, 1, -110),
+			TextSize = 40,
+			Size = UDim2.fromOffset(420, 96),
+			Position = UDim2.new(0.5, 0, 1, -150),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Disabled = not (props.CanPlay and selected),
 			OnClick = function()
@@ -272,9 +272,9 @@ local function Hangar(props: any)
 			then e(C.Button, {
 				Text = props.SideText,
 				Style = "Ghost",
-				TextSize = 14,
-				Size = UDim2.fromOffset(130, 44),
-				Position = UDim2.new(0.5, -280, 1, -102),
+				TextSize = 20,
+				Size = UDim2.fromOffset(210, 70),
+				Position = UDim2.new(0.5, -440, 1, -137),
 				OnClick = props.OnSide,
 			})
 			else nil,
@@ -282,9 +282,9 @@ local function Hangar(props: any)
 			then e(C.Button, {
 				Text = "REPORT",
 				Style = "Ghost",
-				TextSize = 12,
-				Size = UDim2.fromOffset(130, 30),
-				Position = UDim2.new(0.5, -280, 1, -52),
+				TextSize = 15,
+				Size = UDim2.fromOffset(210, 40),
+				Position = UDim2.new(0.5, -440, 1, -58),
 				OnClick = function()
 					props.OnReport(nil)
 				end,
@@ -293,9 +293,9 @@ local function Hangar(props: any)
 		Details = e(C.Button, {
 			Text = "DETAILS",
 			Style = "Ghost",
-			TextSize = 14,
-			Size = UDim2.fromOffset(110, 44),
-			Position = UDim2.new(0.5, 150, 1, -102),
+			TextSize = 20,
+			Size = UDim2.fromOffset(180, 70),
+			Position = UDim2.new(0.5, 230, 1, -137),
 			Disabled = selected == nil,
 			OnClick = function()
 				props.OnDetails(selected)
@@ -303,13 +303,13 @@ local function Hangar(props: any)
 		}),
 		Status = e(C.Label, {
 			Text = props.Status or "",
-			Position = UDim2.new(0.5, 0, 1, -40),
+			Position = UDim2.new(0.5, 0, 1, -44),
 			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(700, 22),
+			Size = UDim2.fromOffset(420, 22),
 			Align = "Center",
 			Color = Theme.Warn,
 			Bold = true,
-			TextSize = 16,
+			TextSize = 18,
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet

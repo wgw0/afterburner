@@ -1,10 +1,11 @@
 --!strict
 -- The training server's home screen (DEVELOPMENT.md §28, TUT-03): any jet, the six lessons, and Vs AI.
--- Nothing here earns rewards. Shown in place of the Hangar on a training server (ServerRole).
+-- Vs AI pays pilot XP only; lessons and free flight pay nothing. Shown in place of the Hangar on a training server (ServerRole).
 -- props: Data, Selected, OnSelect(id), Status, CanPlay, OnPlay(id), Lessons ({ {id, name} }), OnLesson(id),
 --   VsAIRunning (bool), ModeName (the running match's name), OnVsAI(modeId, difficulty, count), OnFreeFlight(),
 --   OnMultiplayer() (back to a lobby: the button left of FLY, where TRAINING sits in the lobby),
---   FirstSession (a new pilot: show the welcome card, TUT-04), OnFinishOnboarding() (stay in training).
+--   FirstSession (a new pilot: show the welcome card, TUT-04), OnFinishOnboarding() (stay in training),
+--   OnDetails(id) (the jet's details, right of FLY as in the Hangar).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -251,7 +252,7 @@ local function Training(props: any)
 		})
 		else nil
 	side.Note = e(C.Label, {
-		Text = "Training earns no rewards. Press MULTIPLAYER (next to FLY) to go back.",
+		Text = "Vs AI earns pilot XP (half a match's). Press MULTIPLAYER (next to FLY) to go back.",
 		Color = Theme.Dim,
 		TextSize = 12,
 		Wrap = true,
@@ -314,17 +315,28 @@ local function Training(props: any)
 		Multiplayer = e(C.Button, {
 			Text = "MULTIPLAYER",
 			Style = "Ghost",
-			TextSize = 14,
-			Size = UDim2.fromOffset(130, 44),
-			Position = UDim2.new(0.5, -280, 1, -102),
+			TextSize = 20,
+			Size = UDim2.fromOffset(210, 70),
+			Position = UDim2.new(0.5, -440, 1, -137),
 			OnClick = props.OnMultiplayer,
+		}),
+		Details = e(C.Button, {
+			Text = "DETAILS",
+			Style = "Ghost",
+			TextSize = 20,
+			Size = UDim2.fromOffset(180, 70),
+			Position = UDim2.new(0.5, 230, 1, -137),
+			Disabled = selected == nil,
+			OnClick = function()
+				props.OnDetails(selected)
+			end,
 		}),
 		Fly = e(C.Button, {
 			Text = "FLY",
 			Style = "Primary",
-			TextSize = 26,
-			Size = UDim2.fromOffset(260, 60),
-			Position = UDim2.new(0.5, 0, 1, -110),
+			TextSize = 40,
+			Size = UDim2.fromOffset(420, 96),
+			Position = UDim2.new(0.5, 0, 1, -150),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Disabled = not (props.CanPlay and selected),
 			OnClick = function()
@@ -333,13 +345,13 @@ local function Training(props: any)
 		}),
 		Status = e(C.Label, {
 			Text = props.Status or "",
-			Position = UDim2.new(0.5, 0, 1, -40),
+			Position = UDim2.new(0.5, 0, 1, -44),
 			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(700, 22),
+			Size = UDim2.fromOffset(420, 22),
 			Align = "Center",
 			Color = Theme.Warn,
 			Bold = true,
-			TextSize = 16,
+			TextSize = 18,
 		}),
 		Jets = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),
