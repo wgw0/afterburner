@@ -441,6 +441,22 @@ end
 
 local function ShopScreen(props: any)
 	local data = props.Data
+	-- Opened at a section (props.Focus, e.g. "Wings" from the top bar's +): scroll its title to the top
+	local scroller = React.useRef(nil)
+	React.useEffect(function()
+		local frame = scroller.current :: ScrollingFrame?
+		if not (frame and props.Focus) then
+			return nil
+		end
+		task.defer(function() -- once the layout has placed the sections
+			local title = frame:FindFirstChild(`{props.Focus}Title`) :: GuiObject?
+			if title then
+				local y = title.AbsolutePosition.Y - frame.AbsolutePosition.Y + frame.CanvasPosition.Y - 8
+				frame.CanvasPosition = Vector2.new(0, math.max(0, y))
+			end
+		end)
+		return nil
+	end, { props.FocusKey })
 	-- Tick once a second so running boosters count down
 	local now, setNow = React.useState(os.time())
 	React.useEffect(function()
@@ -627,6 +643,7 @@ local function ShopScreen(props: any)
 		ScrollBarThickness = 6,
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ref = scroller,
 	}, children)
 end
 

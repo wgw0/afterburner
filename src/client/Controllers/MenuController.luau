@@ -173,6 +173,10 @@ local function navigate(screen: string, id: string?)
 	if screen == "Detail" then
 		state.backTo = if state.screen == "Detail" then state.backTo else state.screen
 		state.detailId = id
+	elseif screen == "Shop" then
+		-- A section to open at ("Wings" from the top bar's +); the key makes it scroll again on every press
+		state.shopFocus = id
+		state.shopFocusKey = (state.shopFocusKey or 0) + 1
 	end
 	state.screen = screen
 	render()
@@ -387,6 +391,8 @@ render = function()
 		Data = PlayerDataController.data,
 		Screen = if resultsUp then "Results" else state.screen,
 		DetailId = state.detailId,
+		ShopFocus = state.shopFocus,
+		ShopFocusKey = state.shopFocusKey,
 		BackTo = state.backTo,
 		Navigate = navigate,
 		Match = match,
