@@ -37,6 +37,7 @@ local ShopService = require(script.Parent.ShopService)
 local SpinService = require(script.Parent.SpinService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local ReportService = require(script.Parent.ReportService)
+local FeedbackService = require(script.Parent.FeedbackService)
 
 local ADMINS: { number } = {} -- extra admin user ids (live config later, §31.1)
 local MAX_GRANT = 1e7
@@ -174,6 +175,16 @@ local COMMANDS: { [string]: Command } = {
 		run = function(_admin, args)
 			local count = math.clamp(tonumber(args.count) or 10, 1, 100)
 			return true, HttpService:JSONEncode(ReportService:Top(count))
+		end,
+	},
+	-- Bug reports, ideas and the rest (FeedbackService): the newest from today and yesterday, { count, kind }
+	-- (kind: Bug / Lag / Idea / Other; all kinds if left out).
+	["feedback.recent"] = {
+		testOnly = false,
+		run = function(_admin, args)
+			local count = math.clamp(tonumber(args.count) or 20, 1, 100)
+			local kind = if type(args.kind) == "string" and args.kind ~= "" then args.kind else nil
+			return true, HttpService:JSONEncode(FeedbackService:Recent(count, kind))
 		end,
 	},
 	-- One pilot's reports with the anti-cheat data attached to each: { userId }.

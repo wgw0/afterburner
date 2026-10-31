@@ -3,7 +3,7 @@
 -- Play button with the match status. Training is on its own servers (TRAINING in the top bar).
 -- props: Data, Selected, OnSelect(id), Status (string), CanPlay, OnPlay(id), SideText and OnSide() (the button left of
 --   PLAY: TRAINING in a lobby, LEAVE MATCH on a match server), OnDetails(id),
---   OnReport(userId?) (on a match server: the report-a-cheater window), OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
+--   OnReport(userId?) (on a match server: the report-a-cheater window), OnFeedback() (the report-a-bug window), OnLineup(ids) -> (ok, err), PlayText (PLAY / CANCEL / JOINING…), QueueMode and OnQueueMode(mode) (in a
 --   lobby: the mode picker over PLAY), OnReroll(index) (the challenges panel on the right),
 --   OnSpin() -> (prize?, err) (the free-spin button bottom right and its window).
 
@@ -295,6 +295,18 @@ local function Hangar(props: any)
 				OnClick = function()
 					props.OnReport(nil)
 				end,
+			})
+			else nil,
+		-- Report a bug (Shared/Feedback), under DETAILS
+		Feedback = if props.OnFeedback
+			then e(C.Button, {
+				Text = "REPORT BUG",
+				Style = "Ghost",
+				TextSize = 15,
+				Size = UDim2.fromOffset(180, 40),
+				Position = UDim2.new(0.5, 230, 1, -58),
+				StrokeColor = Theme.Warn,
+				OnClick = props.OnFeedback,
 			})
 			else nil,
 		Details = e(C.Button, {

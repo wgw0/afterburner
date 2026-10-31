@@ -2,7 +2,7 @@
 -- Settings screen (DEVELOPMENT.md §29, SET-02). Every row changes one setting at once through
 -- SettingsController (applied straight away and saved to your profile).
 -- props: Values (the current settings), OnSet(key, value), OnCapture(device, callback) (waits for the next key or
--- button: BindingsController:Capture).
+-- button: BindingsController:Capture), OnFeedback() (the report-a-bug window).
 -- Numbers use − / + buttons around a bar rather than a drag slider, so they work the same with a mouse,
 -- touch and a gamepad.
 
@@ -448,6 +448,28 @@ local function SettingsScreen(props: any)
 		OnSet = props.OnSet,
 		OnCapture = props.OnCapture,
 		Order = 15, -- right after CONTROLS
+	})
+	-- Report a bug (Shared/Feedback)
+	sections.Feedback = e(C.Panel, {
+		Size = UDim2.fromOffset(760, 64),
+		Padding = 14,
+		LayoutOrder = #SECTIONS * 10 + 5,
+	}, {
+		Label = e(C.Label, {
+			Text = "Found a bug, or something lagging? Tell us.",
+			Size = UDim2.new(1, -200, 1, 0),
+			TextSize = 15,
+		}),
+		Button = e(C.Button, {
+			Text = "REPORT A BUG",
+			Style = "Secondary",
+			Size = UDim2.fromOffset(180, 36),
+			Position = UDim2.fromScale(1, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			TextSize = 14,
+			StrokeColor = Theme.Warn,
+			OnClick = props.OnFeedback,
+		}),
 	})
 	sections.Note = e(C.Label, {
 		Text = "Changes apply straight away and are saved with your pilot.",

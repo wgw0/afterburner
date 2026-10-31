@@ -367,6 +367,7 @@ local function App(props: any)
 			OnCapture = props.OnCapture,
 			Level = data.PilotLevel,
 			AllUnlocked = data.Flags and data.Flags.AllUnlocked == true,
+			OnFeedback = props.OnFeedback,
 		})
 	elseif screen == "TechTree" then
 		body = e(TechTree, {
@@ -429,6 +430,7 @@ local function App(props: any)
 			end,
 			-- On a match server: report a cheater (CMP-03)
 			OnReport = if props.Role == "Match" then props.OnReport else nil,
+			OnFeedback = props.OnFeedback,
 			OnDetails = function(id)
 				props.Navigate("Detail", id)
 			end,
