@@ -33,6 +33,7 @@ export type Score = {
 	deaths: number,
 	score: number,
 	team: string?,
+	airframe: string?, -- the jet they're flying (the last one they spawned in), for the scoreboard
 }
 
 MatchRules.GUNS_ONLY_AMMO = 4 -- Guns Only: times the gun's usual rounds (Will)

@@ -43,6 +43,11 @@ function Skins.get(airframeId: string, skinId: string): SkinConfig.Skin?
 	return nil
 end
 
+-- Whether a skin's paint for this jet is installed (camos are painted for every jet, but check).
+function Skins.installed(airframeId: string, skinId: string): boolean
+	return folderFor(airframeId, skinId) ~= nil
+end
+
 -- The skin a jet comes with ("Default" for airframes without skins yet).
 function Skins.default(airframeId: string): string
 	for _, skin in Skins.list(airframeId) do

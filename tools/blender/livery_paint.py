@@ -67,12 +67,62 @@ SCHEMES = {
     },
 }
 
+# The Wings camos (Config/Cosmetics "Camo", SHP-07), painted on every jet like the level liveries: sold once
+# for every jet. VIP Gold comes with the VIP Pilot pass.
+SCHEMES.update({
+    "VIPGold": {
+        "base": srgb(238, 238, 234),
+        "upper": srgb(238, 238, 234),
+        "lower": srgb(238, 238, 234),
+        "radome": srgb(30, 30, 32),
+        "antiglare": srgb(20, 20, 22),
+        "walkway": srgb(200, 200, 196),
+        "insignia": srgb(238, 238, 234),
+        "markings": "none",
+        "rough": 0.24,
+        "livery": "VIPGold",
+    },
+    "ArcticSplinter": {
+        "camo": [srgb(228, 232, 236), srgb(170, 178, 186), srgb(146, 174, 200)],
+        "camo_style": "splinter",
+        "camo_scale": 3.0,
+        "underside": srgb(214, 220, 226),
+        "base": srgb(228, 232, 236),
+        "upper": srgb(228, 232, 236),
+        "lower": srgb(214, 220, 226),
+        "radome": srgb(120, 128, 136),
+        "antiglare": srgb(52, 58, 66),
+        "walkway": srgb(150, 158, 166),
+        "insignia": srgb(228, 232, 236),
+        "markings": "none",
+    },
+    "TigerStripe": {
+        "camo": [srgb(232, 142, 40), srgb(22, 20, 18), srgb(232, 142, 40)],
+        "camo_style": "tiger",
+        "camo_scale": 1.5,
+        "underside": srgb(226, 150, 60),
+        "base": srgb(232, 142, 40),
+        "upper": srgb(232, 142, 40),
+        "lower": srgb(226, 150, 60),
+        "radome": srgb(22, 20, 18),
+        "antiglare": srgb(16, 15, 14),
+        "walkway": srgb(60, 56, 52),
+        "insignia": srgb(232, 142, 40),
+        "markings": "none",
+    },
+})
+
 # (colour, roughness, metalness) of each livery's stripes
-ACCENT = {"Squadron": (ORANGE, 0.3, 0.0), "AceGold": (GOLD, 0.22, 1.0), "Legend": (ORANGE, 0.3, 0.0)}
+ACCENT = {
+    "Squadron": (ORANGE, 0.3, 0.0),
+    "AceGold": (GOLD, 0.22, 1.0),
+    "Legend": (ORANGE, 0.3, 0.0),
+    "VIPGold": (GOLD, 0.2, 1.0),
+}
 
 
 def with_liveries(schemes):
-    """A jet's own schemes plus the three level liveries."""
+    """A jet's own schemes plus the level liveries and the Wings camos."""
     return {**schemes, **SCHEMES}
 
 
@@ -135,6 +185,9 @@ def trim(scheme, P, N, ao, line, colour, rough, metal, fus, wings, wing_le, tail
     kind = scheme.get("livery")
     if not kind:
         return colour, rough, metal
+    accent = kind
+    if kind == "VIPGold":
+        kind = "AceGold"  # the same gold leading edges, fin tips and pinstripes, over white
     x, y, z = P[..., 0], P[..., 1], P[..., 2]
     side = np.abs(N[..., 2]) < 0.6
     shape = x.shape
@@ -174,7 +227,7 @@ def trim(scheme, P, N, ao, line, colour, rough, metal, fus, wings, wing_le, tail
             mask = np.maximum(mask, np.where(fus & side & (y < y_front) & (y > y_back), stripe, 0))
 
     mask = np.where(keep, 0, mask)
-    c, r, m = ACCENT[kind]
+    c, r, m = ACCENT[accent]
     shade = (1 - 0.3 * line) * (0.55 + 0.45 * np.power(np.clip(ao, 0, 1), 0.8))
     colour = colour * (1 - mask[..., None]) + (c * shade[..., None]) * mask[..., None]
     rough = rough * (1 - mask) + (r + 0.12 * line) * mask

@@ -31,6 +31,7 @@ local Mastery = require(Shared.Mastery)
 local Perks = require(Shared.Perks)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
+local Skins = require(Shared.Skins)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local AircraftService = require(script.Parent.AircraftService)
@@ -304,11 +305,13 @@ local function looksFor(data: { [string]: any }): { [string]: string }
 	return looks
 end
 
--- Re-dresses a player's jet if they're flying (after they buy or equip something).
+-- Re-dresses a player's jet if they're flying (after they buy or equip something), repainting it too in
+-- case a camo went on or came off.
 local function redress(player: Player)
 	local jet = AircraftService:GetJet(player)
 	local data = DataService:GetData(player)
 	if jet and data then
+		Skins.apply(jet.model, jet.airframeId, Progression.skinFor(data, jet.airframeId))
 		AircraftService.dress(jet.model, looksFor(data))
 	end
 end
@@ -469,8 +472,16 @@ function ProgressionService:Init()
 		end
 		return ok == true, err
 	end)
+	-- Everyone can see a pilot's level (the "You were killed by" message): kept on the player
+	DataService.Changed:Connect(function(player)
+		local data = DataService:GetData(player)
+		if data and player:GetAttribute("PilotLevel") ~= data.PilotLevel then
+			player:SetAttribute("PilotLevel", data.PilotLevel)
+		end
+	end)
 	-- On joining: levels reached before their milestones existed still pay, and the title shows
 	DataService.ProfileLoaded:Connect(function(player, data)
+		player:SetAttribute("PilotLevel", data.PilotLevel)
 		task.spawn(refreshCallsign, player)
 		local paid = 0
 		DataService:Update(player, function(d)
