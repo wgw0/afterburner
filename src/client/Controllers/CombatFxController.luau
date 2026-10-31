@@ -3,11 +3,13 @@
 --   Muzzle flash and gun sound on any jet that's firing.
 --   Sparks where rounds hit a jet (HitFx), dust where tracers hit the ground.
 --   Explosion (fire, smoke, sparks, flash, sound) where a jet is destroyed.
---   A hit "tink" for your hits, and a thud when you're hit.
+--   A hit "tink" for your hits (gun or missile), a kill confirm (KillConfirm) for your kills, and a thud when
+--   you're hit.
 -- Effects are pooled anchors with ParticleEmitters fired with :Emit(), using built-in textures. Burst sizes,
 -- impact dust and the muzzle light follow the effects quality (GraphicsController, FX-05); each jet's muzzle
 -- flash is made once and reused for every burst.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
@@ -283,9 +285,14 @@ function CombatFxController:Start()
 	Net.Client.on("HitConfirm", function()
 		playSound("HitImpact", nil, 0.35)
 	end)
-	Net.Client.on("JetDestroyed", function(_jetId: number, _killer: number, cause: string, position: Vector3)
+	Net.Client.on("JetDestroyed", function(jetId: number, killer: number, cause: string, position: Vector3)
 		if cause == "Shot" or cause == "Crash" or cause == "Collision" then
 			explosion(position)
+		end
+		-- Your kill (shot down, or forced into the ground): a satisfying confirm
+		local mine = FlightController.jet and FlightController.jet:GetAttribute("JetId") == jetId
+		if killer == Players.LocalPlayer.UserId and not mine then
+			playSound("KillConfirm", nil, 0.8)
 		end
 	end)
 	-- A thud when you take damage

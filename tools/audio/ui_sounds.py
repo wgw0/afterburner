@@ -9,6 +9,7 @@ Each is a short mono 44.1 kHz WAV, synthesised from tones and filtered noise:
   MatchFound   three quick rising beeps (radar-ish) as the matchmaker finds a match
   RadioIn      the squelch before a radio call: a click and a burst of band-limited static
   RadioOut     the shorter squelch tail after it
+  KillConfirm  your kill: a punchy low thump under a quick rising chime with a bright sparkle on top
 Upload them with Studio's Asset Manager (Bulk Import) and put the ids in ReplicatedStorage.Assets.Audio.
 """
 
@@ -112,6 +113,25 @@ def radio(seconds, decay, click=True):
     return static
 
 
+def kill_confirm():
+    x = t(0.3)
+    sweep = 130 * np.exp(-x / 0.06) + 50  # a kick: the pitch drops fast
+    thump = np.sin(2 * np.pi * np.cumsum(sweep) / RATE) * envelope(len(x), 0.001, 0.09)
+    n = int(RATE * 0.05)
+    snap = bandpass(rng.standard_normal(n), 2500, 9000) * envelope(n, 0.0005, 0.008)
+    sparkle = bell(2637, 0.5, 0.12) * 0.35  # E7, a glint over the chime
+    return place(
+        [
+            (0.0, thump * 1.3),
+            (0.0, snap * 0.5),
+            (0.02, bell(987.77, 0.45, 0.14)),  # B5
+            (0.1, bell(1479.98, 0.6, 0.2)),  # F#6, a rising fifth
+            (0.1, sparkle),
+        ],
+        0.75,
+    )
+
+
 def main():
     write("UIClick", ui_click(), 0.5)
     write("UIConfirm", ui_confirm(), 0.6)
@@ -119,6 +139,7 @@ def main():
     write("MatchFound", match_found(), 0.6)
     write("RadioIn", radio(0.2, 0.07), 0.55)
     write("RadioOut", radio(0.12, 0.035, click=False), 0.45)
+    write("KillConfirm", kill_confirm(), 0.7)
 
 
 if __name__ == "__main__":
