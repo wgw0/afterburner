@@ -18,6 +18,7 @@ local Ballistics = require(Shared.Ballistics)
 local DamageModel = require(Shared.DamageModel)
 local MatchRules = require(Shared.MatchRules)
 local Net = require(Shared.Net)
+local Reload = require(Shared.Reload)
 local Signal = require(Shared.Util.Signal)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
@@ -46,6 +47,8 @@ type CombatState = {
 	health: DamageModel.Health,
 	maxHealth: DamageModel.Health,
 	ammo: number,
+	fullAmmo: number,
+	reloadAt: number?, -- Reload: server time the gun's reload finishes
 	heat: number,
 	jammed: boolean,
 	firing: Firing?,
@@ -287,8 +290,18 @@ local function tick(dt: number)
 	for _, state in states do
 		flyRounds(state, dt)
 	end
+	local now = workspace:GetServerTimeNow()
 	for _, state in states do
 		local model = state.jet.model
+		-- Reloading (Reload): an empty gun refills after a timer
+		local reloadAt, refill = Reload.step(state.ammo, state.fullAmmo, state.reloadAt, now, Reload.SECONDS.Gun)
+		if refill then
+			state.ammo = state.fullAmmo
+		end
+		if reloadAt ~= state.reloadAt then
+			state.reloadAt = reloadAt
+			model:SetAttribute(Reload.PREFIX .. "Gun", reloadAt)
+		end
 		if model:GetAttribute("Ammo") ~= state.ammo then
 			model:SetAttribute("Ammo", state.ammo)
 		end
@@ -306,14 +319,17 @@ local function onJetSpawned(jet: Jet)
 	local airframe = AircraftData.get(jet.airframeId)
 	local gun = airframe and WeaponData.get(airframe.Gun)
 	local maxHealth = DamageModel.maxHealth(airframe)
+	local ammo = if gun
+		then MatchRules.gunRounds(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")), gun.Ammo)
+		else 0
 	local state: CombatState = {
 		jet = jet,
 		gun = gun,
 		health = table.clone(maxHealth),
 		maxHealth = maxHealth,
-		ammo = if gun
-			then MatchRules.gunRounds(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")), gun.Ammo)
-			else 0,
+		ammo = ammo,
+		fullAmmo = ammo,
+		reloadAt = nil,
 		heat = 0,
 		jammed = false,
 		firing = nil,
