@@ -491,7 +491,7 @@ local COMMANDS: { [string]: Command } = {
 
 function AdminService:Run(admin: Player, command: string, args: { [string]: any }?): (boolean, string)
 	if not self:IsAdmin(admin) then
-		Telemetry.event("AdminDenied", 1, { command = command }, admin)
+		Telemetry.event("AdminDenied", 1, { command = if COMMANDS[command] then command else "?" }, admin)
 		return false, "Not allowed"
 	end
 	local def = COMMANDS[command]
@@ -502,7 +502,7 @@ function AdminService:Run(admin: Player, command: string, args: { [string]: any 
 		return false, "Test environment only"
 	end
 	local ok, result, message = pcall(def.run, admin, args or {})
-	Telemetry.event("AdminCommand", 1, { command = command, ok = ok and result }, admin)
+	Telemetry.event("AdminCommand", 1, { command = command, ok = ok and result == true }, admin)
 	if not ok then
 		return false, `Command failed: {result}`
 	end

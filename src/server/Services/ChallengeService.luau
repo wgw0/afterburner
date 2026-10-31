@@ -165,12 +165,17 @@ local function record(
 )
 	local notices = {}
 	local newAchievements = {}
+	local paid, levelCredits = 0, 0
+	local balance = 0
 	DataService:Update(player, function(data)
 		local unix = now()
 		for _, event in challengeEvents do
 			for _, def in Challenges.record(data.Challenges, event, unix) do
 				data.Credits += def.credits
+				paid += def.credits
+				local before = data.Credits
 				Progression.addXP(data, def.xp)
+				levelCredits += data.Credits - before
 				local weekly = table.find(Challenges.WEEKLY_POOL, def) ~= nil
 				table.insert(notices, {
 					kind = if weekly then "Weekly challenge" else "Daily challenge",
@@ -198,7 +203,18 @@ local function record(
 				end
 			end
 		end
+		balance = data.Credits
 	end)
+	Telemetry.economy(
+		player,
+		"Source",
+		"Credits",
+		paid,
+		balance - levelCredits,
+		Telemetry.SOURCES.Challenge,
+		"Challenge"
+	)
+	Telemetry.economy(player, "Source", "Credits", levelCredits, balance, Telemetry.SOURCES.LevelUp, "Level")
 	for _, notice in notices do
 		Net.Server.fire("ChallengeNotice", player, notice)
 	end
@@ -211,6 +227,7 @@ function ChallengeService:Init()
 	-- The daily login reward (LIV-03): claims today's day of the streak and pays it.
 	Net.Server.handle("ClaimDailyReward", function(player: Player)
 		local result = nil
+		local balance = 0
 		DataService:Update(player, function(data)
 			local reward, count = Streak.claim(data.Streak, os.time() // 86400)
 			if reward then
@@ -220,9 +237,19 @@ function ChallengeService:Init()
 					data.Titles[reward.title] = true
 				end
 				result = { count = count, credits = reward.credits, freeRP = reward.freeRP, title = reward.title }
+				balance = data.Credits
 			end
 		end)
 		if result then
+			Telemetry.economy(
+				player,
+				"Source",
+				"Credits",
+				result.credits,
+				balance,
+				Telemetry.SOURCES.DailyReward,
+				`Day{Streak.weekDay(result.count)}`
+			)
 			Telemetry.event("DailyReward", result.count, { credits = result.credits }, player)
 		end
 		return result

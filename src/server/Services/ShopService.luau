@@ -8,7 +8,6 @@
 -- as PendingTierUnlock and the server prompts the purchase, so the receipt knows what to grant.
 -- Test servers can grant any product without Robux (admin shop.grant), through the same receipt path.
 
-local AnalyticsService = game:GetService("AnalyticsService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -43,17 +42,19 @@ function ShopService:Grant(player: Player, purchaseId: string, key: string): (st
 	if result == "Granted" then
 		DataService:Save(player)
 		local product = Products.LIST[key]
-		pcall(function()
-			AnalyticsService:LogEconomyEvent(
+		-- Robux sales are on the dashboard's Monetization pages already; the economy gets the Wings they buy.
+		if product.Kind == "Wings" then
+			local data = DataService:GetData(player)
+			Telemetry.economy(
 				player,
-				Enum.AnalyticsEconomyFlowType.Source,
-				"Robux",
-				product.Price,
-				0,
-				Enum.AnalyticsEconomyTransactionType.IAP.Name,
+				"Source",
+				"Wings",
+				product.Amount :: number,
+				data and data.Wings or 0,
+				Telemetry.SOURCES.Purchase,
 				key
 			)
-		end)
+		end
 		Telemetry.event("Purchase", product.Price, { product = key, granted = detail }, player)
 		print(`[Shop] {player.UserId} bought {key}: {detail}`)
 	end

@@ -11,7 +11,6 @@
 --   Free Flight and lessons pay nothing (the results show why).
 --   Economy events (sources and sinks) go to analytics.
 
-local AnalyticsService = game:GetService("AnalyticsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -77,33 +76,25 @@ local function victimKey(identity: any): (string, boolean)
 	return `ai:{identity and identity.Name or "?"}`, true
 end
 
--- Economy analytics (ANL-03): every source and sink of Credits.
-local function economyEvent(
-	player: Player,
-	flow: "Source" | "Sink",
-	amount: number,
-	balance: number,
-	kind: string,
-	sku: string,
-	currency: string?
-)
-	if amount <= 0 then
-		return
-	end
-	pcall(function()
-		local flowType = if flow == "Source"
-			then Enum.AnalyticsEconomyFlowType.Source
-			else Enum.AnalyticsEconomyFlowType.Sink
-		AnalyticsService:LogEconomyEvent(player, flowType, currency or "Credits", amount, balance, kind, sku)
-	end)
-	Telemetry.event(`Economy{flow}`, amount, { kind = kind, item = sku, currency = currency or "Credits" }, player)
+-- Economy analytics (ANL-03): an item's SKU is the jet for modules and skins ("F16A:Engine2" -> "F16A"), so
+-- they stay under the dashboard's 100 SKUs. The custom event keeps the full item.
+local function skuOf(item: string): string
+	return string.match(item, "^[^:]+") or item
 end
 
 -- Logs mastery stars reached (PRG-07) and, if the player is staying, shows a toast for each.
 local function announceMastery(player: Player, data: { [string]: any }, gains: { Mastery.Gain }, toast: boolean)
 	for _, gain in gains do
 		Telemetry.event("MasteryStar", gain.Stars, { airframe = gain.Airframe }, player)
-		economyEvent(player, "Source", gain.Credits, data.Credits, "Mastery", gain.Airframe)
+		Telemetry.economy(
+			player,
+			"Source",
+			"Credits",
+			gain.Credits,
+			data.Credits,
+			Telemetry.SOURCES.Mastery,
+			gain.Airframe
+		)
 		if toast then
 			local airframe = AircraftData.get(gain.Airframe) :: any
 			Net.Server.fire("ChallengeNotice", player, {
@@ -143,9 +134,12 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
+	local levelCredits = 0
 	local mastery: { Mastery.Gain } = {}
 	local function apply(d: { [string]: any })
+		local before = d.Credits
 		levels = Progression.applyRewards(d, rewards, summary)
+		levelCredits = d.Credits - before - rewards.Credits -- levelling up pays too
 		mastery = Mastery.record(d, summary.Events) -- stars from this match's kills (PRG-07)
 	end
 	if push then
@@ -154,8 +148,27 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 		apply(data) -- the session is being released; DataService saves it
 	end
 	tallies[player] = nil
-	economyEvent(player, "Source", rewards.Credits, data.Credits, "MatchReward", "Match")
-	Telemetry.event("MatchRewards", rewards.XP, { credits = rewards.Credits, afk = summary.Afk, won = won }, player)
+	local balance = data.Credits
+	for _, gain in mastery do
+		balance -= gain.Credits
+	end
+	Telemetry.economy(
+		player,
+		"Source",
+		"Credits",
+		rewards.Credits,
+		balance - levelCredits,
+		Telemetry.SOURCES.MatchReward,
+		"Match"
+	)
+	Telemetry.economy(player, "Source", "Credits", levelCredits, balance, Telemetry.SOURCES.LevelUp, "Level")
+	Telemetry.event(
+		"MatchRewards",
+		rewards.XP,
+		{ credits = rewards.Credits, afk = summary.Afk, won = won },
+		player,
+		{ "won", "afk" }
+	)
 	announceMastery(player, data, mastery, push)
 	return {
 		XP = rewards.XP,
@@ -194,9 +207,13 @@ local function awardVsAI(player: Player, data: { [string]: any }, won: boolean):
 		},
 	})
 	local levels = 0
+	local levelCredits = 0
 	DataService:Update(player, function(d)
+		local before = d.Credits
 		levels = Progression.addXP(d, rewards.XP)
+		levelCredits = d.Credits - before
 	end)
+	Telemetry.economy(player, "Source", "Credits", levelCredits, data.Credits, Telemetry.SOURCES.LevelUp, "Level")
 	Telemetry.event("VsAIRewards", rewards.XP, { won = won, afk = afk }, player)
 	return {
 		XP = rewards.XP,
@@ -263,7 +280,15 @@ local function handleIntent(
 		ProgressionService.IntentDone:Fire(player, action, item)
 		local data = DataService:GetData(player)
 		if data and spendsCredits then
-			economyEvent(player, "Sink", creditsBefore - data.Credits, data.Credits, action, item)
+			Telemetry.economy(
+				player,
+				"Sink",
+				"Credits",
+				creditsBefore - data.Credits,
+				data.Credits,
+				action,
+				skuOf(item)
+			)
 		end
 		Telemetry.event(action, 1, { item = item }, player)
 	end
@@ -352,15 +377,7 @@ function ProgressionService:Init()
 			end, false, `{airframeId}:{skinId}`)
 			local data = DataService:GetData(player)
 			if ok and data then
-				economyEvent(
-					player,
-					"Sink",
-					wingsBefore - data.Wings,
-					data.Wings,
-					"BuySkin",
-					`{airframeId}:{skinId}`,
-					"Wings"
-				)
+				Telemetry.economy(player, "Sink", "Wings", wingsBefore - data.Wings, data.Wings, "BuySkin", airframeId)
 			end
 			return ok, err
 		end
@@ -381,7 +398,7 @@ function ProgressionService:Init()
 		end, false, id)
 		local data = DataService:GetData(player)
 		if ok and data then
-			economyEvent(player, "Sink", wingsBefore - data.Wings, data.Wings, "BuyCosmetic", id, "Wings")
+			Telemetry.economy(player, "Sink", "Wings", wingsBefore - data.Wings, data.Wings, "BuyCosmetic", id)
 			redress(player)
 		end
 		return ok, err
@@ -455,9 +472,13 @@ function ProgressionService:Init()
 	-- On joining: levels reached before their milestones existed still pay, and the title shows
 	DataService.ProfileLoaded:Connect(function(player, data)
 		task.spawn(refreshCallsign, player)
+		local paid = 0
 		DataService:Update(player, function(d)
+			local before = d.Credits
 			Progression.claimLevelRewards(d)
+			paid = d.Credits - before
 		end)
+		Telemetry.economy(player, "Source", "Credits", paid, data.Credits, Telemetry.SOURCES.LevelUp, "Level")
 		local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
 		local title = if LevelRewards.titleUnlocked(data.Title or "", data.PilotLevel, allUnlocked, data.Titles)
 			then data.Title

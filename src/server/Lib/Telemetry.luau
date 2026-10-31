@@ -69,16 +69,17 @@ function Telemetry.event(
 	end)
 end
 
--- One step of a recurring funnel (a session id groups one run of it).
-function Telemetry.funnel(player: Player, funnel: string, step: number, stepName: string)
+-- One step of a funnel other than onboarding. sessionId groups one run of it: the dashboard counts the
+-- first time each step is logged per session (and keeps a player's 10 latest sessions).
+function Telemetry.funnel(player: Player, funnel: string, sessionId: string, step: number, stepName: string)
 	remember(`funnel:{funnel}`, step, { step = stepName })
 	pcall(function()
-		AnalyticsService:LogFunnelStepEvent(player, funnel, nil, step, stepName)
+		AnalyticsService:LogFunnelStepEvent(player, funnel, sessionId, step, stepName)
 	end)
 end
 
--- A step of the one-time onboarding funnel (ANL-02). Log each step once per player (TelemetryService keeps
--- track in the save).
+-- A step of the one-time onboarding funnel (ANL-02). Log each step once per player and in order
+-- (Shared/Funnels.reach decides which).
 function Telemetry.onboarding(player: Player, step: number, stepName: string)
 	remember("onboarding", step, { step = stepName })
 	pcall(function()
@@ -91,6 +92,42 @@ function Telemetry.progression(player: Player, path: string, level: number, leve
 	remember(`progression:{path}`, level, { name = levelName })
 	pcall(function()
 		AnalyticsService:LogProgressionEvent(player, path, Enum.AnalyticsProgressionType.Complete, level, levelName)
+	end)
+end
+
+-- Economy transaction types (ANL-03): the dashboard groups sources and sinks by these (more than 20 would
+-- be lumped into "Other"). Roblox's own names where they fit; the item SKU says what exactly.
+Telemetry.SOURCES = table.freeze({
+	MatchReward = "Gameplay", -- a scored match's Credits
+	LevelUp = "LevelUp", -- pilot levels and their milestones
+	Mastery = "Mastery", -- mastery stars (SKU: the jet)
+	Challenge = "Challenge", -- daily and weekly challenges
+	DailyReward = Enum.AnalyticsEconomyTransactionType.TimedReward.Name, -- the login streak
+	Spin = "Spin", -- the free spin
+	Training = Enum.AnalyticsEconomyTransactionType.Onboarding.Name, -- lessons 1–3, once
+	Purchase = Enum.AnalyticsEconomyTransactionType.IAP.Name, -- Wings bought with Robux
+})
+
+-- A Credits or Wings source or sink. amount is positive either way; balance is the player's balance after
+-- it. Keep SKUs few (jets, cosmetics, products): past 100 they show as "Other".
+function Telemetry.economy(
+	player: Player,
+	flow: "Source" | "Sink",
+	currency: "Credits" | "Wings",
+	amount: number,
+	balance: number,
+	transactionType: string,
+	sku: string
+)
+	if amount <= 0 then
+		return
+	end
+	remember(`Economy{flow}`, amount, { kind = transactionType, item = sku, currency = currency })
+	pcall(function()
+		local flowType = if flow == "Source"
+			then Enum.AnalyticsEconomyFlowType.Source
+			else Enum.AnalyticsEconomyFlowType.Sink
+		AnalyticsService:LogEconomyEvent(player, flowType, currency, amount, balance, transactionType, sku)
 	end)
 end
 

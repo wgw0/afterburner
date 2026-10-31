@@ -36,6 +36,7 @@ local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local AircraftService = require(script.Parent.AircraftService)
 local DataService = require(script.Parent.DataService)
 local MatchService = require(script.Parent.MatchService)
+local TelemetryService = require(script.Parent.TelemetryService)
 
 local STATS_KEPT = 500 -- recent waits and matches kept for matchmaking.stats (MMK-06)
 local POLL = 2 -- seconds between matchmaker passes, and between a lobby's checks for players to send
@@ -244,6 +245,7 @@ local function markOnboarded(player: Player, how: string)
 			lessons += 1
 		end
 		Telemetry.event("Onboarded", lessons, { how = how }, player)
+		TelemetryService:Onboarding(player, "Onboarded")
 	end
 end
 function MatchmakingService:MarkOnboarded(player: Player, how: string)
@@ -592,6 +594,7 @@ function MatchmakingService:Init()
 			-- Played before the first-session flow existed: they know their way round
 			DataService:Update(player, function(d)
 				d.Flags.Onboarded = true
+				d.Onboarding.Onboarded = true -- reached, not logged: their funnel ran before this step existed
 			end)
 		end
 	end)

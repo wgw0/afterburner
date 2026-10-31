@@ -387,6 +387,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
   - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
 - [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
+  - Partly done: events checked against Roblox's limits, onboarding funnel reordered and a Training funnel added, every Credits/Wings source now in the economy log; how to read the dashboard in `docs/ANALYTICS.md`. Not yet seen arriving on the published game.
 - [ ] **OPS-03** Event flags (double XP etc.)
 - [ ] **OPS-04** Message of the day and announcements
 - [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
