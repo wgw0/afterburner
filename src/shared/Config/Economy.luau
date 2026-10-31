@@ -26,6 +26,7 @@ Economy.FREE_RP_SHARE = 0.1 -- of every RP award, also paid into a pool spendabl
 
 -- Anti-farming (PRG-05)
 Economy.AI_KILL_FACTOR = 0.5 -- kills on AI pilots pay half
+Economy.VS_AI_XP = 0.5 -- Vs AI on a training server pays pilot XP only, this share of a match's *(tune in playtests)*
 Economy.SAME_VICTIM_FULL_KILLS = 3 -- after this many kills on one victim in a match...
 Economy.SAME_VICTIM_FACTOR = 0.25 -- ...each further kill on them pays a quarter
 Economy.AFK_SECONDS = 60 -- no input this long at the end: no survival or win bonus

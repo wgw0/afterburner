@@ -327,7 +327,8 @@ local function App(props: any)
 	return e("Frame", {
 		Size = UDim2.fromScale(1 / scale, 1 / scale),
 		BackgroundColor3 = Theme.Background,
-		BackgroundTransparency = if screen == "Results" then 0.35 else 0.15,
+		-- The hangar lets the prerendered Strait behind it show through (MenuBackdrop); other screens keep it dim
+		BackgroundTransparency = if screen == "Results" then 0.35 elseif screen == "Hangar" then 0.45 else 0.15,
 		BorderSizePixel = 0,
 	}, {
 		Scale = e("UIScale", { Scale = scale }),

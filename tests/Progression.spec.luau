@@ -141,6 +141,23 @@ return function(ctx)
 			expect(data.Stats.Wins).toBe(1)
 			expect(data.LastWinDay).toBe(7)
 		end)
+
+		it("Vs AI pays pilot XP only, at a share of the match's, and no first win of the day", function()
+			local s = summary({ kill("F14A", "ai1", true), kill("F14A", "ai2", true) }, {
+				last = "F14A",
+				survived = true,
+				won = true,
+				day = 9,
+			})
+			local vs = Progression.vsAIRewards(s)
+			local full = Progression.matchRewards(s, 9) -- already won today: the same bonuses minus the first win
+			expect(vs.Credits).toBe(0)
+			expect(vs.FreeRP).toBe(0)
+			expect(next(vs.RP)).toBe(nil)
+			expect(vs.FirstWin).toBe(false)
+			expect(vs.XP > 0).toBe(true)
+			expect(math.abs(vs.XP - full.XP * Economy.VS_AI_XP) <= #full.Lines).toBe(true) -- rounding per line
+		end)
 	end)
 
 	describe("pilot level", function()

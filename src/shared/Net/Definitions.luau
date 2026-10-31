@@ -128,6 +128,8 @@ local definitions: { [string]: Definition } = {
 	ChallengeNotice = { direction = "ServerToClient", args = { "table" } },
 	-- A new pilot chose to stay in training after the welcome card (TUT-04): no more first-session flow
 	FinishOnboarding = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.2 } },
+	-- A new pilot closed the lobby's welcome window instead of going to training: no more first-session flow
+	SkipOnboarding = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.2 } },
 	-- The daily login reward (LIV-03): claim today's; returns { count, credits, freeRP, title? } or nil
 	ClaimDailyReward = { direction = "Function", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	-- A tutorial lesson finished (TutorialController → TelemetryService, ANL-02)
@@ -142,9 +144,10 @@ local definitions: { [string]: Definition } = {
 	SetCallsign = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Leave the current flight for the hangar (HangarButtonController)
 	ReturnToHangar = { direction = "ClientToServer", args = {}, rate = { burst = 2, perSecond = 0.5 } },
-	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id), leave it, and its state
-	-- back to the player: { state = "Idle" | "Searching" | "Found", mode, waited, message }
-	QueueJoin = { direction = "ClientToServer", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	-- Matchmaking (MatchmakingService): join the queue for a mode ("Any" or a mode id) with the jet you clicked
+	-- PLAY with (it sets your BR), leave it, and its state back to the player:
+	-- { state = "Idle" | "Searching" | "Found", mode, waited, message }
+	QueueJoin = { direction = "ClientToServer", args = { "string", "string?" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
 	-- Report a pilot on this server for cheating (ReportService, CMP-03): targetUserId, reason id (Reports) ->

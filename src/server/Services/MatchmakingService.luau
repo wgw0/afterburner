@@ -47,7 +47,6 @@ local ASSIGN_TTL = 120
 local RECORD_TRIES = 8 -- a reserved server reads its record this many times, 1.5 s apart
 local TELEPORT_TRIES = 3
 local STUDIO_FILL_AFTER = 4 -- a solo test in Studio shouldn't wait 30 s
-local FIRST_SESSION_DELAY = 2 -- a new pilot sees the lobby for a moment before training
 
 local MatchmakingService = {
 	Priority = 51, -- after MatchService
@@ -148,7 +147,7 @@ end
 local studio = RunService:IsStudio()
 local store: Store = if studio then localStore() else memoryStore()
 
-type Queued = { mode: string, joinedAt: number, missingSince: number? }
+type Queued = { mode: string, joinedAt: number, missingSince: number?, airframe: string? }
 local queued: { [Player]: Queued } = {}
 local leaving: { [Player]: boolean } = {} -- a teleport is under way
 local teleportFails: { [Player]: number } = {}
@@ -179,7 +178,8 @@ end
 
 local function entryFor(player: Player, q: Queued): Queue.Entry
 	local data = DataService:GetData(player)
-	local br = data and Matchmaking.lineupBR(data.Lineup) or Matchmaking.DEFAULT_BR
+	-- The jet you clicked PLAY with, if it's in your lineup; else the lineup's best (Matchmaking.queueBR)
+	local br = data and Matchmaking.queueBR(data.Lineup, q.airframe) or Matchmaking.DEFAULT_BR
 	return { userId = player.UserId, br = br, mode = q.mode, joinedAt = q.joinedAt, jobId = game.JobId }
 end
 
@@ -311,15 +311,16 @@ end
 
 ------------------------------------------------------------------------------------------------ queue
 
-local function join(player: Player, mode: string)
+local function join(player: Player, mode: string, airframe: string?)
 	if not ServerRole.isLobby() or not Queue.validMode(mode) or leaving[player] then
 		return
 	end
 	local q = queued[player]
 	if q then
 		q.mode = mode
+		q.airframe = airframe or q.airframe
 	else
-		q = { mode = mode, joinedAt = now() }
+		q = { mode = mode, joinedAt = now(), airframe = airframe }
 		queued[player] = q
 		Telemetry.event("QueueJoined", 1, { mode = mode }, player)
 	end
@@ -568,6 +569,10 @@ function MatchmakingService:Init()
 	end)
 	Net.Server.on("Travel", function(player: Player, target: string)
 		if target == "Training" and ServerRole.isLobby() and not leaving[player] then
+			local data = DataService:GetData(player)
+			if data and not data.Flags.Onboarded then
+				Telemetry.event("FirstSessionTraining", 1, {}, player)
+			end
 			leave(player, true)
 			sendToTraining(player)
 		elseif target == "Lobby" and not ServerRole.isLobby() and not leaving[player] then
@@ -575,22 +580,18 @@ function MatchmakingService:Init()
 			sendToLobby({ player })
 		end
 	end)
-	-- A brand-new pilot joining a lobby: straight to training for lesson 1
-	DataService.ProfileLoaded:Connect(function(player, data)
-		if data.Flags.Onboarded then
-			return
+	-- A brand-new pilot in a lobby gets the welcome window (MenuController): GO TO TRAINING is a Travel, and
+	-- closing it is SkipOnboarding
+	Net.Server.on("SkipOnboarding", function(player: Player)
+		if ServerRole.isLobby() then
+			markOnboarded(player, "Skipped")
 		end
-		if data.Stats.Matches > 0 or next(data.Lessons) ~= nil then
+	end)
+	DataService.ProfileLoaded:Connect(function(player, data)
+		if not data.Flags.Onboarded and (data.Stats.Matches > 0 or next(data.Lessons) ~= nil) then
 			-- Played before the first-session flow existed: they know their way round
 			DataService:Update(player, function(d)
 				d.Flags.Onboarded = true
-			end)
-		elseif ServerRole.isLobby() then
-			task.delay(FIRST_SESSION_DELAY, function()
-				if player.Parent and ServerRole.isLobby() and not queued[player] and not leaving[player] then
-					Telemetry.event("FirstSessionTraining", 1, {}, player)
-					sendToTraining(player)
-				end
 			end)
 		end
 	end)
