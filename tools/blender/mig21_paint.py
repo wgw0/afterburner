@@ -135,9 +135,11 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     # Colour
     colour = np.broadcast_to(scheme["base"] if "base" in scheme else scheme["upper"], shape + (3,)).copy()
     if "camo" in scheme:
-        camo = paint.camouflage(P, scheme)
+        camo = paint.camouflage(P, scheme, N)
         under = np.where(wing | surf | stab, (nz < 0).astype(np.float32), smooth(-0.10, -0.25, z))
         under = np.where(fin | rudder, 0.0, under)
+        if scheme.get("camo_under"):  # the pattern underneath too (Arachnida)
+            under = np.zeros_like(under)
         colour = camo * (1 - under[..., None]) + scheme["underside"] * under[..., None]
     elif not scheme.get("metal"):
         t = np.where(wing | surf | stab, (nz > 0).astype(np.float32), smooth(-0.15, 0.05, z))
@@ -202,6 +204,8 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     metal = np.where(lip | hot, 0.85, metal)
     rough = np.where(hot, 0.45, rough)
     rough = np.maximum(rough, soot * 0.85)
+    if "camo" in scheme:
+        rough, metal = paint.camo_shine(rough, metal)
     keep = cone | antiglare | lip | duct | hot | well
     colour, rough, metal = livery_paint.trim(scheme, P, N, ao, line, colour, rough, metal, fus, wing, fw * chord,
                                              [on("StabilatorL"), on("StabilatorR")], fin | rudder, keep,

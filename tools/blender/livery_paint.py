@@ -115,6 +115,29 @@ SCHEMES.update({
         "rough": 0.5,
         "line_colour": srgb(70, 76, 88),
     },
+    # Arachnida (Will): white orb webs over glossy blue-black, with a few silver spiders, top and bottom
+    "Arachnida": {
+        "camo": [srgb(12, 14, 20), srgb(236, 240, 246), srgb(190, 196, 208)],
+        "camo_style": "web",
+        "camo_scale": 1.5,  # one web per cell of this size (m)
+        "camo_spokes": 11,  # spokes per web: this to this + 3
+        "camo_ring": 0.13,  # ring spacing (m)
+        "camo_thread": 0.009,  # thread half-width (m), thicker near the centre
+        "camo_spiders": 0.25,  # share of webs with a spider
+        "camo_spider_size": 0.55,  # m across the legs
+        "camo_under": True,
+        "underside": srgb(12, 14, 20),
+        "base": srgb(12, 14, 20),
+        "upper": srgb(12, 14, 20),
+        "lower": srgb(12, 14, 20),
+        "radome": srgb(10, 11, 14),
+        "antiglare": srgb(8, 9, 11),
+        "walkway": srgb(30, 32, 38),
+        "insignia": srgb(12, 14, 20),
+        "markings": "none",
+        "rough": 0.28,
+        "line_colour": srgb(26, 28, 34),
+    },
     "TigerStripe": {
         "camo": [srgb(232, 142, 40), srgb(22, 20, 18), srgb(232, 142, 40)],
         "camo_style": "tiger",

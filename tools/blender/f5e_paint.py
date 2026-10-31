@@ -382,14 +382,136 @@ def make_on(part, ids):
     return on
 
 
-def camouflage(P, scheme):
+def _segment(u, v, a, b):
+    """Distance from the points (u, v) to the 2D segment a-b."""
+    du, dv = b[0] - a[0], b[1] - a[1]
+    t = np.clip(((u - a[0]) * du + (v - a[1]) * dv) / (du * du + dv * dv), 0, 1)
+    return np.hypot(u - a[0] - t * du, v - a[1] - t * dv)
+
+
+def _spider(u, v, size, grow=0.0):
+    """A spider seen from above, head towards +v, in surface metres round its centre: 1 on it, else 0.
+    grow fattens it (in the unscaled units), for the dark outline round it."""
+    s = size / 0.28
+    u, v = u / s, v / s
+    body = (((u / (0.034 + grow)) ** 2 + ((v + 0.032) / (0.05 + grow)) ** 2 < 1)
+            | (u * u + (v - 0.03) ** 2 < (0.024 + grow) ** 2))
+    d = np.full(u.shape, 9.0, np.float32)
+    for side in (-1, 1):
+        for k, (base, knee, foot) in enumerate(((30, 45, 25), (70, 80, 75), (110, 105, 120), (145, 140, 160))):
+            a = (0.0, 0.025 - 0.014 * k)
+            kr, fr = 0.075, 0.14
+            b = (side * kr * np.sin(np.radians(knee)), a[1] + kr * np.cos(np.radians(base)) * 0.9 + 0.03)
+            c = (b[0] + side * (fr - kr) * np.sin(np.radians(foot)), b[1] + (fr - kr) * np.cos(np.radians(foot)) * 1.2)
+            d = np.minimum(d, np.minimum(_segment(u, v, a, b), _segment(u, v, b, c)))
+    return (body | (d < 0.0065 + grow)).astype(np.float32)
+
+
+def spider_webs(P, N, scheme):
+    """Orb webs over the airframe (camo_style "web"): returns (thread, spider) coverage, 0..1.
+    Web centres come from a hashed 3D grid (one per cell of camo_scale metres), so every texture set gets the
+    same webs and they join across seams. Each texel belongs to its nearest centre's web (webs meet along
+    shared threads); round the centre: camo_spokes straight spokes and rings of straight segments between
+    them, in the plane across the web's axis (the main direction of the skin's normals in its cell)."""
+    cell = scheme["camo_scale"]
+    q = P / cell
+    base = np.floor(q).astype(np.int64)
+    d1 = np.full(P.shape[:-1], 1e9, np.float32)
+    d2 = np.full(P.shape[:-1], 1e9, np.float32)
+    c1 = np.zeros(P.shape, np.float32)
+    c2 = np.zeros(P.shape, np.float32)
+    k1 = np.zeros(P.shape[:-1] + (3,), np.int64)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                k = base + np.array([dx, dy, dz])
+                jitter = np.stack([_hash(k[..., 0], k[..., 1], k[..., 2], 201 + i) for i in range(3)], -1)
+                c = (k + 0.15 + 0.7 * jitter) * cell
+                dist = np.linalg.norm(P - c, axis=-1)
+                nearer = dist < d1
+                second = ~nearer & (dist < d2)
+                c2 = np.where(nearer[..., None], c1, np.where(second[..., None], c, c2))
+                d2 = np.where(nearer, d1, np.minimum(d2, dist))
+                d1 = np.where(nearer, dist, d1)
+                c1 = np.where(nearer[..., None], c, c1)
+                k1 = np.where(nearer[..., None], k, k1)
+    ki, kj, kk = k1[..., 0], k1[..., 1], k1[..., 2]
+    # Each web's axis: the main direction of the surface normals in its cell (sign-free, so the top and
+    # bottom of a wing agree), from this set's texels. One fixed frame per web keeps spokes straight.
+    n = N / np.maximum(np.linalg.norm(N, axis=-1, keepdims=True), 1e-6)
+    # ...split by which way the skin faces (x, y or z most), so a cell over the fin and the spine, or a wing
+    # root and the fuselage side, makes a web for each surface instead of one axis that fits neither
+    facing = np.argmax(np.abs(n), -1)
+    key = (ki * 73856093) ^ (kj * 19349663) ^ (kk * 83492791) ^ (facing * 2654435761)
+    keys, inverse = np.unique(key.ravel(), return_inverse=True)
+    nf = n.reshape(-1, 3)
+    tensor = np.zeros((len(keys), 3, 3), np.float64)
+    np.add.at(tensor, inverse, nf[:, :, None] * nf[:, None, :])
+    axis = np.linalg.eigh(tensor + np.eye(3) * 1e-9)[1][:, :, 2]  # largest eigenvalue's vector
+    a = axis[inverse].reshape(n.shape).astype(np.float32)
+    ref = np.stack([_hash(ki, kj, kk, 211 + i) - 0.5 for i in range(3)], -1)
+    e1 = np.cross(a, ref)
+    e1 /= np.maximum(np.linalg.norm(e1, axis=-1, keepdims=True), 1e-6)
+    e2 = np.cross(a, e1)
+    d = P - c1
+    u, v = np.sum(d * e1, -1), np.sum(d * e2, -1)  # round the centre's foot on the skin
+    r = np.hypot(u, v)
+    spokes = np.floor(scheme.get("camo_spokes", 11) + 4 * _hash(ki, kj, kk, 223)).astype(np.float32)
+    seg = 2 * np.pi / spokes
+    t = np.mod(np.arctan2(v, u) + 6.3 * _hash(ki, kj, kk, 227), seg)
+    to_spoke = r * np.abs(np.sin(np.minimum(t, seg - t)))
+    ring_r = r * np.cos(t - seg / 2) / np.cos(seg / 2)  # straight segments between the spokes
+    gap = scheme.get("camo_ring", 0.13) * (0.85 + 0.3 * _hash(ki, kj, kk, 229))
+    ring_i = np.round((ring_r - 0.05) / gap)
+    to_ring = np.where(ring_i >= 0, np.abs(ring_r - 0.05 - ring_i * gap), 9.0)
+    # The shared thread where two webs meet, measured along the skin (where the two centres' boundary runs
+    # nearly flat along the skin, a straight-line measure would paint a wide band)
+    grad = (P - c2) / np.maximum(d2, 1e-6)[..., None] - (P - c1) / np.maximum(d1, 1e-6)[..., None]
+    grad = grad - np.sum(grad * n, -1, keepdims=True) * n
+    to_border = (d2 - d1) / np.maximum(np.linalg.norm(grad, axis=-1), 1e-3)
+    width = scheme.get("camo_thread", 0.009) * (1 + 0.7 * np.exp(-r / 0.25))
+    aa = 0.0035
+    thread = np.maximum.reduce([
+        1 - smooth(width - aa, width + aa, to_spoke),
+        1 - smooth(width * 0.8 - aa, width * 0.8 + aa, to_ring),
+        1 - smooth(width * 1.1 - aa, width * 1.1 + aa, to_border),
+    ])
+    # Spiders at some webs' centres
+    has = _hash(ki, kj, kk, 233) < scheme.get("camo_spiders", 0.22)
+    size = scheme.get("camo_spider_size", 0.3)
+    spider = np.where(has, _spider(u, v, size), 0.0)
+    outline = np.where(has, _spider(u, v, size, grow=0.014), 0.0)  # clears the web round it
+    thread = thread * (1 - outline)
+    return thread.astype(np.float32), spider.astype(np.float32)
+
+
+CAMO_SHINE = None  # where the last camouflage() call wants a metal finish (Arachnida's spiders), else None
+
+
+def camo_shine(rough, metal):
+    """Polished metal where the last camouflage() asked for it (call right after it, on the same texels)."""
+    if CAMO_SHINE is None:
+        return rough, metal
+    return rough * (1 - CAMO_SHINE) + 0.22 * CAMO_SHINE, metal * (1 - CAMO_SHINE) + 0.9 * CAMO_SHINE
+
+
+def camouflage(P, scheme, N=None):
     """Hard-edged, wavy camouflage bands from 3D noise, so they wrap continuously over the airframe.
     The two thresholds split the noise into three roughly equal areas. camo_style "splinter" cuts angular,
     straight-edged patches instead; "tiger" paints stripes of the second colour across the first; "digital"
-    cuts the bands into square pixels (the noise is sampled at the centre of each pixel cube)."""
+    cuts the bands into square pixels (the noise is sampled at the centre of each pixel cube); "web" draws
+    spider webs and spiders (spider_webs; needs N, the surface normals)."""
     scale = scheme["camo_scale"]
     style = scheme.get("camo_style", "bands")
     c0, c1, c2 = scheme["camo"]
+    global CAMO_SHINE
+    CAMO_SHINE = None
+    if style == "web":
+        # Arachnida: c0 underneath, c1 web threads, c2 spiders (polished metal: camo_shine). Needs the normals.
+        thread, spider = spider_webs(P, N, scheme)
+        CAMO_SHINE = spider
+        colour = c0 * (1 - thread[..., None]) + c1 * thread[..., None]
+        return colour * (1 - spider[..., None]) + c2 * spider[..., None]
     if style == "splinter":
         # Random planes through the airframe: each texel's side of every plane picks its patch, so every
         # edge is straight. Thresholds at the thirds give three equal areas.
@@ -526,7 +648,7 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     t_upper = np.where(up & (body | frame), np.maximum(t_upper, 1.0), t_upper)
     colour = lower_c * (1 - t_upper[..., None]) + upper_c * t_upper[..., None]
     if "camo" in scheme:
-        colour = camouflage(P, scheme)
+        colour = camouflage(P, scheme, N)
 
     # Panel-to-panel tone variation
     fidx = np.searchsorted(-np.array([Y(f) for f in FRAMES]), -y)
@@ -620,6 +742,8 @@ def paint_airframe(P, N, part, ids, ao, scheme):
     rough = np.where(lip, 0.48, rough)
     metal = np.where(chips, 0.7, metal)
     rough = np.where(chips, 0.45, rough)
+    if "camo" in scheme:
+        rough, metal = camo_shine(rough, metal)
     keep = radome | antiglare | lip | duct | well | (fus & (xd < 95 + 18))
     colour, rough, metal = livery_paint.trim(scheme, P, N, ao, line, colour, rough, metal, fus, wing | surf,
                                              wing_le(np.abs(x)) - y, [on("StabilatorL"), on("StabilatorR")],

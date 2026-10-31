@@ -139,6 +139,15 @@ Cosmetics.LIST = table.freeze({
 		Images = { "rbxassetid://86462251013488" },
 		Order = 4,
 	},
+	CamoArachnida = {
+		Kind = "Camo",
+		DisplayName = "Arachnida",
+		Wings = 400,
+		Skin = "Arachnida",
+		Colours = { rgb(236, 240, 246) },
+		Images = { "rbxassetid://80619780902880" },
+		Order = 5,
+	},
 
 	-- Wing art (DESIGN: 250 R$). Made by tools/cosmetics/wing_art.py; Images = { right wing, left wing }.
 	WingShark = {
