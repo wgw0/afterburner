@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import f16a_paint  # noqa: E402,F401  (sets the shared generator module to the F-16A)
 import f5e_paint as paint  # noqa: E402
 
-CAMOS = ("VIPGold", "ArcticSplinter", "TigerStripe", "MidnightDigital")
+CAMOS = ("VIPGold", "ArcticSplinter", "TigerStripe", "MidnightDigital", "Arachnida")
 SETS = ("Body", "Wings", "Details")
 WIDTH, HEIGHT = 1024, 512
 MARGIN = 0.06  # of the picture, round the jet
