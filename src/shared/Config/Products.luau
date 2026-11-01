@@ -62,6 +62,8 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		TierUnlock5 = 3723990665,
 		CreditsBooster = 3724025598,
 		RPBooster = 3724025817,
+		SeasonPass = 3726720787,
+		Starter = 3726721017,
 	},
 	[10773807904] = { -- the live experience (place 95037764806358)
 		Wings150 = 3723986676,
@@ -74,6 +76,8 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		TierUnlock5 = 3723988280,
 		CreditsBooster = 3724023374,
 		RPBooster = 3724023704,
+		SeasonPass = 3726721441,
+		Starter = 3726721692,
 	},
 }
 

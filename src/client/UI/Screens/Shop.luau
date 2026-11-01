@@ -6,8 +6,11 @@
 -- price is shown before the purchase window; nothing is random or on a fake timer. A product or pass that
 -- isn't created on the dashboard yet says "Coming soon" instead of a buy button. What's still to come (the
 -- season pass, the starter bundle, premium jets) is listed at the bottom.
--- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree(),
---   OnBuyCosmetic(id) -> (ok, err), OnEquipCosmetic(kind, id) -> (ok, err)
+-- The Starter Bundle (once per player) sits under the VIP banner until it's bought; the season pass and this
+-- week's bundle (SHP-05, LIV-04) have their own panels.
+-- props: Data, OnBuyProduct(key) -> (ok, err), OnBuyPass(key) -> (ok, err), OnTechTree(), OnSeason(),
+--   OnBuyCosmetic(id) -> (ok, err), OnEquipCosmetic(kind, id) -> (ok, err), OnChooseStarter(camoId) -> (ok, err),
+--   OnBuyBundle(bundleId) -> (ok, err)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +22,8 @@ local Cosmetics = require(Shared.Cosmetics)
 local Passes = require(Shared.Config.Passes)
 local Perks = require(Shared.Perks)
 local Products = require(Shared.Config.Products)
+local Season = require(Shared.Season)
+local Seasons = require(Shared.Config.Seasons)
 local Shop = require(Shared.Shop)
 local Skins = require(Shared.Skins)
 
@@ -418,6 +423,261 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 	})
 end
 
+local STARTER = Color3.fromRGB(120, 230, 180)
+
+-- The Starter Bundle: pick a camo from the strip, then buy. Shown until it's bought.
+local function StarterBanner(props: { Camos: { string }, Order: number, OnChoose: (string) -> (boolean, string?) })
+	local picked, setPicked = React.useState(props.Camos[1] or "")
+	local message, setMessage = React.useState(nil :: string?)
+	local strip: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8 }) }
+	for i, id in props.Camos do
+		local item = Catalogue.LIST[id]
+		strip[id] = e("ImageButton", {
+			Image = if item.Images then item.Images[1] else "",
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromOffset(120, 64),
+			BackgroundColor3 = Theme.Background,
+			AutoButtonColor = true,
+			LayoutOrder = i,
+			[React.Event.Activated] = function()
+				setPicked(id)
+			end,
+		}, {
+			Corner = C.corner(8),
+			Stroke = if picked == id then C.stroke(STARTER, 2) else nil,
+			Name = e(C.Label, {
+				Text = item.DisplayName,
+				Size = UDim2.new(1, 0, 0, 14),
+				Position = UDim2.new(0, 0, 1, -14),
+				TextSize = 11,
+				Bold = true,
+				Align = "Center",
+				Color = if picked == id then STARTER else Theme.Dim,
+			}),
+		})
+	end
+	local camoWings = if picked ~= "" then Catalogue.LIST[picked].Wings or 0 else 0
+	local boosterRobux = Products.LIST.CreditsBooster.Price * Shop.STARTER.BoosterHours
+	return e(C.Panel, {
+		Size = UDim2.new(1, 0, 0, 186),
+		Padding = 18,
+		LayoutOrder = props.Order,
+		StrokeColor = STARTER,
+		Color = UNDER_WASH,
+	}, {
+		Wash = wash(STARTER, 0.22),
+		Ribbon = e(C.Pill, {
+			Text = "ONCE ONLY",
+			Size = UDim2.fromOffset(100, 22),
+			Position = UDim2.fromScale(1, 0),
+			AnchorPoint = Vector2.new(1, 0),
+			Color = STARTER,
+			TextColor = Theme.Background,
+		}),
+		Title = e(C.Label, {
+			Text = "STARTER BUNDLE",
+			Size = UDim2.new(0.5, 0, 0, 30),
+			Heavy = true,
+			TextSize = 26,
+			Color = STARTER,
+		}),
+		Contents = e(C.Label, {
+			Text = `{if #props.Camos > 0 then "A camo you pick" else "A camo's worth of Wings (you own every camo)"}  ·  {Shop.STARTER.BoosterHours} hours of 2x Credits  ·  {Shop.STARTER.Wings} Wings`,
+			Size = UDim2.new(0.6, 0, 0, 18),
+			Position = UDim2.fromOffset(0, 34),
+			Bold = true,
+			TextSize = 14,
+		}),
+		Worth = e(C.Label, {
+			Text = `On their own: {C.number(camoWings + Shop.STARTER.Wings)} Wings and R$ {boosterRobux} of boosters.`,
+			Size = UDim2.new(0.6, 0, 0, 16),
+			Position = UDim2.fromOffset(0, 56),
+			TextSize = 13,
+			Color = Theme.Dim,
+		}),
+		Strip = e("Frame", {
+			Size = UDim2.new(1, -300, 0, 64),
+			Position = UDim2.new(0, 0, 1, -64),
+			BackgroundTransparency = 1,
+		}, strip),
+		Buy = if Products.idFor("Starter")
+			then e(C.Button, {
+				Text = `GET IT  ·  R$ {Products.LIST.Starter.Price}`,
+				Style = "Primary",
+				Color = STARTER,
+				TextColor = Theme.Background,
+				Size = UDim2.fromOffset(260, 52),
+				Position = UDim2.fromScale(1, 1),
+				AnchorPoint = Vector2.new(1, 1),
+				TextSize = 18,
+				OnClick = function()
+					local ok, err = props.OnChoose(picked)
+					setMessage(if ok then nil else err)
+				end,
+			})
+			else e(C.Label, {
+				Text = "Coming soon",
+				Size = UDim2.fromOffset(260, 52),
+				Position = UDim2.fromScale(1, 1),
+				AnchorPoint = Vector2.new(1, 1),
+				Align = "Center",
+				Color = Theme.Dim,
+			}),
+		Message = if message
+			then e(C.Label, {
+				Text = message,
+				Size = UDim2.fromOffset(260, 16),
+				Position = UDim2.new(1, 0, 1, -58),
+				AnchorPoint = Vector2.new(1, 1),
+				Align = "Center",
+				TextSize = 13,
+				Color = Theme.Warn,
+			})
+			else nil,
+	})
+end
+
+-- The season pass: where you are and what it costs; the Season tab has the track.
+local function SeasonPanel(props: { Data: any, Order: number, OnSeason: () -> () })
+	local now = workspace:GetServerTimeNow()
+	local season = Seasons.at(now)
+	local saved = props.Data.Season or Season.newState()
+	local premium = season ~= nil and saved.Id == season.Id and saved.Premium == true
+	local detail
+	if not season then
+		detail = "The next season is coming soon."
+	elseif premium then
+		detail = `You have the premium pass. Tier {Season.tierFor(saved.XP)} of {Seasons.TIERS}.`
+	else
+		detail = `{Seasons.TIERS} tiers of rewards; premium adds season-only cosmetics and gives back most of its `
+			.. `price in Wings. {C.number(Seasons.PASS_WINGS)} Wings or R$ {Products.LIST.SeasonPass.Price}.`
+	end
+	return e(C.Panel, {
+		Size = UDim2.new(1, 0, 0, 84),
+		Padding = 16,
+		LayoutOrder = props.Order,
+		StrokeColor = GOLD,
+	}, {
+		Title = e(C.Label, {
+			Text = if season then `SEASON PASS  ·  {string.upper(season.Name)}` else "SEASON PASS",
+			Size = UDim2.new(1, -240, 0, 24),
+			Heavy = true,
+			TextSize = 20,
+			Color = GOLD,
+		}),
+		Detail = e(C.Label, {
+			Text = detail,
+			Size = UDim2.new(1, -240, 0, 30),
+			Position = UDim2.fromOffset(0, 26),
+			TextSize = 13,
+			Wrap = true,
+			AlignY = "Top",
+			Color = Theme.Dim,
+		}),
+		Open = e(C.Button, {
+			Text = if premium or not season then "SEE THE SEASON" else "SEE THE PASS",
+			Style = "Primary",
+			Color = GOLD,
+			TextColor = Theme.Background,
+			Size = UDim2.fromOffset(220, 44),
+			Position = UDim2.fromScale(1, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			TextSize = 15,
+			OnClick = props.OnSeason,
+		}),
+	})
+end
+
+-- This week's featured bundle: its items, what it would cost you (owned items aren't charged) and the day it
+-- changes (a real date, not a countdown to pressure anyone).
+local function BundlePanel(props: { Data: any, Order: number, OnBuy: (string) -> (boolean, string?) })
+	local message, setMessage = React.useState(nil :: string?)
+	local now = workspace:GetServerTimeNow()
+	local bundle = Shop.bundleFor(now)
+	local price, items, full = Shop.bundlePrice(props.Data, bundle)
+	local names, camo = {}, nil
+	for _, id in bundle.Items do
+		local item = Catalogue.LIST[id]
+		table.insert(names, if Cosmetics.owns(props.Data, id) then `<s>{item.DisplayName}</s>` else item.DisplayName)
+		if item.Kind == "Camo" and item.Images then
+			camo = item.Images[1]
+		end
+	end
+	local left = if camo then 166 else 0 -- the text starts after the camo's picture
+	local _, nextAt = Shop.week(now)
+	local nextDay = os.date("!%A %d %B", nextAt)
+	local action
+	if #items == 0 then
+		action = e(C.Label, {
+			Text = "OWNED  ✓",
+			Size = UDim2.fromOffset(220, 44),
+			Position = UDim2.fromScale(1, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			Bold = true,
+			Align = "Center",
+			Color = Theme.Good,
+		})
+	else
+		action = e(C.Button, {
+			Text = `{C.number(price)} WINGS`,
+			Style = "Primary",
+			Color = Theme.Wings,
+			Size = UDim2.fromOffset(220, 44),
+			Position = UDim2.fromScale(1, 0.5),
+			AnchorPoint = Vector2.new(1, 0.5),
+			TextSize = 16,
+			OnClick = function()
+				local ok, err = props.OnBuy(bundle.Id)
+				setMessage(if ok then nil else err)
+			end,
+		})
+	end
+	local detail = if #items > 0
+		then `{C.number(full - price)} Wings off the items on their own. Next bundle {nextDay}.`
+		else `Next bundle {nextDay}.`
+	return e(C.Panel, {
+		Size = UDim2.new(1, 0, 0, 110),
+		Padding = 14,
+		LayoutOrder = props.Order,
+		StrokeColor = Theme.Wings,
+	}, {
+		Picture = if camo
+			then e("ImageLabel", {
+				Image = camo,
+				Size = UDim2.fromOffset(150, 82),
+				BackgroundColor3 = Theme.Background,
+				ScaleType = Enum.ScaleType.Fit,
+			}, { Corner = C.corner(8) })
+			else nil,
+		Title = e(C.Label, {
+			Text = `THIS WEEK  ·  {string.upper(bundle.DisplayName)} BUNDLE`,
+			Size = UDim2.new(1, -(left + 250), 0, 24),
+			Position = UDim2.fromOffset(left, 0),
+			Heavy = true,
+			TextSize = 20,
+			Color = Theme.Wings,
+		}),
+		Items = e(C.Label, {
+			Text = table.concat(names, "  ·  "),
+			Rich = true,
+			Size = UDim2.new(1, -(left + 250), 0, 18),
+			Position = UDim2.fromOffset(left, 28),
+			Bold = true,
+			TextSize = 14,
+		}),
+		Detail = e(C.Label, {
+			Text = message or detail,
+			Size = UDim2.new(1, -(left + 250), 0, 32),
+			Position = UDim2.fromOffset(left, 50),
+			TextSize = 13,
+			Wrap = true,
+			AlignY = "Top",
+			Color = if message then Theme.Warn else Theme.Dim,
+		}),
+		Action = action,
+	})
+end
+
 local function clock(seconds: number): string
 	return string.format("%d:%02d", seconds // 60, seconds % 60)
 end
@@ -582,7 +842,7 @@ local function ShopScreen(props: any)
 	children.Vip = e(VipBanner, {
 		Owned = owns("VIP"),
 		Buyable = Passes.idFor("VIP") ~= nil,
-		Order = 2,
+		Order = 1,
 		OnBuy = function()
 			return props.OnBuyPass("VIP")
 		end,
@@ -624,11 +884,17 @@ local function ShopScreen(props: any)
 		})
 	end
 
+	-- The Starter Bundle, once per player, under VIP
+	local starter = Shop.starterOffer(data)
+	if starter then
+		children.Starter = e(StarterBanner, { Camos = starter, Order = 2, OnChoose = props.OnChooseStarter })
+	end
+	children.Season = e(SeasonPanel, { Data = data, Order = 9, OnSeason = props.OnSeason })
+	children.Bundle = e(BundlePanel, { Data = data, Order = 13, OnBuy = props.OnBuyBundle })
+
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)
 	children.Soon = grid(41, {
-		Season = e(Card, { Title = "Season Pass", Detail = "A free and a premium track of rewards.", Order = 3 }),
-		Starter = e(Card, { Title = "Starter Bundle", Detail = "A camo, a booster and Wings, once.", Order = 4 }),
 		Premium = e(Card, { Title = "Premium Jets", Detail = "Named variants with a unique camo.", Order = 5 }),
 	})
 

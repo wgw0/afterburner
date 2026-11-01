@@ -19,6 +19,7 @@ local AircraftData = require(Shared.AircraftData)
 local Environment = require(Shared.Config.Environment)
 local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
+local Seasons = require(Shared.Config.Seasons)
 local Shop = require(Shared.Shop)
 local Mastery = require(Shared.Mastery)
 local Net = require(Shared.Net)
@@ -312,6 +313,44 @@ local COMMANDS: { [string]: Command } = {
 				else `admin-{os.time()}-{math.random(1e6)}`
 			local result, why = ShopService:Grant(who, purchaseId, key)
 			return result ~= nil, if result then `{key}: {result} ({purchaseId})` else `Failed: {why}`
+		end,
+	},
+	-- The first season runs from now for a week, on this server only (until it restarts), to try the season
+	-- pass before a season starts (LIV-04; Seasons.PREVIEW_ATTRIBUTE)
+	["season.preview"] = {
+		testOnly = true,
+		run = function()
+			local now = os.time()
+			local running = Seasons.at(now)
+			if running then
+				return true, `Season {running.Id} is already running`
+			end
+			ReplicatedStorage:SetAttribute(Seasons.PREVIEW_ATTRIBUTE, now - 60)
+			return true, `Season {Seasons.LIST[1].Id} ({Seasons.LIST[1].Name}) runs on this server for a week`
+		end,
+	},
+	-- Puts top-level save fields back (e.g. from data.inspect after a test): { fields = { Name = value, ... } }
+	["data.set"] = {
+		testOnly = true,
+		run = function(admin, args)
+			local who = target(admin, args)
+			local template = PlayerData.template()
+			if not (who and type(args.fields) == "table") then
+				return false, "Usage: data.set { userId?, fields = { Name = value } }"
+			end
+			local names = {}
+			for name in args.fields do
+				if template[name] == nil or name == "Version" then
+					return false, `{name} isn't a save field`
+				end
+				table.insert(names, name)
+			end
+			DataService:Update(who, function(data)
+				for name, value in args.fields do
+					data[name] = value
+				end
+			end)
+			return true, `Set {table.concat(names, ", ")}`
 		end,
 	},
 	["take.pass"] = {
