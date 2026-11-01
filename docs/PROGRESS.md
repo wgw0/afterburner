@@ -348,7 +348,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 
 ## Phase 7: Monetisation
 
-- [ ] **UI-07** Shop screen
+- [x] **UI-07** Shop screen
+  - Built: the §27.9 layout (DEVELOPMENT.md): VIP banner, passes still to buy, boosters, Tier Unlock while there is one, Wings packs, cosmetics, owned passes in one line, coming later; rows wrap on narrow screens. Checked in Studio as an owner and as a new player (pass flags off on the test client).
 - [ ] **UI-08** Season pass and challenges screens
 - [ ] **LIV-04** Season framework and pass progression
 - [x] **SHP-01** Product config (test + prod IDs) and ShopService skeleton
