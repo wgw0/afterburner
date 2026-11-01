@@ -1823,7 +1823,7 @@ Follows DESIGN §8: **never pay-to-win.**
 | Type | Items |
 |---|---|
 | **Game Passes** | VIP Pilot, Extra Lineup Slot, Loadout Presets, Custom Callsign |
-| **Developer Products** | Wings packs (several sizes), Tier Unlocks (Tiers II–V), Season Pass (per season), Starter Bundle, Boosters (RP 1h, Credits 1h), premium jets (or bought with Wings) |
+| **Developer Products** | Wings packs (several sizes), Tier Unlocks (Tiers IV–V), Season Pass (per season), Starter Bundle, Boosters (RP 1h, Credits 1h), premium jets (or bought with Wings) |
 | **Private servers** | Enabled in experience settings with a monthly price |
 | **Subscription** (later) | "Squadron Leader", if Roblox experience subscriptions are available to the experience |
 
@@ -1862,7 +1862,7 @@ end
 
 - Premium jets must have a free equivalent with the **same BR and stats**. The airframe validator checks that a premium airframe's `StatsFrom` points to a free airframe and copies its stats.
 - Booster multipliers cap at ×2 total.
-- Tier Unlocks: only the tier directly above the buyer's highest owned jet, only up to Tier V, exactly two jets of that tier chosen by the buyer before the purchase prompt (stored as a pending choice, so the receipt knows what to grant).
+- Tier Unlocks: only the tier directly above the buyer's highest owned jet, only Tiers IV and V, exactly two jets of that tier chosen by the buyer before the purchase prompt (stored as a pending choice, so the receipt knows what to grant).
 - No product grants modules, performance or top-tier jets. A unit test scans the product config and fails if a product grants anything in a blocked category.
 - Paid random items: none. If ever added, gate them with `PolicyService` (`ArePaidRandomItemsRestricted`) and show odds.
 
@@ -1880,11 +1880,11 @@ end
 
 ### 27.6 As built: products, receipts and Tier Unlocks (SHP-01/02)
 
-- **`Config/Products`** (shared, so the client shows prices): each developer product's kind, Robux price and what it grants, and its id per experience (`idFor` / `keyFor`; none created yet). Wings packs: 150 for 149 R$ (the smallest buys at least one skin), 550 for 499, 1,200 for 999, 2,500 for 1,999. Tier Unlocks II–V: 99, 199, 299, 399 R$. Game passes stay in `Config/Passes` (`PassService`, CMP-01).
+- **`Config/Products`** (shared, so the client shows prices): each developer product's kind, Robux price and what it grants, and its id per experience (`idFor` / `keyFor`; none created yet). Wings packs: 150 for 149 R$ (the smallest buys at least one skin), 550 for 499, 1,200 for 999, 2,500 for 1,999. Tier Unlocks IV and V: 299 and 399 R$ (II and III were dropped in November 2026: those tiers now come in under two hours of play; their dashboard products should be taken off sale). Game passes stay in `Config/Passes` (`PassService`, CMP-01).
 - **`Shared/Shop`** (pure): `grant` applies a product to a save; `processReceipt` is the exactly-once rule: a purchase id already in `ProcessedReceipts` is never granted again; otherwise the grant runs on a deep copy of the save, which replaces the save (with the id remembered) only if the grant succeeded, so an error leaves the save untouched.
 - **`ShopService`** sets the one `MarketplaceService.ProcessReceipt`: no loaded save, an unknown product id or any error → `NotProcessedYet`; a grant → `DataService:Save` straight away (ProfileStore's `Profile:Save`), an analytics economy event and a `Purchase` telemetry event, then `PurchaseGranted`.
-- **Tier Unlock:** `Shop.tierUnlockOffer` is the tier above the player's highest owned jet (none from Tier V up). The Tech Tree shows a "SKIP AHEAD: UNLOCK TIER N" banner; CHOOSE JETS lists that tier's jets, the player picks two and BUY calls `ChooseTierUnlock`, which checks the pick (`Shop.checkTierUnlockChoice`), saves it as `PendingTierUnlock` and prompts the purchase (the receipt can't carry a choice). The grant makes the two jets researched and owned (stock) and clears the choice; if the choice was lost, the first two unowned jets of the tier.
-- **On screen:** the top bar shows your Wings next to Credits (click: the shop). The **SHOP** tab (`UI/Screens/Shop`, UI-07) follows §27.9: the VIP banner (a one-line thank-you once owned), the other game passes you don't own as big cards, boosters, the next Tier Unlock (the section goes once you're past Tier V), Wings packs, cosmetics by kind, the passes you own in one line, then what's coming. Rows wrap, so a narrow screen stacks the cards. Anything without a dashboard id says "Coming soon".
+- **Tier Unlock:** `Shop.tierUnlockOffer` is the tier above the player's highest owned jet, only when that's Tier IV or V (`Products.MIN_UNLOCK_TIER` / `MAX_UNLOCK_TIER`). The Tech Tree shows a "SKIP AHEAD: UNLOCK TIER N" banner; CHOOSE JETS lists that tier's jets, the player picks two and BUY calls `ChooseTierUnlock`, which checks the pick (`Shop.checkTierUnlockChoice`), saves it as `PendingTierUnlock` and prompts the purchase (the receipt can't carry a choice). The grant makes the two jets researched and owned (stock) and clears the choice; if the choice was lost, the first two unowned jets of the tier.
+- **On screen:** the top bar shows your Wings next to Credits (click: the shop). The **SHOP** tab (`UI/Screens/Shop`, UI-07) follows §27.9: the VIP banner (a one-line thank-you once owned), the other game passes you don't own as big cards, boosters, the next Tier Unlock (shown for a Tier III or IV pilot only), Wings packs, cosmetics by kind, the passes you own in one line, then what's coming. Rows wrap, so a narrow screen stacks the cards. Anything without a dashboard id says "Coming soon".
 - **Spending Wings** (first part of SHP-04): every skin sold for Credits can also be bought for `Skins.WINGS_PRICE` (150) Wings, or a skin's own `Wings` price: a second button on its row on the jet's page (`BuySkin` takes a currency; Wings spending is logged as an economy sink). Default and level skins aren't sold. The smallest pack (150 Wings) always buys at least one skin (tested).
 - **Testing without Robux** (test servers): admin `shop.grant { key, jets?, purchaseId? }` grants through the same receipt path (the same `purchaseId` twice shows `AlreadyGranted`), `take.wings { amount }` undoes Wings. Checked in play: 100 Wings granted once, the repeated receipt refused, both undone. `Shop.spec` covers the rules, the copy-or-nothing grant and that products only grant Wings or Tier Unlocks.
 
@@ -1914,7 +1914,7 @@ end
 - **Starter Bundle** (`Starter`, 99 R$, created in both experiences; DESIGN §8.4): once per player, a camo they pick from the ones sold for Wings, 3 hours of 2x Credits and 300 Wings (on their own: 700 Wings and 225 R$ of boosters). The Shop shows it under the VIP banner until it's bought: a strip of the camos to pick from and GET IT. `ChooseStarter` checks the pick, keeps it as `PendingStarter` and prompts the purchase, like the Tier Unlock. A lost choice, or a player who owns every camo, gets a camo's worth of Wings instead; bought twice, its Wings. `data.StarterBought` (replicated).
 - **Weekly bundle** (`Config/Bundles`): six themed bundles of three cosmetics (Display Team, Arctic Patrol, Tiger Meet, Night Raider, Black Widow, Deep Space), one featured each week in turn, changing on Monday at 00:00 UTC, the same for everyone (`Shop.bundleFor`). Bought with Wings (`BuyBundle`, which names the bundle so a purchase can't land on next week's), 25% off the items you don't own yet; owned items are crossed out and not charged. The panel says the real day it changes, with no countdown.
 - **Premium jets** (SHP-06): a premium airframe module names the free jet it's a variant of (`StatsFrom`) and may only set `Id`, `DisplayName`, `NameStatus`, `FallbackName` and `ModelName`; `AircraftData` copies every stat, the tier and the BR from that jet when it loads, and stops boot if a premium module sets anything else or points at a missing or premium jet. Premium jets aren't in the tech tree. None exist yet.
-- **Never pay-to-win, tested** (`PayToWin.spec`): premium jets' stats match their free jet; every product grants only Wings, boosters, Tier Unlocks up to Tier V, the season pass or the Starter Bundle; every cosmetic carries only looks (a fixed list of fields).
+- **Never pay-to-win, tested** (`PayToWin.spec`): premium jets' stats match their free jet; every product grants only Wings, boosters, Tier Unlocks for Tiers IV–V, the season pass or the Starter Bundle; every cosmetic carries only looks (a fixed list of fields).
 
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
 
@@ -1925,7 +1925,7 @@ What sells best on Roblox, and what we most want to sell, goes first and gets th
 1. **VIP Pilot banner** across the top: gold, its four benefits, "One payment. Yours forever", and a big GET VIP · R$ 399 button. It's the best long-term value and Roblox players already know what a VIP pass is. Once owned it shrinks to a one-line thank-you, so owners aren't sold to.
 2. **Game passes** as big cards, each with its own colour, icon, ✓ benefits and the price on the button ("GAME PASS · ONE-TIME"); VIP's card is the banner. Passes you own leave the top and are listed in one line near the end ("YOUR PASSES ✓").
 3. **Boosters** (75 R$, the cheapest buy: the impulse purchase), with a live countdown while running.
-4. **Skip ahead** (the Tier Unlock), only while there's a next tier: the section isn't shown after that.
+4. **Skip ahead** (the Tier Unlock), only for a Tier III or IV pilot (Tiers IV and V are sold): the section isn't shown otherwise.
 5. **Wings packs**, with the per-Robux bonus on each and BEST VALUE on the biggest (true: the most Wings per Robux).
 6. **Cosmetics** by kind, then what's coming.
 

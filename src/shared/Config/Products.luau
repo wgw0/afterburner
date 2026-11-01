@@ -8,7 +8,7 @@
 -- Kinds:
 --   Wings: adds Amount Wings (the premium currency for cosmetics).
 --   TierUnlock: two jets of Tier, chosen by the buyer, researched and owned (Shop.tierUnlockOffer has the
---     rules: only the tier above your highest owned jet, never past Tier V).
+--     rules: only the tier above your highest owned jet, Tiers IV and V only).
 --   Booster: doubles Credits or RP from matches for an hour (Shared/Perks: another adds an hour; capped at
 --     ×2 with VIP).
 --   SeasonPass: the premium track of the season running now (Shared/Season; it can also be bought with Wings).
@@ -26,6 +26,7 @@ export type Product = {
 
 local Products = {}
 
+Products.MIN_UNLOCK_TIER = 4 -- Tiers II and III come in under two hours of play: not worth selling (Will, November 2026)
 Products.MAX_UNLOCK_TIER = 5 -- Tiers VI–VIII are only ever researched (DESIGN §8.3)
 Products.UNLOCK_JETS = 2 -- jets a Tier Unlock grants
 
@@ -35,8 +36,6 @@ Products.LIST = table.freeze({
 	Wings550 = table.freeze({ Kind = "Wings", DisplayName = "550 Wings", Price = 499, Amount = 550 }),
 	Wings1200 = table.freeze({ Kind = "Wings", DisplayName = "1,200 Wings", Price = 999, Amount = 1200 }),
 	Wings2500 = table.freeze({ Kind = "Wings", DisplayName = "2,500 Wings", Price = 1999, Amount = 2500 }),
-	TierUnlock2 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier II", Price = 99, Tier = 2 }),
-	TierUnlock3 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier III", Price = 199, Tier = 3 }),
 	TierUnlock4 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier IV", Price = 299, Tier = 4 }),
 	TierUnlock5 = table.freeze({ Kind = "TierUnlock", DisplayName = "Unlock Tier V", Price = 399, Tier = 5 }),
 	CreditsBooster = table.freeze({
@@ -56,8 +55,6 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		Wings550 = 3723989234,
 		Wings1200 = 3723989437,
 		Wings2500 = 3723989686,
-		TierUnlock2 = 3723989940,
-		TierUnlock3 = 3723990190,
 		TierUnlock4 = 3723990459,
 		TierUnlock5 = 3723990665,
 		CreditsBooster = 3724025598,
@@ -70,8 +67,6 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		Wings550 = 3723986944,
 		Wings1200 = 3723987123,
 		Wings2500 = 3723987371,
-		TierUnlock2 = 3723987579,
-		TierUnlock3 = 3723987793,
 		TierUnlock4 = 3723988148,
 		TierUnlock5 = 3723988280,
 		CreditsBooster = 3724023374,

@@ -355,7 +355,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **LIV-04** Season framework and pass progression
   - Built: `Config/Seasons` (Season 1 "First Light", 9 November 2026 to 4 January 2027, 30 tiers), `Shared/Season` (all XP counts, claim everything reached, unclaimed rewards handed out when the next season starts), `SeasonService`; the premium track for 900 Wings or 449 R$ (the `SeasonPass` product, both experiences); five season-only cosmetics and two titles (§26.7). Tested in `Season.spec`. Checked in Studio with a test season (admin `season.preview`) and Will's test save restored afterwards.
 - [x] **SHP-01** Product config (test + prod IDs) and ShopService skeleton
-  - Built: `Config/Products` (Wings packs, Tier Unlocks II–V) with per-experience ids, `ShopService` (DEVELOPMENT.md §27.6). Checked in Studio and by Will; real purchases need the products created on the dashboard.
+  - Built: `Config/Products` (Wings packs, Tier Unlocks IV–V, II and III dropped in November 2026) with per-experience ids, `ShopService` (DEVELOPMENT.md §27.6). Checked in Studio and by Will; real purchases need the products created on the dashboard.
 - [x] **SHP-02** ProcessReceipt with idempotency and failure safety
   - Built: a purchase id is granted once; the grant works on a copy of the save and is kept only if it succeeds; the save is written straight away. Plus the Tier Unlock (pick two jets on the Tech Tree). Checked in play through `shop.grant` and by Will.
 - [x] **SHP-03** Game pass ownership checks and benefits
