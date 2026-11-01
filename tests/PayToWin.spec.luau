@@ -69,13 +69,14 @@ return function(ctx)
 
 	describe("nothing sold is power", function()
 		it(
-			"products grant only Wings, boosters, Tier Unlocks up to Tier V, the season pass or the starter bundle",
+			"products grant only Wings, boosters, Tier Unlocks for Tiers IV–V, the season pass or the starter bundle",
 			function()
 				local allowed = { Wings = true, Booster = true, TierUnlock = true, SeasonPass = true, Starter = true }
 				for _, product in Products.LIST do
 					expect(allowed[product.Kind]).toBe(true)
 					if product.Kind == "TierUnlock" then
-						expect((product.Tier :: number) <= Products.MAX_UNLOCK_TIER).toBe(true)
+						local tier = product.Tier :: number
+						expect(tier >= Products.MIN_UNLOCK_TIER and tier <= Products.MAX_UNLOCK_TIER).toBe(true)
 					end
 				end
 			end

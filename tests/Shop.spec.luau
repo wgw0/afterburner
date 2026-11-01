@@ -46,9 +46,11 @@ return function(ctx)
 			expect(smallest >= Skins.WINGS_PRICE).toBe(true)
 		end)
 
-		it("Tier Unlocks exist for Tiers II to V and cost more each tier", function()
+		it("Tier Unlocks exist for Tiers IV and V only, and cost more each tier", function()
+			expect(Products.tierUnlockKey(2)).toBe(nil)
+			expect(Products.tierUnlockKey(3)).toBe(nil)
 			local last = 0
-			for tier = 2, 5 do
+			for tier = 4, 5 do
 				local product = Products.LIST[`TierUnlock{tier}`]
 				expect(product ~= nil).toBe(true)
 				expect(product.Price > last).toBe(true)
@@ -59,11 +61,20 @@ return function(ctx)
 	end)
 
 	describe("Tier Unlock offer", function()
-		it("a new account is offered Tier II, all of its jets to pick from", function()
-			local offer = Shop.tierUnlockOffer(fresh()) :: Shop.Offer
-			expect(offer.tier).toBe(2)
+		it("nothing before Tier IV: Tiers II and III come quickly enough to play for", function()
+			local data = fresh()
+			expect(Shop.tierUnlockOffer(data)).toBe(nil)
+			give(data, "F4E")
+			expect(Shop.tierUnlockOffer(data)).toBe(nil)
+		end)
+
+		it("a Tier III pilot is offered Tier IV, all of its jets to pick from", function()
+			local data = fresh()
+			give(data, "F16A")
+			local offer = Shop.tierUnlockOffer(data) :: Shop.Offer
+			expect(offer.tier).toBe(4)
 			table.sort(offer.jets)
-			expect(table.concat(offer.jets, ",")).toBe("F4E,MiG23MLD,MirageF1")
+			expect(table.concat(offer.jets, ",")).toBe("F15C,FA18C,Su27S,TornadoF3")
 		end)
 
 		it("always the tier above your highest owned jet, and nothing past Tier V", function()
@@ -76,11 +87,12 @@ return function(ctx)
 
 		it("the choice must be two different jets of that tier", function()
 			local data = fresh()
-			expect((Shop.checkTierUnlockChoice(data, { "F4E", "MirageF1" }))).toBe(2)
-			expect((Shop.checkTierUnlockChoice(data, { "F4E" }))).toBe(nil)
-			expect((Shop.checkTierUnlockChoice(data, { "F4E", "F4E" }))).toBe(nil)
-			expect((Shop.checkTierUnlockChoice(data, { "F4E", "F16A" }))).toBe(nil)
-			expect((Shop.checkTierUnlockChoice(data, { "F4E", "MirageF1", "MiG23MLD" }))).toBe(nil)
+			give(data, "F16A")
+			expect((Shop.checkTierUnlockChoice(data, { "F15C", "Su27S" }))).toBe(4)
+			expect((Shop.checkTierUnlockChoice(data, { "F15C" }))).toBe(nil)
+			expect((Shop.checkTierUnlockChoice(data, { "F15C", "F15C" }))).toBe(nil)
+			expect((Shop.checkTierUnlockChoice(data, { "F15C", "F16C" }))).toBe(nil)
+			expect((Shop.checkTierUnlockChoice(data, { "F15C", "Su27S", "FA18C" }))).toBe(nil)
 		end)
 	end)
 
@@ -106,24 +118,26 @@ return function(ctx)
 
 		it("a Tier Unlock grants the two chosen jets, researched and owned, and clears the choice", function()
 			local data = fresh()
-			data.PendingTierUnlock = { Tier = 2, Jets = { "MiG23MLD", "MirageF1" } }
-			local result, detail = Shop.processReceipt(data, "p1", "TierUnlock2")
+			give(data, "F16A")
+			data.PendingTierUnlock = { Tier = 4, Jets = { "Su27S", "TornadoF3" } }
+			local result, detail = Shop.processReceipt(data, "p1", "TierUnlock4")
 			expect(result).toBe("Granted")
 			expect(detail ~= nil).toBe(true)
-			for _, id in { "MiG23MLD", "MirageF1" } do
+			for _, id in { "Su27S", "TornadoF3" } do
 				expect(data.Aircraft[id].Owned and data.Aircraft[id].Researched).toBe(true)
 			end
-			expect(data.Aircraft.F4E).toBe(nil)
+			expect(data.Aircraft.F15C).toBe(nil)
 			expect(data.PendingTierUnlock).toBe(false)
-			expect((Shop.tierUnlockOffer(data) :: Shop.Offer).tier).toBe(3)
+			expect((Shop.tierUnlockOffer(data) :: Shop.Offer).tier).toBe(5)
 		end)
 
 		it("a Tier Unlock with its choice lost still grants two jets of that tier", function()
 			local data = fresh()
-			Shop.processReceipt(data, "p1", "TierUnlock2")
+			give(data, "F16A")
+			Shop.processReceipt(data, "p1", "TierUnlock4")
 			local count = 0
 			for _, node in TechTree.NODES do
-				if node.Tier == 2 and data.Aircraft[node.Id] and data.Aircraft[node.Id].Owned then
+				if node.Tier == 4 and data.Aircraft[node.Id] and data.Aircraft[node.Id].Owned then
 					count += 1
 				end
 			end

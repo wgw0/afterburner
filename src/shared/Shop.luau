@@ -33,10 +33,11 @@ function Shop.highestTier(data: { [string]: any }): number
 end
 
 -- The Tier Unlock this player can buy: the tier above their highest owned jet, with the jets of that tier
--- they could pick from; nil once they own a Tier V jet or above (Tiers VI–VIII are only ever researched).
+-- they could pick from; nil until that's Tier IV (Products.MIN_UNLOCK_TIER) and once they own a Tier V jet
+-- or above (Tiers VI–VIII are only ever researched).
 function Shop.tierUnlockOffer(data: { [string]: any }): Offer?
 	local tier = Shop.highestTier(data) + 1
-	if tier > Products.MAX_UNLOCK_TIER then
+	if tier < Products.MIN_UNLOCK_TIER or tier > Products.MAX_UNLOCK_TIER then
 		return nil
 	end
 	local jets = {}
