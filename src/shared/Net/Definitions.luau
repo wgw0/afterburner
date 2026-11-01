@@ -158,6 +158,8 @@ local definitions: { [string]: Definition } = {
 	QueueJoin = { direction = "ClientToServer", args = { "string", "string?" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- An admin's message to every player on every server (OPS-04): { text, seconds }
+	Announcement = { direction = "ServerToClient", args = { "table" } },
 	-- Parties (MMK-05, PartyService): invite someone on this server, answer an invite (inviter, yes), remove a
 	-- member (leader), leave; PartyState tells each member their party and invites
 	PartyInvite = { direction = "Function", args = { "number" }, rate = { burst = 4, perSecond = 1 } },

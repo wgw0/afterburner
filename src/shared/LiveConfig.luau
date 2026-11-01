@@ -8,10 +8,14 @@
 --   event             an event name shown in the menu ("" = none), e.g. "Double XP weekend"
 --   motd              a message of the day shown in the menu ("" = none)
 -- validate() is the only gate for what can be set (the admin commands use it).
+-- Scheduled events (OPS-03, Shared/Events) come on top: while one runs, each economy multiplier is the
+-- higher of the override and the event's, and the banner shows the event's name if no event override is set.
 
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AircraftData = require(script.Parent.AircraftData)
+local Events = require(script.Parent.Events)
 
 export type Spec =
 	{ kind: "number", min: number, max: number, default: number }
@@ -73,14 +77,55 @@ function LiveConfig.attributeName(key: string): string
 	return "LC_" .. key:gsub("%.", "_")
 end
 
--- A key's current value: the override if one is set, else the default.
+LiveConfig.EVENTS_ATTRIBUTE = "LiveEvents" -- the schedule as JSON (ConfigService)
+
+local decoded: { text: string, schedule: { Events.Event } } = { text = "", schedule = {} }
+
+-- The event schedule ConfigService shared (oldest first).
+function LiveConfig.schedule(): { Events.Event }
+	local text = ReplicatedStorage:GetAttribute(LiveConfig.EVENTS_ATTRIBUTE)
+	if type(text) ~= "string" or text == "" then
+		return {}
+	end
+	if text ~= decoded.text then
+		local ok, raw = pcall(HttpService.JSONDecode, HttpService, text)
+		decoded = { text = text, schedule = if ok then Events.clean(raw) else {} }
+	end
+	return decoded.schedule
+end
+
+local function serverNow(): number
+	local ok, t = pcall(function()
+		return workspace:GetServerTimeNow()
+	end)
+	return if ok and type(t) == "number" then t else os.time()
+end
+
+-- The scheduled event running now (or at `now`), or nil.
+function LiveConfig.activeEvent(now: number?): Events.Event?
+	return Events.active(LiveConfig.schedule(), now or serverNow())
+end
+
+local EVENT_FIELDS = { ["economy.xp"] = "xp", ["economy.credits"] = "credits", ["economy.rp"] = "rp" }
+
+-- A key's current value: the override if one is set, else the default; a running event raises the economy
+-- multipliers and names the event.
 function LiveConfig.get(key: string): any
 	local spec = LiveConfig.spec(key)
 	local value = ReplicatedStorage:GetAttribute(LiveConfig.attributeName(key))
-	if value ~= nil and spec and LiveConfig.validate(key, value) then
-		return value
+	if value == nil or not spec or not LiveConfig.validate(key, value) then
+		value = spec and spec.default
 	end
-	return spec and spec.default
+	local field = EVENT_FIELDS[key]
+	if field or key == "event" then
+		local event = LiveConfig.activeEvent()
+		if event and field then
+			value = math.max(value, (event :: any)[field])
+		elseif event and value == "" then
+			value = event.name
+		end
+	end
+	return value
 end
 
 -- A jet's battle rating, live override included. Use this, not AircraftData's BattleRating, everywhere.

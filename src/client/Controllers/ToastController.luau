@@ -1,7 +1,8 @@
 --!strict
 -- Toasts (LIV-01/02): a card under the top of the screen when a challenge completes or an achievement is
 -- earned (ChallengeNotice), in the menu's navy and orange, one at a time for SHOW seconds, in flight or in
--- the menu. A chime plays with each (UIConfirm, or LevelUp for an achievement).
+-- the menu. A chime plays with each (UIConfirm, or LevelUp for an achievement). Admin announcements (OPS-04)
+-- use the same card, taller so two lines fit, for as long as the admin asked.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -57,6 +58,12 @@ local function showNext()
 	showing = true
 	local notice = table.remove(queue, 1)
 	local achievement = notice.kind == "Achievement"
+	local tall = notice.kind == "Announcement" -- two lines of text, no reward line
+	card.Size = UDim2.fromOffset(WIDTH, if tall then HEIGHT + 16 else HEIGHT)
+	textLabel.Size = UDim2.new(1, -28, 0, if tall then 44 else 22)
+	textLabel.TextWrapped = tall
+	textLabel.TextTruncate = if tall then Enum.TextTruncate.None else Enum.TextTruncate.AtEnd
+	rewardLabel.Visible = not tall
 	kindLabel.Text = if notice.heading
 		then notice.heading
 		elseif achievement then "ACHIEVEMENT UNLOCKED"
@@ -83,7 +90,7 @@ local function showNext()
 	TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.new(0.5, 0, 0, 64),
 	}):Play()
-	task.delay(SHOW, function()
+	task.delay(notice.seconds or SHOW, function()
 		local out = TweenService:Create(card, TweenInfo.new(0.25), { Position = UDim2.new(0.5, 0, 0, -HEIGHT) })
 		out:Play()
 		out.Completed:Wait()
@@ -132,6 +139,15 @@ function ToastController:Start()
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	Net.Client.on("ChallengeNotice", function(notice: any)
 		table.insert(queue, notice)
+		showNext()
+	end)
+	Net.Client.on("Announcement", function(message: any)
+		table.insert(queue, {
+			kind = "Announcement",
+			heading = "ANNOUNCEMENT",
+			text = tostring(message.text),
+			seconds = math.clamp(tonumber(message.seconds) or 10, 5, 60),
+		})
 		showNext()
 	end)
 end

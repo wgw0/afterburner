@@ -395,8 +395,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
 - [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
   - Partly done: events checked against Roblox's limits, onboarding funnel reordered and a Training funnel added, every Credits/Wings source now in the economy log; how to read the dashboard in `docs/ANALYTICS.md`. Not yet seen arriving on the published game.
-- [ ] **OPS-03** Event flags (double XP etc.)
-- [ ] **OPS-04** Message of the day and announcements
+- [x] **OPS-03** Event flags (double XP etc.)
+  - Built: events scheduled ahead (name, UTC start and end, XP / Credits / RP multipliers) that start and stop on their own, kept with the live config; admin `event.add` / `event.remove` / `event.list`; the hangar banner shows the event and when it ends (`Shared/Events`, DEVELOPMENT.md §31.4; `Events.spec`). Checked in Studio.
+- [x] **OPS-04** Message of the day and announcements
+  - Built: the message of the day is the `motd` live override (OPS-01); admin `announce { text, seconds? }` reaches every player on every server at once as a toast (§31.4). Checked in Studio.
 - [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
   - Includes the Right to Erasure webhook in Creator Hub and a way to delete a player's data when asked (DEVELOPMENT.md §32.3: what to delete and the setup steps).
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI
