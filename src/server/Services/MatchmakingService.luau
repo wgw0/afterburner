@@ -13,6 +13,10 @@
 --   First session (TUT-04): a brand-new pilot (never onboarded, no matches, no lessons) joining a lobby goes
 --   straight to a training server, where lesson 1 starts. Going back to a lobby (MULTIPLAYER, or SKIP TO
 --   MULTIPLAYER on the welcome card) marks them onboarded, so it only happens once.
+--   Parties (MMK-05, PartyService): the leader's PLAY queues the whole party as one entry (its BR is the
+--   highest of each member's selected jet); any member can cancel; a party that changes stops searching.
+--   The match record sets each player's team so a party flies together, and after the match each party goes
+--   home together and is put back together in the lobby.
 --   Studio can't reserve servers or teleport, so there the queue is local and a formed match (or Travel)
 --   switches this server's role in place instead.
 
@@ -28,6 +32,7 @@ local MatchRules = require(Shared.MatchRules)
 local Matchmaking = require(Shared.Matchmaking)
 local MatchmakingStats = require(Shared.MatchmakingStats)
 local Net = require(Shared.Net)
+local Party = require(Shared.Party)
 local Places = require(Shared.Config.Places)
 local Queue = require(Shared.Queue)
 local ServerRole = require(Shared.ServerRole)
@@ -36,6 +41,7 @@ local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 local AircraftService = require(script.Parent.AircraftService)
 local DataService = require(script.Parent.DataService)
 local MatchService = require(script.Parent.MatchService)
+local PartyService = require(script.Parent.PartyService)
 local TelemetryService = require(script.Parent.TelemetryService)
 
 local STATS_KEPT = 500 -- recent waits and matches kept for matchmaking.stats (MMK-06)
@@ -149,7 +155,7 @@ local studio = RunService:IsStudio()
 local store: Store = if studio then localStore() else memoryStore()
 
 type Queued = { mode: string, joinedAt: number, missingSince: number?, airframe: string? }
-local queued: { [Player]: Queued } = {}
+local queued: { [Player]: Queued } = {} -- by the player, or a party's leader (the entry is the whole party)
 local leaving: { [Player]: boolean } = {} -- a teleport is under way
 local teleportFails: { [Player]: number } = {}
 local modeTurn = 0
@@ -169,6 +175,16 @@ local function sendState(player: Player, payload: { [string]: any })
 	Net.Server.fire("QueueState", player, payload)
 end
 
+-- The same queue state to everyone in a player's party (just them on their own).
+local function tellParty(player: Player, payload: { [string]: any })
+	for _, userId in PartyService:MembersOf(player) do
+		local member = Players:GetPlayerByUserId(userId)
+		if member then
+			sendState(member, payload)
+		end
+	end
+end
+
 local function despawnAll(player: Player?)
 	for _, jet in AircraftService:GetJets() do
 		if player == nil or jet.pilot == player then
@@ -177,11 +193,31 @@ local function despawnAll(player: Player?)
 	end
 end
 
+-- A player's (or party's) queue entry. Each pilot's BR is the jet they picked: the one PLAY was clicked
+-- with for the player who clicked it, the jet selected in the hangar for the rest of a party; if it isn't in
+-- their lineup, the lineup's best (Matchmaking.queueBR). A party's BR is its highest.
 local function entryFor(player: Player, q: Queued): Queue.Entry
-	local data = DataService:GetData(player)
-	-- The jet you clicked PLAY with, if it's in your lineup; else the lineup's best (Matchmaking.queueBR)
-	local br = data and Matchmaking.queueBR(data.Lineup, q.airframe) or Matchmaking.DEFAULT_BR
-	return { userId = player.UserId, br = br, mode = q.mode, joinedAt = q.joinedAt, jobId = game.JobId }
+	local members = PartyService:MembersOf(player)
+	local br = nil
+	for _, userId in members do
+		local member = Players:GetPlayerByUserId(userId)
+		local data = member and DataService:GetData(member)
+		if data then
+			local picked = if member == player then q.airframe else data.Settings and data.Settings.SelectedJet
+			local mine = Matchmaking.queueBR(data.Lineup, picked)
+			if mine and (br == nil or mine > br) then
+				br = mine
+			end
+		end
+	end
+	return {
+		userId = player.UserId,
+		members = if #members > 1 then members else nil,
+		br = br or Matchmaking.DEFAULT_BR,
+		mode = q.mode,
+		joinedAt = q.joinedAt,
+		jobId = game.JobId,
+	}
 end
 
 ------------------------------------------------------------------------------------------------ roles
@@ -196,7 +232,10 @@ local function becomeTraining()
 	MatchService:SetMode("FreeFlight")
 end
 
+local matchRecord: any = nil -- this match server's record (parties go home together)
+
 local function becomeMatch(record: any)
+	matchRecord = record
 	ReplicatedStorage:SetAttribute("ServerRole", "Match")
 	MatchService:StartFromRecord(record)
 end
@@ -270,8 +309,9 @@ local function teleport(placeId: number, players: { Player }, options: TeleportO
 	return false
 end
 
--- Back to a lobby: after a match, or LEAVE / MULTIPLAYER.
-local function sendToLobby(players: { Player })
+-- Back to a lobby: after a match, or LEAVE / MULTIPLAYER. party: { leader, members } to put back together
+-- there (PartyService), sent as teleport data.
+local function sendToLobby(players: { Player }, party: { [string]: any }?)
 	if studio then
 		despawnAll(nil)
 		becomeLobby()
@@ -280,11 +320,39 @@ local function sendToLobby(players: { Player })
 	for _, player in players do
 		leaving[player] = true
 	end
-	if not teleport(Places.lobby(), players, nil) then
+	local options = nil
+	if party then
+		options = Instance.new("TeleportOptions")
+		options:SetTeleportData({ party = party })
+	end
+	if not teleport(Places.lobby(), players, options) then
 		for _, player in players do
 			leaving[player] = nil
 			Net.Server.fire("SpawnRefused", player, "Couldn't reach a lobby just now. Try again in a moment.")
 		end
+	end
+end
+
+-- After a match: each party home together (so it lands on one lobby server and re-forms), everyone else in
+-- one group.
+local function sendEveryoneHome()
+	local rest = Players:GetPlayers()
+	for _, members in (matchRecord and matchRecord.parties) or {} do
+		local group = {}
+		for _, userId in members do
+			local player = Players:GetPlayerByUserId(userId)
+			local i = player and table.find(rest, player)
+			if i then
+				table.insert(group, player)
+				table.remove(rest, i)
+			end
+		end
+		if #group > 0 then
+			task.spawn(sendToLobby, group, if #group > 1 then { leader = members[1], members = members } else nil)
+		end
+	end
+	if #rest > 0 then
+		sendToLobby(rest)
 	end
 end
 
@@ -317,6 +385,11 @@ local function join(player: Player, mode: string, airframe: string?)
 	if not ServerRole.isLobby() or not Queue.validMode(mode) or leaving[player] then
 		return
 	end
+	local leader = PartyService:LeaderOf(player)
+	if leader and leader ~= player.UserId then
+		sendState(player, { state = "Idle", message = "Your party's leader starts the search." })
+		return
+	end
 	local q = queued[player]
 	if q then
 		q.mode = mode
@@ -333,10 +406,10 @@ local function join(player: Player, mode: string, airframe: string?)
 		sendState(player, { state = "Idle", message = "Matchmaking is busy. Try again in a moment." })
 		return
 	end
-	sendState(player, { state = "Searching", mode = mode, waited = now() - q.joinedAt })
+	tellParty(player, { state = "Searching", mode = mode, waited = now() - q.joinedAt })
 end
 
-local function leave(player: Player, quiet: boolean?)
+local function leave(player: Player, quiet: boolean?, message: string?)
 	local q = queued[player]
 	if not q then
 		return
@@ -346,7 +419,16 @@ local function leave(player: Player, quiet: boolean?)
 	Telemetry.event("QueueLeft", now() - q.joinedAt, { mode = q.mode }, player)
 	MatchmakingStats.push(stats.gaveUp, now() - q.joinedAt, STATS_KEPT)
 	if not quiet then
-		sendState(player, { state = "Idle" })
+		tellParty(player, { state = "Idle", message = message })
+	end
+end
+
+-- A party member's CANCEL stops the party's search.
+local function cancel(player: Player)
+	local leader = PartyService:LeaderOf(player)
+	local owner = if leader then Players:GetPlayerByUserId(leader) else player
+	if owner then
+		leave(owner)
 	end
 end
 
@@ -369,27 +451,35 @@ end
 
 -- An assignment from the matchmaker: send these players (the ones still here and queued) to their match.
 local function sendGroup(assignment: any)
-	local entries: { [number]: any } = {}
+	local entries: { [number]: any } = {} -- by the player or party leader
 	for _, entry in assignment.entries do
 		entries[entry.userId] = entry
 	end
-	local players = {}
-	for userId in entries do
-		local player = Players:GetPlayerByUserId(userId)
-		if player and queued[player] then
-			table.insert(players, player)
+	local players, owners = {}, {}
+	for userId, entry in entries do
+		local owner = Players:GetPlayerByUserId(userId)
+		if owner and queued[owner] then
+			table.insert(owners, owner)
+			for _, memberId in Queue.users(entry) do
+				local member = Players:GetPlayerByUserId(memberId)
+				if member then
+					table.insert(players, member)
+				end
+			end
 		end
 	end
 	if #players == 0 then
 		return
 	end
+	for _, owner in owners do
+		local q = queued[owner]
+		queued[owner] = nil
+		Telemetry.event("QueueMatched", now() - q.joinedAt, { mode = assignment.mode }, owner)
+		MatchmakingStats.push(stats.matched, now() - q.joinedAt, STATS_KEPT)
+	end
 	for _, player in players do
-		local q = queued[player]
-		queued[player] = nil
 		leaving[player] = true
 		sendState(player, { state = "Found", mode = assignment.mode })
-		Telemetry.event("QueueMatched", now() - q.joinedAt, { mode = assignment.mode }, player)
-		MatchmakingStats.push(stats.matched, now() - q.joinedAt, STATS_KEPT)
 	end
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = assignment.code
@@ -397,11 +487,13 @@ local function sendGroup(assignment: any)
 		-- Back to the front of the queue (their original join time)
 		for _, player in players do
 			leaving[player] = nil
-			if player.Parent then
-				local entry = entries[player.UserId]
-				queued[player] = { mode = entry.mode, joinedAt = entry.joinedAt }
-				pcall(store.queueSet, keyOf(player.UserId), entryFor(player, queued[player]))
-				sendState(player, {
+		end
+		for _, owner in owners do
+			if owner.Parent then
+				local entry = entries[owner.UserId]
+				queued[owner] = { mode = entry.mode, joinedAt = entry.joinedAt }
+				pcall(store.queueSet, keyOf(owner.UserId), entryFor(owner, queued[owner]))
+				tellParty(owner, {
 					state = "Searching",
 					mode = entry.mode,
 					waited = now() - entry.joinedAt,
@@ -447,12 +539,26 @@ local function pickMode(): string
 end
 
 local function makeMatch(match: Queue.Match)
-	local users = {}
+	local users, groups, parties = {}, {}, {}
 	for _, entry in match.entries do
-		table.insert(users, entry.userId)
+		local members = Queue.users(entry)
+		table.move(members, 1, #members, #users + 1, users)
+		table.insert(groups, members)
+		if #members > 1 then
+			table.insert(parties, members)
+		end
 		pcall(store.queueRemove, keyOf(entry.userId))
 	end
-	local record = { role = "Match", mode = match.mode, players = users, band = match.band, formed = now() }
+	local record =
+		{ role = "Match", mode = match.mode, players = users, band = match.band, formed = now(), parties = parties }
+	-- Team modes: parties kept together, teams as even as can be (keys are strings: the record is JSON)
+	local teams = (MatchRules.MODES :: any)[match.mode] and (MatchRules.MODES :: any)[match.mode].Teams
+	if teams then
+		record.teams = {}
+		for userId, team in Party.splitTeams(groups, teams) do
+			record.teams[tostring(userId)] = team
+		end
+	end
 	-- Value: the longest wait in it (s). Sent: the mode and the BR spread; AI seats in the log (MMK-06)
 	local spread = math.round(match.spread * 10) / 10
 	Telemetry.event(
@@ -566,8 +672,29 @@ function MatchmakingService:Init()
 	resolveRole()
 
 	Net.Server.on("QueueJoin", join)
-	Net.Server.on("QueueLeave", function(player: Player)
-		leave(player)
+	Net.Server.on("QueueLeave", cancel)
+	-- A party that changes (someone joins, leaves or is removed) stops searching: press PLAY again
+	PartyService.Changed:Connect(function(userIds: { number })
+		local stopped = false
+		for owner in queued do
+			local entryUsers = PartyService:MembersOf(owner)
+			for _, userId in userIds do
+				if table.find(entryUsers, userId) then
+					leave(owner, true)
+					stopped = true
+					break
+				end
+			end
+		end
+		if stopped then
+			-- Everyone the change touched, including anyone who just left the party
+			for _, userId in userIds do
+				local player = Players:GetPlayerByUserId(userId)
+				if player then
+					sendState(player, { state = "Idle", message = "Your party changed. Press PLAY to search again." })
+				end
+			end
+		end
 	end)
 	Net.Server.on("Travel", function(player: Player, target: string)
 		if target == "Training" and ServerRole.isLobby() and not leaving[player] then
@@ -599,9 +726,7 @@ function MatchmakingService:Init()
 		end
 	end)
 	-- After a match's results, everyone goes back to a lobby
-	MatchService.MatchOver:Connect(function()
-		sendToLobby(Players:GetPlayers())
-	end)
+	MatchService.MatchOver:Connect(sendEveryoneHome)
 
 	TeleportService.TeleportInitFailed:Connect(
 		function(player: Player, result: Enum.TeleportResult, message: string, placeId: number, options: any)

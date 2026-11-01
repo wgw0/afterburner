@@ -158,6 +158,13 @@ local definitions: { [string]: Definition } = {
 	QueueJoin = { direction = "ClientToServer", args = { "string", "string?" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- Parties (MMK-05, PartyService): invite someone on this server, answer an invite (inviter, yes), remove a
+	-- member (leader), leave; PartyState tells each member their party and invites
+	PartyInvite = { direction = "Function", args = { "number" }, rate = { burst = 4, perSecond = 1 } },
+	PartyRespond = { direction = "Function", args = { "number", "boolean" }, rate = { burst = 4, perSecond = 1 } },
+	PartyKick = { direction = "Function", args = { "number" }, rate = { burst = 3, perSecond = 1 } },
+	PartyLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 1 } },
+	PartyState = { direction = "ServerToClient", args = { "table" } },
 	-- Report a pilot on this server for cheating (ReportService, CMP-03): targetUserId, reason id (Reports) ->
 	-- (ok, message). The server also allows one report per 30 s.
 	ReportPlayer = { direction = "Function", args = { "integer", "string" }, rate = { burst = 2, perSecond = 1 / 30 } },

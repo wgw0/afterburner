@@ -72,7 +72,8 @@ local pilotStates: { [any]: MatchRules.PilotState } = {}
 local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
 local zoneState: AirSuperiority.State? = nil -- Air Superiority only
-local record: { mode: string, players: { number }, band: Matchmaking.Band }? = nil -- match servers only
+-- Match servers only. teams: { [tostring(userId)] = team } from the matchmaker, so parties fly together (MMK-05)
+local record: { mode: string, players: { number }, band: Matchmaking.Band, teams: { [string]: string }? }? = nil
 
 local function humans(): { Player }
 	return Players:GetPlayers()
@@ -90,8 +91,14 @@ end
 local function ensureScore(identity: any, name: string, isAI: boolean, userId: number)
 	if not scores[identity] then
 		local score = MatchRules.newScore(name, isAI, userId)
-		-- Team modes: humans spread evenly over the teams (AI fill then evens the numbers)
-		score.team = MatchRules.pickTeam(mode, scores, not isAI)
+		-- Team modes: humans spread evenly over the teams (AI fill then evens the numbers), except that the
+		-- matchmaker's pick (parties kept together) comes first
+		local picked = not isAI and record and record.teams and record.teams[tostring(userId)]
+		score.team = if picked
+				and mode.Teams
+				and table.find(mode.Teams, picked)
+			then picked
+			else MatchRules.pickTeam(mode, scores, not isAI)
 		for _, jet in AircraftService:GetJets() do
 			if jet.identity == identity then
 				score.airframe = jet.airframeId -- already flying when they joined the board
@@ -669,6 +676,7 @@ function MatchService:StartFromRecord(matchRecord: any)
 		mode = matchRecord.mode,
 		players = matchRecord.players or {},
 		band = Matchmaking.bandFor(matchRecord.band and matchRecord.band.br or Matchmaking.DEFAULT_BR),
+		teams = if type(matchRecord.teams) == "table" then matchRecord.teams else nil,
 	}
 	band = record.band
 end

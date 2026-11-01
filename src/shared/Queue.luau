@@ -1,9 +1,10 @@
 --!strict
 -- Forming matches from the matchmaking queue (DEVELOPMENT.md §25.2, MMK-03). Pure: the lobby's
 -- MatchmakingService feeds it the queue and gets back the matches to make.
---   Each entry is one player: their lineup BR, the mode they asked for ("Any" or a mode id) and when they
---   joined. The longest-waiting player anchors a group: players whose mode fits and whose BR is within the
---   spread join it (closest BR first, up to MATCH_SIZE). The spread starts at BR 1.0 and widens to 1.7 over
+--   Each entry is one player or one party (MMK-05: members, keyed by its leader): its BR (a party's is its
+--   highest), the mode asked for ("Any" or a mode id) and when it joined. The longest-waiting entry anchors a
+--   group: entries whose mode fits and whose BR is within the spread join it (closest BR first, while their
+--   pilots still fit in MATCH_SIZE seats). The spread starts at BR 1.0 and widens to 1.7 over
 --   a minute of waiting (DESIGN §5.2). A full group becomes a match at once; a smaller one once its anchor
 --   has waited FILL_AFTER seconds, and AI fills the empty seats on the battle server.
 
@@ -19,7 +20,8 @@ Queue.SPREAD_GROW_SECONDS = 60
 Queue.MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
 
 export type Entry = {
-	userId: number,
+	userId: number, -- the player, or the party's leader
+	members: { number }?, -- a party: everyone in it, leader first (nil for one player)
 	br: number,
 	mode: string, -- "Any" or one of Queue.MODES
 	joinedAt: number, -- seconds (any clock, the same for every entry)
@@ -32,6 +34,7 @@ export type Match = {
 	band: Matchmaking.Band,
 	spread: number, -- BR spread of the players in it
 	longestWait: number,
+	players: number, -- pilots in it (a party counts each member)
 }
 
 export type Options = {
@@ -48,6 +51,16 @@ end
 
 function Queue.validMode(mode: string): boolean
 	return mode == "Any" or table.find(Queue.MODES, mode) ~= nil
+end
+
+-- The pilots an entry brings: a party's members, else one.
+function Queue.seats(entry: Entry): number
+	return if entry.members then math.max(#entry.members, 1) else 1
+end
+
+-- Everyone an entry brings, leader first.
+function Queue.users(entry: Entry): { number }
+	return if entry.members then table.clone(entry.members) else { entry.userId }
 end
 
 local function fits(entry: Entry, mode: string): boolean
@@ -116,18 +129,24 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 			return a.joinedAt < b.joinedAt
 		end)
 		local group = { anchor }
+		local count = Queue.seats(anchor)
 		local low, high = anchor.br, anchor.br
 		for _, entry in near do
-			if #group >= Queue.MATCH_SIZE then
+			if count >= Queue.MATCH_SIZE then
 				break
 			end
-			if fits(entry, mode) and math.max(high, entry.br) - math.min(low, entry.br) <= spread + 1e-6 then
+			if
+				fits(entry, mode)
+				and count + Queue.seats(entry) <= Queue.MATCH_SIZE
+				and math.max(high, entry.br) - math.min(low, entry.br) <= spread + 1e-6
+			then
 				table.insert(group, entry)
+				count += Queue.seats(entry)
 				low, high = math.min(low, entry.br), math.max(high, entry.br)
 			end
 		end
 
-		if #group >= Queue.MATCH_SIZE or waited >= fillAfter then
+		if count >= Queue.MATCH_SIZE or waited >= fillAfter then
 			for _, entry in group do
 				taken[entry.userId] = true
 			end
@@ -137,6 +156,7 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 				band = Matchmaking.bandFor(high),
 				spread = high - low,
 				longestWait = waited,
+				players = count,
 			})
 		end
 	end
