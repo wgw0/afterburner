@@ -9,7 +9,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 | Check | Status |
 |---|---|
 | Every airframe module has `DisplayName`, `NameStatus` and `FallbackName` (the validator requires them) | Done |
-| No manufacturer names or logos in game | **Will: decide on "Eurofighter Typhoon"**. "Eurofighter" is the consortium that builds it, and §6.4 says manufacturer names never appear. Its fallback is `Typhoon "EF-2000"`; plain "Typhoon" would also do. Every other name is a designation plus an official nickname. |
+| No manufacturer names or logos in game | Done: "Eurofighter Typhoon" became "Typhoon" (Will, November 2026); every other name is a designation plus an official nickname |
 | The one programme name (Tempest) is semi-fictional: "Tempest-class concept" | Done |
 | Review every `Real` name against the manufacturers' published trademark guidance (§6.4: a design policy, not legal clearance) | **Will** |
 | Skins, camos, titles and cosmetics use no real squadron, display-team or brand names | Done (Display Team, Tiger Meet and the rest are generic phrases) |

@@ -404,5 +404,5 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **OPS-04** Message of the day and announcements
   - Built: the message of the day is the `motd` live override (OPS-01); admin `announce { text, seconds? }` reaches every player on every server at once as a toast (§31.4). Checked in Studio.
 - [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
-  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). *Left for Will: the Eurofighter name, the VIP Pilot description, the questionnaire, the erasure webhook and a last asset look; then tick.*
+  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). *Left for Will: the VIP Pilot description, the questionnaire, the erasure webhook and a last asset look; then tick.*
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI

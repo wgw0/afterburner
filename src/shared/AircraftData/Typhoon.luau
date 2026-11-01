@@ -4,7 +4,7 @@
 -- tune in playtests.
 return {
 	Id = "Typhoon",
-	DisplayName = "Eurofighter Typhoon",
+	DisplayName = "Typhoon",
 	NameStatus = "Real",
 	FallbackName = 'Typhoon "EF-2000"',
 	Branch = "Europe",
