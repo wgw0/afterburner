@@ -1,9 +1,9 @@
 --!strict
 -- Leaderboards (LIV-05, DAT-04; DEVELOPMENT.md §26.8). Four boards, each an OrderedDataStore: kills and
 -- wins this week (a new store every Monday 00:00 UTC, the same week as the Shop's bundle), the season's XP
--- (a store per season) and all-time kills. Only scored matches count (not training or free flight); kills
--- include AI pilots, since matches fill empty seats with them. Pure: LeaderboardService writes and reads
--- the stores; data.Weekly holds this week's counts.
+-- (a store per season) and all-time kills. Only scored matches count (not training or free flight), and
+-- only other players shot down (Will: AI pilots filling empty seats don't count). Pure: LeaderboardService
+-- writes and reads the stores; data.Weekly holds this week's counts.
 
 local Seasons = require(script.Parent.Config.Seasons)
 
@@ -84,8 +84,7 @@ function Leaderboards.score(data: { [string]: any }, id: string, now: number): n
 		local saved = data.Season
 		return if season and type(saved) == "table" and saved.Id == season.Id then math.floor(saved.XP or 0) else 0
 	elseif id == "KillsAll" then
-		local stats = data.Stats or {}
-		return (stats.Kills or 0) + (stats.AIKills or 0)
+		return (data.Stats and data.Stats.Kills) or 0 -- players only
 	end
 	return 0
 end

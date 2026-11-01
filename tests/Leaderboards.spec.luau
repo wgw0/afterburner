@@ -26,7 +26,7 @@ return function(ctx)
 	end)
 
 	describe("scores", function()
-		it("a scored match adds its kills and win to this week, and to all-time kills", function()
+		it("a scored match adds its player kills (not bots) and win to this week, and to all-time kills", function()
 			local data = PlayerData.template()
 			local summary = {
 				Events = {
@@ -42,9 +42,9 @@ return function(ctx)
 			local rewards = { XP = 0, Credits = 0, FreeRP = 0, RP = {} }
 			Progression.applyRewards(data, rewards :: any, summary :: any)
 			local now = os.time()
-			expect(Leaderboards.score(data, "KillsWeek", now)).toBe(2)
+			expect(Leaderboards.score(data, "KillsWeek", now)).toBe(1)
 			expect(Leaderboards.score(data, "WinsWeek", now)).toBe(1)
-			expect(Leaderboards.score(data, "KillsAll", now)).toBe(2)
+			expect(Leaderboards.score(data, "KillsAll", now)).toBe(1)
 		end)
 
 		it("last week's counts don't count this week, and a new week starts from zero", function()

@@ -1765,11 +1765,11 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 
 ### 26.8 As built: leaderboards (LIV-05, DAT-04, November 2026)
 
-- **Boards** (`Shared/Leaderboards`, tested in `Leaderboards.spec`): Kills this week and Wins this week (a new `OrderedDataStore` every Monday 00:00 UTC: `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`), Season XP (`LB_Season_<id>`, none between seasons) and All-time kills (`LB_KillsAll`), keyed by user id. Only scored matches count (not training, Vs AI or free flight); kills include AI pilots, since matches fill empty seats with them; an AFK player's win doesn't count.
+- **Boards** (`Shared/Leaderboards`, tested in `Leaderboards.spec`): Kills this week and Wins this week (a new `OrderedDataStore` every Monday 00:00 UTC: `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`), Season XP (`LB_Season_<id>`, none between seasons) and All-time kills (`LB_KillsAll`), keyed by user id. Only scored matches count (not training, Vs AI or free flight), and only other players shot down: AI pilots filling empty seats don't count (Will); an AFK player's win doesn't count.
 - **Scores:** `Progression.applyRewards` adds each scored match's kills and win to `data.Weekly` (`{ Week, Kills, Wins }`, started afresh each week); season XP and lifetime kills come from the season pass and `Stats`.
 - **LeaderboardService:** writes a player's scores after each scored match (`ProgressionService.MatchRewarded`) and when they leave, only the ones that changed (and never 0). `GetLeaderboard(boardId)` returns the top 50 (cached 60 s per server, display names looked up in one `UserService` request and remembered) and the asking player's own score. Without DataStore access (Studio without API access) a board shows the players on the server. Admin `leaderboard.remove { userId }` takes a player off every current board (a cheater).
 - **UI** (`UI/LeaderboardPanel`): the Career screen's lower panel switches between ACHIEVEMENTS and LEADERBOARDS: a button per board, the top 50 (rank, pilot, score; gold, silver and bronze for the top three; your row lit) and a line with your own score.
-- Checked in Studio: Will's all-time kills (27) written as he left and read back as #1 on the board.
+- Checked in Studio: a score written as the player left and read back as #1 on the board (that entry was bot kills from before bots stopped counting, so it was removed again with `leaderboard.remove`).
 
 ### 26.4 Squadrons (v1.2)
 
