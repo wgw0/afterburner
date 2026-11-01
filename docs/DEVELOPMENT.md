@@ -1573,7 +1573,9 @@ All of these are server-side. The client calls them through remotes with IDs onl
 
 ### 23.6 Economy simulation
 
-A script simulates a player's progression with average match results, so the playtime targets in DESIGN §7.3 can be checked (Tier II in 2–3 h, F-22 in 100–130 h). It is `tools/EconomySim.luau`, run by `Economy.spec`. Re-run it whenever an economy value changes.
+A script simulates a player's progression with average match results, so the playtime targets in DESIGN §7.3 can be checked. It is `tools/EconomySim.luau`, run by `Economy.spec`. Re-run it whenever an economy value changes.
+
+**Retuned (November 2026, Will: Tier II in 20–30 minutes, scaling up):** every jet's research and purchase cost, and every module's, is multiplied by its tier's `Economy.TECH_COST_SCALE` (0.33, 0.1, 0.13, 0.21, 0.22, 0.26, 0.3, 0.15 for Tiers I–VIII), so the pace is one table. The simulated player climbs (saves for the next tier up, skipping side jets except the cheap Tier I one and the second Tier VII jet the Tempest needs) and counts the Test Pilot trials as flown once they open. Result: first new jet 11 min, Tier II 22 min, III 1.5 h, IV 3.7 h, V 8.6 h, VI 17 h, first Tier VII 31 h, Tempest owned at 57 h; `Economy.spec` checks each within a band. Tier VII jets can now also be researched with RP earned in another Tier VII jet (same-tier prerequisites, §23.3), so the second one doesn't mean flying Tier VI again.
 
 ### 23.7 Tasks
 

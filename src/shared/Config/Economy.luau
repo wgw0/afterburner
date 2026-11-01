@@ -31,6 +31,10 @@ Economy.SAME_VICTIM_FULL_KILLS = 3 -- after this many kills on one victim in a m
 Economy.SAME_VICTIM_FACTOR = 0.25 -- ...each further kill on them pays a quarter
 Economy.AFK_SECONDS = 60 -- no input this long at the end: no survival or win bonus
 
+-- Research (RP) and purchase (Credits) costs in TechTree are multiplied by this per tier (Will, November
+-- 2026: Tier II in 20–30 minutes, then scaling up; DESIGN §7.3). Tune the pace here; tools/EconomySim checks it.
+Economy.TECH_COST_SCALE = table.freeze({ 0.33, 0.1, 0.13, 0.21, 0.22, 0.26, 0.3, 0.15 })
+
 Economy.STARTING_CREDITS = 500
 Economy.STARTERS = table.freeze({ "F5E", "MiG21bis" }) -- owned by every new account
 

@@ -1,7 +1,7 @@
 --!strict
 -- Economy pacing simulation (DEVELOPMENT.md §23.6, PRG-06). A typical free player plays average
 -- matches with the real reward code (Progression.matchRewards / applyRewards) and spends greedily with
--- the real rules (research, buy, modules). Reports when each milestone is reached, to check DESIGN §7.3:
+-- the real rules (research, buy, modules), climbing the tree. Reports when each milestone is reached, to check DESIGN §7.3:
 --   first new jet 20–30 min · Tier II 2–3 h · Tier III 8–10 h.
 -- Re-run whenever an economy value changes:
 --   print(require(game.ServerStorage.Tools.EconomySim).report())
@@ -63,15 +63,22 @@ function EconomySim.run(hours: number?, shared: Instance?): (Milestones, { strin
 	end
 
 	local function spend(flying: string)
-		-- Research and buy: the cheapest node it can research, then anything researched it can afford
+		-- Research and buy: like most players, it climbs. It saves its RP for the next tier up (the cheapest jet
+		-- there), skipping side jets, except the cheap Tier I one and the second Tier VII jet the Tempest needs
+		-- (LIV-07); then buys anything researched it can afford
 		local progress = true
 		while progress do
 			progress = false
-			local candidate, cost = nil, math.huge
+			local top = (AircraftData.get(best()) :: any).Tier
+			local candidate = nil
 			for _, node in TechTree.NODES do
-				local plan = Progression.researchPlan(data, node.Id)
-				if plan and node.RP < cost then
-					candidate, cost = node, node.RP
+				local wanted = node.Tier > top or node.Tier == 1 or (top == 7 and node.Tier == 7)
+				local plan = wanted and Progression.researchPlan(data, node.Id)
+				local better = candidate == nil
+					or node.Tier > candidate.Tier
+					or (node.Tier == candidate.Tier and node.RP < candidate.RP)
+				if plan and better then
+					candidate = node
 				end
 			end
 			if candidate and Progression.research(data, candidate.Id) then
@@ -132,6 +139,12 @@ function EconomySim.run(hours: number?, shared: Instance?): (Milestones, { strin
 		if levels > 0 and data.PilotLevel >= 5 then
 			note("pilot level 5 (second lineup slot)")
 		end
+		-- The Test Pilot trials (LIV-07) are flown, not bought: count them done as soon as they open
+		local TestPilot = require(Shared:FindFirstChild("TestPilot") :: any) :: any
+		if TestPilot.open(data) and not TestPilot.done(data) then
+			data.TestPilot = { Step = #TestPilot.STEPS + 1, Progress = 0 }
+			note("Test Pilot trials open (counted as flown)")
+		end
 		spend(flying)
 		local tier = (AircraftData.get(best()) :: any).Tier
 		for id, entry in data.Aircraft do
@@ -139,11 +152,9 @@ function EconomySim.run(hours: number?, shared: Instance?): (Milestones, { strin
 				note("first new jet")
 			end
 		end
-		if tier >= 2 then
-			note("Tier II")
-		end
-		if tier >= 3 then
-			note("Tier III")
+		local NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
+		for t = 2, tier do
+			note(`Tier {NAMES[t]}`)
 		end
 	end
 	return milestones, log
