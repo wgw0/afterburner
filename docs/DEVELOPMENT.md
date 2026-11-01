@@ -2024,6 +2024,13 @@ Outside the Shop, the match results say what VIP would have added this match ("�
 | Monthly | Event weekend (double RP, special camo challenge) |
 | ~8 weeks | Season: new jet(s), pass, ranked reset, a map or mode |
 
+### 31.4 As built: scheduled events and announcements (OPS-03/04, November 2026)
+
+- **Scheduled events** (`Shared/Events`, tested in `Events.spec`): a name, a start and an end (UTC), and XP / Credits / RP multipliers (1–3, never a penalty), set up ahead of time so an event weekend starts and stops on its own. At most 14 days long, never overlapping another, at most 20 kept (ended ones drop off first). ConfigService keeps the schedule in the `LiveConfig` DataStore record beside the overrides (same audit, same reload and `LiveConfigChanged` message) and shares it as the `LiveEvents` attribute (JSON). `LiveConfig.get` folds the running event in: each economy multiplier is the higher of the override and the event's, and `event` is the event's name unless an `event` override is set. The hangar banner says when it ends ("Double XP weekend · until Sunday 18:00 UTC": a real time, not a countdown); the results screen's event line uses its name.
+- Admin, live and test: `event.add { name, start = "2026-11-14 18:00", hours = 48 | finish, xp?, credits?, rp? }` (times UTC; a unix time works too), `event.remove { id }` (ends a running one now), `event.list`.
+- **Announcements:** `announce { text, seconds? }` (up to 100 characters, 5–60 s, default 10) reaches every player on every server at once (MessagingService `Announce`, shown here straight away too), as a taller toast headed ANNOUNCEMENT, in the menu or in flight. For restarts, maintenance or an event starting. The message of the day stays the `motd` override (OPS-01).
+- Checked in Studio: an hour-long test event (XP ×2, Credits ×1.5) showed on the banner with its end time and raised the multipliers, an announcement showed on two lines, and removing the event put everything back.
+
 | ID | Task | Phase |
 |---|---|---|
 | OPS-01 | ConfigService with live overrides | 6 |
@@ -2372,6 +2379,7 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `PartyRespond` | Function | Reliable | `inviterId, yes` → (ok, why not) | 1/s | §25.3 |
 | `PartyLeave` | C→S | Reliable | none | 1/s | §25.3 |
 | `PartyState` | S→C | Reliable | `{ leader, members, invites, max }` | n/a | §25.3 |
+| `Announcement` | S→All | Reliable | `{ text, seconds }` | n/a | §31.4 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

@@ -300,6 +300,10 @@ end
 -- The live event and message of the day (LiveConfig event / motd, OPS-01), at the top of the hangar.
 local function NewsBanner(props: any)
 	local event, motd = props.Event or "", props.Motd or ""
+	if event ~= "" and props.EventEnds then
+		-- A scheduled event says when it ends (a real date, not a countdown)
+		event ..= `  ·  until {os.date("!%A %H:%M", props.EventEnds)} UTC`
+	end
 	if event == "" and motd == "" then
 		return nil
 	end
@@ -489,7 +493,9 @@ local function App(props: any)
 			BackgroundTransparency = 1,
 		}, {
 			Screen = body,
-			News = if screen == "Hangar" then e(NewsBanner, { Event = props.Event, Motd = props.Motd }) else nil,
+			News = if screen == "Hangar"
+				then e(NewsBanner, { Event = props.Event, EventEnds = props.EventEnds, Motd = props.Motd })
+				else nil,
 		}),
 	})
 end

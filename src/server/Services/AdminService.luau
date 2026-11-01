@@ -130,6 +130,46 @@ local COMMANDS: { [string]: Command } = {
 		end,
 	},
 	-- The latest analytics events this server sent (ANL-04), newest last: { count? = 30, name? = filter }.
+	-- Scheduled events (OPS-03): event.add { name, start = "2026-11-14 18:00", hours = 48 | finish, xp?, credits?,
+	-- rp? } (UTC; multipliers 1–3), event.remove { id }, event.list
+	["event.add"] = {
+		testOnly = false,
+		run = function(admin, args)
+			return ConfigService:AddEvent(admin, args)
+		end,
+	},
+	["event.remove"] = {
+		testOnly = false,
+		run = function(admin, args)
+			if type(args.id) ~= "string" then
+				return false, "Usage: event.remove { id } (event.list shows the ids)"
+			end
+			return ConfigService:RemoveEvent(admin, args.id)
+		end,
+	},
+	["event.list"] = {
+		testOnly = false,
+		run = function()
+			local lines = {}
+			for _, event in ConfigService:Events() do
+				table.insert(
+					lines,
+					`{event.id}  "{event.name}"  {os.date("!%a %d %b %H:%M", event.start)} to {os.date(
+						"!%a %d %b %H:%M",
+						event.finish
+					)} UTC  xp x{event.xp} credits x{event.credits} rp x{event.rp}`
+				)
+			end
+			return true, if #lines > 0 then table.concat(lines, "\n") else "No events scheduled"
+		end,
+	},
+	-- A message to every player on every server (OPS-04): announce { text, seconds? }
+	["announce"] = {
+		testOnly = false,
+		run = function(admin, args)
+			return ConfigService:Announce(admin, args.text, args.seconds)
+		end,
+	},
 	["telemetry.recent"] = {
 		testOnly = false,
 		run = function(_admin, args)

@@ -613,6 +613,10 @@ render = function()
 		end,
 		FirstSession = TutorialController:FirstSession(),
 		Event = LiveConfig.get("event"),
+		EventEnds = (function(): number?
+			local event = LiveConfig.activeEvent()
+			return event and event.finish
+		end)(),
 		Motd = LiveConfig.get("motd"),
 		OnFinishOnboarding = function()
 			Net.Client.fire("FinishOnboarding")
