@@ -456,6 +456,13 @@ local function App(props: any)
 			OnSpin = props.OnSpin,
 			QueueMode = props.QueueMode,
 			OnQueueMode = props.OnQueueMode,
+			Party = props.Party,
+			PartyCandidates = props.PartyCandidates,
+			OnPartyInvite = props.OnPartyInvite,
+			OnPartyRespond = props.OnPartyRespond,
+			OnPartyKick = props.OnPartyKick,
+			OnPartyLeave = props.OnPartyLeave,
+			OnInviteFriends = props.OnInviteFriends,
 		})
 	end
 	-- Menu scale setting (SET-03): a UIScale grows everything; the frame shrinks by the same factor so the
