@@ -138,6 +138,26 @@ SCHEMES.update({
         "rough": 0.28,
         "line_colour": srgb(26, 28, 34),
     },
+    # Galaxy (Will): swirled purple, blue and magenta nebula over deep space, with stars. The stars and bright
+    # streaks get a glow mask (_Emissive), which the game pulses gently (CamoGlowController).
+    "Galaxy": {
+        "camo": [srgb(12, 8, 34), srgb(122, 44, 210), srgb(40, 110, 255)],
+        "camo_magenta": srgb(232, 52, 178),
+        "camo_style": "galaxy",
+        "camo_scale": 1.5,  # nebula swirl size (m)
+        "camo_under": True,
+        "underside": srgb(12, 8, 34),
+        "base": srgb(12, 8, 34),
+        "upper": srgb(12, 8, 34),
+        "lower": srgb(12, 8, 34),
+        "radome": srgb(10, 8, 20),
+        "antiglare": srgb(8, 6, 16),
+        "walkway": srgb(26, 20, 48),
+        "insignia": srgb(12, 8, 34),
+        "markings": "none",
+        "rough": 0.25,
+        "line_colour": srgb(24, 18, 50),
+    },
     "TigerStripe": {
         "camo": [srgb(232, 142, 40), srgb(22, 20, 18), srgb(232, 142, 40)],
         "camo_style": "tiger",
