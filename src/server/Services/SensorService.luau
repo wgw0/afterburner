@@ -46,10 +46,17 @@ local function radarOf(jet: Jet): any
 	return airframe and airframe.Radar
 end
 
--- Radar cross-section factor (Signature.radarDetects): 1 for ordinary jets, small for stealth ones.
-local function stealthOf(jet: Jet): number
+-- Radar cross-section as seen from `radarPosition` (Signature.rcs): 1 for ordinary jets; for stealth ones it
+-- depends on the angle and on whether the weapon bays are open (SNS-09).
+local function rcsOf(jet: Jet, radarPosition: Vector3): number
 	local airframe = Progression.airframeForModel(jet.model) :: any
-	return airframe and airframe.Stealth or 1
+	local stealth = airframe and airframe.Stealth or 1
+	return Signature.rcs(
+		stealth,
+		jet.root.CFrame,
+		radarPosition,
+		Signature.bayOpen(jet.model, workspace:GetServerTimeNow())
+	)
 end
 
 local function realVelocity(jet: Jet): Vector3
@@ -74,7 +81,7 @@ function SensorService:CanTrack(shooter: Jet, target: Jet): (boolean, string)
 		shooter.root.CFrame,
 		target.root.Position,
 		realVelocity(target),
-		stealthOf(target)
+		rcsOf(target, shooter.root.Position)
 	)
 	if not ok then
 		return false, reason

@@ -58,6 +58,37 @@ function Signature.radialSpeed(radarPosition: Vector3, targetPosition: Vector3, 
 	return targetVelocity:Dot(los.Unit)
 end
 
+-- Radar cross-section (SNS-09): how big a jet looks to a radar, as a share of an ordinary jet (1). A
+-- stealth jet's airframe `Stealth` is its head-on figure; seen from the side it's up to BEAM_RCS times
+-- bigger and from behind REAR_RCS times (shaped for the front), never more than an ordinary jet. With its
+-- weapon bays open (a missile just fired: the BAY_ATTRIBUTE time on the jet) it's at least BAY_OPEN_RCS.
+Signature.BEAM_RCS = 8
+Signature.REAR_RCS = 4
+Signature.BAY_OPEN_RCS = 0.5
+Signature.BAY_OPEN_SECONDS = 3
+Signature.BAY_ATTRIBUTE = "BayOpenUntil" -- server time (workspace:GetServerTimeNow) the bays close
+
+function Signature.rcs(stealth: number?, targetCF: CFrame, radarPosition: Vector3, bayOpen: boolean?): number
+	local base = stealth or 1
+	if base >= 1 then
+		return 1
+	end
+	local aspect = Signature.aspectAngle(targetCF, radarPosition) -- 0 tail, π head-on
+	local beam = math.sin(aspect) ^ 2
+	local rear = math.max(0, math.cos(aspect)) ^ 2
+	local rcs = math.min(1, base * (1 + (Signature.BEAM_RCS - 1) * beam + (Signature.REAR_RCS - 1) * rear))
+	if bayOpen then
+		rcs = math.max(rcs, Signature.BAY_OPEN_RCS)
+	end
+	return rcs
+end
+
+-- Whether a jet's weapon bays are open now (it fired a missile in the last BAY_OPEN_SECONDS).
+function Signature.bayOpen(model: Instance, now: number): boolean
+	local closes = model:GetAttribute(Signature.BAY_ATTRIBUTE)
+	return type(closes) == "number" and now < closes
+end
+
 export type RadarSpec = { Range: number, Cone: number, CanNotch: boolean, CanTWS: boolean? }
 
 Signature.TWS_TIER = 4
@@ -84,7 +115,7 @@ function Signature.radarDetects(
 	radarCF: CFrame,
 	targetPosition: Vector3,
 	targetVelocity: Vector3,
-	stealth: number?
+	rcs: number? -- Signature.rcs: 1 for an ordinary jet
 ): (boolean, string)
 	local los = targetPosition - radarCF.Position
 	local distance = los.Magnitude
@@ -92,8 +123,8 @@ function Signature.radarDetects(
 		return true, "ok"
 	end
 	local range = Units.toMetres(distance)
-	local rcs = stealth or 1
-	if range > radar.Range * rcs ^ 0.25 then
+	rcs = rcs or 1
+	if range > radar.Range * (rcs :: number) ^ 0.25 then
 		return false, "range"
 	end
 	local off = math.acos(math.clamp(radarCF.LookVector:Dot(los.Unit), -1, 1))
@@ -105,7 +136,7 @@ function Signature.radarDetects(
 	local clutter = lookingDown or targetLow
 	if clutter then
 		if not radar.CanNotch then
-			if range > radar.Range * Signature.CLUTTER_RANGE * rcs ^ 0.25 then
+			if range > radar.Range * Signature.CLUTTER_RANGE * (rcs :: number) ^ 0.25 then
 				return false, "clutter"
 			end
 		elseif
