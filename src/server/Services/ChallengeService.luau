@@ -22,8 +22,6 @@ local AircraftData = require(Shared.AircraftData)
 local Badges = require(Shared.Config.Badges)
 local Challenges = require(Shared.Challenges)
 local TestPilot = require(Shared.TestPilot)
-local Economy = require(Shared.Config.Economy)
-local LevelRewards = require(Shared.Config.LevelRewards)
 local Net = require(Shared.Net)
 local Perks = require(Shared.Perks)
 local Progression = require(Shared.Progression)
@@ -101,56 +99,9 @@ local function tierOf(airframeId: string?): number?
 	return airframe and airframe.Tier
 end
 
--- Lifetime totals for the career achievements (Veteran, Centurion, Collector, High Flyer, and the hangar and
--- bank ones: jets, upgrades, Credits, RP, skins).
+-- Lifetime totals for the career achievements and series (Achievements.career)
 local function careerEvent(data: { [string]: any }): Achievements.Event
-	local owned, kitted, skins, totalJets = 0, 0, 0, 0
-	local rp = data.FreeRP or 0
-	for _ in AircraftData.getAll() do
-		totalJets += 1
-	end
-	for _, entry in data.Aircraft do
-		rp += entry.RP or 0
-		if entry.Owned then
-			owned += 1
-			local all = true
-			for _, def in Economy.MODULES do
-				if entry.Modules == nil or entry.Modules[def.Id] == nil then
-					all = false
-					break
-				end
-			end
-			if all then
-				kitted += 1
-			end
-		end
-		for _, bought in entry.Skins or {} do
-			if bought then
-				skins += 1
-			end
-		end
-	end
-	for _, skin in LevelRewards.SKINS do -- the level liveries count, on every jet you own
-		if data.PilotLevel >= skin.Level then
-			skins += owned
-		end
-	end
-	if data.Flags and data.Flags.AllUnlocked == true then
-		-- Full access (testing) owns everything without earning it: no hangar or bank achievements
-		totalJets, kitted, rp, skins = math.huge, 0, 0, 0
-	end
-	return {
-		kind = "Career",
-		matches = data.Stats.Matches,
-		totalKills = data.Stats.Kills + data.Stats.AIKills,
-		ownedJets = owned,
-		totalJets = totalJets,
-		fullyKitted = kitted,
-		credits = if data.Flags and data.Flags.AllUnlocked == true then 0 else data.Credits,
-		rp = rp,
-		skins = skins,
-		level = data.PilotLevel,
-	}
+	return Achievements.career(data)
 end
 
 local function missileClass(weaponId: string?): string?
@@ -203,12 +154,13 @@ local function record(
 )
 	local notices = {}
 	local newAchievements = {}
-	local paid, levelCredits = 0, 0
+	local paid, levelCredits, wingsPaid = 0, 0, 0
 	local balance = 0
 	DataService:Update(player, function(data)
 		local unix = now()
 		for _, event in challengeEvents do
 			for _, def in Challenges.record(data.Challenges, event, unix) do
+				data.Stats.Challenges = (data.Stats.Challenges or 0) + 1 -- the Taskmaster series
 				data.Credits += def.credits
 				paid += def.credits
 				local before = data.Credits
@@ -250,11 +202,19 @@ local function record(
 					data.Achievements[id] = { At = unix, Badge = false }
 					table.insert(newAchievements, id)
 					local def = Achievements.get(id) :: Achievements.Def
+					-- Every achievement pays (Achievements.REWARDS, by rarity)
+					local reward = Achievements.reward(def)
+					data.Credits += reward.credits
+					data.Wings = (data.Wings or 0) + reward.wings
+					paid += reward.credits
+					wingsPaid += reward.wings
+					local paidText = `+{reward.credits} Cr`
+						.. (if reward.wings > 0 then `  ·  +{reward.wings} Wings` else "")
 					table.insert(notices, {
 						kind = "Achievement",
 						heading = if def.secret then "SECRET ACHIEVEMENT" else nil,
 						text = def.name,
-						detail = if extra then `{def.text}  ·  {extra}` else def.text,
+						detail = `{def.text}  ·  {paidText}` .. (if extra then `  ·  {extra}` else ""),
 						rarity = def.rarity,
 					})
 					Telemetry.event("AchievementEarned", 1, { id = id }, player)
@@ -273,6 +233,18 @@ local function record(
 		"Challenge"
 	)
 	Telemetry.economy(player, "Source", "Credits", levelCredits, balance, Telemetry.SOURCES.LevelUp, "Level")
+	if wingsPaid > 0 then
+		local data = DataService:GetData(player)
+		Telemetry.economy(
+			player,
+			"Source",
+			"Wings",
+			wingsPaid,
+			data and data.Wings or 0,
+			Telemetry.SOURCES.Challenge,
+			"Achievement"
+		)
+	end
 	for _, notice in notices do
 		Net.Server.fire("ChallengeNotice", player, notice)
 	end
