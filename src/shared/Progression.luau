@@ -279,10 +279,10 @@ function Progression.applyRewards(data: { [string]: any }, rewards: Rewards, sum
 	end
 	local stats = data.Stats
 	stats.Matches += 1
-	local kills = 0
+	local kills = 0 -- other players shot down (bots don't count on the leaderboards)
 	for _, event in summary.Events do
 		if event.Kind == "Kill" then
-			kills += 1
+			kills += if event.VictimAI then 0 else 1
 			if event.VictimAI then
 				stats.AIKills += 1
 			else

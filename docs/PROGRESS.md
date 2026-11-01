@@ -391,7 +391,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **MMK-05** Parties
   - Built: parties of up to 3 in a lobby (invite players here or friends through Roblox's invite window), queueing as one entry at the party's highest BR, the same team in team modes, home together and re-formed after the match (`Party.luau`, `PartyService`, `UI/PartyPanel`, DEVELOPMENT.md §25.3; 13 tests in `Party.spec`). Checked in Studio on one player. *To tick after the live test with two or more players.*
 - [x] **LIV-05** Leaderboards
-  - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
+  - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters Only player kills count, not bots (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
 - [ ] **LIV-06** Squadrons
 - [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
   - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
