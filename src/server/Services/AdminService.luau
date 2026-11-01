@@ -31,6 +31,7 @@ local Version = require(Shared.Version)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local ConfigService = require(script.Parent.ConfigService)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local DataService = require(script.Parent.DataService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 local PassService = require(script.Parent.PassService)
@@ -161,6 +162,17 @@ local COMMANDS: { [string]: Command } = {
 				)
 			end
 			return true, if #lines > 0 then table.concat(lines, "\n") else "No events scheduled"
+		end,
+	},
+	-- Takes a player off every current leaderboard (a cheater): leaderboard.remove { userId }
+	["leaderboard.remove"] = {
+		testOnly = false,
+		run = function(_, args)
+			local userId = tonumber(args.userId)
+			if not userId then
+				return false, "Usage: leaderboard.remove { userId }"
+			end
+			return true, `Removed {userId} from {LeaderboardService:Remove(userId)} boards`
 		end,
 	},
 	-- A message to every player on every server (OPS-04): announce { text, seconds? }

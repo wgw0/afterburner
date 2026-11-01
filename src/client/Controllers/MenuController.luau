@@ -696,6 +696,14 @@ render = function()
 			end
 			return result == true, message
 		end,
+		-- A leaderboard's top entries and your score (LIV-05)
+		OnLeaderboard = function(boardId: string): (any, string?)
+			local ok, result, why = pcall(Net.Client.invoke, "GetLeaderboard", boardId)
+			if not ok then
+				return nil, "Couldn't load it just now."
+			end
+			return result, why
+		end,
 		OnSetCallsign = function(text: string): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "SetCallsign", text)
 			if not ok then

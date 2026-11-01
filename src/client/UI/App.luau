@@ -379,7 +379,12 @@ local function App(props: any)
 			OnReroll = props.OnReroll,
 		})
 	elseif screen == "Career" then
-		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle, OnSetCallsign = props.OnSetCallsign })
+		body = e(Career, {
+			Data = data,
+			OnSetTitle = props.OnSetTitle,
+			OnSetCallsign = props.OnSetCallsign,
+			OnLeaderboard = props.OnLeaderboard,
+		})
 	elseif screen == "Settings" then
 		body = e(SettingsScreen, {
 			Values = props.Settings,

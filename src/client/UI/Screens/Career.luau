@@ -1,8 +1,9 @@
 --!strict
 -- Career (PRG-03, LIV-02). Top: your lifetime stats, and the level track: your level and XP, then every
 -- milestone (Config/LevelRewards) in a row, the ones reached lit, the next one marked, later ones dimmed,
--- with your callsign (CMP-01) and title picker under it. Bottom: the achievements, earned ones lit with the date.
--- props: Data, OnSetTitle(titleId) -> (ok, err), OnSetCallsign(text) -> (ok, err).
+-- with your callsign (CMP-01) and title picker under it. Bottom: the achievements, earned ones lit with the date,
+-- or the leaderboards (LIV-05: UI/LeaderboardPanel).
+-- props: Data, OnSetTitle(titleId) -> (ok, err), OnSetCallsign(text) -> (ok, err), OnLeaderboard(boardId).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,6 +20,7 @@ local Mastery = require(Shared.Mastery)
 local Passes = require(Shared.Config.Passes)
 
 local C = require(script.Parent.Parent.Components)
+local LeaderboardPanel = require(script.Parent.Parent.LeaderboardPanel)
 local Theme = require(script.Parent.Parent.Theme)
 
 local e = React.createElement
@@ -427,6 +429,7 @@ end
 
 local function Career(props: any)
 	local data = props.Data
+	local view, setView = React.useState("Achievements")
 	local stats = data.Stats or {}
 	local earned = data.Achievements or {}
 	local kills = (stats.Kills or 0) + (stats.AIKills or 0)
@@ -503,20 +506,40 @@ local function Career(props: any)
 				PaddingRight = UDim.new(0, 16),
 			}),
 			Layout = C.List({ Gap = 12 }),
-			Title = e(C.Label, {
-				Text = `ACHIEVEMENTS  ·  {tally}`,
-				Bold = true,
-				Color = Theme.Accent,
-				TextSize = 14,
-				Size = UDim2.new(1, 0, 0, 20),
-				LayoutOrder = 0,
+			Tabs = e("Frame", { Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, LayoutOrder = 0 }, {
+				Layout = C.List({ Horizontal = true, Gap = 10 }),
+				Achievements = e(C.Button, {
+					Text = `ACHIEVEMENTS  ·  {tally}`,
+					Style = if view == "Achievements" then "Primary" else "Ghost",
+					Size = UDim2.fromOffset(260, 34),
+					TextSize = 14,
+					LayoutOrder = 1,
+					OnClick = function()
+						setView("Achievements")
+					end,
+				}),
+				Leaderboards = e(C.Button, {
+					Text = "LEADERBOARDS",
+					Style = if view == "Leaderboards" then "Primary" else "Ghost",
+					Size = UDim2.fromOffset(200, 34),
+					TextSize = 14,
+					LayoutOrder = 2,
+					OnClick = function()
+						setView("Leaderboards")
+					end,
+				}),
 			}),
-			Cards = e("Frame", {
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				LayoutOrder = 1,
-			}, cards),
+			Cards = if view == "Achievements"
+				then e("Frame", {
+					Size = UDim2.fromScale(1, 0),
+					AutomaticSize = Enum.AutomaticSize.Y,
+					BackgroundTransparency = 1,
+					LayoutOrder = 1,
+				}, cards)
+				else nil,
+			Boards = if view == "Leaderboards"
+				then e(LeaderboardPanel, { OnLeaderboard = props.OnLeaderboard, Order = 1 })
+				else nil,
 		}),
 	})
 end

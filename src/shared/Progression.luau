@@ -8,6 +8,7 @@ local Cosmetics = require(script.Parent.Cosmetics)
 local CosmeticsCatalogue = require(script.Parent.Config.Cosmetics)
 local Economy = require(script.Parent.Config.Economy)
 local LevelRewards = require(script.Parent.Config.LevelRewards)
+local Leaderboards = require(script.Parent.Leaderboards)
 local Perks = require(script.Parent.Perks)
 local Season = require(script.Parent.Season)
 local PlayerData = require(script.Parent.PlayerData)
@@ -278,8 +279,10 @@ function Progression.applyRewards(data: { [string]: any }, rewards: Rewards, sum
 	end
 	local stats = data.Stats
 	stats.Matches += 1
+	local kills = 0
 	for _, event in summary.Events do
 		if event.Kind == "Kill" then
+			kills += 1
 			if event.VictimAI then
 				stats.AIKills += 1
 			else
@@ -287,6 +290,8 @@ function Progression.applyRewards(data: { [string]: any }, rewards: Rewards, sum
 			end
 		end
 	end
+	-- This week's leaderboard counts (LIV-05)
+	Leaderboards.record(data, kills, summary.Won and not summary.Afk, os.time())
 	if not summary.Survived then
 		stats.Deaths += 1
 	end

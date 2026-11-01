@@ -1763,6 +1763,14 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **The SEASON tab** (`UI/Screens/Season`, between Career and Shop; the tabs are now 108 wide): the season's name, time left (or when it starts), the tier and XP to the next, the premium price or PREMIUM ✓, CLAIM N REWARDS, and the track (a column per tier, free over premium; claimed ✓, READY, locked or 🔒 PREMIUM), scrolled to the first reward waiting. Today's and this week's challenges sit on the right. The tab reads SEASON ● while rewards wait. The Shop has a Season Pass panel that opens the tab.
 - **Testing:** test servers can preview a season before it starts: admin `season.preview` sets `ReplicatedStorage.SeasonPreview` and the first season runs for a week from then, on that server only (`Seasons.at` checks it, on both sides). Admin `data.set { fields = { Name = value } }` puts save fields back after a test.
 
+### 26.8 As built: leaderboards (LIV-05, DAT-04, November 2026)
+
+- **Boards** (`Shared/Leaderboards`, tested in `Leaderboards.spec`): Kills this week and Wins this week (a new `OrderedDataStore` every Monday 00:00 UTC: `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`), Season XP (`LB_Season_<id>`, none between seasons) and All-time kills (`LB_KillsAll`), keyed by user id. Only scored matches count (not training, Vs AI or free flight); kills include AI pilots, since matches fill empty seats with them; an AFK player's win doesn't count.
+- **Scores:** `Progression.applyRewards` adds each scored match's kills and win to `data.Weekly` (`{ Week, Kills, Wins }`, started afresh each week); season XP and lifetime kills come from the season pass and `Stats`.
+- **LeaderboardService:** writes a player's scores after each scored match (`ProgressionService.MatchRewarded`) and when they leave, only the ones that changed (and never 0). `GetLeaderboard(boardId)` returns the top 50 (cached 60 s per server, display names looked up in one `UserService` request and remembered) and the asking player's own score. Without DataStore access (Studio without API access) a board shows the players on the server. Admin `leaderboard.remove { userId }` takes a player off every current board (a cheater).
+- **UI** (`UI/LeaderboardPanel`): the Career screen's lower panel switches between ACHIEVEMENTS and LEADERBOARDS: a button per board, the top 50 (rank, pilot, score; gold, silver and bronze for the top three; your row lit) and a line with your own score.
+- Checked in Studio: Will's all-time kills (27) written as he left and read back as #1 on the board.
+
 ### 26.4 Squadrons (v1.2)
 
 - Data in a `Squadrons` DataStore: `{ id, name, tag, ownerId, members = { userId → role }, weeklyScore }`.
@@ -2380,6 +2388,7 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `PartyLeave` | C→S | Reliable | none | 1/s | §25.3 |
 | `PartyState` | S→C | Reliable | `{ leader, members, invites, max }` | n/a | §25.3 |
 | `Announcement` | S→All | Reliable | `{ text, seconds }` | n/a | §31.4 |
+| `GetLeaderboard` | Function | Reliable | `boardId` → ({ board, entries, mine }, why not) | 1/s | §26.8 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

@@ -12,6 +12,7 @@
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
 local Challenges = require(script.Parent.Challenges)
+local Leaderboards = require(script.Parent.Leaderboards)
 local Season = require(script.Parent.Season)
 local Spin = require(script.Parent.Spin)
 local Streak = require(script.Parent.Streak)
@@ -102,6 +103,7 @@ function PlayerData.template(): { [string]: any }
 		TopTier = 0, -- highest tier owned, for the progression event
 		Season = Season.newState(), -- the season pass (Shared/Season)
 		StarterBought = false, -- the Starter Bundle (once per player, Shop)
+		Weekly = Leaderboards.newWeekly(), -- this week's kills and wins for the leaderboards (Shared/Leaderboards)
 		PendingStarter = false, -- the camo chosen before a Starter Bundle purchase (Shop), false for none
 		Flags = {},
 		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)

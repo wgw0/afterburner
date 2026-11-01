@@ -45,6 +45,7 @@ local TextFilterService = require(script.Parent.TextFilterService)
 local ProgressionService = {
 	Priority = 70, -- after MatchService, so the spawn gate can wrap its own
 	IntentDone = Signal.new(), -- (player, action, item) a research, purchase or change went through
+	MatchRewarded = Signal.new(), -- (player, data) a scored match's rewards are in the save (leaderboards)
 }
 
 type Tally = {
@@ -171,6 +172,7 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 		{ "won", "afk" }
 	)
 	announceMastery(player, data, mastery, push)
+	ProgressionService.MatchRewarded:Fire(player, data)
 	return {
 		XP = rewards.XP,
 		Credits = rewards.Credits,
