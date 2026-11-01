@@ -180,6 +180,8 @@ function FlightModel.computeForces(
 		+ airframe.InducedK * cl * cl
 		+ FlightModel.waveDrag(mach) * (airframe.WaveDrag or 1)
 		+ (if stalled then 1.0 * sinAoa * sinAoa else 0)
+		-- Thrust vectoring past the stall: the turned exhaust and the jet's whole planform across the airflow
+		+ (if stalled and airframe.ThrustVectoring then Flight.THRUST_VECTORING_BLEED * sinAoa * sinAoa else 0)
 		+ 0.5 * math.sin(sideslip) ^ 2
 	local drag = -vhat * (q * S * cd)
 
@@ -246,6 +248,10 @@ local function substep(
 	local critical = airframe.CriticalAoA * RAD
 	local aoaLimit = critical
 		* (if input.protections then Flight.PROTECTED_AOA_FRACTION else Flight.UNPROTECTED_AOA_FRACTION)
+	if airframe.ThrustVectoring and not input.protections then
+		-- Post-stall manoeuvres (FLT-09): with the limiter off, a vectoring jet can haul its nose far past the stall
+		aoaLimit = math.min(critical * Flight.THRUST_VECTORING_AOA_FRACTION, Flight.THRUST_VECTORING_MAX_AOA * RAD)
+	end
 	local aoaCommand = 0
 	if f.q > 1 then
 		local clRequired = nCommand * mass * G / (f.q * airframe.WingArea)
@@ -259,6 +265,13 @@ local function substep(
 	local flightPathRate = accel:Dot(liftDir) / math.max(speed, 30)
 
 	local maxPitchRate = airframe.MaxPitchRate * RAD * auth * ((mods and mods.pitch) or 1)
+	if airframe.ThrustVectoring and not input.protections and math.abs(f.aoa) > critical * 0.8 then
+		-- Vectored nozzles keep pitching the jet near and past the stall, whatever the airspeed (FLT-09)
+		maxPitchRate = math.max(
+			maxPitchRate,
+			airframe.MaxPitchRate * RAD * Flight.THRUST_VECTORING_PITCH_BOOST * ((mods and mods.pitch) or 1)
+		)
+	end
 	local pitchTarget = flightPathRate + Flight.AOA_TRACKING_GAIN * (aoaCommand - f.aoa)
 	pitchTarget = math.clamp(pitchTarget, -maxPitchRate, maxPitchRate)
 	local pitchRate = s.pitchRate + (pitchTarget - s.pitchRate) * math.min(1, h * Flight.PITCH_RATE_RESPONSE)

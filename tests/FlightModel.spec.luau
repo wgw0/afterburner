@@ -120,6 +120,38 @@ return function(ctx)
 			end
 			expect(maxAoa).toBeLessThan(F5E.CriticalAoA * RAD)
 		end)
+
+		-- FLT-09: thrust vectoring past the stall
+		local SU35 = AircraftData.get("Su35S") :: any
+		local function pull(airframe: any, protections: boolean, seconds: number): (number, number)
+			local s = levelState(airframe, 3000, 120)
+			local maxAoa = 0
+			for _ = 1, math.round(seconds * 60) do
+				s = FlightModel.step(s, input({ pitch = 1, throttle = 1, protections = protections }), airframe, 1 / 60)
+				maxAoa = math.max(maxAoa, s.aoa)
+			end
+			return maxAoa, s.speed
+		end
+		it("a vectoring jet with the limiter off hauls its nose far past the stall; others can't", function()
+			expect(SU35.ThrustVectoring).toBe(true)
+			local vectoring = pull(SU35, false, 5)
+			expect(vectoring > SU35.CriticalAoA * RAD * 2).toBe(true)
+			local plain = table.clone(SU35)
+			plain.ThrustVectoring = nil
+			local ordinary = pull(plain, false, 5)
+			expect(ordinary < SU35.CriticalAoA * RAD * 1.6).toBe(true) -- the 1.5x limit, give or take tracking lag
+		end)
+		it("post-stall manoeuvring bleeds the airspeed fast", function()
+			local _, slowed = pull(SU35, false, 3)
+			local plain = table.clone(SU35)
+			plain.ThrustVectoring = nil
+			local _, kept = pull(plain, false, 3)
+			expect(slowed < kept).toBe(true)
+		end)
+		it("with the limiter on, a vectoring jet stays out of the stall like any other", function()
+			local maxAoa = pull(SU35, true, 3)
+			expect(maxAoa).toBeLessThan(SU35.CriticalAoA * RAD)
+		end)
 	end)
 
 	describe("fuel", function()

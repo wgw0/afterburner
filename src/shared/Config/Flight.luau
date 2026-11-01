@@ -9,6 +9,13 @@ return table.freeze({
 	Q_REFERENCE = 0.5 * 1.225 * 120 ^ 2,
 	MIN_AUTHORITY = 0.15,
 	THRUST_VECTORING_MIN_AUTHORITY = 0.6,
+	-- Thrust vectoring with the AoA limiter off (FLT-09): AoA up to this many times critical (capped at
+	-- THRUST_VECTORING_MAX_AOA degrees) for post-stall manoeuvres, and this much extra drag (per sin² AoA) while
+	-- past the stall, so the airspeed bleeds very quickly
+	THRUST_VECTORING_AOA_FRACTION = 3,
+	THRUST_VECTORING_MAX_AOA = 80,
+	THRUST_VECTORING_BLEED = 1.2,
+	THRUST_VECTORING_PITCH_BOOST = 2, -- × MaxPitchRate once near the stall: the nozzles don't need airspeed
 
 	-- Afterburning thrust rises with speed (ram pressure): +this share of wet thrust per Mach above 0.9
 	AFTERBURNER_RAM_GAIN = 1.0,
