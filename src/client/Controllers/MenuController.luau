@@ -27,6 +27,7 @@ local Environment = require(Shared.Config.Environment)
 local LiveConfig = require(Shared.LiveConfig)
 local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
+local Queue = require(Shared.Queue)
 local ServerRole = require(Shared.ServerRole)
 local Streak = require(Shared.Streak)
 local Net = require(Shared.Net)
@@ -165,8 +166,19 @@ local function queueStatus(): string?
 	local queue = state.queue
 	if queue.state == "Searching" then
 		local waited = math.floor(os.clock() - queue.startedAt)
+		local relaxed = queue.mode ~= "Any" and Queue.modeAfter(queue.mode, waited) == "Any"
 		local line =
-			`Finding a{MODE_NAMES[queue.mode] or ""} match…  {waited // 60}:{string.format("%02d", waited % 60)}`
+			`Finding a{if relaxed then "" else MODE_NAMES[queue.mode] or ""} match…  {waited // 60}:{string.format(
+				"%02d",
+				waited % 60
+			)}`
+		-- The longer the wait, the wider the search (Queue): say so once it's past the usual range
+		if waited >= Queue.SPREAD_STAGES[2][1] then
+			line ..= `  ·  widened to {string.format("%.1f", Queue.spreadFor(waited))} BR`
+		end
+		if relaxed then
+			line ..= "  ·  any mode"
+		end
 		return if queue.message then `{queue.message}  {line}` else line
 	elseif queue.state == "Found" then
 		return "Match found! Joining…"
