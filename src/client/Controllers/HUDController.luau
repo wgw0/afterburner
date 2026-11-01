@@ -949,7 +949,10 @@ local function update(dt: number)
 			continue
 		end
 		local range = Units.toMetres((otherRoot.Position - myPosition).Magnitude)
-		if range > TARGET_RANGE then
+		local jetId = model:GetAttribute("JetId") :: number?
+		local linkedContact = jetId and SensorController.contacts[jetId]
+		-- Data-link contacts (SNS-08) get a marker at any range
+		if range > TARGET_RANGE and not (linkedContact and linkedContact.linked) then
 			continue
 		end
 		seen[model] = true
@@ -978,7 +981,7 @@ local function update(dt: number)
 		local pilot = Players:GetPlayerByUserId((model:GetAttribute("PilotUserId") :: number?) or 0)
 		m.label.Text = string.format(
 			"%s%s%s %.1fkm",
-			if markerState == "Track" then "TWS · " else "",
+			if markerState == "Track" then "TWS · " elseif contact and contact.linked then "DL · " else "",
 			if pilot and pilot:GetAttribute("Pass_VIP") == true then '<font color="#FFC93C"><b>VIP</b></font> ' else "", -- the VIP Pilot pass
 			(model:GetAttribute("PilotName") :: string?) or "?",
 			range / 1000

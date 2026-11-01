@@ -415,7 +415,8 @@ local function update()
 				then UDim2.fromOffset(8, 8)
 				elseif beyond then UDim2.fromOffset(4, 4)
 				else UDim2.fromOffset(6, 6)
-			d.BackgroundTransparency = if beyond and not locked then 0.5 else 0
+			-- A data-link contact (SNS-08) is faint: a teammate sees it, your radar doesn't
+			d.BackgroundTransparency = if locked then 0 elseif contact.linked then 0.6 elseif beyond then 0.5 else 0
 			d.Visible = true
 		end
 	end

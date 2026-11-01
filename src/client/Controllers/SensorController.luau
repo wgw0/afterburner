@@ -16,6 +16,9 @@
 --   TWS (SNS-07): with an active radar missile selected, no hard lock and a track-while-scan radar (Tier IV+
 --     pulse-Doppler), the radar contact nearest the nose is the TWS target: the missile can go at it unlocked.
 --   RWR: threats the server says are painting you.
+--   Data link (SNS-08): with a Tier V+ jet in a team mode, what your data-link teammates see on radar comes
+--     from the server (DataLinkContacts) and shows as `linked` contacts: on the situation display and the HUD,
+--     never lockable (your own radar has to see them for that).
 -- Updated 5× a second; the HUD, scopes, camera (padlock) and audio read from here.
 
 local Players = game:GetService("Players")
@@ -58,6 +61,7 @@ export type Contact = {
 	range: number, -- real metres
 	spotted: boolean,
 	onRadar: boolean,
+	linked: boolean, -- known only through data link (SNS-08)
 	friendly: boolean, -- on your team (team modes): never lockable
 }
 
@@ -78,6 +82,7 @@ local SensorController = {
 	irCued = false, -- the IR target came from the helmet cue (MSL-09)
 	seekerCaged = false, -- the pilot switched the heat-seeker off (lock key)
 	threats = {} :: { Threat },
+	linked = {} :: { [number]: boolean }, -- jet ids your data-link teammates see (SNS-08)
 	message = "", -- why a lock failed or broke, shown on the HUD until messageUntil
 	messageUntil = 0,
 	LockChanged = Signal.new(), -- (id, state)
@@ -238,6 +243,8 @@ local function update()
 	local radar = radarOf(jet)
 	local myCF = root.CFrame
 	local seen: { [number]: boolean } = {}
+	local airframe = Progression.airframeForModel(jet) :: any
+	local dataLink = airframe ~= nil and Signature.hasDataLink(airframe.Tier, airframe.Radar)
 
 	for _, model in workspace.Jets:GetChildren() do
 		if not model:IsA("Model") or model == jet then
@@ -265,7 +272,8 @@ local function update()
 			onRadar = Signature.radarDetects(radar, myCF, otherRoot.Position, velocity, rcsOf(model, myCF.Position))
 				and hasLos()
 		end
-		if spotted or onRadar or id == self.lockId then
+		local linked = dataLink and self.linked[id] == true and not (spotted or onRadar)
+		if spotted or onRadar or linked or id == self.lockId then
 			seen[id] = true
 			self.contacts[id] = {
 				model = model,
@@ -275,6 +283,7 @@ local function update()
 				range = range,
 				spotted = spotted,
 				onRadar = onRadar,
+				linked = linked,
 				friendly = isFriendly(model),
 			}
 		end
@@ -432,6 +441,12 @@ function SensorController:CancelRadarLock()
 end
 
 function SensorController:Start()
+	Net.Client.on("DataLinkContacts", function(ids: { number })
+		table.clear(self.linked)
+		for _, id in ids do
+			self.linked[id] = true
+		end
+	end)
 	local timer = 0
 	RunService.Heartbeat:Connect(function(dt)
 		timer += dt

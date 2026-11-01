@@ -377,7 +377,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Done early, with Phase 6's roster work: the F-16C, F-15E, Su-30SM, MiG-29SMT, Gripen C, F/A-18E, Su-35S, Typhoon, Rafale C, F-22A, F-35A, Su-57 and the Tempest-class concept, each spawned in play with its loadout and skin. Tech tree runs to Tier VIII.
 - [x] **FLT-09** Thrust vectoring behaviour
   - Built: `ThrustVectoring` jets (Su-30SM, Su-35S, F-22A, Su-57, Tempest) keep more control authority at low speed, and with the AoA limiter off can haul the nose up to 80° past the stall at up to twice their pitch rate, paying for it with a fast airspeed bleed (DEVELOPMENT.md §6; `FlightModel.spec`). *Feel to check in play.*
-- [ ] **SNS-08** Data link
+- [x] **SNS-08** Data link
+  - Built: in team modes, Tier V+ jets share what their radars see with data-link teammates, twice a second; the contacts show faint on the situation display and as "DL" markers on the HUD at any range, not lockable (DEVELOPMENT.md §14.4; `DataLink.spec`). *To see in a team match.*
 - [x] **SNS-09** Stealth RCS and weapon bay effect
   - Built: the airframe `Stealth` factor is the head-on radar cross-section; from the side a stealth jet is up to 8× bigger and from behind 4×; firing a missile opens its bays for 3 s, when radars see it from much further; server locks and the radar scope both use it (`Signature.rcs`, DEVELOPMENT.md §14; `Stealth.spec`).
 - [ ] **MCH-07** Strike Escort

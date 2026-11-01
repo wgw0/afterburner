@@ -4,6 +4,8 @@
 --   or notch, terrain line of sight). Break any rule and the lock is lost: both pilots find out.
 --   RWR: every pilot hears who is searching them, who has locked them, and (for radar missiles, or IR
 --   missiles if their jet has a missile-approach warner) who has launched at them.
+--   Data link (SNS-08): in team modes, twice a second, what each team's data-link jets (Tier V+, AI too) can
+--   see on radar goes to every human pilot on that team whose own jet has data link (DataLinkContacts).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +29,7 @@ export type Threat = { id: number, kind: string, position: Vector3 }
 
 local LOCK_CHECK_INTERVAL = 0.2
 local RWR_INTERVAL = 0.5
+local DATA_LINK_INTERVAL = 0.5
 
 local SensorService = {
 	Priority = 32,
@@ -262,11 +265,69 @@ function SensorService:Init()
 	end)
 end
 
+local function hasDataLink(jet: Jet): boolean
+	local airframe = Progression.airframeForModel(jet.model) :: any
+	return airframe ~= nil and Signature.hasDataLink(airframe.Tier, airframe.Radar)
+end
+
+local linkedLast: { [Player]: string } = {}
+
+-- Shares each team's radar picture with its data-link pilots (team modes only; nothing to send otherwise).
+local function updateDataLink()
+	local byTeam: { [string]: { Jet } } = {}
+	local jets = AircraftService:GetJets()
+	for _, jet in jets do
+		local team = Teams.of(jet.identity)
+		if team then
+			byTeam[team] = byTeam[team] or {}
+			table.insert(byTeam[team], jet)
+		end
+	end
+	for team, members in byTeam do
+		local trackers = {}
+		for _, jet in members do
+			if hasDataLink(jet) then
+				table.insert(trackers, jet)
+			end
+		end
+		local enemies = {}
+		for _, jet in jets do
+			local other = Teams.of(jet.identity)
+			if other and other ~= team then
+				table.insert(enemies, jet)
+			end
+		end
+		local picture = Signature.dataLinkPicture(trackers, enemies, function(tracker, enemy)
+			return (SensorService:CanTrack(tracker, enemy))
+		end, function(jet)
+			return jet.id
+		end)
+		local key = table.concat(picture, ",")
+		for _, jet in trackers do
+			local player = jet.pilot
+			if player and linkedLast[player] ~= key then
+				linkedLast[player] = key
+				Net.Server.fire("DataLinkContacts", player, picture)
+			end
+		end
+	end
+end
+
 function SensorService:Start()
-	local lockTimer, rwrTimer = 0, 0
+	local lockTimer, rwrTimer, linkTimer = 0, 0, 0
+	Players.PlayerRemoving:Connect(function(player)
+		linkedLast[player] = nil
+	end)
 	RunService.Heartbeat:Connect(function(dt)
 		lockTimer += dt
 		rwrTimer += dt
+		linkTimer += dt
+		if linkTimer >= DATA_LINK_INTERVAL then
+			linkTimer = 0
+			debug.profilebegin("SensorService.datalink")
+			updateDataLink()
+			debug.profileend()
+		end
 		if lockTimer >= LOCK_CHECK_INTERVAL then
 			lockTimer = 0
 			debug.profilebegin("SensorService.locks")
