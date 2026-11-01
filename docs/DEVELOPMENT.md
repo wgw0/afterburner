@@ -1110,6 +1110,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 - IR signature: base heat × throttle factor (afterburner ×3) × aspect factor (rear 1.0, side 0.5, front 0.25 for rear-aspect seekers) × altitude/background factor.
 - RCS: base × airframe `Stealth` × aspect (front smaller for stealth jets) × weapon bay state (opening bays raises it briefly).
   - *As built:* `Signature.radarDetects` takes the target's `Stealth` and shrinks the detection range by `Stealth^0.25` (F-22A 0.002 → about a fifth, F-35A 0.003, Su-57 0.05 → about half, Tempest 0.001). `SensorService:CanTrack` and `SensorController` both pass it (until October 2026 neither did, so stealth jets showed at full range). Aspect and weapon-bay effects are not modelled (SNS-09).
+  - *As built (SNS-09, November 2026):* `Signature.rcs` makes it depend on the angle and the bays: a stealth jet's `Stealth` is its head-on figure; from the side it's up to 8× that (`BEAM_RCS`), from behind 4× (`REAR_RCS`), never more than an ordinary jet's 1. Firing a missile opens a stealth jet's bays for 3 s (MissileService sets `BayOpenUntil` on the jet, server time), and while they're open its RCS is at least 0.5 (`BAY_OPEN_RCS`), so a radar sees it from much further. Server locks (`SensorService:CanTrack`) and the client's radar scope both use it, from the radar's own position. Tested in `Stealth.spec`.
 
 ### 14.6 Tasks
 

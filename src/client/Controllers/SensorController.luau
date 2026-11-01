@@ -148,9 +148,19 @@ function SensorController:HasTWS(): boolean
 end
 
 -- Radar cross-section factor: 1 for ordinary jets, small for stealth ones (matches SensorService).
-local function stealthOf(jet: Model): number
+-- Its radar cross-section as seen from `radarPosition` (Signature.rcs: angle and open weapon bays, SNS-09).
+local function rcsOf(jet: Model, radarPosition: Vector3): number
 	local airframe = Progression.airframeForModel(jet) :: any
-	return airframe and airframe.Stealth or 1
+	local root = jet.PrimaryPart
+	if not (airframe and root) then
+		return 1
+	end
+	return Signature.rcs(
+		airframe.Stealth,
+		root.CFrame,
+		radarPosition,
+		Signature.bayOpen(jet, workspace:GetServerTimeNow())
+	)
 end
 
 -- Why your radar can't see `model` right now ("ok" if it can).
@@ -162,7 +172,8 @@ local function reasonFor(model: Model): string
 		return "range"
 	end
 	local velocity = Units.velocityFromStuds(otherRoot.AssemblyLinearVelocity)
-	local ok, reason = Signature.radarDetects(radar, root.CFrame, otherRoot.Position, velocity, stealthOf(model))
+	local ok, reason =
+		Signature.radarDetects(radar, root.CFrame, otherRoot.Position, velocity, rcsOf(model, root.Position))
 	if ok and not clearLineOfSight(root.Position, otherRoot.Position) then
 		return "terrain"
 	end
@@ -251,7 +262,8 @@ local function update()
 		local spotted = range <= visualRange and hasLos()
 		local onRadar = false
 		if radar then
-			onRadar = Signature.radarDetects(radar, myCF, otherRoot.Position, velocity, stealthOf(model)) and hasLos()
+			onRadar = Signature.radarDetects(radar, myCF, otherRoot.Position, velocity, rcsOf(model, myCF.Position))
+				and hasLos()
 		end
 		if spotted or onRadar or id == self.lockId then
 			seen[id] = true

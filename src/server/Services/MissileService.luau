@@ -337,6 +337,11 @@ local function launch(jet: Jet, targetId: number): boolean
 		missile.twsChecked = now
 	end
 	MissileService.MissileLaunched:Fire(jet, slot.id, missile.launchTargetIdentity)
+	-- A stealth jet carries its missiles inside: firing opens the bays and shows it on radar for a moment (SNS-09)
+	local airframe = Progression.airframeForModel(jet.model) :: any
+	if airframe and (airframe.Stealth or 1) < 1 then
+		jet.model:SetAttribute(Signature.BAY_ATTRIBUTE, workspace:GetServerTimeNow() + Signature.BAY_OPEN_SECONDS)
+	end
 	setAttributes(loadout)
 	return true
 end

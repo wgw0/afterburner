@@ -378,8 +378,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **FLT-09** Thrust vectoring behaviour
   - Built: `ThrustVectoring` jets (Su-30SM, Su-35S, F-22A, Su-57, Tempest) keep more control authority at low speed, and with the AoA limiter off can haul the nose up to 80° past the stall at up to twice their pitch rate, paying for it with a fast airspeed bleed (DEVELOPMENT.md §6; `FlightModel.spec`). *Feel to check in play.*
 - [ ] **SNS-08** Data link
-- [ ] **SNS-09** Stealth RCS and weapon bay effect
-  - Partly done: the airframe `Stealth` factor shrinks radar detection range on both server and client (`Missiles.spec` checks it). Aspect-dependent RCS and the weapon-bay effect are not built.
+- [x] **SNS-09** Stealth RCS and weapon bay effect
+  - Built: the airframe `Stealth` factor is the head-on radar cross-section; from the side a stealth jet is up to 8× bigger and from behind 4×; firing a missile opens its bays for 3 s, when radars see it from much further; server locks and the radar scope both use it (`Signature.rcs`, DEVELOPMENT.md §14; `Stealth.spec`).
 - [ ] **MCH-07** Strike Escort
 - [ ] **MCH-08** PvE wave missions
 - [ ] **MCH-09** Ranked Duels with Elo
