@@ -592,11 +592,14 @@ function TutorialController:Start()
 			kills += 1
 		end
 	end)
-	Net.Client.on("KillFeed", function(killer: string, _victim: string, weapon: string)
-		if killer == Players.LocalPlayer.Name and IR_NAMES[weapon] then
-			irKills += 1
+	Net.Client.on(
+		"KillFeed",
+		function(_killer: string, _victim: string, weapon: string, _assists: any, killerId: number)
+			if killerId == Players.LocalPlayer.UserId and IR_NAMES[weapon] then
+				irKills += 1
+			end
 		end
-	end)
+	)
 	-- Lesson 5: the missiles it fires at you have no owner jet; one that ends without hitting you is beaten
 	Net.Client.on("MissileSpawned", function(id: number, _weaponId: string, ownerJetId: number)
 		if ownerJetId == 0 and self.active == "Defend" then

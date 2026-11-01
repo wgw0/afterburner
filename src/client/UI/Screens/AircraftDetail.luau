@@ -3,7 +3,7 @@
 -- their costs and Fit buttons, the loadout, camo, and adding the jet to your lineup.
 -- props: Data, AirframeId, OnBack(), OnBuyModule(id, moduleId) -> (ok, err),
 --   OnSetModuleFitted(id, moduleId, fitted) -> (ok, err), OnLineup(ids) -> (ok, err),
---   OnBuySkin(id, skinId, currency?) -> (ok, err), OnSetSkin(id, skinId) -> (ok, err)
+--   OnBuySkin(id, skinId, currency?) -> (ok, err), OnSetSkin(id, skinId) -> (ok, err), OnShop() (the Shop's camos)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -27,6 +27,7 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local G = 9.81
+local SHOP_ROW_H = 50 -- the "Shop camos" row under the skins
 
 -- Rough, comparable performance numbers for the bars.
 local function stats(a: any): { { string } | any }
@@ -369,6 +370,30 @@ local function AircraftDetail(props: any)
 			OnSetSkin = props.OnSetSkin,
 		})
 	end
+	-- Under the skins, a way to the Shop's camos: they paint every jet you fly, not just this one
+	if props.OnShop then
+		skinChildren.Shop = e("Frame", {
+			Size = UDim2.new(1, 0, 0, SHOP_ROW_H),
+			BackgroundTransparency = 1,
+			LayoutOrder = 1000,
+		}, {
+			Label = e(C.Label, {
+				Text = "Want to stand out? Camos paint every jet you fly.",
+				Size = UDim2.new(1, 0, 0, 16),
+				TextSize = 12,
+				Wrap = true,
+				Color = Theme.Dim,
+			}),
+			Button = e(C.Button, {
+				Text = "SHOP CAMOS",
+				Style = "Primary",
+				Size = UDim2.new(1, 0, 0, 30),
+				Position = UDim2.fromOffset(0, 20),
+				TextSize = 13,
+				OnClick = props.OnShop,
+			}),
+		})
+	end
 
 	-- Mastery (PRG-07): stars from kills in this jet, the next one, and what stars give
 	local kills = entry and entry.Mastery or 0
@@ -508,7 +533,15 @@ local function AircraftDetail(props: any)
 			else nil,
 		Skins = if #Skins.list(id) > 0
 			then e(C.Panel, {
-				Size = UDim2.new(0.24, 0, 0, 52 + 50 * #Skins.list(id)),
+				Size = UDim2.new(
+					0.24,
+					0,
+					0,
+					52
+						+ 50 * #Skins.list(id)
+						+ (if skinChildren.Camo then 36 else 0)
+						+ (if props.OnShop then SHOP_ROW_H + 6 else 0)
+				),
 				Position = UDim2.new(0.38, 20, 0, 472),
 				Padding = 14,
 			}, skinChildren)

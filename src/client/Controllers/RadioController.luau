@@ -122,12 +122,15 @@ function RadioController:Start()
 			call(fox)
 		end
 	end)
-	Net.Client.on("KillFeed", function(killer: string)
-		if killer == Players.LocalPlayer.Name then
-			killsThisLife += 1
-			call(SPLASH[killsThisLife] or "Splash")
+	Net.Client.on(
+		"KillFeed",
+		function(_killer: string, _victim: string, _weapon: string, _assists: any, killerId: number)
+			if killerId == Players.LocalPlayer.UserId then
+				killsThisLife += 1
+				call(SPLASH[killsThisLife] or "Splash")
+			end
 		end
-	end)
+	)
 	FlightController.JetChanged:Connect(function()
 		killsThisLife = 0
 		table.clear(queue)
