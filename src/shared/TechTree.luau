@@ -55,7 +55,8 @@ local NODES: { Node } = {
 	{ Id = "F22A", Tier = 7, Branch = "NATO", Requires = TIER_VI_OR_VII, RP = 160000, Credits = 260000 },
 	{ Id = "F35A", Tier = 7, Branch = "NATO", Requires = TIER_VI_OR_VII, RP = 145000, Credits = 235000 },
 	{ Id = "Su57", Tier = 7, Branch = "East", Requires = TIER_VI_OR_VII, RP = 160000, Credits = 260000 },
-	-- The prestige jet: researched from any Tier VII jet (DESIGN also wants two of them and a challenge chain)
+	-- The prestige jet: researched from any Tier VII jet, once two Tier VII jets are researched and the Test Pilot
+	-- trials are done (Shared/TestPilot, enforced in Progression.researchPlan)
 	{
 		Id = "Tempest",
 		Tier = 8,

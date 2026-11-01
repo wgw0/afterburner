@@ -92,10 +92,13 @@ Go to the **Economy** page. Pick the currency at the top: **Credits** (earned) o
 | Match Credits | `Gameplay` | `Match` |
 | Pilot levels and their milestones | `LevelUp` | `Level` |
 | Mastery stars | `Mastery` | the jet |
-| Daily and weekly challenges | `Challenge` | `Challenge` |
+| Daily and weekly challenges, Test Pilot steps and achievements (Credits) | `Challenge` | `Challenge` |
+| Achievements (Wings, Rare and above) | `Challenge` | `Achievement` |
 | Login streak | `TimedReward` | `Day1` to `Day7` |
 | Free spin (Credits or Wings) | `Spin` | the prize rarity |
 | Lessons 1–3 reward | `Onboarding` | `TrainingComplete` |
+| Season pass rewards (Credits or Wings) | `Season` | `SeasonPass` |
+| Squadron weekly goal | `Squadron` | `Weekly` |
 | Wings bought with Robux | `IAP` | the product, e.g. `Wings550` |
 
 | Sinks | Type | SKU |
@@ -104,8 +107,11 @@ Go to the **Economy** page. Pick the currency at the top: **Credits** (earned) o
 | Modules | `BuyModule` | the jet |
 | Skins (Credits or Wings) | `BuySkin` | the jet |
 | Cosmetics (Wings) | `BuyCosmetic` | the cosmetic |
+| Weekly bundle (Wings) | `BuyBundle` | the bundle |
+| Season pass premium track (Wings) | `SeasonPass` | the season, e.g. `Season1` |
+| Creating a squadron | `Squadron` | `Create` |
 
-Robux sales themselves are on the **Monetization** pages, not Economy. Credits and Wings given with admin commands aren't logged as economy events, so they never skew the totals.
+Robux sales themselves are on the **Monetization** pages, not Economy (the `Purchase` custom event logs each one too). The Wings a purchase adds (a Wings pack or the Starter Bundle) are logged as a `Purchase` source. Credits and Wings given with admin commands aren't logged as economy events, so they never skew the totals.
 
 ## What you have to do in Creator Hub
 

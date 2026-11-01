@@ -1,6 +1,6 @@
 # Aircraft model pipeline
 
-How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). Jets are rebuilt in the order players meet them. The F-5E Tiger II, the MiG-21bis and the Mirage IIIE are done (the Mirage on the `art/mirage3` branch); docs/art/ROSTER_STATUS.md tracks the rest. The F-5E is the worked example in this document; the MiG-21bis section at the end lists what differs.
+How a jet goes from Blender into the game: a modular mid-poly model with moving control surfaces, swappable PBR skins and its own cockpit interior (section 7). All 27 jets on the roster have been built this way and are in the game, each with its flight data; [ROSTER_STATUS.md](ROSTER_STATUS.md) lists them. The F-5E is the worked example in this document; sections 6 and 8 onwards say what differs for each of the other jets, in the order they were built.
 
 | Stage | Tool | F-5E |
 |---|---|---|
@@ -75,7 +75,7 @@ ReplicatedStorage.Assets.Skins.F5E
 
 Each skin's name, price and default flag are in `Shared.Config.Skins`. `Shared.Skins.apply` paints a model by cloning each SurfaceAppearance into the MeshParts whose `TextureSet` attribute matches. Scripts can't change a SurfaceAppearance's images at runtime, so skins are swapped as whole instances. The server paints every jet as it spawns, so all players see the same paint; AI jets get a random skin. The client uses the same function for the hangar previews.
 
-Ownership is saved per jet in `Aircraft[id].Skins`, and the skin in use in `Aircraft[id].Camo`. The default skin is always owned. The others cost 5,000 Credits for now and will move to the shop (Wings or Robux, and season-pass rewards) in Phase 7. The assembler fits the default skin when it builds a model, so a re-import keeps its paint.
+Ownership is saved per jet in `Aircraft[id].Skins`, and the skin in use in `Aircraft[id].Camo`. The default skin is always owned. The others cost 5,000 Credits, or 150 Wings. The level skins (section 9) are free at their pilot level on every jet, and a camo bought in the Shop (`Config/Cosmetics`, kind `Camo`) paints every jet you fly, over its own skin; both are skin folders under `Assets.Skins.<Id>` like any other. The assembler fits the default skin when it builds a model, so a re-import keeps its paint.
 
 Two ideas for later. A skin can use `AlphaMode = Overlay`, where transparent areas of the colour map show the MeshPart's own `Color`, so one texture set could be sold in several colours. Per-player text such as callsigns would go on small `SurfaceGui` panels rather than into the textures.
 
@@ -181,7 +181,7 @@ Checks:
 
 `AircraftModelContract` lets parts join Root by a WeldConstraint or a Motor6D. Hinged parts need `Control`, `HingeAxis`, `HingeMin` and `HingeMax`, and a jet can have up to 60 parts.
 
-`ControlSurfaceController` moves the surfaces with the rules in `Shared.ControlSurfaces`. It sets each Motor6D's `Transform` on the client only, so it costs no network traffic. Your own jet follows your stick. Other players' jets and AI jets follow how they are actually moving: pitch and roll from their body rates, the rudder from sideslip (in a banked turn the yaw rate is large while the rudder stays near centre). The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps. Surfaces move at 120°/s, and jets more than 1,500 studs from the camera are skipped.
+`ControlSurfaceController` moves the surfaces with the rules in `Shared.ControlSurfaces`. It sets each Motor6D's `Transform` on the client only, so it costs no network traffic. Your own jet follows your stick. Other players' jets and AI jets follow how they are actually moving: pitch and roll from their body rates, the rudder from sideslip (in a banked turn the yaw rate is large while the rudder stays near centre). The leading- and trailing-edge flaps come out with angle of attack at lower speeds, like the F-5E's manoeuvring flaps. Surfaces move at 120°/s, and jets more than 420 studs from the camera are skipped. On swing-wing jets (MiG-23MLD, F-14A, Tornado F3) it also turns each wing's weld into a Motor6D at its pivot and swings it to the sweep the flight model is using (`VariableGeometry` in the airframe data, FLT-08), carrying the flaps, slats and wingtip attachments with it.
 
 `Shared.Skins`, `Shared.Config.Skins` and the skin picker on the aircraft detail screen handle skins (section 2).
 
@@ -277,6 +277,8 @@ Jets from the Mirage IIIE on are painted by `tools/blender/jet_paint.py`. Each j
 
 The three level-reward liveries (`Config/LevelRewards.SKINS`: Squadron Black, Ace Gold, Legend Chrome) are defined once, in `tools/blender/livery_paint.py`, and every jet's paint script accepts them through `--skin Squadron|AceGold|Legend`, including the F-5E's and MiG-21bis's own painters. They carry no national markings. The stripes are placed from each jet's own baked texels, so they need no per-jet layout: the cheat line is a straight line fitted 60% of the way up the fuselage between the radome and the hot tail end, the fin bands are measured from each fin's top, and the gold leading edges come from the wing's `le` function and from the most forward texel of each tailplane, canard and fin at every span station. A scheme can also set `rough`, `metalness` and `line_colour` (panel lines that lighten instead of darken, for the black livery); schemes without them paint exactly as before. Their normal maps, and most of their Details maps, are pixel-identical to the jet's other skins, so the install reuses those asset ids and uploads only the Color, Roughness and Metalness maps that differ.
 
+The six camos sold in the Shop (`Config/Cosmetics`, kind `Camo`: VIP Gold, Arctic Splinter, Tiger Stripe, Midnight Digital, Arachnida and Galaxy) are schemes in the same `livery_paint.SCHEMES`, so every painter paints them through `--skin <Camo>` (for example `--skin Galaxy`) like the level liveries. They're meant to look bold rather than real. `f5e_paint.camouflage` has the styles they need: `splinter`, `tiger`, `digital` (pixel blocks), `web` (Arachnida's orb webs and metal spiders) and `galaxy` (swirled nebula and stars). Galaxy also writes an `_Emissive` glow mask, set as each SurfaceAppearance's `EmissiveMaskContent` and tagged `CamoGlow`, which `CamoGlowController` makes breathe on the client. The shop card's picture of each camo is the F-16A in it, rendered by `tools/blender/camo_cards.py`. To add a camo: add a scheme, paint all 27 jets, upload, install, then add the catalogue item. DEVELOPMENT.md §27.8 has the detail.
+
 ## 10. Mirage F1C
 
 `tools/blender/miragef1_generate.py` builds the F1C and `tools/blender/miragef1_paint.py` paints it.
@@ -303,7 +305,7 @@ There are four skins: `SEA` (Southeast Asia tan and two greens over light grey, 
 `tools/blender/mig23_generate.py` builds the MiG-23MLD and `tools/blender/mig23_paint.py` paints it.
 
 - The reference is Kaboldy's Commons three-view of the MiG-23MF, rendered 3840 px wide; the MF and MLD airframes are the same shape at this level of detail. The scale comes from the published 16.70 m length (180 px/m). The spread span then comes out 13.3 m against the published 13.97 m.
-- The wings are swing wings. The top view shows one spread (16°), and that wing was measured and turned 29° about its pivot to the 45° combat sweep. The wing parts have their origin on the pivot, so sweep could be animated later; for now they're fixed. The overlay was checked with the wings left spread, where the model sits on the drawing's spread wing.
+- The wings are swing wings. The top view shows one spread (16°), and that wing was measured and turned 29° about its pivot to the 45° combat sweep. The wing parts have their origin on the pivot, and the game now sweeps them in flight from 16° to 72° (section 5). The overlay was checked with the wings left spread, where the model sits on the drawing's spread wing.
 - The fixed gloves with their dogtooth, the splitter plates and the GSh-23L gun pack are one part, `Gloves`. There are leading-edge slats (`LEFlap`) and trailing-edge flaps (`Flap`), a ventral fin, and a long dorsal fillet into the fin.
 - The MiG-23 rolls with its all-moving tailplanes (tailerons), which mix pitch and roll the way elevons do, so `StabilatorL` and `StabilatorR` use the `ElevonL` and `ElevonR` controls.
 - The jet has 30 parts and 10,164 triangles. The cockpit is 2,280 triangles, in Soviet turquoise, with the Sapfir-23 scope under the sight and a wing-sweep gauge.
@@ -333,21 +335,22 @@ There are four skins: `Falcon` (the three greys, the default), `Blue`, `Desert` 
 
 There are four skins: `Grey` (Soviet grey and grey-green with a light radome, the default), `Euro`, `BlueGrey` (both low-visibility) and `Desert` (no national markings). The red stars are on both fins and on the wings.
 
-## 15. F-14A Tomcat (art only)
+## 15. F-14A Tomcat
 
-`tools/blender/f14a_generate.py` builds the F-14A and `tools/blender/f14a_paint.py` paints it. The F-14A has no flight data yet, so this is the art for when it does: the model, skins, cockpit and manifests, with the Id `F14A`.
+`tools/blender/f14a_generate.py` builds the F-14A and `tools/blender/f14a_paint.py` paints it. Its Id is `F14A`.
 
 - The reference is Niyansfarn's Commons drawing of the F-14D (CC BY 3.0). Its top and side views are at the same scale, set from the published 19.10 m length (121.2 px/m), which gives the swept span 11.54 m against the published 11.65 m. The F-14D's airframe is the F-14A's apart from the chin pod, which is left smaller. In the overlays the model sits on the drawing's lines, apart from the wings.
-- The drawing's wings are fully swept (68°). The model measures that wing and turns it 30° forward about the published pivot (half width 2.72 m), to 35°. As on the MiG-23, the wing parts have their origin on the pivot. There are slats (`LEFlap`) and flaps (`Flap`).
+- The drawing's wings are fully swept (68°). The model measures that wing and turns it 30° forward about the published pivot (half width 2.72 m), to 35°. As on the MiG-23, the wing parts have their origin on the pivot, and the game sweeps them from 20° to 68°. There are slats (`LEFlap`) and flaps (`Flap`).
+- October 2026 fix: the wings, fins and tailerons now meet the airframe, and all seven skins (the four below and the three level skins) were repainted for the fixed model. The previous model is in `ServerStorage.ReplacedModels`.
 - The jet is built from the forward fuselage with the tandem canopy (three frames) and the flat centre body (the "pancake") ending in the beavertail. Alongside it are the separated `Nacelles` with box intakes and dark `IntakeDucts`, and the fixed `Gloves`. The tail has tailerons on the elevon controls, twin fins canted 5° (`FinL` and `FinR`) with rudders, and ventral fins.
 - The jet has 35 parts and 11,308 triangles, with 8 hardpoints. The cockpit is 2,000 triangles: the HUD, the vertical display indicator (the radar face) and the horizontal situation display below it.
 - The shared painter gained a `ducts` key, which paints recessed intake mouths as dark ducts. Before this, the F-16A and MiG-29A painted them in the radome colour, which on the MiG-29's Grey skin was white. That skin has been repainted.
 
 There are four skins: `Navy` (two greys, low-visibility markings, the default), `Gull` (light gull grey over white, full-colour markings), `Ghost` (three-tone grey, low-visibility) and `Desert` (no national markings).
 
-## 16. Mirage 2000C (art only)
+## 16. Mirage 2000C
 
-`tools/blender/mirage2000_generate.py` builds the Mirage 2000C and `tools/blender/mirage2000_paint.py` paints it. Its Id is `Mirage2000C`; it has no flight data yet.
+`tools/blender/mirage2000_generate.py` builds the Mirage 2000C and `tools/blender/mirage2000_paint.py` paints it. Its Id is `Mirage2000C`.
 
 - The Mirage 2000 is laid out like the Mirage III: half-round intakes with half-cone centre bodies, a tailless delta with two elevons a side, and a single fin. So the script uses the Mirage IIIE's builders (`mirage3_generate.py`), switching that module's settings the way the jets switch the F-5E kit's. The fin with its curved dorsal fillet and the pitot are built in the script itself.
 - The reference is a small (1000 px) CC BY-SA three-view of the Mirage 2000C. Its top view is drawn nose-right, and its side view has the canopy open, so the closed outline was used. The scale comes from the published 14.36 m length (42.0 px/m), which gives a 9.29 m span against the published 9.13 m. In the overlays the model sits on the drawing's lines.
@@ -355,9 +358,9 @@ There are four skins: `Navy` (two greys, low-visibility markings, the default), 
 
 There are four skins: `AirDefence` (blue-greys over light grey, with French roundels and fin flash; the default), `Grey` (low-visibility), `Tactical` and `Desert` (no national markings).
 
-## 17. F-15C Eagle (art only)
+## 17. F-15C Eagle
 
-`tools/blender/f15c_generate.py` builds the F-15C and `tools/blender/f15c_paint.py` paints it. Its Id is `F15C`; it has no flight data yet.
+`tools/blender/f15c_generate.py` builds the F-15C and `tools/blender/f15c_paint.py` paints it. Its Id is `F15C`.
 
 - The reference is Kaboldy's Commons drawing of the F-15A (CC BY-SA 4.0), mirrored nose left. The F-15C's airframe is the F-15A's. The scale comes from the published 19.43 m length (144.5 px/m), which gives a 13.07 m span against the published 13.05 m. In the overlays the model sits on the drawing's lines; the wing's trailing edge is a straight line, where the drawing has an unswept flap and a swept aileron.
 - The jet is built from the forward fuselage with the bubble canopy, running back as a central spine between the engines. Alongside it are the `Nacelles`, which run from the raked box intakes (with dark `IntakeDucts`) back to the engines, which meet at the centreline. `Strakes` holds the curved leading-edge gloves and the tail booms. The tail has tailerons on the elevon controls and twin upright fins with rudders and tip pods. The F-15 has no nose probe, so `Pitot` is the two probes on the sides of the nose.
@@ -366,9 +369,9 @@ There are four skins: `AirDefence` (blue-greys over light grey, with French roun
 
 There are four skins: `ModEagle` (two ghost greys, low-visibility markings; the default), `Blue` (Air Superiority Blue, full-colour markings), `Aggressor` (blue camouflage) and `Desert` (no national markings).
 
-## 18. F/A-18C Hornet (art only)
+## 18. F/A-18C Hornet
 
-`tools/blender/fa18c_generate.py` builds the F/A-18C and `tools/blender/fa18c_paint.py` paints it. Its Id is `FA18C`; it has no flight data yet.
+`tools/blender/fa18c_generate.py` builds the F/A-18C and `tools/blender/fa18c_paint.py` paints it. Its Id is `FA18C`.
 
 - The reference is NASA's public-domain three-view of the F/A-18, rebuilt as a composite with both views nose left. The scale comes from the published 17.07 m length (107.8 px/m), which gives an 11.54 m span over the wingtips against the published 11.43 m. In the overlays the model sits on the drawing's lines.
 - The jet is built from the fuselage (the radome, the bubble canopy, the dorsal spine and the wide engine bay) and `Strakes`, the long leading-edge extensions, which slope down from the windscreen into the wing roots. Under them are the D-shaped intakes (`Nacelles`, with dark `IntakeDucts`). The wing has the big leading-edge flaps (22% of the chord), flaps, ailerons and wingtip rails. The tail has tailerons on the elevon controls and twin fins canted out 18 degrees with rudders. `Pitot` is the two probes on the sides of the nose.
@@ -376,9 +379,9 @@ There are four skins: `ModEagle` (two ghost greys, low-visibility markings; the 
 
 There are four skins: `Navy` (two greys, low-visibility markings; the default), `Gull` (gull grey over white, full-colour markings), `Adversary` (tan, brown and green, no national markings) and `Ghost` (three-tone grey, low-visibility).
 
-## 19. Su-27S Flanker (art only)
+## 19. Su-27S Flanker
 
-`tools/blender/su27s_generate.py` builds the Su-27S and `tools/blender/su27s_paint.py` paints it. Its Id is `Su27S`; it has no flight data yet. The script reuses the F-15C's builders (separated nacelles, booms, twin fins), with the Su-27's own shapes and its nose probe.
+`tools/blender/su27s_generate.py` builds the Su-27S and `tools/blender/su27s_paint.py` paints it. Its Id is `Su27S`. The script reuses the F-15C's builders (separated nacelles, booms, twin fins), with the Su-27's own shapes and its nose probe.
 
 - The reference is Malyszkz's public-domain Commons three-view, rendered from its SVG and rebuilt as a composite with both views nose left. Both views come out at the same scale (86.0 px/m), giving the length 22.0 m against the published 21.94 m. In the overlays the model sits on the drawing's lines.
 - The jet is built from the fuselage (the drooped nose, the bubble canopy, the dorsal hump and the wide, flat centre body over the engines, ending in the tail sting). `Nacelles` are the engine nacelles under the body, with raked box intakes and dark `IntakeDucts`. `Strakes` holds the long leading-edge extensions and the tail booms. The tail has tailerons on the elevon controls and twin upright fins with rudders.
@@ -386,56 +389,56 @@ There are four skins: `Navy` (two greys, low-visibility markings; the default), 
 
 There are four skins: `Flanker` (the three blue-greys over light blue, with red stars on the fins; the default), `Grey` (low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).
 
-## 20. Tornado F3 (art only)
+## 20. Tornado F3
 
-`tools/blender/tornadof3_generate.py` builds the Tornado F3 and `tools/blender/tornadof3_paint.py` paints it. Its Id is `TornadoF3`; it has no flight data yet.
+`tools/blender/tornadof3_generate.py` builds the Tornado F3 and `tools/blender/tornadof3_paint.py` paints it. Its Id is `TornadoF3`.
 
 - The only F3 (ADV) drawing on Commons is 533 px wide, so the reference is the large public-domain three-view of the IDS, rebuilt as a composite with both views nose left. The scale comes from the span with the wings at 25 degrees (13.91 m, 110.8 px/m). The F3 differs from the IDS by a longer radome and a fuselage plug behind the rear cockpit. The generator measures the IDS and maps every station through `stretch()`, which adds 0.60 m to the radome and spreads 1.36 m over the plug, giving 18.84 m against the published 18.68 m. With `TORNADO_IDS=1` it builds the drawing's IDS proportions instead. The overlays (`TornadoF3_overlay_*.png`) are of that build, and the model sits on the drawing's lines.
-- The wings are modelled at 25 degrees of sweep, fixed, with slats (`LEFlap`), flaps and the outer surfaces on the aileron controls. The fixed `Gloves` run from the intakes out to the wing roots. `Nacelles` are the raked box intakes running back into the rear fuselage, with dark `IntakeDucts`. The tail has tailerons on the elevon controls and a single fin with its rudder and tip pod. `EjectionSeat` holds both seats.
+- The wings are modelled at 25 degrees of sweep (the game sweeps them to 67°; the model wasn't built around the pivot, so the visual pivot is the wing's inner leading corner), with slats (`LEFlap`), flaps and the outer surfaces on the aileron controls. The fixed `Gloves` run from the intakes out to the wing roots. `Nacelles` are the raked box intakes running back into the rear fuselage, with dark `IntakeDucts`. The tail has tailerons on the elevon controls and a single fin with its rudder and tip pod. `EjectionSeat` holds both seats.
 - The jet has 36 parts and 10,648 triangles, with 8 hardpoints: two missile rails on each wing pylon and the four semi-recessed stations under the fuselage. The cockpit (the front one) is 2,256 triangles: the HUD with the radar repeater under it.
 - The painter's `roundel_colours` run from the outer ring to the centre, so RAF roundels are blue, white, red.
 
 There are four skins: `AirDefence` (two light greys, low-visibility roundels; the default), `DarkGrey` (low-visibility), `Splinter` (grey splinter camouflage, full-colour roundels) and `Desert` (desert pink, no national markings).
 
-## 21. F-16C Block 50 (art only)
+## 21. F-16C Block 50
 
-`tools/blender/f16c_generate.py` builds the F-16C Block 50 and `tools/blender/f16c_paint.py` paints it. Its Id is `F16C`; it has no flight data yet.
+`tools/blender/f16c_generate.py` builds the F-16C Block 50 and `tools/blender/f16c_paint.py` paints it. Its Id is `F16C`.
 
 - The F-16C's airframe is the F-16A's, so the script imports `f16a_generate.py` (its measurements, overlays and builders) and changes what the Block 50 changes: the larger "big mouth" intake for the F110 engine, and four IFF blade antennas on the nose (`Antennas`). The painter reuses the F-16A's panel layout.
 - The jet has 36 parts and 10,776 triangles, with the F-16A's 7 hardpoints. The cockpit is 1,528 triangles, with the side stick: the HUD over the up-front controls, two multifunction displays (the left one is the radar face) and the standby instruments.
 
 There are four skins: `Viper` (two greys, low-visibility markings; the default), `Ghost` (two blues, low-visibility), `Arctic` (white and grey aggressor splinter, no national markings) and `Night` (overall dark grey, low-visibility).
 
-## 22. F-15E Strike Eagle (art only)
+## 22. F-15E Strike Eagle
 
-`tools/blender/f15e_generate.py` builds the F-15E and `tools/blender/f15e_paint.py` paints it. Its Id is `F15E`; it has no flight data yet.
+`tools/blender/f15e_generate.py` builds the F-15E and `tools/blender/f15e_paint.py` paints it. Its Id is `F15E`.
 
 - The F-15E's airframe is the F-15C's, so the script imports `f15c_generate.py` (its measurements, overlays and builders) and changes what the F-15E changes. The canopy runs back over the rear seat, with a frame between the cockpits, and the spine rises behind it. `ConformalTanks` run along the outsides of the intakes, under the wing roots (body texture set). `Pods` are the navigation and targeting pods under the intakes, and `RearSeat` is the second seat. The painter reuses the F-15C's panel layout, with the fuselage star moved onto the tanks.
 - The jet has 41 parts and 12,076 triangles, with 9 hardpoints: the four on the tanks' lower corners replace the F-15C's fuselage stations. The cockpit (the front one) is 1,648 triangles: the HUD over the up-front controls, three displays (the left one is the radar face) and standby instruments.
 
 There are four skins: `Strike` (gunship grey all over, low-visibility markings; the default), `Ghost` (two light greys, low-visibility), `Splinter` (three-grey splinter, full-colour markings) and `Desert` (no national markings).
 
-## 23. Su-30SM (art only)
+## 23. Su-30SM
 
-`tools/blender/su30sm_generate.py` builds the Su-30SM and `tools/blender/su30sm_paint.py` paints it. Its Id is `Su30SM`; it has no flight data yet.
+`tools/blender/su30sm_generate.py` builds the Su-30SM and `tools/blender/su30sm_paint.py` paints it. Its Id is `Su30SM`.
 
 - The Su-30SM's airframe is the Su-27S's, so the script imports `su27s_generate.py` (its measurements, overlays and builders) and changes what the Su-30SM changes. The canopy runs back over the rear seat (`RearSeat`) and the dorsal hump starts behind it. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit on the leading-edge extensions. Two more wing pylons give 12 hardpoints. The painter reuses the Su-27S's panel layout, with the canards painted like the tailerons.
 - The jet has 41 parts and 11,676 triangles. The cockpit (the front one) is 1,720 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (two blue-greys over light grey, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Naval` (dark blue over light grey) and `Desert` (no national markings).
 
-## 24. MiG-29SMT (art only)
+## 24. MiG-29SMT
 
-`tools/blender/mig29smt_generate.py` builds the MiG-29SMT and `tools/blender/mig29smt_paint.py` paints it. Its Id is `MiG29SMT`; it has no flight data yet.
+`tools/blender/mig29smt_generate.py` builds the MiG-29SMT and `tools/blender/mig29smt_paint.py` paints it. Its Id is `MiG29SMT`.
 
 - The SMT's airframe is the MiG-29A's, so the script imports `mig29_generate.py` (its measurements, overlays and builders) and changes what the SMT changes. The dorsal hump (more fuel) is raised and widened from the canopy back to between the fins, and the retractable refuelling probe (`RefuellingProbe`) is on the left of the nose. The painter reuses the MiG-29A's panel layout.
 - The jet has 39 parts and 11,996 triangles, with the MiG-29A's 7 hardpoints. The cockpit is 1,768 triangles, in charcoal: the HUD over two colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (two greys, red stars; the default), `Blue` (overall blue-grey, low-visibility), `Splinter` (grey-green splinter) and `Desert` (no national markings).
 
-## 25. Gripen C (art only)
+## 25. Gripen C
 
-`tools/blender/gripenc_generate.py` builds the Gripen C and `tools/blender/gripenc_paint.py` paints it. Its Id is `GripenC`; it has no flight data yet.
+`tools/blender/gripenc_generate.py` builds the Gripen C and `tools/blender/gripenc_paint.py` paints it. Its Id is `GripenC`.
 
 - The reference is Kaboldy's Commons three-view of the Gripen (CC BY-SA 3.0), mirrored nose left. The scale comes from the published span over the wingtip rails (8.4 m, 101.9 px/m), which gives the length 14.2 m against the published 14.1 m. In the overlays the model sits on the drawing's lines; the wing's leading edge is one straight line, where the drawing has a small dogtooth.
 - The jet is built from the fuselage (the radome, the one-piece canopy and the dorsal spine) and `Intakes`, the D-shaped intakes beside the cockpit, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit just ahead of the wing. The cropped delta wing has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip rails. There is a single fin with its rudder.
@@ -444,9 +447,9 @@ There are four skins: `VKS` (two greys, red stars; the default), `Blue` (overall
 
 There are four skins: `Grey` (two greys, low-visibility markings; the default), `DarkGrey` (low-visibility), `Splinter` (greens and brown, full-colour markings) and `Arctic` (white and light grey, no national markings).
 
-## 26. F/A-18E Super Hornet (art only)
+## 26. F/A-18E Super Hornet
 
-`tools/blender/fa18e_generate.py` builds the F/A-18E and `tools/blender/fa18e_paint.py` paints it. Its Id is `FA18E`; it has no flight data yet.
+`tools/blender/fa18e_generate.py` builds the F/A-18E and `tools/blender/fa18e_paint.py` paints it. Its Id is `FA18E`.
 
 - Commons has no three-view of the Super Hornet (the only US Navy drawing of it is an artwork with its weapons), so the script builds it from the F/A-18C (`fa18c_generate.py`) and the published differences. It is 1.24 m longer (18.31 m): a 0.86 m plug behind the cockpit and 0.38 m in the rear fuselage. Stations are mapped through `stretch()` before the F/A-18C module computes anything, so all of its shapes, parts and attachments follow. The wing is larger (span 13.62 m over the wingtip rails, chords 15% longer), and so are the leading-edge extensions, the tailerons and the fins. The intakes are boxier and raked more, for the caret intakes.
 - The jet has 38 parts and 10,816 triangles, with 11 hardpoints: the wingtip rails, three pylons under each wing, two on the intakes and the centreline. The cockpit is the F/A-18C's layout (1,624 triangles).
@@ -454,59 +457,63 @@ There are four skins: `Grey` (two greys, low-visibility markings; the default), 
 
 There are four skins: `Navy` (two greys, low-visibility markings; the default), `CAG` (the greys with full-colour markings), `Adversary` (blue splinter, no national markings) and `Ghost` (overall dark grey, low-visibility).
 
-## 27. Su-35S (art only)
+## 27. Su-35S
 
-`tools/blender/su35s_generate.py` builds the Su-35S and `tools/blender/su35s_paint.py` paints it. Its Id is `Su35S`; it has no flight data yet.
+`tools/blender/su35s_generate.py` builds the Su-35S and `tools/blender/su35s_paint.py` paints it. Its Id is `Su35S`.
 
 - The Su-35S's airframe is the Su-27S's, so the script imports `su27s_generate.py` (its measurements, overlays and builders) and changes what the Su-35S changes: the longer, thicker tail sting, the refuelling probe on the left of the windscreen (`RefuellingProbe`), and two more wing pylons (12 hardpoints). The painter reuses the Su-27S's panel layout.
 - The jet has 39 parts and 11,352 triangles. The cockpit is 1,720 triangles, in charcoal: the HUD over two large colour displays (the left one is the radar face), with standby instruments under them.
 
 There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Flanker` (the Su-27's blues) and `Desert` (no national markings).
 
-## 28. Eurofighter Typhoon (art only)
+## 28. Typhoon
 
-`tools/blender/typhoon_generate.py` builds the Typhoon and `tools/blender/typhoon_paint.py` paints it. Its Id is `Typhoon`; it has no flight data yet.
+`tools/blender/typhoon_generate.py` builds the Typhoon and `tools/blender/typhoon_paint.py` paints it. Its Id is `Typhoon`.
 
 - The reference is Inductiveload's public-domain Commons line drawing of the Typhoon, rebuilt as a composite with both views nose left. The scale comes from the published 15.96 m length (118.1 px/m), which gives a 10.9 m span against the published 10.95 m. In the overlays the model sits on the drawing's lines.
 - The jet is built from the fuselage (the radome, the bubble canopy and the spine, widening over the twin engines) and `Intakes`, the chin intake under the fuselage with its splitter, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, origin on their spigots, on the elevon controls) sit beside the cockpit. The cropped delta wing has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip pods. There is a single fin with its rudder, and twin nozzles. The builders are the Gripen C's, with twin engines.
 - The jet has 35 parts and 9,528 triangles, with 11 hardpoints: three pylons under each wing, four semi-recessed under the intake trunk and the centreline. The cockpit is 1,520 triangles, in charcoal: the HUD over the up-front controls and three colour displays (the middle one is the radar face).
+- October 2026 fix: the wing was raised, and the skins were repainted.
 
 There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour RAF roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
 
-## 29. Rafale C (art only)
+## 29. Rafale C
 
-`tools/blender/rafalec_generate.py` builds the Rafale C and `tools/blender/rafalec_paint.py` paints it. Its Id is `RafaleC`; it has no flight data yet.
+`tools/blender/rafalec_generate.py` builds the Rafale C and `tools/blender/rafalec_paint.py` paints it. Its Id is `RafaleC`.
 
 - The reference is Kaboldy's Commons three-view of the Rafale (CC BY-SA 3.0), cropped inside its border and scaled to 2000 px, with both views nose left. The scale comes from the published 15.27 m length (127.5 px/m), which gives a 10.8 m span against the published 10.9 m. The drawing is the two-seat Rafale B: the C's single-seat canopy is shorter, with a spine behind it. In the overlays the model sits on the drawing's lines, apart from the B's rear canopy.
 - The jet is built from the fuselage (the radome, the canopy and the spine, widening forward into the canard roots and over the twin engines) and `Intakes`, either side of the cockpit under the canard roots, with dark `IntakeDucts`. The all-moving canards (`CanardL` and `CanardR`, on the elevon controls) are close-coupled ahead of the cropped delta wing, which has leading-edge flaps, two elevons a side (`Flap` inboard, `Aileron` outboard) and wingtip rails. There is a single fin with its rudder and tip pod, and twin nozzles. `Pitot` holds the nose probe and the fixed refuelling probe. The builders are the Gripen C's and the Typhoon's.
 - The jet has 35 parts and 9,864 triangles, with 11 hardpoints: the wingtip rails, three pylons under each wing, two under the intakes and the centreline. The cockpit is 1,484 triangles, in charcoal, with the side stick: the HUD over the radar display (the middle face) and a colour display either side.
+- October 2026 fix: the wing and canard roots now meet the body, and the skins were repainted.
 
 There are four skins: `AirDefence` (light grey, low-visibility roundels; the default), `TwoTone` (two greys, full-colour roundels), `DarkGrey` (low-visibility) and `Desert` (no national markings).
 
-## 30. F-22A Raptor (art only)
+## 30. F-22A Raptor
 
-`tools/blender/f22a_generate.py` builds the F-22A and `tools/blender/f22a_paint.py` paints it. Its Id is `F22A`; it has no flight data yet.
+`tools/blender/f22a_generate.py` builds the F-22A and `tools/blender/f22a_paint.py` paints it. Its Id is `F22A`.
 
 - The reference is ZakuTalk's Commons three-view (CC BY-SA 2.0), rebuilt as a composite with both views nose left. Its two views are not at quite the same scale (the side view is 2.2% shorter), so stations and half widths are the top view's, and side-view readings go through `side()` and `Z()`, which scale them by 1.022. The scale comes from the published 18.92 m length (95.8 px/m), which gives a 13.8 m span against the published 13.56 m. In the overlays the model sits on the drawing's lines.
 - The builders are the F/A-18C's. The jet is built from the chined forebody with the frameless bubble canopy and the wide, flat centre body (`Fuselage`); `Nacelles` are the raked caret intakes running back to the engines (with dark `IntakeDucts`), and `Strakes` the chines from the intakes to the wing roots. The diamond wing (swept leading edge, forward-swept trailing edge) has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 28 degrees with rudders.
 - The jet has 38 parts and 10,812 triangles, with 8 hardpoints: six in the main weapons bay and one in each side bay. The cockpit is 1,328 triangles, in charcoal, with the side stick: the HUD over the up-front controls, the large primary display in the middle (the radar face) and two smaller displays.
+- October 2026 fix: the nose now rises into the windscreen, and the skins were repainted.
 
 There are four skins: `AirDominance` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Splinter` (grey splinter, no national markings).
 
-## 31. F-35A Lightning II (art only)
+## 31. F-35A Lightning II
 
-`tools/blender/f35a_generate.py` builds the F-35A and `tools/blender/f35a_paint.py` paints it. Its Id is `F35A`; it has no flight data yet.
+`tools/blender/f35a_generate.py` builds the F-35A and `tools/blender/f35a_paint.py` paints it. Its Id is `F35A`.
 
 - The reference is the Commons three-view made from the programme's public-domain renders: shaded images, so the outlines are silhouettes and the fit is looser than from a line drawing (about 5 cm). Its side view and its top view (turned nose left) were rebuilt as a composite. The scale comes from the published 15.67 m length (119.3 px/m), which gives an 11.0 m span against the published 10.7 m.
 - The builders are the F/A-18C's (as for the F-22A), with one engine. The jet is built from the chined forebody with the bubble canopy and the wide body over the engine (`Fuselage`); `Nacelles` are the intakes either side of the cockpit (with dark `IntakeDucts`), and `Strakes` the chines to the wing roots. The trapezoidal wing has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 25 degrees with rudders.
 - `TailBooms` are the fairings either side of the nozzle: the fins sit on them and the tailerons pivot from them (without them both floated clear of the body).
+- October 2026 fix: the nose now rises into the windscreen, and the skins were repainted.
 - The jet has 37 parts and 10,856 triangles, with 10 hardpoints: two in each internal bay and three pylons under each wing. The cockpit is 1,344 triangles, in charcoal, with the side stick: the panoramic display as two large faces (the left one is the radar), with standby instruments under them. The real jet has no head-up display; the cockpit keeps one for the game's sight.
 
 There are four skins: `Stealth` (two greys, low-visibility markings; the default), `Dark` (overall dark grey, low-visibility), `Ghost` (light grey, full-colour markings) and `Aggressor` (grey splinter, no national markings).
 
-## 32. Su-57 (art only)
+## 32. Su-57
 
-`tools/blender/su57_generate.py` builds the Su-57 and `tools/blender/su57_paint.py` paints it. Its Id is `Su57`; it has no flight data yet.
+`tools/blender/su57_generate.py` builds the Su-57 and `tools/blender/su57_paint.py` paints it. Its Id is `Su57`.
 
 - The reference is XaHyMaH's Commons three-view of the T-50 (CC BY-SA 3.0), the Su-57's prototype, mirrored nose left and rebuilt as a composite. The scale comes from the published 20.1 m length (98.0 px/m), which gives a 14.3 m span against the published 14.1 m. In the overlays the model sits on the drawing's lines.
 - The builders are the F/A-18C's (as for the F-22A). The jet is built from the chined forebody with the bubble canopy and the wide, flat lifting body ending in the tail sting (`Fuselage`); `Nacelles` are the widely spaced engine nacelles under the body with their raked intakes (and dark `IntakeDucts`), and `Strakes` the leading-edge extensions. The wing (forward-swept trailing edge) has leading-edge flaps, flaperons and ailerons. The tail has tailerons on the elevon controls and twin fins canted out 27 degrees; the real fins are all-moving, here they have rudders.
@@ -514,9 +521,9 @@ There are four skins: `Stealth` (two greys, low-visibility markings; the default
 
 There are four skins: `VKS` (blue-grey splinter, red stars; the default), `Dark` (overall dark grey, low-visibility), `Grey` (two light greys, low-visibility) and `Desert` (no national markings).
 
-## 33. Tempest-class concept (art only)
+## 33. Tempest-class concept
 
-`tools/blender/tempest_generate.py` builds the Tempest and `tools/blender/tempest_paint.py` paints it. Its Id is `Tempest`; it has no flight data yet.
+`tools/blender/tempest_generate.py` builds the Tempest and `tools/blender/tempest_paint.py` paints it. Its Id is `Tempest`.
 
 - The Tempest is a fictionalised sixth-generation concept, not a real aircraft, so it is designed rather than measured: its tables are in centimetres from the nose tip, on the same scheme as the measured jets. It follows the general shape of the published sixth-generation concepts without copying any one of them, and carries no manufacturer names or logos. It is 17.5 m long with a 13.6 m span.
 - The builders are the F-22A's, without the tailplane. The jet is built from a long chined forebody with a large bubble canopy blending into a wide, flat body (`Fuselage`); `Nacelles` are caret intakes under the leading-edge extensions (`Strakes`) running back to two engines. The broad tailless delta has a forward-swept trailing edge, leading-edge flaps and two elevons a side: the kit builds them as `Flap` and `Aileron` parts, and `elevons()` puts all four on the elevon controls. Twin fins are canted out 35 degrees, with rudders.

@@ -1,7 +1,7 @@
 --!strict
--- Leaderboards (LIV-05, DAT-04; DEVELOPMENT.md §26.8). Four boards, each an OrderedDataStore: kills and
+-- Leaderboards (LIV-05, DAT-04; DEVELOPMENT.md §26.8). Five boards, each an OrderedDataStore: kills and
 -- wins this week (a new store every Monday 00:00 UTC, the same week as the Shop's bundle), the season's XP
--- (a store per season) and all-time kills. Only scored matches count (not training or free flight), and
+-- (a store per season), all-time kills and squadrons this week. Only scored matches count (not training or free flight), and
 -- only other players shot down (Will: AI pilots filling empty seats don't count). Pure: LeaderboardService
 -- writes and reads the stores; data.Weekly holds this week's counts.
 

@@ -17,7 +17,7 @@
 -- then AI fills the empty seats) and fires MatchOver after the results so everyone goes back to a lobby; a
 -- training server runs free flight or Vs AI matches that repeat.
 -- Rotation: elsewhere (the test environment's DebugSetMode) the next mode after the results is the next in
--- MatchRules.ROTATION (Dogfight, Team Deathmatch, Air Superiority, Dogfight…).
+-- MatchRules.ROTATION (Dogfight, Team Deathmatch, Air Superiority, Guns Only, Dogfight…).
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")

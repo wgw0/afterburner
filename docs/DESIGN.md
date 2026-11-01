@@ -71,7 +71,7 @@ Three control schemes, selectable in settings and reflected in matchmaking stats
 | **Direct** | Experienced players and gamepad | Mouse or stick drives pitch and roll directly, with full control over AoA. More manoeuvrability and more risk (stalls, blackouts). |
 | **Touch** | Mobile | A virtual stick plus auto-throttle, aim-assist on guns and big buttons for fire, flares and lock. |
 
-Default PC bindings: W/S for throttle (holding W above 100% engages afterburner), A/D for yaw, Q/E for roll, LMB for guns, Space for missiles, R to cycle weapons, F for flares, C for chaff, T for radar lock or cycle target, V for camera, Tab for scoreboard.
+Default PC bindings: W/S for throttle (holding W above 100% engages afterburner), A/D for yaw, Q/E for roll, LMB for guns, Space for missiles, R for the next missile, T for radar lock or unlock, F for flares, C for chaff, V for cockpit or chase view, X to padlock (hold), Z to zoom (hold), Left Shift to override the limiter (hold), M to switch Mouse Aim and Direct, Tab for the scoreboard and H (hold) to go back to the hangar. Every key and gamepad button can be rebound in Settings.
 
 Gamepad and touch layouts are first-class. A large share of Roblox players are on mobile, so mobile must be playable from day one, not patched in later.
 
@@ -89,6 +89,8 @@ Modelling a unique cockpit for 30+ jets is the biggest art cost in the project, 
 | **Wide-area display** | Tiers VII–VIII (F-22, F-35, Su-57, Tempest) | One large touchscreen-style panel, sensor-fusion view |
 
 Each jet reuses its era kit and changes only the frame, the canopy shape and a few signature details. Instruments are **live** (`SurfaceGui`s driven by the flight model), so a single instrument script serves every cockpit.
+
+*Built, October 2026: it went further than the plan. All 27 jets have their own modelled, textured cockpit with live instruments, so the kits are only the fallback. The HUD symbology also follows the cockpit era.*
 
 Cockpit features:
 - Free look: hold right mouse button, or use the right stick, to look around the canopy. Snap-views for checking six and checking above you.
@@ -172,8 +174,10 @@ Balancing becomes a spreadsheet job. Real-world figures give the starting point,
 ### 4.1 Guns
 
 - Projectiles are simulated as **raycast tracers** (no physical parts). They have travel time and gravity drop, so leading the target matters.
-- A **lead indicator (pipper)** appears on the HUD when a target is locked or close. Older jets get a simpler gunsight; newer ones get a predictive LCOS/EEGS-style funnel. That's a meaningful upgrade.
+- A **lead indicator (pipper)** appears on the HUD when a target is locked or close. Older jets get a simpler gunsight; newer ones get a predictive LCOS/EEGS-style funnel. That's a meaningful upgrade. *Built: a fixed sight at Tiers I–II, a lead-computing (LCOS) pipper that follows a turning target from Tier III, and the bullet-stream (EEGS) funnel from Tier V.*
 - Ammunition is limited (for example, 500 rounds) with spool-up and overheat on rotary cannons.
+- **Reloading** (Will, October 2026: running dry shouldn't punish a pilot who's doing well and staying alive). Not realistic, on purpose. When the gun runs dry it refills after 10 s; a missile type refills after 15 s, flares and chaff after 8 s. A bar on the HUD shows the timer.
+- **Hit markers** confirm hits from the server, for guns and missiles, with a hit sound and a kill-confirm sound.
 - Damage is per hit, with a **component damage model**: wings, engine, tail and pilot. A hit on the tail reduces yaw authority, a hit on the engine reduces thrust, and fire causes damage over time.
 
 ### 4.2 Missiles
@@ -188,7 +192,9 @@ Missiles must always be **defeatable** (pillar 2). Each missile is a small data 
 | **SARH radar** | AIM-7M, R-27R | The launching jet must keep a lock until impact | Break the lock: notch (fly 90° to the radar), chaff, or force the shooter to turn away |
 | **Active radar** | AIM-120, R-77, Meteor | Fire-and-forget after midcourse; its own radar takes over near the target | Notch plus chaff at the right time, or run (kinematic defeat) |
 
-Each missile has a motor burn time, then coasts on drag, so its energy falls off. A long-range shot at a fleeing target can simply run out of energy. This is the DCS "drag the missile" tactic and it's important to include. Missiles use proportional navigation, with a max G that falls as they slow down.
+Each missile has a motor burn time, then coasts on drag, so its energy falls off. A long-range shot at a fleeing target can simply run out of energy. This is the DCS "drag the missile" tactic and it's important to include. Missiles use proportional navigation, with a max G that falls as they slow down. Long-range radar missiles (Tier IV+) loft: they climb on long shots and dive onto the target.
+
+Missiles in flight are drawn at 3× their real length, so players can see them (Will, October 2026: visibility over realism). Jets carry their missiles visibly on the hardpoints, and each one disappears as that type runs out.
 
 Locking on:
 - IR: hold the target in a seeker cone for about 1 second until the tone becomes a solid growl.
@@ -202,14 +208,15 @@ Locking on:
 | **Radar** | Shows contacts in a forward cone (wider and longer on newer jets). Pulse-Doppler radars can be **notched**: a target flying perpendicular at low altitude disappears. |
 | **RWR** | A 360° indicator of who is painting you, with direction and threat type. |
 | **Visual** | Enemy markers appear only within visual range or when spotted by a teammate's radar (data link at higher tiers). Keeps "where is everybody" meaningful. |
-| **Data link** | Tier 5 and up: share radar contacts with teammates. This is a big part of modern air combat and a reason to want newer jets. |
-| **Stealth** | Tier 6 and up: shrinks the range at which enemy radar detects you. Balanced by battle rating. Stealth jets meet other stealth jets or very capable 4.5-gens. |
+| **Data link** | Tier V and up: share radar contacts with teammates whose jets also have it. This is a big part of modern air combat and a reason to want newer jets. *Built, November 2026.* |
+| **Stealth** | Tier VII and up (F-22A, F-35A, Su-57, Tempest): shrinks the range at which enemy radar detects you. Stealth is strongest head-on and weaker from the side and behind, and opening the weapon bays to fire shows the jet for a few seconds. Balanced by battle rating. Stealth jets meet other stealth jets or very capable 4.5-gens. *Built, November 2026.* |
 
 ### 4.4 Countermeasures
 
 - Flares spoof IR missiles with a chance based on the seeker generation, the angle and the throttle setting.
 - Chaff spoofs radar missiles and is most effective while notching.
-- Both are limited per life and refilled by landing at a friendly airbase, or on respawn. A rearm-at-base option in larger modes adds a risk/reward choice.
+- Both are limited per life. Each refills on a short timer once it runs out (reloading, §4.1), and on respawn. A rearm-at-base option in larger modes could add a risk/reward choice later.
+- Tier V+ jets have flare programmes: one press fires a short burst, and an optional automatic burst fires as a heat-seeker closes in. The most advanced heat-seekers can only be fooled by bursts.
 
 ## 5. Game modes and matchmaking
 
@@ -217,25 +224,29 @@ Locking on:
 
 | Mode | Players | Description | Phase |
 |---|---|---|---|
-| **Training** | 1 | Tutorial flights: takeoff, energy basics, guns on a target drone, defending a missile, landing. Rewards the first jet's upgrades. | MVP |
-| **Free Flight** | 1–12 | Explore the map, practise against AI drones. No rewards, no pressure. | MVP |
-| **Dogfight (FFA)** | 8–12 | Spawn in the air, first to 15 kills or 10 minutes. Guns and IR only at low tiers. | MVP |
-| **Team Deathmatch** | 6v6 to 8v8 | Team score race. Airborne spawns. The main mode at launch. | v1.0 |
-| **Air Superiority** | 8v8 | Capture three airspace zones. Holding zones drains enemy tickets, so it rewards teamwork and positioning, not just K/D. | v1.0 |
+| **Training** | 1 | Six lessons on a private training server: flight, energy, guns, missiles, defending a missile, and a first fight against an AI pilot. New pilots start here and can leave at any time. The training server also has Vs AI (bots in jets at your jet's level, pilot XP only) and any jet to try. | Built |
+| **Free Flight** | 1–12 | Explore the map, practise against AI drones. No rewards, no pressure. | Built |
+| **Dogfight (FFA)** | 6 | Spawn in the air, first to 15 kills or 10 minutes. Guns and IR only at low tiers. | Built |
+| **Guns Only** | 6 | A free-for-all with no missiles of any kind: guns only, with four times the usual rounds (Will, October 2026). First to 15 kills or 10 minutes. Also on training servers against AI. | Built |
+| **Team Deathmatch** | 3v3 | Team score race to 30 kills or 10 minutes. Airborne spawns over each team's coast, no friendly fire. | Built |
+| **Air Superiority** | 3v3 | Capture three airspace zones. Holding zones drains enemy tickets, so it rewards teamwork and positioning, not just K/D. 12 minutes. | Built |
 | **Strike Escort** | 8v8 | One team escorts AI bombers along a route and the other intercepts. Air-to-air only: the bombers are the objective, not ground targets. | v1.1 |
 | **PvE Missions** | 1–4 co-op | Wave defence against AI flights and scripted missions with bosses (a heavily armed bomber, an AWACS). A good on-ramp and a mobile-friendly option. | v1.1 |
 | **Ranked Duels** | 1v1 | Merge-start dogfight at a set tier, guns only or with IR missiles. Seasonal ladder. | v1.2 |
 | **BVR Battles** | 6v6 | Top tiers only. Big map, long-range missiles, data link. The endgame for high-tier players. | v1.2 |
+
+A match seats 6 pilots (Will, October 2026), so matches fill quickly at low population. AI pilots take any empty seats. Respawns are on a 5 s timer for now (decision log #3).
 
 ### 5.2 Matchmaking by battle rating (BR)
 
 Without battle ratings an F-22 would farm F-5s and new players would quit. So:
 
 - Every aircraft has a **Battle Rating** (for example 1.0 to 13.0).
-- A player brings a **lineup** of up to three jets (one at a time, swapped on respawn). The lineup's BR is its highest jet.
-- The matchmaker puts lineups within **±1.0 BR** into the same server. That widens over time if queues are thin, capped at ±1.7.
-- BR values are **tuned from live data**: win rate, K/D and average survival time per aircraft, reviewed every patch.
-- Roblox servers are separate instances, so matchmaking uses **reserved servers** plus `MemoryStoreService` queues. See §9.4.
+- A player brings a **lineup** of up to three jets (four with the Extra Lineup Slot pass; one at a time, swapped on respawn). The lineup's BR is its highest jet. Matchmaking uses the jet you click PLAY with.
+- The matchmaker puts lineups within **±1.0 BR** into the same match. The longer the wait, the looser the rules (Will, November 2026): the spread widens to ±1.7 over the first minute, then to ±3.0 by two and a half minutes, and after two minutes a player who picked a mode takes any mode. A match starts short-handed after 30 s, with AI pilots in the empty seats.
+- **Parties** of up to 3 queue as one, at the party's highest BR, fly on the same team and go home together. Three is the most so two parties always fit a 6-pilot match.
+- BR values are **tuned from live data**: win rate, K/D and average survival time per aircraft, reviewed every patch. Live config can change a jet's BR on live servers without an update.
+- Roblox servers are separate instances, so matchmaking uses **reserved servers** plus `MemoryStoreService` queues. See §9.4. *Built, October 2026: lobby servers, a queue for any mode or a chosen one, match servers and training servers; waiting on the live test.*
 
 ### 5.3 Maps
 
@@ -258,9 +269,9 @@ One tech tree with **three branches** that share tiers, so players can follow th
 
 Cross-branch research is allowed. Every jet needs Research Points (RP) from the previous jet *in any branch at the same or lower tier*, so nobody is locked out of a favourite.
 
-### 6.2 Proposed roster (launch is about 15 jets, growing to about 30)
+### 6.2 The roster (all 27 jets built)
 
-BR values are starting points and will be tuned in testing.
+The plan was about 15 jets at launch, growing to about 30. In the end the whole roster was built in October 2026: all 27 jets have flight data, weapons, a final model, their own cockpit and skins, and all can be researched. BR values are starting points and will be tuned in testing.
 
 | Tier | Era | NATO / US | Soviet / Russia | Europe | BR range | Signature unlock |
 |---|---|---|---|---|---|---|
@@ -268,12 +279,12 @@ BR values are starting points and will be tuned in testing.
 | **II** | 1970s–80s | F-4E Phantom II | MiG-23MLD | Mirage F1 | 2.7–4.0 | First radar and SARH missiles. RWR. |
 | **III** | 1980s | F-14A Tomcat, F-16A | MiG-29A | Mirage 2000C | 4.3–6.0 | All-aspect IR, pulse-Doppler radar, high-G airframes. |
 | **IV** | late 80s–90s | F-15C Eagle, F/A-18C | Su-27S | Tornado F3 | 6.3–8.0 | Active radar missiles (early AIM-120 / R-77). |
-| **V** | 2000s | F-16C Block 50, F-15E | Su-30SM, MiG-29SMT | Gripen C | 8.3–9.7 | Helmet-cued high off-boresight IR, data link. |
-| **VI. 4.5-gen** | 2010s | F/A-18E Super Hornet | Su-35S | Eurofighter Typhoon, Rafale | 10.0–11.3 | Supercruise (Typhoon), thrust vectoring (Su-35), long-range missiles. |
+| **V** | 2000s | F-16C, F-15E | Su-30SM, MiG-29SMT | Gripen C | 8.3–9.7 | Helmet-cued high off-boresight IR, data link. |
+| **VI. 4.5-gen** | 2010s | F/A-18E Super Hornet | Su-35S | Typhoon, Rafale | 10.0–11.3 | Supercruise (Typhoon), thrust vectoring (Su-35), long-range missiles. |
 | **VII. 5th-gen** | 2010s–20s | **F-22A Raptor**, F-35A | Su-57 | | 11.7–12.7 | Stealth, sensor fusion, the full kit. |
 | **VIII. Prestige** | Future | | | **"Tempest" concept** | 13.0 | Sixth-gen capstone. See below. |
 
-The prestige jet is the Tempest. The UK-led Tempest/GCAP programme (with Japan and Italy, and with development work under the Edgewing joint venture) is still in development, and no real performance figures are public. So in Afterburner it's presented clearly as a **"concept" aircraft with fictionalised stats**: extreme sensor range, a deep internal magazine and a smart loadout. Unlock it after researching any two Tier VII jets plus completing a **"Test Pilot" challenge chain**. That way it reads as an achievement, not just a grind. The same "concept" slot can later hold other sixth-gen designs as seasonal headline aircraft.
+The prestige jet is the Tempest. The UK-led Tempest/GCAP programme (with Japan and Italy, and with development work under the Edgewing joint venture) is still in development, and no real performance figures are public. So in Afterburner it's presented clearly as a **"concept" aircraft with fictionalised stats**: extreme sensor range, a deep internal magazine and a smart loadout. Unlock it after researching any two Tier VII jets plus completing a **"Test Pilot" challenge chain**. That way it reads as an achievement, not just a grind. *Built, November 2026: once two Tier VII jets are researched, the Test Pilot trials open as five steps in order, each flown in a Tier VII jet in scored matches (finish 5 matches, shoot down 10 jets, defeat 5 missiles, win 3 matches, then finish a match without being shot down). Each step pays Credits and XP; the last makes the Tempest researchable. A Tier VII jet can also be researched with RP from another Tier VII jet, so the second one doesn't mean flying Tier VI again.* The same "concept" slot can later hold other sixth-gen designs as seasonal headline aircraft.
 
 ### 6.3 Making each jet feel different
 
@@ -281,11 +292,11 @@ Jets should play differently, not just have bigger numbers:
 
 - F-5E: a light knife-fighter. Great roll and terrible radar. The perfect teacher.
 - MiG-21: fast in a straight line, bleeds speed in turns. Teaches boom-and-zoom.
-- F-14A: swing wings change the flight model with speed. Long-range missiles at its tier.
+- F-14A: swing wings change the flight model with speed (built: the sweep follows Mach and changes lift and drag). Long-range missiles at its tier.
 - MiG-29 vs F-16: a classic rivalry. The MiG has a better helmet-cued IR missile; the F-16 has better sustained turn and visibility.
 - Su-27: huge fuel and missile load, and great at high AoA.
-- Typhoon: climb and supercruise monster.
-- Su-35: thrust vectoring allows post-stall manoeuvres (a high-skill gimmick).
+- Typhoon: climb and supercruise monster. Only the Typhoon, F-22A and Tempest stay supersonic on dry thrust.
+- Su-35: thrust vectoring allows post-stall manoeuvres (a high-skill gimmick) that bleed energy fast. Built for the Su-30SM, Su-35S, F-22A, Su-57 and Tempest.
 - F-22: stealth plus supercruise plus thrust vectoring. The best jet, and players must have earned it.
 
 ### 6.4 Naming policy (decided)
@@ -296,7 +307,7 @@ Real aircraft names, nicknames and designs can belong to manufacturers or progra
 
 | Name element | Default | Example |
 |---|---|---|
-| **Military designation** (F-16C, MiG-29A, Su-27S) | Real, where allowed | `F-16C Block 50` |
+| **Military designation** (F-16C, MiG-29A, Su-27S) | Real, where allowed | `F-16C` |
 | **Official nickname** (Raptor, Typhoon, Fighting Falcon) | Real if it's clear to use. If not, a semi-fictional nod | `F-22A Raptor`, or `F-22A "Raptor-X"` if needed |
 | **Manufacturer names and logos** (Lockheed, Sukhoi, BAE) | **Never** in-game | none |
 | **Unreleased or programme names** (Tempest / GCAP) | Semi-fictional concept name | `Tempest-class concept`, `"Project Tempus"` |
@@ -304,10 +315,12 @@ Real aircraft names, nicknames and designs can belong to manufacturers or progra
 Every aircraft data module carries the name and its status, so a rename is a one-line change and we can audit the whole roster at once:
 
 ```lua
-DisplayName = "F-16C Block 50",
+DisplayName = "F-16C Fighting Falcon",
 NameStatus = "Real",            -- "Real" | "SemiFictional"
 FallbackName = "F-16C \"Viper-C\"", -- used if a name ever has to change
 ```
+
+The Eurofighter Typhoon is just "Typhoon" in game, because Eurofighter is the consortium that builds it (Will, November 2026). Every other name is a designation plus, at most, an official nickname.
 
 A semi-fictional name should keep the designation shape and the silhouette, so players still know exactly what they're flying. Before launch, review every `"Real"` name against each manufacturer's published trademark guidance. *This is a design policy, not legal clearance.*
 
@@ -319,8 +332,8 @@ A semi-fictional name should keep the designation shape and the silhouette, so p
 |---|---|---|
 | **XP** (per account) | Everything you do in a match | Pilot Level. Unlocks modes, lineup slots and cosmetics. |
 | **Research Points (RP)** (per aircraft) | Flying a jet. RP goes toward that branch's next jet. | Researching new aircraft and modules |
-| **Credits** | Match rewards, challenges, level-ups | Buying researched jets, modules, repairs (if used) and camos |
-| **Wings** (premium, Robux) | Bought with Robux, small amounts from the season pass | Cosmetics, premium jets, convenience. See §8. |
+| **Credits** | Match rewards, challenges, level-ups, achievements, the login streak, mastery stars, squadron goals, the free spin | Buying researched jets, modules, jet skins (5,000 each) and starting a squadron |
+| **Wings** (premium, Robux) | Bought with Robux; small amounts from the season pass, Rare and rarer achievements and the free spin | Cosmetics, jet skins, the season pass and weekly bundles. See §8. |
 
 Use **two earnable currencies plus one premium currency**. More than that confuses players. Research needs RP *and* Credits so that playing and progressing go together.
 
@@ -335,10 +348,13 @@ Rewards come from **contribution**, not just kills, so support players and newer
 | Missile defeated | 15 | 15 | 20 |
 | Zone captured or held | 75 | 75 | 100 |
 | Survive to the end | 50 | 50 | 50 |
+| Finish the match | 20 | 20 | 30 |
 | Win | +30% | +30% | +30% |
 | First win of the day | ×2 | ×2 | ×2 |
 
-Tier multiplier: higher-tier jets earn more RP and Credits per action but cost more to buy, so the economy stays balanced.
+Tier multiplier: higher-tier jets earn more RP and Credits per action (×1.0 at Tier I up to ×3.5 at Tier VIII) but cost more to buy, so the economy stays balanced. A tenth of every RP award also goes into a free RP pool that can be spent on any jet.
+
+Against farming: kills on AI pilots pay half, and after 3 kills on the same victim in a match each further kill on them pays a quarter. A pilot with no input for the last 60 s gets no survival or win bonus.
 
 ### 7.3 Progression pacing (targets to tune)
 
@@ -362,29 +378,34 @@ Early unlocks come fast to hook players. Late unlocks are aspirational. Paying p
 
 ### 7.4 Aircraft modules (per-jet upgrades)
 
-After buying a jet, players spend that jet's RP on **modules**. A stock jet should be about **85–90%** as good as a fully upgraded one, so it feels weaker but never helpless:
+After buying a jet, players spend that jet's RP (and Credits) on **modules**. A stock jet should be about **85–90%** as good as a fully upgraded one, so it feels weaker but never helpless. Every jet has **18 modules** (Will, October 2026: more upgrades per jet), some needing another first; owned modules can be taken off and refitted:
 
-- Engine: thrust +3–6%
-- Airframe: max G +0.3–0.5, plus damage resistance
-- Avionics: radar range, better lock speed, missile-launch warning on older jets
-- Weapons: unlocks better missiles available to that airframe historically (for example, F-16A AIM-9L becomes AIM-9M)
-- Countermeasures: more flares and chaff
+- Engine: Engine I–III (thrust +3%, +3%, +2%), Afterburner Tuning, Fuel System (burns less), Extra Fuel
+- Airframe: Airframe I–III (max G +0.25 each and faster roll), Aerodynamic Refinement (less drag), High-Lift Devices, Weight Reduction, Flight Controls (pitch and yaw rate)
+- Avionics: Avionics I–II (radar range)
+- Countermeasures: Countermeasures I–II (more flares and chaff)
+- Guns: Ammunition Belt (more rounds)
+
+Not built: weapons modules that unlock better missiles available to that airframe historically (for example, F-16A AIM-9L becomes AIM-9M), better lock speed and a missile-launch warning on older jets.
 
 BR accounts for fully upgraded performance, so stock jets are briefly underpowered rather than upgraded jets being overpowered.
 
 ### 7.5 Pilot Level and mastery
 
-- Pilot Level (1–100): XP-driven account level. Unlocks: lineup slot 2 (level 5), slot 3 (level 15), Ranked Duels (level 20), custom callsign colours, titles, and HUD colour themes.
-- Aircraft Mastery (per jet, 1–5 stars): kills in that jet unlock camos, a cockpit trinket and kill-marker decals. Rewards loyalty to favourite jets even after moving up.
-- Achievements: ace in a day (5 kills in one life), "Guns Only" (gun kills in a missile-armed jet), "Notched" (defeat a radar missile by notching), and so on. These are also good Badges for Roblox discoverability.
+- Pilot Level (1–100): XP-driven account level, with 250 Credits for every level. Unlocks: lineup slot 2 (level 5), slot 3 (level 15), titles, HUD colours (Pink, Blue, Violet), Credits and free RP milestones, and the level liveries Squadron Black (10), Ace Gold (25) and Legend Chrome (50), painted for every jet. Ranked Duels (level 20) comes with that mode.
+- Aircraft Mastery (per jet, 1–5 stars): stars at 5, 15, 40, 80 and 150 kills in that jet. Each star pays Credits; from 2 stars the jet carries kill markers under the canopy, and 5 stars gives the "<jet> Ace" title. A mastery camo and a cockpit trinket come later with art (Will, November 2026). Rewards loyalty to favourite jets even after moving up.
+- Achievements: 99 in all, shown by rarity (Common to Legendary) on the Career screen. 32 are one-offs, such as Ace in a Day (5 kills in one life), Guns Only, Notched (defeat a radar missile), Full Hangar and the secret Threading the Needle (fly under a bridge); these get Roblox badges, good for discoverability. The other 67 are levels of 12 ranked series (Hunter, Dogfighter, Champion, Promotion and so on), so the next one is always in reach. Every achievement pays by rarity (Will, November 2026): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings.
 
 ### 7.6 Retention systems
 
-- Daily challenges (3 per day, rerollable once): "Get 2 kills with IR missiles", "Win a match in a Tier II jet". Reward Credits and season XP.
-- Weekly challenges: bigger, with Wings or rare-camo rewards.
-- Login streak: small rewards, with a cosmetic at day 7 and day 30. Never punish a missed day harshly.
-- Seasons (about 8 weeks): a new headline jet, a map or mode, a season pass, and a ranked reset.
-- Squadrons (v1.2): player groups with a shared tag, weekly squadron challenges and a leaderboard. This builds the social retention that keeps Roblox games alive.
+- Daily challenges (3 per day, the same for everyone, rerollable once; VIP gets an extra reroll): "Get 2 kills with IR missiles", "Win a match in a Tier II jet". Reward Credits and XP, and all XP counts as season XP.
+- Weekly challenges: 2 a week, bigger, new on Monday. They pay Credits and XP.
+- Login streak: a 7-day week of Credits (free RP on day 7), repeating, with the title Regular at day 7 and Devoted plus 5,000 Credits at day 30. Never punish a missed day harshly: one missed day is forgiven, and a longer break goes back to the start of that week, never to day 1.
+- Free spin: one per 20 minutes played, up to 3 saved, with a prize by rarity (Credits, a free module, Wings or a jet skin). Spins are earned only, never sold, because a paid random prize is gambling (§8.1).
+- Seasons (about 8 weeks): a new headline jet, a map or mode, a season pass, and a ranked reset. *Season 1, "First Light", starts on Monday 9 November 2026 and runs 8 weeks: a 30-tier pass with a free and a premium track (§8.2).*
+- Squadrons: player groups with a shared tag, weekly squadron goals and a leaderboard. This builds the social retention that keeps Roblox games alive. *Built, November 2026: 10,000 Credits to start one, up to 30 pilots, an owner, officers and members, and the tag before members' names. Members' scored matches earn points (1 per player shot down, 3 per win); at 100 points in a week every member can claim 5,000 Credits.*
+- Leaderboards: kills and wins this week, season XP, all-time kills and squadrons this week. Only other players shot down count, not AI pilots (Will, November 2026).
+- Scheduled events (such as a double XP weekend) start and stop on their own, and announcements reach every server at once.
 
 ## 8. Monetisation strategy
 
@@ -400,13 +421,15 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 
 | Stream | Roblox mechanism | Examples (indicative prices) | Notes |
 |---|---|---|---|
-| **Cosmetics** | Developer Products (via Wings) | Camos 150–600 R$, contrail colours 200 R$, kill-marker styles 100 R$, cockpit trinkets 75 R$, nose art 250 R$, HUD themes 150 R$ | **The core earner.** Planes are huge on-screen billboards, so skins sell. Seasonal and limited-time camos create urgency without randomness. |
-| **Season Pass** | Developer Product (each season) | ~400–500 R$ | Free track plus premium track. Premium has about 30 cosmetic tiers plus some Wings back (enough to *almost* buy the next pass when completed, which drives engagement). |
-| **Premium jets** | Developer Product / Game Pass | 400–1,200 R$ | Unique variants (for example "F-4E Night Owl", "MiG-29 Display Team") **at the same BR and performance** as a researchable equivalent, plus a unique camo and a +25% RP bonus while flown. Gives a reason to buy without being stronger. |
+| **Wings** | Developer Products | 150 Wings for 149 R$, 550 for 499 R$, 1,200 for 999 R$, 2,500 for 1,999 R$ | The premium currency, about one Wing per Robux. The smallest pack buys at least one jet skin. |
+| **Cosmetics** | Bought with Wings | Camos 400 Wings (painted on every jet), contrail colours 200 (Tricolour 300), kill-marker styles 100 (Gold Stars 150), HUD themes 150, wing art 250, a jet's own skins 150 (or 5,000 Credits) | **The core earner.** Planes are huge on-screen billboards, so skins sell. Seasonal and limited-time camos create urgency without randomness. Wing art replaced nose art after Will's test (October 2026). Six camos so far: Arctic Splinter, Tiger Stripe, Midnight Digital, Arachnida, Galaxy, and VIP Gold with the VIP pass. A SHOP CAMOS button sits under each jet's skins. Cockpit trinkets aren't built. |
+| **Season Pass** | Developer Product (each season), or Wings | 449 R$ or 900 Wings | Free track plus premium track, 30 tiers. Free: Credits or free RP every tier, a title at 15 and 100 Wings at 30. Premium: double the free Credits or RP, five season-only cosmetics (never sold, kept for good), a title at 30, and 800 Wings back (enough to *almost* buy the next pass when completed, which drives engagement). |
+| **Premium jets** | Developer Product / Game Pass | 400–1,200 R$ | Unique variants (for example "F-4E Night Owl", "MiG-29 Display Team") **at the same BR and performance** as a researchable equivalent, plus a unique camo and a +25% RP bonus while flown. Gives a reason to buy without being stronger. *The rule is built (November 2026): a premium jet names its free jet and copies every stat, its tier and BR, or the game won't boot. None are on sale yet, and the RP bonus isn't built.* |
 | **Tier Unlock** | Developer Product (one per tier) | Tier IV 299 R$, V 399 R$ | Skips the grind one tier at a time: always the tier directly above your highest owned jet, only Tiers IV and V (Tiers II and III come in under two hours of play, so they aren't sold: Will, November 2026). You pick two jets of that tier and they're researched and owned (stock, no modules); the rest of the tier is researched as usual. A time-saver, not power: the jets are the same ones everyone flies (Will, 30 October 2026). |
-| **VIP Pilot** | Game Pass (one-off) | ~399 R$ | +25% Credits permanently, a VIP name tag, an extra daily-challenge reroll, and an exclusive camo. Gentle boost, big perceived value. |
-| **Boosters** | Developer Product | 2× RP for 1h: 75 R$; 2× Credits for 1h: 75 R$ | Time-limited. Cap stacking at 2× total so it can't trivialise the grind. |
-| **Convenience** | Game Passes | Extra lineup slot (149 R$), extra loadout presets (99 R$), custom callsign (99 R$) | Quality of life only. |
+| **VIP Pilot** | Game Pass (one-off) | 399 R$ | +25% Credits permanently, a gold VIP tag by your name, an extra daily-challenge reroll, and the VIP Gold camo and contrails. Gentle boost, big perceived value. |
+| **Boosters** | Developer Product | 2× RP for 1h: 75 R$; 2× Credits for 1h: 75 R$ | Time-limited; buying another adds an hour. Stacking is capped at 2× total, VIP included, so it can't trivialise the grind. |
+| **Convenience** | Game Passes | Extra lineup slot (149 R$, a fourth slot), custom callsign (99 R$, through Roblox's text filter) | Quality of life only. Extra loadout presets (99 R$) aren't built. |
+| **Bundles** | Developer Product, or Wings | Starter Bundle 99 R$; weekly bundle in Wings | See §8.4. |
 | **Private servers** | Roblox Private Servers | ~100 R$/month | Squads practising, content creators. Good recurring income. |
 | **Subscription (optional, later)** | Roblox experience subscriptions, if available | "Squadron Leader": monthly Wings stipend plus a monthly exclusive camo | Only once there's a steady flow of cosmetic content. |
 | **Premium Payouts** | Automatic | none | Roblox pays based on Premium players' time in game. Long sessions and good retention earn this for free. |
@@ -421,9 +444,10 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 
 ### 8.4 Store and UX
 
-- The **Hangar** shows the jet in 3D with an equipped camo preview. "Try before you buy" lets players fly a cosmetic in Free Flight before purchase.
-- A **featured shop rotation** changes weekly with themed bundles ("Top Gun-style Navy pack", "Aggressor camo pack").
-- First-purchase offer: a starter bundle (~99 R$) with a camo, a 3-hour booster and some Wings at a big discount. Converts players who've never paid.
+- The **Hangar** shows the jet in 3D with an equipped camo preview. "Try before you buy" lets players fly a cosmetic in Free Flight before purchase (not built yet).
+- A **featured shop rotation** changes weekly with themed bundles. *Built, November 2026: six bundles (Display Team, Arctic Patrol, Tiger Meet, Night Raider, Black Widow, Deep Space), one featured each week from Monday 00:00 UTC, the same for everyone. A bundle costs Wings at 25% off the items you don't own yet, so owning some of it never means paying twice. Nothing in a bundle is random.*
+- First-purchase offer: the **Starter Bundle** (99 R$, once per player): a camo you pick, a 3-hour Credits booster and 300 Wings, at a big discount. Converts players who've never paid.
+- The top bar shows Credits, free RP and Wings as chips with a hover card (what it is, what it's for, how to get more); Wings + opens the Shop at the packs.
 - All purchases go through `MarketplaceService.ProcessReceipt` with **idempotent receipt handling** saved in the DataStore. This is non-negotiable, because a lost purchase means a refund request and an angry player.
 
 ### 8.5 KPIs to watch
@@ -443,8 +467,10 @@ Roblox conventions apply: server logic in ServerScriptService, client logic in S
 ```
 src/shared  → ReplicatedStorage.Shared      pure modules used by both sides: FlightModel, Ballistics, Guidance,
                                             DamageModel, Progression, Skins, AircraftData/, WeaponData/, Config/, Net/
-src/server  → ServerScriptService.Server    Services/: Data, Aircraft, Combat, Missile, Sensor, Match, Progression,
-                                            AI, Drone, History, AntiCheat, Admin, Diagnostics
+src/server  → ServerScriptService.Server    Services/: Data, Aircraft, Combat, Missile, Sensor, Match, Matchmaking,
+                                            Party, Progression, Challenge, Season, Shop, Pass, Spin, Leaderboard,
+                                            Squadron, Config, Telemetry, Report, Feedback, AI, Drone, History,
+                                            AntiCheat, Admin, Diagnostics and others
 src/client  → StarterPlayerScripts.Client   Controllers/: Flight, Input, Camera, Cockpit, HUD, Weapon, Sensor, Scopes,
                                             ControlSurface, Effects, Audio, Menu, Tutorial and others; UI/ (React screens)
 tests       → ServerStorage.Tests           TestRunner and *.spec modules
@@ -484,16 +510,18 @@ The key decision: **client-authoritative flight, server-authoritative combat.**
 		},
 	},
 	Lineup = { "F5E" },
-	Cosmetics = { Camos = {}, Trails = {}, KillMarkers = {} },
+	Cosmetics = { Owned = {}, Equipped = {} }, -- Wings cosmetics: [id] = true; [kind] = id
 	Passes = {}, -- cache only; always re-verify with UserOwnsGamePassAsync
+	Boosters = { Credits = 0, RP = 0 }, -- unix time each booster runs out
 	ProcessedReceipts = {}, -- receipt IDs for idempotent ProcessReceipt (bounded list)
 	Settings = { ControlScheme = "MouseAim", Sensitivity = 1.0, Units = "Imperial" },
-	Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },
-	Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
+	Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0, Assists = 0 }, -- and more lifetime counts
+	Season = { Id = 1, XP = 0, Premium = false, FreeClaimed = 0, PremiumClaimed = 0 },
 	Flags = { AllUnlocked = true }, -- only for the game's owner: every jet, module, skin and lineup slot
 }
 ```
 
+- The real template has more: challenges, achievements, titles, the login streak, free spins, the squadron, the Test Pilot trials and this week's leaderboard counts. `src/shared/PlayerData.luau` has every field.
 - Save on leave, on a periodic autosave (every few minutes) and right after any purchase.
 
 ### 9.4 Server topology
@@ -503,6 +531,8 @@ The key decision: **client-authoritative flight, server-authoritative combat.**
 - Queues: `MemoryStoreService` sorted maps keyed by BR band and mode. A queue worker forms matches and fills empty slots with **AI pilots** after a timeout, so matches start quickly even at low population.
 
 For the very first playable build, a **single place** is fine: everyone in one server, picking jets from a simple menu. Split into lobby and battle places once the core loop is fun.
+
+*Built, October 2026: every server works out its role (lobby, match or training) for itself. Matches run on reserved servers of the lobby place until a separate battle place id is set, so a second place is optional. Training servers are private servers with the lessons, Vs AI and any jet. It waits on the live test on the test experience.*
 
 ### 9.5 Performance budget
 
@@ -570,30 +600,32 @@ Exit test: 8 players and bots have a full match. Run an internal playtest with f
 Exit test: a fresh account can play from F-5E to a Tier II jet, data survives rejoins, and there's no way to dupe currency. *Signed off 2026-10-26; the two-servers session-lock check is carried to the first multiplayer playtest. Details in [PROGRESS.md](PROGRESS.md).*
 
 ### Phase 6: Content and polish for a soft launch (weeks 11–14)
-- [ ] Real jet models for all launch aircraft (about 15). Tiers I–IV plus one or two tasters. *1 of about 15 done: the F-5E has its final model, moving control surfaces and four PBR skins.*
-- [ ] Team Deathmatch and Air Superiority modes.
-- [ ] Lobby and battle place split, with reserved-server matchmaking.
-- [ ] Audio pass (engine, RWR, missiles, radio barks), plus effects (vapour, contrails, explosions).
-- [ ] Settings menu, controller support and key rebinding.
-- [ ] Daily challenges and badges.
-- [ ] Analytics events (`AnalyticsService` funnels: tutorial complete, first kill, first research).
+- [x] Real jet models for all launch aircraft (about 15). Tiers I–IV plus one or two tasters. *Went further: all 27 jets, Tiers I–VIII, have final models, moving control surfaces, their own cockpits and skins (October 2026).*
+- [x] Team Deathmatch and Air Superiority modes. *Guns Only came too (§5.1).*
+- [ ] Lobby and battle place split, with reserved-server matchmaking. *Built (§5.2, §9.4), with parties; to tick after the live test on the test experience.*
+- [x] Audio pass (engine, RWR, missiles, radio barks), plus effects (vapour, contrails, explosions).
+- [x] Settings menu, controller support and key rebinding. *Plus accessibility options and graphics quality settings.*
+- [ ] Daily challenges and badges. *Daily and weekly challenges, the login streak, achievements, mastery and the free spin are built. Badges are made on the live experience at launch.*
+- [x] Analytics events (`AnalyticsService` funnels: tutorial complete, first kill, first research).
+
+Still to do in this phase: mobile streaming and performance passes, and the release rollback drill. Task-level status is in [PROGRESS.md](PROGRESS.md).
 
 Exit test: a soft launch to a small audience. Measure D1/D7 retention and session length, and fix the biggest drop-off.
 
 ### Phase 7: Monetisation (weeks 15–16)
-- [ ] Wings currency, `ProcessReceipt` with idempotency, and a shop UI.
-- [ ] The first cosmetics batch (about 20 camos, trails and kill markers). *The skin system is in: a picker on the aircraft screen, ownership saved per jet, and four F-5E skins. They sell for Credits for now; Robux prices come with the shop.*
-- [ ] VIP game pass, boosters and the starter bundle.
-- [ ] Season 1 pass with a free and a premium track.
+- [x] Wings currency, `ProcessReceipt` with idempotency, and a shop UI.
+- [x] The first cosmetics batch (about 20 camos, trails and kill markers). *29 items: six camos, seven contrails, five kill-marker styles, five HUD themes and six wing-art decals, including the VIP and Season 1 ones. Jet skins sell for Credits or Wings.*
+- [x] VIP game pass, boosters and the starter bundle. *Plus the Extra Lineup Slot and Custom Callsign passes, Wings packs, Tier Unlocks (IV and V) and the weekly bundle.*
+- [x] Season 1 pass with a free and a premium track. *Season 1, "First Light", starts on 9 November 2026.*
 
 Exit test: every purchase path is tested in Studio with test purchases, and a rejoin shows the item granted exactly once.
 
 ### Phase 8: Launch and live ops (week 17+)
 - [ ] Public launch. Thumbnails and an icon (a jet mid-turn with vapour trails sells the game). First thumbnail: [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg), uploaded at launch (release checklist step 5).
 - [ ] Weekly balance patches from BR data.
-- [ ] Season cadence: new jets (Tiers V–VII), maps and modes every about 8 weeks.
-- [ ] Squadrons, Ranked Duels, BVR mode and PvE missions as post-launch content.
-- [ ] Tempest prestige unlock as a headline update once Tier VII is live and balanced.
+- [ ] Season cadence: new jets, maps and modes every about 8 weeks. *Tiers V–VII came early, in October 2026, so seasons start from the full roster.*
+- [ ] Squadrons, Ranked Duels, BVR mode and PvE missions as post-launch content. *Squadrons are built (November 2026), with parties, leaderboards, scheduled events and announcements.*
+- [x] Tempest prestige unlock as a headline update once Tier VII is live and balanced. *Built early: the Test Pilot trials (§6.2), November 2026.*
 
 Timeline note: the weeks assume one dedicated developer with AI assistance. Phases 1 and 3 are where time overruns are most likely, and that's fine. They're the game.
 
@@ -604,7 +636,7 @@ Timeline note: the weeks assume one dedicated developer with AI assistance. Phas
 | Flight model isn't fun, or feels floaty on Roblox | Critical | Phase 1 is dedicated to it, with a live tuning panel and early playtests. Mouse Aim smooths out rough edges. |
 | Network jitter makes dogfights feel unfair | High | Client-owned flight, server lag compensation, and interpolated missiles. Test with simulated latency in Studio. |
 | Exploiters (speed hacks, teleporting) | High | Server sanity checks on every jet, server-authoritative damage and missiles, and rate-limited remotes. |
-| Low player counts split across BR bands | High | AI filler pilots, wide BR bands at low population, and fewer modes at launch. |
+| Low player counts split across BR bands | High | 6-pilot matches, AI filler pilots after 30 s, a BR spread and mode choice that loosen the longer a player waits, and fewer modes at launch. |
 | Mobile performance and controls | Medium–High | Low-poly assets, a strict performance budget, and touch controls built in Phase 4 rather than at the end. |
 | Long grind drives players away | Medium | Fast early tiers, contribution-based rewards, and data-driven pacing adjustments. |
 | Trademark complaints over real aircraft names | Medium | Data-driven display names (one-line rename), no manufacturer logos, and fictionalised "concept" jets. |
@@ -616,6 +648,10 @@ Timeline note: the weeks assume one dedicated developer with AI assistance. Phas
 |---|---|---|
 | 1 | Tooling | Decided. **Git + GitHub** ([wgw0/afterburner](https://github.com/wgw0/afterburner)), with the project laid out for **Rojo** so scripts live as files. |
 | 2 | Aircraft names | Decided. **Real names wherever allowed**, otherwise semi-fictionalised but recognisable. See §6.4. |
-| 3 | Respawn model | **Deferred.** Decide after playtesting the Phase 4 match loop. Candidates: unlimited respawns on a timer, or one life per jet in the lineup. |
+| 3 | Respawn model | **Deferred.** Decide after playtesting the Phase 4 match loop. Candidates: unlimited respawns on a timer, or one life per jet in the lineup. Every mode uses a 5 s respawn timer meanwhile. |
 | 4 | Camera | Decided. **Cockpit view first**, with third person as a fallback if the cockpit proves too hard for general players. See §2.4. |
 | 5 | Ground targets | Decided. **Not for now.** Air-to-air only until after launch. Strike missions are a possible future update. |
+| 6 | Match size | Decided. **6 pilots a match** (Will, October 2026), with AI in empty seats. See §5.1. |
+| 7 | Pacing | Decided. **Tier II in 20–30 minutes**, then scaling up to the Tempest at about 50–60 hours (Will, November 2026). See §7.3. |
+| 8 | Tier Unlocks | Decided. **Tiers IV and V only** (Will, November 2026). Tiers II and III come in under two hours of play. See §8.2. |
+| 9 | Reloading | Decided. **Stores refill on a timer** when they run dry (Will, October 2026). Not realistic, on purpose. See §4.1. |

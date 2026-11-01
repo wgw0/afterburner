@@ -32,6 +32,8 @@ function ShopService:Grant(player: Player, purchaseId: string, key: string): (st
 	if not DataService:IsLoaded(player) then
 		return nil, "save not loaded"
 	end
+	local before = DataService:GetData(player)
+	local wingsBefore = before and before.Wings or 0
 	local ok, result, detail = pcall(function()
 		return DataService:Update(player, function(data)
 			return Shop.processReceipt(data, purchaseId, key)
@@ -44,18 +46,12 @@ function ShopService:Grant(player: Player, purchaseId: string, key: string): (st
 	if result == "Granted" then
 		DataService:Save(player)
 		local product = Products.LIST[key]
-		-- Robux sales are on the dashboard's Monetization pages already; the economy gets the Wings they buy.
-		if product.Kind == "Wings" then
-			local data = DataService:GetData(player)
-			Telemetry.economy(
-				player,
-				"Source",
-				"Wings",
-				product.Amount :: number,
-				data and data.Wings or 0,
-				Telemetry.SOURCES.Purchase,
-				key
-			)
+		-- Robux sales are on the dashboard's Monetization pages already; the economy gets the Wings they buy
+		-- (a Wings pack, or the Wings in the Starter Bundle)
+		local data = DataService:GetData(player)
+		local gained = (data and data.Wings or 0) - wingsBefore
+		if gained > 0 then
+			Telemetry.economy(player, "Source", "Wings", gained, data.Wings, Telemetry.SOURCES.Purchase, key)
 		end
 		Telemetry.event("Purchase", product.Price, { product = key, granted = detail }, player)
 		print(`[Shop] {player.UserId} bought {key}: {detail}`)

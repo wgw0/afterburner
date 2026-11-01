@@ -6,7 +6,7 @@ return {
 	Id = "Typhoon",
 	DisplayName = "Typhoon",
 	NameStatus = "Real",
-	FallbackName = 'Typhoon "EF-2000"',
+	FallbackName = 'Typhoon "Typhoon-A"',
 	Branch = "Europe",
 	Tier = 6,
 	BattleRating = 11.0,
