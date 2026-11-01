@@ -16,6 +16,7 @@ local Leaderboards = require(script.Parent.Leaderboards)
 local Season = require(script.Parent.Season)
 local Spin = require(script.Parent.Spin)
 local Streak = require(script.Parent.Streak)
+local TestPilot = require(script.Parent.TestPilot)
 local Economy = require(script.Parent.Config.Economy)
 local Settings = require(script.Parent.Config.Settings)
 
@@ -49,6 +50,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Titles",
 	"Season",
 	"StarterBought",
+	"TestPilot",
 })
 
 local function deepCopy<T>(value: T): T
@@ -103,6 +105,7 @@ function PlayerData.template(): { [string]: any }
 		TopTier = 0, -- highest tier owned, for the progression event
 		Season = Season.newState(), -- the season pass (Shared/Season)
 		StarterBought = false, -- the Starter Bundle (once per player, Shop)
+		TestPilot = TestPilot.newState(), -- the Test Pilot trials toward the Tempest (Shared/TestPilot)
 		Weekly = Leaderboards.newWeekly(), -- this week's kills and wins for the leaderboards (Shared/Leaderboards)
 		PendingStarter = false, -- the camo chosen before a Starter Bundle purchase (Shop), false for none
 		Flags = {},

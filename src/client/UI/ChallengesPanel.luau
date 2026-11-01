@@ -1,7 +1,8 @@
 --!strict
 -- Today's and this week's challenges (LIV-01), on the right of the Hangar: each with its progress bar and
 -- reward, a tick when done, and REROLL on unfinished daily ones while a reroll is left. Shows the time to the
--- next reset. props: Data (player data), OnReroll(index) -> (ok, err).
+-- next reset. Once open, the Test Pilot trials toward the Tempest (LIV-07) show their current step at the
+-- bottom. props: Data (player data), OnReroll(index) -> (ok, err).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,6 +10,7 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Challenges = require(Shared.Challenges)
 local Perks = require(Shared.Perks)
+local TestPilot = require(Shared.TestPilot)
 
 local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
@@ -26,7 +28,7 @@ local function duration(seconds: number): string
 end
 
 local function row(props: any)
-	local def = Challenges.get(props.Entry.Id)
+	local def = props.Def or Challenges.get(props.Entry.Id)
 	if not def then
 		return nil
 	end
@@ -149,6 +151,28 @@ local function ChallengesPanel(props: any)
 	for i, entry in state.Weekly or {} do
 		children[`Weekly{i}`] = e(row, { Entry = entry, Order = 10 + i })
 	end
+	-- The Test Pilot trials (LIV-07), once two Tier VII jets are researched, until the Tempest is earned
+	local trial = nil
+	if TestPilot.open(props.Data) and not TestPilot.done(props.Data) then
+		local step, progress = TestPilot.current(table.clone(props.Data))
+		trial = step
+		children.TestPilot = e(
+			"Frame",
+			{ Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = 20 },
+			{
+				Title = e(C.Label, {
+					Text = `TEST PILOT TRIALS  ·  {props.Data.TestPilot.Step}/{#TestPilot.STEPS}`,
+					Size = UDim2.new(1, 0, 0, 18),
+					Position = UDim2.fromOffset(0, 8),
+					Bold = true,
+					Color = Color3.fromRGB(255, 201, 60),
+					TextSize = 13,
+				}),
+			}
+		)
+		children.TestPilotStep =
+			e(row, { Def = step, Entry = { Id = (step :: any).id, Progress = progress, Done = false }, Order = 21 })
+	end
 	children.Error = if err
 		then e(
 			C.Label,
@@ -156,9 +180,12 @@ local function ChallengesPanel(props: any)
 		)
 		else nil
 
-	local rows = #(state.Daily or {}) + #(state.Weekly or {})
+	local rows = #(state.Daily or {}) + #(state.Weekly or {}) + (if trial then 1 else 0)
 	return e(C.Panel, {
-		Size = UDim2.fromOffset(WIDTH, 18 + 26 + rows * (ROW_H + 4) + (if err then 20 else 0) + 34),
+		Size = UDim2.fromOffset(
+			WIDTH,
+			18 + 26 + rows * (ROW_H + 4) + (if err then 20 else 0) + (if trial then 30 else 0) + 34
+		),
 		Position = UDim2.new(1, -20, 0, 20),
 		AnchorPoint = Vector2.new(1, 0),
 		Padding = 14,

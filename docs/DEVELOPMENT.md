@@ -1555,6 +1555,7 @@ All of these are server-side. The client calls them through remotes with IDs onl
 - To buy: researched and enough Credits.
 - The starter jets (F-5E and MiG-21bis) are owned by default.
 - The Tempest needs two Tier VII jets plus the Test Pilot challenge chain (§26).
+- **As built (LIV-07, November 2026):** `Shared/TestPilot`. The trials open once two Tier VII jets are researched and run as five steps in order, each counted only in a Tier VII jet in scored matches (the challenges' events: `Challenges.matches`, which gained a `minTier` filter; missiles defeated now carry the jet's tier): finish 5 matches; shoot down 10 jets; defeat 5 missiles; win 3 matches; finish a match without being shot down. The steps pay 10,000 / 15,000 / 15,000 / 20,000 / 25,000 Credits and 500–1,500 XP, with a toast ("TEST PILOT TRIAL COMPLETE"; the last says the Tempest can now be researched). `Progression.researchPlan` refuses the Tempest until then (full access skips it). Saved as `data.TestPilot = { Step, Progress }` (replicated); the Hangar's challenges panel shows the current step and its progress under the weeklies. Tested in `TestPilot.spec`.
 
 ### 23.4 Pilot level
 

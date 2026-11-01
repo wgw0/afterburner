@@ -21,6 +21,7 @@ local BridgeRun = require(Shared.BridgeRun)
 local AircraftData = require(Shared.AircraftData)
 local Badges = require(Shared.Config.Badges)
 local Challenges = require(Shared.Challenges)
+local TestPilot = require(Shared.TestPilot)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Net = require(Shared.Net)
@@ -223,6 +224,26 @@ local function record(
 				Telemetry.event("ChallengeCompleted", def.credits, { id = def.id }, player)
 			end
 		end
+		-- The Test Pilot trials toward the Tempest (LIV-07): the same events, Tier VII jets only
+		for _, event in challengeEvents do
+			local step = TestPilot.record(data, event)
+			if step then
+				data.Credits += step.credits
+				paid += step.credits
+				local before = data.Credits
+				Progression.addXP(data, step.xp)
+				levelCredits += data.Credits - before
+				local finished = TestPilot.done(data)
+				table.insert(notices, {
+					kind = "Test Pilot",
+					heading = if finished then "TEST PILOT TRIALS COMPLETE" else "TEST PILOT TRIAL COMPLETE",
+					text = if finished then "The Tempest can now be researched" else step.text,
+					credits = step.credits,
+					xp = step.xp,
+				})
+				Telemetry.event("TestPilotStep", step.credits, { id = step.id }, player)
+			end
+		end
 		for _, event in achievementEvents do
 			for _, id in Achievements.earned(event) do
 				if not data.Achievements[id] then
@@ -367,7 +388,7 @@ function ChallengeService:Init()
 			session.lifeDefeats += 1
 			record(
 				player,
-				{ { kind = "MissileDefeated", weapon = weapon } },
+				{ { kind = "MissileDefeated", weapon = weapon, tier = tierOf(targetJet.airframeId) } },
 				{ { kind = "MissileDefeated", weapon = weapon, lifeDefeats = session.lifeDefeats } }
 			)
 		end
