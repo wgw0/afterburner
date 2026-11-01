@@ -4,6 +4,10 @@ A drivable 4x4 for exploring the map from the ground (DEVELOPMENT.md §36). It i
 short-wheelbase soft-top utility vehicle of the 1970s, built to the same standard as the jets, with no maker's names
 or badges anywhere: its grille badge reads GROUND ROAMER and its plates read GR 88 MAP.
 
+**Switched off for now (Will):** `Config/GroundRoamer.Enabled` is `false` and the Hangar has no DRIVE button (TRAINING
+took its place). The model, skins and code stay. To bring it back, set `Enabled` to `true` and re-add the DRIVE button
+(see the git history of `Screens/Hangar`).
+
 ## Files
 
 | What | Where |
@@ -78,4 +82,4 @@ position, normal, part and AO per texel (the jets' pipeline) and paints:
    ```
    It reports the import scale and how well the parts match the manifest, and writes
    `ServerStorage.Vehicles.GroundRoamer`. Without `maps` it is untextured (coloured by set).
-4. Delete the import, play, press DRIVE in the Hangar.
+4. Delete the import. To drive it, the vehicle must be switched on (above); then play and press DRIVE in the Hangar.

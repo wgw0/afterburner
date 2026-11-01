@@ -13,27 +13,32 @@ the release date when the release is tagged.
 The soft-launch build: the first version published to the live experience.
 
 ### Added
-- 15 launch jets (27 airframes in the tech tree) with final models, cockpits and skins, including
-  level-reward liveries (Squadron Black, Ace Gold, Legend Chrome).
-- Team Deathmatch and Air Superiority (capture zones), alongside Dogfight and Free Flight.
-- Matchmaking across servers: lobby servers, a queue for any mode or a chosen one, 6-pilot match servers
-  filled with AI pilots after 30 s, and training servers.
-- Lessons 4–6 and a first-session flow: new pilots start in training, and can leave it at any time.
-- The "Strait" map, finished: materials, props, lighting, bridges.
-- Daily and weekly challenges with rerolls, 21 achievements by rarity, a career screen with the level track,
-  and titles.
-- A daily login streak with weekly rewards.
-- Aircraft mastery: 1–5 stars per jet from kills in it, with Credits, kill markers under the canopy and a
-  "<jet> Ace" title at 5 stars.
-- Settings: controls, key and gamepad rebinding, display, audio levels, and accessibility (subtitles, HUD
-  colours, menu size, reduce flashing, shapes on the scopes).
-- Radio calls and warnings with subtitles, music, and menu sounds.
-- Back to the hangar from the air (hold H).
-- Live config: reward multipliers, an event banner, a message of the day and battle ratings, changed on live
-  servers without an update.
-- Report a cheater: an in-game report with the pilot's anti-cheat data attached for review.
-- Analytics: onboarding funnel, progression, economy, combat and balance events.
-- The game's version in Settings.
+- The whole roster: 27 jets across eight tiers, from the F-5E to the Tempest-class concept, each with a final
+  model, moving control surfaces, its own cockpit and skins, plus the level-reward liveries (Squadron Black,
+  Ace Gold, Legend Chrome).
+- Swing wings on the F-14A, supercruise on the Typhoon, F-22A and Tempest, and thrust vectoring with
+  post-stall manoeuvres on the Su-30SM, Su-35S, F-22A, Su-57 and Tempest.
+- Stealth on the Tier VII jets and the Tempest: hardest to see head-on, and the weapon bays give a stealth
+  jet away for a few seconds after it fires.
+- Data link: Tier V+ jets share radar contacts with teammates.
+- Team Deathmatch, Air Superiority (capture zones) and Guns Only (no missiles, four times the rounds),
+  alongside Dogfight and Free Flight.
+- Matchmaking across servers: lobby servers, a queue for any mode or a chosen one by the jet you click PLAY
+  with, 6-pilot matches filled with AI pilots after 30 s, and training servers.
+- Parties of up to 3: queue together, fly on the same team and come home together.
+- Lessons 4–6 and a first-session flow: new pilots get a welcome window and start in training, and can leave
+  it at any time.
+- Vs AI on training servers, with bots flying jets at your jet's level, in normal or Guns Only matches.
+- The "Strait" map, finished: materials, props, lighting, two bridges (fly under one for a secret
+  achievement), the world edge and a "Pull up" warning.
+- 18 upgrade modules per jet.
+- Reloading: an empty gun, missile type, flares or chaff refill after a short timer, with a bar on the HUD.
+- Hit markers and a hit sound for missile hits, and a kill-confirm sound.
+- The scoreboard shows each pilot's jet and username, and a message says who shot you down.
+- Missiles shown on each jet's hardpoints, disappearing as each type runs out, and missile models in flight.
+- The HUD changes with the cockpit era.
+- Radar lock feedback: the HUD says why a lock failed or broke. A zooming radar and situation display.
+- Advanced heat-seekers: helmet-cued shots, and imaging seekers that only bursts of flares can fool.
 - Gunsights by tier: a lead-computing pipper that follows a turning target from Tier III, and the
   bullet-stream funnel from Tier V.
 - A damage diagram on the HUD: which parts of your jet are hit, and how badly.
@@ -43,7 +48,51 @@ The soft-launch build: the first version published to the live experience.
   further.
 - Flare programmes on Tier V+ jets: one press fires a short burst, and an optional automatic burst as a
   heat-seeker closes in.
+- Daily and weekly challenges with rerolls, a career screen with the level track, and titles.
+- 99 achievements by rarity, each paying Credits (and Wings from Rare up): 32 one-offs and 12 ranked series,
+  such as Hunter, Champion and Promotion, so the next one is always in reach.
+- A daily login streak with weekly rewards.
+- A free spin every 20 minutes played (up to 3 saved), with prizes by rarity. Spins are earned only, never
+  sold.
+- Aircraft mastery: 1–5 stars per jet from kills in it, with Credits, kill markers under the canopy and a
+  "<jet> Ace" title at 5 stars.
+- The Test Pilot trials: research two Tier VII jets, then five trials in them unlock the Tempest.
+- Squadrons: a tag before your name, owners, officers and members, a weekly goal worth 5,000 Credits each,
+  and a squadron leaderboard.
+- Leaderboards: kills and wins this week, season XP and all-time kills. Only other players count, not AI
+  pilots.
+- The season pass: Season 1, "First Light", starts on 9 November 2026. 30 tiers with a free and a premium
+  track; the premium track costs Robux or Wings and has season-only cosmetics.
+- Wings, the premium currency, in four packs, shown in the top bar with the other currencies.
+- The Shop: camos painted on every jet (Arctic Splinter, Tiger Stripe, Midnight Digital, Arachnida, Galaxy),
+  contrail colours with display smoke, kill-marker styles, HUD themes and wing art, all for Wings. Each jet's
+  own skins can be bought with Credits or Wings, and a SHOP CAMOS button sits under them.
+- The Starter Bundle (once per player: a camo you pick, a 3-hour Credits booster and 300 Wings) and a
+  themed weekly bundle at 25% off.
+- Tier Unlocks for Tiers IV and V: two jets of the tier above your highest, researched and owned.
+- 2x Credits and 2x RP boosters, an hour each.
+- Game passes: VIP Pilot (+25% Credits, a gold VIP tag, VIP Gold camo and contrails, an extra reroll),
+  Extra Lineup Slot and Custom Callsign.
+- Settings: controls, key and gamepad rebinding, display, audio levels, and accessibility (subtitles, HUD
+  colours, menu size, reduce flashing, shapes on the scopes).
 - Graphics settings: effects quality (Auto / Low / Medium / High), contrails and wingtip vapour on or off.
+- Radio calls and voice warnings with subtitles, music, and menu sounds.
+- Back to the hangar from the air (hold H).
+- Live events: an event banner, a message of the day, scheduled events such as double XP weekends, and
+  announcements to every server.
+- Report a cheater: an in-game report with the pilot's anti-cheat data attached for review.
+- Report a bug: a Bug / Lag / Idea / Other window that sends your device details with it.
+- The game's version in Settings.
+
+### Changed
+- Faster progression: Tier II in about 22 minutes, then scaling up to the Tempest in about 57 hours.
+- Matchmaking loosens the longer you wait: the BR spread widens to 3.0, and after two minutes you'll take any
+  mode.
+- The kill feed is CS:GO style, with your own lines outlined in red.
+- Missiles in flight are drawn at three times their real length, so you can see them.
+- Shorter missile and radar ranges, to suit the map's size.
+- The world is at 1 stud = 1 m, so the map loads in seconds rather than minutes.
+- The Eurofighter Typhoon is now just the Typhoon.
 
 ## 0.1.0 – 0.5.0 - Internal builds
 

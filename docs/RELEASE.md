@@ -37,12 +37,16 @@ same for a server, with its save version, role and uptime.
    Latest Update"; it moves players to the new version). Old servers otherwise run until they empty.
 5. **Check it live:** join production, open Settings: the new version, no "· Test", the new build.
 6. **Tag it:** on an up-to-date master, `bash scripts/release.sh` (try `--dry-run` first). It dates the
-   changelog section, commits "Release v0.7.0", and makes the tag. Then push both:
-   `git push origin master v0.7.0`.
+   changelog section, commits "Release v0.7.0", and makes the tag, with the changelog section as its message.
+   It stops first if you're not on master, the working tree isn't clean, master differs from origin/master,
+   the tag already exists, the changelog has no section for the version, or `scripts/ci-checks.sh` fails.
+   It pushes nothing; push both yourself: `git push origin master v0.7.0`.
 7. **Watch the first hour:** the Creator Dashboard's error report and analytics (sessions, the onboarding
    funnel, `DataLoadFailed`), and the server logs if anything looks off. Decide within the hour whether to
    keep it or roll back.
-8. **First launch only:** the store thumbnail and badges (DEVELOPMENT.md §35.3 steps 5 and 6).
+8. **First launch only:** the store thumbnail and the remaining badges (DEVELOPMENT.md §35.3 steps 5 and 6).
+   The icon is already set on the live experience, and 15 of the 32 one-off achievements have badges there
+   (ids in `Config/Badges`).
 
 ## Rolling back
 

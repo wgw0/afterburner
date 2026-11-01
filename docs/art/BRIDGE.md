@@ -127,3 +127,12 @@ BridgeWest 19 m so its mainland end meets the hillside there instead of running 
 13 m clear of the sea; they now stand on `TowerFootings` (a copy of `TowerPiers` stretched down to 6 m under the
 sea, same concrete). **Don't re-run `place()`**: it would move them back to the planned spots. Roads still don't
 reach the bridge ends.
+
+## Flying under it
+
+Flying under either bridge pays 100 XP in scored matches (once a minute) and earns the secret achievement
+Threading the Needle anywhere. `ChallengeService` checks each jet ten times a second in each bridge's own frame
+(the axes above, read from the placed model's pivot). `Shared/BridgeRun` holds the shape it tests against: the road
+on a parabola 50 m above the water at midspan and 18 m at the deck's ends, the girder 4 m under the road, nothing
+within 15 m of a tower, and only between the anchorages. If the model or its placement changes, update those
+numbers (tested in `BridgeRun.spec`).

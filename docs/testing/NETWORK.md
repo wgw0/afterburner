@@ -12,15 +12,15 @@ settings().Network.IncomingReplicationLag = 0.15 -- seconds; set back to 0 when 
 
 Or use **File → Studio Settings → Network → Incoming Replication Lag**.
 
-> **Limitation:** Studio's simulated lag does **not** show up in `Player:GetNetworkPing()` (it reads ~1 ms), so the server's lag compensation can't see it. Studio tests prove the game *stays correct* under lag (hits still register, nothing desyncs or errors). They can't prove the compensation *amount* is right. Check that on a live test server with real latency (Phase 5, REL-02).
+> **Limitation:** Studio's simulated lag does **not** show up in `Player:GetNetworkPing()` (it reads ~1 ms), so the server's lag compensation can't see it. Studio tests prove the game *stays correct* under lag (hits still register, nothing desyncs or errors). They can't prove the compensation *amount* is right. Check that on the test experience, *Afterburner (TEST)* (REL-02), with real latency; how to get players there is in [MULTIPLAYER_AND_MOBILE.md](MULTIPLAYER_AND_MOBILE.md).
 
 ## Checklist
 
 | # | Test | How | Pass when |
 |---|---|---|---|
-| 1 | Guns register under lag | 150 ms lag; spawn a drone (P panel → "Spawn target drone (ahead)"), fire | Hits and a kill register; hit markers and tracers line up with the target |
-| 2 | Tracers match | Two clients (Test → Server & Clients); one fires | The watching client sees the stream come from the shooter's nose and go the same way |
-| 3 | No double kills | Kill a jet with two players firing | Exactly one kill feed line; the assist goes to the other shooter if they did ≥25% |
+| 1 | Guns register under lag | 150 ms lag; spawn a drone (P panel → SPAWN TARGET DRONE (AHEAD)), fire | Hits and a kill register; hit markers and tracers line up with the target |
+| 2 | Tracers match | Two clients (Test → Clients and Servers); one fires | The watching client sees the stream come from the shooter's nose and go the same way |
+| 3 | No double kills | Kill a jet with two players firing | Exactly one kill feed line; the assist goes to the other shooter if they did ≥25%; the line is outlined red only on the screens of the pilots named in it |
 | 4 | Crash detection | Fly into the ground | Explosion, death cam, "You crashed"; server log has no errors |
 | 5 | Fake crash report ignored | Client command bar while flying high: `game.ReplicatedStorage.Remotes.ReportCrash:FireServer()` | Jet keeps flying |
 | 6 | Leaving mid-fight | Damage another player's jet, then they leave | Kill feed credits you |

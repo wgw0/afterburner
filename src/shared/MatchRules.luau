@@ -120,7 +120,7 @@ MatchRules.MODES = table.freeze({
 	} :: ModeConfig),
 })
 
--- Public servers take turns between these modes, one match each, until a mode-select screen exists (UI-05).
+-- Servers with no mode chosen by matchmaking (UI-05) take turns between these modes, one match each.
 -- A server set to a mode outside the list (Free Flight, the stress test) stays on it.
 MatchRules.ROTATION = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
 

@@ -46,7 +46,8 @@ Economy.MAX_LEVEL = 100
 Economy.LINEUP_SLOTS = table.freeze({ { level = 1, slots = 1 }, { level = 5, slots = 2 }, { level = 15, slots = 3 } })
 Economy.LEVEL_CREDITS = 250 -- Credits for every level gained
 
--- Upgrade modules (PRG-04). Costs are for a Tier I jet and scale with the tier multiplier. Effects are
+-- Upgrade modules (PRG-04). Costs are for a Tier I jet and scale with the tier multiplier
+-- and TECH_COST_SCALE (Progression.moduleCost). Effects are
 -- applied to the airframe at spawn; stock is about 85–90% of fully upgraded (DESIGN §7.4).
 export type ModuleDef = {
 	Id: string,

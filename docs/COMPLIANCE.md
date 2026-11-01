@@ -26,7 +26,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 
 | Check | Status |
 |---|---|
-| Maturity and compliance questionnaire answered honestly: stylised aircraft combat, no blood or gore, no real-world violence, cosmetic purchases, no paid random items | **Will** |
+| Maturity and compliance questionnaire answered honestly: stylised aircraft combat, no blood or gore, no real-world violence, cosmetic purchases, no paid random items | Done (Will, 1 November 2026) |
 | Genre and description say what the game is; no promises it doesn't keep | **Will** |
 | Private servers price set, if wanted (DESIGN §8.2) | **Will** (optional) |
 

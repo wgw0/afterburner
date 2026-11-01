@@ -9,7 +9,7 @@
 [![Platform](https://img.shields.io/badge/platform-Roblox-000000?style=for-the-badge&logo=roblox&logoColor=white)](https://create.roblox.com)
 [![Language](https://img.shields.io/badge/language-Luau-00A2FF?style=for-the-badge&logo=lua&logoColor=white)](https://luau.org)
 [![Tooling](https://img.shields.io/badge/sync-Rojo-E13835?style=for-the-badge)](https://rojo.space)
-[![Status](https://img.shields.io/badge/status-pre--alpha-FF8A3D?style=for-the-badge)](#roadmap)
+[![Status](https://img.shields.io/badge/status-soft--launch%20build-FF8A3D?style=for-the-badge)](#roadmap)
 
 [**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Progress**](docs/PROGRESS.md) · [**Art pipeline**](docs/art/AIRCRAFT_PIPELINE.md) · [**Roadmap**](#roadmap) · [**Getting started**](#getting-started) · [**Project layout**](#project-layout)
 
@@ -35,7 +35,8 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 - A physics-flavoured flight model: thrust, lift, drag and gravity
 - Stalls, G-LOC grey-out, corner speed and transonic drag
 - Cockpit view first, with era-based cockpits (analogue, glass, wide-area display)
-- Mouse Aim, Direct, gamepad and touch controls
+- Swing wings, supercruise and thrust vectoring on the jets that had them
+- Mouse Aim, Direct, gamepad and touch controls, with every key rebindable
 
 </td>
 <td width="50%" valign="top">
@@ -43,8 +44,9 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 ### Combat
 - Raycast guns with travel time, a lead pipper and component damage
 - IR, semi-active and active radar missiles that run out of energy
-- Radar, RWR and notching, with data link and stealth at the high tiers
-- Flares and chaff that reward good timing
+- Radar, RWR and notching, with data link from Tier V and stealth at Tier VII
+- Flares and chaff that reward good timing, and stores that reload on a timer when they run dry
+- Hit markers, a kill-confirm sound and a kill feed with your own lines outlined
 
 </td>
 </tr>
@@ -52,8 +54,9 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 <td valign="top">
 
 ### Modes
-- In the game now: Dogfight (free-for-all against players and AI pilots), Free Flight and three training lessons
-- Planned: Team Deathmatch, Air Superiority, Strike Escort, PvE co-op, Ranked Duels and BVR Battles
+- In the game now: Dogfight, Team Deathmatch, Air Superiority (capture zones), Guns Only, Free Flight, six training lessons and Vs AI
+- 6-pilot matches across servers, with AI pilots in empty seats and parties of up to 3
+- Planned: Strike Escort, PvE co-op, Ranked Duels and BVR Battles
 - Air-to-air only for now; ground targets may come in a later update
 
 </td>
@@ -61,8 +64,10 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 
 ### Progression
 - Three tech-tree branches: NATO, Soviet/Russia and Europe
-- XP, research points and Credits, with upgrade modules per jet
-- Paint schemes per jet, bought with Credits for now
+- XP, research points and Credits, with 18 upgrade modules per jet
+- Challenges, a login streak, 99 achievements, mastery stars, a free spin and a season pass
+- Squadrons and leaderboards
+- Skins per jet, and camos, contrails, kill markers, HUD themes and wing art bought with Wings
 - Monetisation is cosmetics and convenience only
 
 </td>
@@ -71,7 +76,7 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 
 ## The hangar
 
-Eight jets are in the game today, covering Tiers I to III: the F-5E, MiG-21bis and Mirage IIIE, the F-4E, MiG-23MLD and Mirage F1C, and the F-16A and MiG-29A. The F-5E has its final model, with moving control surfaces and four paint schemes; the other seven are still greybox models. The full roster runs from 1970s starter jets to a sixth-generation prestige concept:
+All 27 jets are in the game, from 1970s starter jets to a sixth-generation prestige concept. Every one has its final model with moving control surfaces, its own cockpit, skins and the level liveries. The Tempest is unlocked through the Test Pilot trials, flown in Tier VII jets.
 
 ```mermaid
 flowchart LR
@@ -133,16 +138,19 @@ afterburner/
 ├── wally.toml             # packages: React (UI), ProfileStore (saves)
 ├── stylua.toml · selene.toml
 ├── Afterburner.rbxl       # the place: map, terrain, jet models, skins
-├── .github/workflows/     # CI: integrity checks, model contract, format, lint, Rojo build
+├── .github/workflows/     # CI: integrity checks, model contract, format, lint, Rojo build, unit tests
 ├── docs/
 │   ├── DESIGN.md          # game design document
 │   ├── DEVELOPMENT.md     # engineering spec: every system, task and acceptance test
 │   ├── PROGRESS.md        # task tracker, ticked only when tested
+│   ├── RELEASE.md         # how to cut a release and roll back
+│   ├── ANALYTICS.md       # analytics events and the dashboard
+│   ├── COMPLIANCE.md      # pre-launch compliance checklist
 │   ├── art/               # aircraft art pipeline, marketing art
 │   ├── playtests/         # playtest logs
 │   └── testing/           # network test checklist
 ├── assets/                # README art
-├── scripts/               # CI scripts (integrity checks, model contract check with Lune)
+├── scripts/               # CI and release scripts (integrity checks, model contract, headless tests, release.sh)
 ├── tools/  → ServerStorage.Tools      # Studio tools (assembler, map builders, economy sim)
 │   └── blender/                       # Blender scripts: jet generator, paint, reference overlay
 ├── tests/  → ServerStorage.Tests      # TestRunner + *.spec modules
@@ -205,11 +213,11 @@ Then:
 | 3 | Missiles, radar, RWR and countermeasures | Done |
 | 4 | Match loop: Dogfight, AI pilots, first map, tutorial, touch controls | Done |
 | 5 | Progression and saving: tech tree Tiers I–III, BR matchmaking | Done |
-| 6 | Content and polish for a soft launch: about 15 jets with final art, TDM and Air Superiority | In progress |
-| 7 | Monetisation: shop, VIP, Season 1 pass | Not started |
-| 8 | Launch and live ops: Tiers V–VIII, squadrons, ranked, BVR | Not started |
+| 6 | Content and polish for a soft launch: all 27 jets with final art, TDM, Air Superiority, matchmaking across servers | In progress |
+| 7 | Monetisation: Wings, shop, passes, boosters, bundles, Season 1 pass | Built |
+| 8 | Launch and live ops: Tiers V–VIII, squadrons, ranked, BVR | In progress |
 
-Each phase ends with a playable build and an exit test. Phase 6 so far: the F-5E has its final model and four paint schemes, jets have moving control surfaces, and the skin picker is in. Task-level status is in [PROGRESS.md](docs/PROGRESS.md), and the phase checklists are in [design doc §10](docs/DESIGN.md#10-build-plan-steps-to-follow).
+Each phase ends with a playable build and an exit test. Phase 6 still has the live matchmaking test, badges, the mobile passes and the rollback drill. Phase 7 is built and checked in Studio. From Phase 8, Tiers V–VIII, squadrons, parties, leaderboards, scheduled events and the Test Pilot trials came early; the public launch, Ranked Duels, BVR and PvE are still to come. Task-level status is in [PROGRESS.md](docs/PROGRESS.md), and the phase checklists are in [design doc §10](docs/DESIGN.md#10-build-plan-steps-to-follow).
 
 <details>
 <summary><b>Decision log</b></summary>
@@ -222,7 +230,11 @@ Each phase ends with a playable build and an exit test. Phase 6 so far: the F-5E
 | Aircraft names | Real where allowed, otherwise semi-fictional but recognisable |
 | Camera | Cockpit first, with third person as a fallback |
 | Ground targets | Not for now; possibly a later update |
-| Respawn model | Still open: decide after playtesting the match loop (Dogfight uses a 5 s respawn timer meanwhile) |
+| Respawn model | Still open: decide after playtesting the match loop (every mode uses a 5 s respawn timer meanwhile) |
+| Match size | 6 pilots a match, with AI in empty seats |
+| Pacing | Tier II in 20–30 minutes, the Tempest in about 50–60 hours |
+| Tier Unlocks | Tiers IV and V only; Tiers II and III come in under two hours |
+| Typhoon | Called just "Typhoon": no manufacturer names in game |
 
 </details>
 
@@ -230,9 +242,9 @@ Each phase ends with a playable build and an exit test. Phase 6 so far: the F-5E
 
 > Nothing bought with Robux makes a jet turn harder, hit harder or see further than its free equivalent.
 
-On sale: camos, contrails, kill markers and nose art, a season pass, premium jets at the same BR and stats as free ones, VIP, capped boosters and private servers.
+On sale: Wings packs; camos, jet skins, contrails, kill markers, HUD themes and wing art (for Wings); the season pass; the Starter Bundle and a weekly bundle; Tier Unlocks for Tiers IV and V; the VIP Pilot, Extra Lineup Slot and Custom Callsign passes; and capped boosters. Premium jets, at the same BR and stats as free ones, may come later.
 
-Never on sale: loot boxes, top-tier jets, performance upgrades, or revives in PvP.
+Never on sale: loot boxes or spins (the free spin is earned only), jets above Tier V, performance upgrades, or revives in PvP.
 
 ## Licence
 

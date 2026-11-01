@@ -71,10 +71,10 @@
 | **Wally** | Luau package manager | Pinned in `rokit.toml`. `wally.toml` in the repo root |
 | **StyLua** | Formatter | Pinned in `rokit.toml`. Config in `stylua.toml` |
 | **Selene** | Linter | Pinned in `rokit.toml`. Config in `selene.toml` with the `roblox` std |
-| **Lune** | Runs Luau outside Roblox; reads the place file in CI | Pinned in `rokit.toml`. `lune run scripts/validate-models.luau` checks the aircraft models in `Afterburner.rbxl` (ACD-03) |
+| **Lune** | Runs Luau outside Roblox; reads the place file in CI | Pinned in `rokit.toml`. `lune run scripts/validate-models.luau` checks the aircraft models in `Afterburner.rbxl` (ACD-03); `scripts/run-tests.luau` runs the unit tests headless (§33.1) |
 | **luau-lsp** | Type checking and autocomplete in your editor | VS Code extension ("Luau Language Server"). Uses `sourcemap.json` from `rojo sourcemap` |
 | **TestRunner** (in-house) | Unit tests for pure modules | `tests/TestRunner.luau`, synced to `ServerStorage.Tests` (§33) |
-| **GitHub Actions** | CI: integrity checks, model contract, format check, lint, Rojo build | `.github/workflows/ci.yml` (§35) |
+| **GitHub Actions** | CI: integrity checks, model contract, format check, lint, Rojo build, headless unit tests | `.github/workflows/ci.yml` (§35) |
 
 > **Why an in-house test runner instead of Jest-Lua:** Jest-Lua needs a Studio feature flag (`debug.loadmodule`) to be switched on by editing Studio's settings files. A ~200-line runner covers what the pure modules need, runs in Edit mode from the command bar or the Studio MCP tools, and clones modules before requiring them, so edits synced by Rojo are always picked up.
 
@@ -84,10 +84,10 @@ Pin the **exact** version of every tool in `rokit.toml` at the moment you add it
 
 | Package | Use | Realm |
 |---|---|---|
-| **ProfileStore** (loleris) | Session-locked player data | Server. If it isn't on Wally, vendor it into `src/server/Vendor/` with its licence. |
-| **React (react-lua) + ReactRoblox** | Hangar, shop, menus | Client |
+| **ProfileStore** (loleris) | Session-locked player data | Server (`lm-loleris/profilestore`, a Wally server dependency) |
+| **React (react-lua) + ReactRoblox** | Hangar, shop, menus | Client (`jsdotlua/react`, `jsdotlua/react-roblox`) |
 
-Packages install to `Packages/` (git-ignored, restored with `wally install`). Add a `Packages` entry under `ReplicatedStorage` in `default.project.json` when the first dependency is added.
+Packages install to `Packages/` and server packages to `ServerPackages/` (both git-ignored, restored with `wally install`). `default.project.json` maps them to `ReplicatedStorage.Packages` and `ServerStorage.ServerPackages`.
 
 Keep the dependency list short. Everything else (Signal, Trove, Spring, networking) is small enough to write in-house in `src/shared/Util`, so we own and understand it.
 
@@ -113,6 +113,8 @@ Keep the dependency list short. Everything else (Signal, Trove, Spring, networki
 ### 0.5 Configuration rule
 
 All tunable numbers live in config modules under `src/shared/Config/` (shared) or `src/server/Config/` (secret, such as economy and anti-cheat thresholds). Live overrides are applied on top by `ConfigService` (§31).
+
+*As built:* there is no `src/server/Config/`. Everything is in `src/shared/Config/`, the economy included, so the menus can show costs; every rule that grants or spends runs on the server. The anti-cheat margins are constants in `Shared/MovementCheck`.
 
 ### 0.6 Environments
 
@@ -149,7 +151,7 @@ Keep **separate experiences** for test and production, so DataStores, MemoryStor
 
 ### 1.1 Source tree
 
-The tree as built. Modules planned for later phases are listed after it.
+The tree as built (November 2026). What was planned and not built is listed after it.
 
 ```
 src/
@@ -157,35 +159,80 @@ src/
 │   ├── Config/
 │   │   ├── Scale.luau               -- world/speed scale factors
 │   │   ├── Flight.luau              -- global flight constants (air density curve, g)
-│   │   ├── Economy.luau             -- rewards, costs, modules, lineup slots
+│   │   ├── Economy.luau             -- rewards, tier pace (TECH_COST_SCALE), modules, lineup slots
 │   │   ├── Settings.luau            -- known settings keys, ranges, defaults
+│   │   ├── Bindings.luau            -- rebindable actions and their defaults (INP-05)
+│   │   ├── Graphics.luau            -- effects quality profiles (FX-05)
+│   │   ├── HUDStyles.luau           -- HUD symbology per cockpit era (HUD-05)
 │   │   ├── Skins.luau               -- paint schemes per airframe, prices
-│   │   └── Environment.luau         -- reads the environment attribute
+│   │   ├── Cosmetics.luau           -- Wings cosmetics: contrails, kill markers, HUD themes, wing art, camos
+│   │   ├── Bundles.luau             -- the weekly featured bundles (SHP-05)
+│   │   ├── LevelRewards.luau        -- pilot level milestones, titles, level skins
+│   │   ├── Seasons.luau             -- seasons and the pass's tiers (LIV-04)
+│   │   ├── Products.luau            -- developer products, prices and ids per experience
+│   │   ├── Passes.luau              -- game passes, prices and ids per experience
+│   │   ├── Badges.luau              -- achievement badge ids per experience
+│   │   ├── Places.luau              -- the places in each universe (MMK-02)
+│   │   ├── Teams.luau               -- team names and colours
+│   │   ├── GroundRoamer.luau        -- the 4x4's tuning (§36)
+│   │   └── Environment.luau         -- Test or Prod, from the experience (§0.6)
 │   ├── Boot.luau                    -- Init/Start loader for services and controllers
 │   ├── Types.luau                   -- shared type definitions
-│   ├── Units.luau                   -- SI <-> studs, knots, feet, Mach
+│   ├── Units.luau                   -- real SI <-> studs, knots, feet
 │   ├── Atmosphere.luau              -- density, speed of sound vs altitude
 │   ├── FlightModel.luau             -- pure: forces, AoA, limits, step()
 │   ├── Instructor.luau              -- pure: mouse-aim autopilot
-│   ├── Ballistics.luau              -- pure: bullet step, lead solution
-│   ├── Guidance.luau                -- pure: proportional navigation, seekers, ARH tracking
-│   ├── Signature.luau               -- pure: IR/RCS signature maths
-│   ├── Countermeasures.luau         -- pure: flare and chaff physics, decoy rolls
+│   ├── ControlSurfaces.luau         -- pure: stick/body rates -> surface deflections
+│   ├── Ballistics.luau              -- pure: bullet step, lead solution, gunsights
+│   ├── Guidance.luau                -- pure: proportional navigation, seekers, loft, ARH tracking
+│   ├── Signature.luau               -- pure: IR/RCS signature maths, TWS, data link
+│   ├── Countermeasures.luau         -- pure: flare and chaff physics, decoy rolls, flare programmes
+│   ├── Reload.luau                  -- reload timers for guns, missiles and countermeasures (§15.3a)
 │   ├── DamageModel.luau             -- pure: component health, flight modifiers, kill credit
 │   ├── PoseHistory.luau             -- pure: pose ring buffer and interpolation (lag compensation)
 │   ├── MovementCheck.luau           -- pure: speed, teleport and acceleration checks
-│   ├── AIBrain.luau                 -- pure: AI pilot decisions
-│   ├── MatchRules.luau              -- modes as data, respawn rules
+│   ├── AIBrain.luau                 -- pure: AI pilot decisions and difficulty profiles
+│   ├── AdaptiveAI.luau              -- Vs AI bots that ease off or sharpen with the player's form
+│   ├── MatchRules.luau              -- modes as data, scoring, respawn rules
+│   ├── AirSuperiority.luau          -- pure: zones and tickets (MCH-06)
 │   ├── LessonRunner.luau            -- pure: tutorial lesson steps
-│   ├── Matchmaking.luau             -- BR bands, AI airframe choice
+│   ├── Matchmaking.luau             -- BR bands, queue BR, Vs AI airframe choice
+│   ├── Queue.luau                   -- forming matches from the queue (MMK-03)
+│   ├── MatchmakingStats.luau        -- matchmaking telemetry maths (MMK-06)
+│   ├── Party.luau                   -- party rules (MMK-05)
+│   ├── ServerRole.luau              -- Lobby / Match / Training / Pending
 │   ├── PlayerData.luau              -- save schema, migrations, replica, deltas
 │   ├── Progression.luau             -- rewards, research, purchase, modules, skins, lineup
-│   ├── TechTree.luau                -- research graph (nodes, edges, costs)
+│   ├── TechTree.luau                -- research graph (nodes, prerequisites, costs)
+│   ├── TestPilot.luau               -- the Test Pilot trials toward the Tempest (LIV-07)
+│   ├── Mastery.luau                 -- aircraft mastery stars (PRG-07)
+│   ├── Challenges.luau              -- daily and weekly challenges
+│   ├── Achievements.luau            -- achievements, ranked series, rarity rewards
+│   ├── Streak.luau                  -- daily login rewards
+│   ├── Spin.luau                    -- the free spin
+│   ├── Season.luau                  -- the season pass
+│   ├── Leaderboards.luau            -- boards and their stores (LIV-05)
+│   ├── Squadron.luau                -- squadron rules (LIV-06)
+│   ├── Shop.luau                    -- what purchases grant; exactly-once receipts; bundles
+│   ├── Perks.luau                   -- what passes and boosters give
+│   ├── Cosmetics.luau               -- owning, buying and equipping cosmetics
 │   ├── Skins.luau                   -- applies a skin's SurfaceAppearances to a jet model
-│   ├── ControlSurfaces.luau         -- pure: stick/body rates -> surface deflections
+│   ├── CamoGlow.luau                -- the Galaxy camo's breathing glow
+│   ├── HullDecal.luau, KillMarkers.luau, WingArt.luau -- decals laid on a jet's skin
+│   ├── LiveConfig.luau              -- live overrides and the running event (OPS-01)
+│   ├── Events.luau                  -- scheduled events (OPS-03)
+│   ├── Callsign.luau                -- custom callsign rules (CMP-01)
+│   ├── Reports.luau                 -- report-a-cheater rules (CMP-03)
+│   ├── Feedback.luau                -- report-a-bug rules
+│   ├── Policy.luau                  -- Roblox policy answers (CMP-02)
+│   ├── Funnels.luau                 -- analytics funnel steps (ANL-02)
+│   ├── BridgeRun.luau               -- flying under a bridge
+│   ├── GroundVehicle.luau           -- pure: raycast-suspension vehicle (§36)
+│   ├── WorldEdge.luau               -- what lies past the map's edge
+│   ├── Version.luau                 -- the game's version (REL-03)
 │   ├── AircraftModelContract.luau   -- model validator (§5.3)
-│   ├── AircraftData/                -- one module per airframe + init (registry)
-│   ├── WeaponData/                  -- one module per weapon + init (registry)
+│   ├── AircraftData/                -- one module per airframe (27) + init (registry)
+│   ├── WeaponData/                  -- one module per weapon (38) + init (registry)
 │   ├── Net/
 │   │   ├── init.luau                -- typed remote wrapper (§4)
 │   │   ├── Definitions.luau         -- every remote declared here
@@ -200,65 +247,109 @@ src/
 ├── server/                          → ServerScriptService.Server
 │   ├── Main.server.luau
 │   ├── Lib/
-│   │   └── Telemetry.luau           -- analytics wrapper (§30)
+│   │   ├── Telemetry.luau           -- analytics wrapper (§30)
+│   │   ├── Teams.luau               -- who is on which team
+│   │   └── Erasure.luau             -- Right to Erasure (§32.3)
 │   └── Services/
 │       ├── DataService.luau
 │       ├── DiagnosticsService.luau
+│       ├── ConfigService.luau       -- live config and scheduled events (§31)
+│       ├── AdminService.luau
+│       ├── StreamingService.luau    -- map warm-up, MapReady
 │       ├── AircraftService.luau
 │       ├── HistoryService.luau      -- position history for lag compensation
 │       ├── CombatService.luau       -- guns + damage
 │       ├── MissileService.luau      -- missiles + countermeasures
-│       ├── SensorService.luau       -- lock validation, RWR
+│       ├── SensorService.luau       -- lock validation, RWR, data link
 │       ├── AntiCheatService.luau
 │       ├── MatchService.luau
+│       ├── MatchmakingService.luau  -- queue, matchmaker lease, teleports (§25)
+│       ├── TrainingService.luau     -- training servers: lessons, Vs AI, free flight
+│       ├── PartyService.luau
 │       ├── AIService.luau
 │       ├── DroneService.luau        -- target drones (test environment)
+│       ├── GroundRoamerService.luau
 │       ├── ProgressionService.luau
-│       └── AdminService.luau
+│       ├── ChallengeService.luau    -- challenges, achievements, badges, login streak, bridge runs
+│       ├── SeasonService.luau
+│       ├── SpinService.luau
+│       ├── LeaderboardService.luau
+│       ├── SquadronService.luau
+│       ├── ShopService.luau         -- ProcessReceipt
+│       ├── PassService.luau         -- game pass ownership
+│       ├── TelemetryService.luau
+│       ├── TextFilterService.luau
+│       ├── PolicyChecksService.luau
+│       ├── ReportService.luau       -- report a cheater
+│       └── FeedbackService.luau     -- report a bug
 └── client/                          → StarterPlayer.StarterPlayerScripts.Client
     ├── Main.client.luau
     ├── Controllers/
     │   ├── PlayerDataController.luau
     │   ├── SettingsController.luau
+    │   ├── BindingsController.luau      -- key and button bindings
+    │   ├── GraphicsController.luau      -- effects quality for this device
     │   ├── DiagnosticsController.luau
+    │   ├── StreamingController.luau     -- reports the frame rate during map warm-up
     │   ├── InputController.luau
     │   ├── FlightController.luau
+    │   ├── DriveController.luau         -- the Ground Roamer
     │   ├── SensorController.luau        -- radar and RWR picture
     │   ├── WeaponController.luau
     │   ├── CameraController.luau
     │   ├── CockpitController.luau
-    │   ├── ControlSurfaceController.luau -- animates control surfaces on every nearby jet
+    │   ├── ControlSurfaceController.luau -- animates control surfaces and swing wings on every nearby jet
+    │   ├── HardpointViewController.luau -- missiles on each jet's hardpoints
     │   ├── HUDController.luau
     │   ├── ScopesController.luau        -- radar and situation displays
     │   ├── GEffectsController.luau      -- grey-out, blackout, red-out
     │   ├── EffectsController.luau
+    │   ├── CamoGlowController.luau      -- the Galaxy camo's glow
     │   ├── MissileViewController.luau   -- interpolates server missiles
     │   ├── CombatFxController.luau
     │   ├── AudioController.luau
-    │   ├── ToneController.luau          -- seeker, lock and RWR tones
+    │   ├── ToneController.luau          -- seeker, lock and RWR tones, voice warnings
+    │   ├── RadioController.luau         -- radio calls
+    │   ├── MusicController.luau
     │   ├── MatchController.luau
+    │   ├── ZonesController.luau         -- Air Superiority zones
+    │   ├── WorldEdgeController.luau     -- the world past the map's edge
     │   ├── TutorialController.luau
     │   ├── TouchController.luau
+    │   ├── ToastController.luau         -- challenge, achievement and announcement toasts
+    │   ├── HangarButtonController.luau  -- back to the hangar from a flight or a drive
     │   ├── MenuController.luau          -- owns menu state, mounts the React app
     │   └── DebugController.luau         -- test-environment-only tuning panel
-    └── UI/                              -- React: App, Components, Theme, JetPreview, Screens/
+    └── UI/                              -- React: App, Components, Theme, JetPreview, MenuBackdrop, LoadingScreen,
+                                            Sounds, the panels and dialogs (challenges, matchmaking, party,
+                                            leaderboards, squadron, damage diagram, daily reward, spin, welcome,
+                                            report, feedback) and Screens/ (Hangar, TechTree, AircraftDetail,
+                                            Career, Season, Shop, Settings, Results, Training)
 
-tests/                               → ServerStorage.Tests (TestRunner, *.spec, Smoke)
+tests/                               → ServerStorage.Tests (TestRunner, 64 *.spec, Smoke)
 tools/                               → ServerStorage.Tools (Studio tools, run from the command bar)
 ├── GreyboxBuilder.luau, TerrainBuilder.luau, StraitBuilder.luau, EconomySim.luau, ExploitTest.luau
-├── AircraftAssembler.luau           -- imported FBX + manifest -> game-ready jet
+├── AircraftAssembler.luau           -- imported FBX + manifest -> game-ready jet (and its cockpit)
+├── MissileBuilder.luau              -- the missile model families
+├── BridgeBuilder.luau               -- the two bridges to the island
+├── GroundRoamerBuilder.luau         -- the Ground Roamer template
 ├── SceneryBuilder.luau              -- roads, towns, farms, woods and airbase buildings on the Strait
 ├── SkyBuilder.luau                  -- sky, sun, haze, clouds, colour grade and the grass variants
-├── Manifests/                       -- per-airframe model manifests written by the Blender generator
-└── blender/                         -- Blender scripts (not synced): f5e_generate.py, f5e_paint.py,
-                                        mig21_generate.py, mig21_paint.py, scenery_generate.py, sky_paint.py,
-                                        terrain_paint.py,
-                                        overlay_reference.py, render_views.py
-scripts/                             -- CI: ci-checks.sh, validate-models.luau (Lune)
+├── Manifests/                       -- model manifests written by the Blender generators (jets, Cockpits/,
+│                                       Missiles, Scenery/, Vehicles/)
+├── audio/, badges/, cosmetics/, marketing/ -- Python generators: UI sounds, badge images, wing art,
+│                                       the icon, cover and trailer
+└── blender/                         -- Blender scripts (not synced): <jet>_generate.py and <jet>_paint.py for
+                                        every airframe, jet_paint.py, livery_paint.py, cockpit_*.py,
+                                        missiles_generate.py, bridge_*.py, groundroamer_*.py, camo_cards.py,
+                                        scenery_generate.py, woods_merge.py, sky_paint.py, terrain_paint.py,
+                                        overlay_reference.py, render_views.py; art in out/ (Git LFS)
+scripts/                             -- ci-checks.sh, validate-models.luau, run-tests.luau (Lune), release.sh,
+                                        woods-export.luau
 docs/art/                            -- art pipeline; reference images are kept out of git
 ```
 
-Planned for later phases and not built yet: `SquadronService`, `AfterburnerTeleport` (the TeleportService wrapper), `ModerationService`, and per-mode modules if modes outgrow the data in `MatchRules`.
+Planned and not built: `AfterburnerTeleport` (teleports are wrapped inside `MatchmakingService` and `PartyService`), `ModerationService` (reports go to `ReportService`, §32.1) and per-mode modules (the modes are still data in `MatchRules`, §17.2).
 
 > Some module names would clash with Roblox service names (`TeleportService`, `AnalyticsService`). Those are named `AfterburnerTeleport` and `Telemetry`.
 
@@ -379,17 +470,19 @@ export type Weapon = { --[[ fields per §5.4 ]] }
 | `MAP_HALF_EXTENT` | `5600` studs | Play area radius (~14.7 km real) |
 | `CEILING` | `5600` studs | Hard ceiling (displays as ~48,000 ft) |
 
-**Rule:** the flight model runs in **"game metres"** (already scaled), so maths stays realistic-shaped. `Units` converts:
+**Rule (as built):** the flight model runs in **real SI units**; only the world is compressed. A jet doing a real 250 m/s moves 250 × `SPEED_SCALE` studs a second, so real-equivalent distances and altitudes are world distances ÷ `SPEED_SCALE`, and climbs, turn rates and energy stay true to life. `Units` converts (`Units.STUDS_PER_REAL_METRE` = `STUDS_PER_METRE × SPEED_SCALE`):
 
-- `Units.toStuds(m)`, `Units.toMetres(studs)`
-- `Units.displayKnots(gameMps)`, `Units.displayMach(gameMps, altitude)`, `Units.displayFeet(studs)`, `Units.displayKm(studs)`
+- `Units.velocityToStuds(realMps)`, `Units.velocityFromStuds(studsPerSecond)` (numbers or vectors)
+- `Units.toStuds(metres)`, `Units.toMetres(studs)`, `Units.altitudeMetres(worldY)`
+- `Units.knots(mps)`, `Units.kmh(mps)`, `Units.feet(metres)`, `Units.km(metres)`; Mach is `Atmosphere.mach(speed, altitude)`
 
-Every HUD number goes through `Units.display*`. Nothing else multiplies by magic numbers.
+Every HUD number goes through these. Nothing else multiplies by magic numbers.
 
 ### 3.3 Atmosphere (`Atmosphere.luau`)
 
 - `density(altitudeM): number`: exponential approximation `ρ = 1.225 × e^(−h / 8500)`, using *display* altitude so the curve feels real.
 - `speedOfSound(altitudeM): number`: linear from 340 m/s at sea level to 295 m/s at 11 km display altitude, flat above.
+- `mach(speed, altitudeM): number`.
 
 ### 3.4 Util modules
 
@@ -400,7 +493,7 @@ Every HUD number goes through `Units.display*`. Nothing else multiplies by magic
 | `Spring` | Critically damped spring for cameras and needles: `new(initial, speed, damping)`, `:Update(dt, target)` |
 | `RingBuffer` | Fixed-capacity buffer: `push(item)`, `at(i)`, `findBracket(time)` (for history) |
 | `Pool` | Object pool: `new(template, size)`, `:Get()`, `:Release(obj)` |
-| `Validate` | `isFiniteNumber`, `isVector3`, `isUnitVector`, `inRange`, `isEnumString(set)`, `isString(maxLen)` |
+| `Validate` | `isFiniteNumber`, `isInteger`, `isVector3`, `isUnitVector`, `inRange`, `isEnumString(set)`, `isString(maxLen)`, and `matchesSpec` / `args`, which check a remote's arguments against its `Definitions` entry |
 
 **Acceptance:** unit tests cover each module, including edge cases (NaN rejected by `Validate`, RingBuffer wraparound).
 
@@ -488,17 +581,18 @@ Full list of remotes: [Appendix A](#appendix-a-remote-catalogue).
 | `MaxPitchRate`, `MaxYawRate` | deg/s | |
 | `MaxMach` | number | |
 | `VariableGeometry` | table? | Swing wings (F-14A, MiG-23MLD, Tornado F3): Mach→sweep schedule, wings-forward and wings-back coefficients, model sweep and pivot (§6.4) |
-| `ThrustVectoring` | boolean | Su-35, F-22: raises post-stall pitch authority |
-| `Stealth` | number 0–1 | RCS multiplier (1 = normal) |
-| `Radar` | table | `{ Type, Range, ConeDeg, CanNotch, CanTWS, DataLink }` |
-| `RWR` | table | `{ LaunchWarning: boolean, Resolution }` |
-| `Gun` | WeaponId | |
-| `Hardpoints` | `{ { Allowed: {WeaponClass} } }` | |
-| `DefaultLoadout` | `{ WeaponId }` | |
-| `Countermeasures` | `{ Flares, Chaff }` | |
-| `ComponentHealth` | table | Per component (§12) |
-| `Modules` | table | Upgrade definitions (§23.5) |
-| `Cost` | `{ Research: number, Credits: number }` | |
+| `ThrustVectoring` | boolean? | Su-30SM, Su-35S, F-22A, Su-57, Tempest: raises low-speed and post-stall pitch authority (§6.4) |
+| `Stealth` | number 0–1? | Head-on RCS multiplier (1 = normal, §14.5) |
+| `WaveDrag` | number? | Scales the transonic drag rise (default 1, §6.4) |
+| `Radar` | table? | `{ Range (m), Cone (degrees half-angle), CanNotch, CanTWS? }`. TWS and data link follow from the tier (`Signature.hasTWS`, `hasDataLink`) |
+| `RWR` | table? | `{ LaunchWarning: boolean, Resolution: "Coarse" \| "Fine" }` |
+| `Gun` | WeaponId | Cross-checked against `WeaponData` at boot |
+| `Missiles` | `{ { Weapon: WeaponId, Count } }`? | The jet's missile load (no hardpoint slots or loadout choice yet) |
+| `Countermeasures` | `{ Flares, Chaff }`? | |
+| `ComponentHealth` | table? | Overrides the `DamageModel` defaults (§12) |
+| `StatsFrom` | string? | Premium jets only: the free jet whose stats it copies (§27.10) |
+
+*As built:* fields marked `?` are optional. Upgrade modules are the same for every jet (`Economy.MODULES`, §23.5) and research and purchase costs live in `TechTree` (§23.3), so neither is on the airframe.
 
 ### 5.3 Model and asset contract
 
@@ -521,8 +615,8 @@ Every aircraft model **must** follow this contract, or the game won't load it. A
 |---|---|
 | `Id`, `DisplayName`, `NameStatus` | As for aircraft |
 | `Class` | `"Gun"`, `"IR_Rear"`, `"IR_All"`, `"IR_Adv"`, `"SARH"`, `"ARH"` |
-| Gun fields | `RateOfFire` (rounds/min), `MuzzleVelocity`, `Damage`, `Ammo`, `Spread`, `SpoolTime`, `HeatPerShot`, `CoolRate` |
-| Missile fields | `MotorBurnTime`, `MotorThrust` (as acceleration m/s²), `Mass`, `DragCoef`, `MaxG`, `MinSpeedForGuidance`, `MaxRange`, `MinRange`, `SeekerConeDeg`, `GimbalLimitDeg`, `LockTime`, `NavConstant`, `FlareResistance` 0–1, `ChaffResistance` 0–1, `ProximityFuse` m, `Damage`, `Lifetime` s, `ActiveRange` (ARH only) |
+| Gun fields | `RateOfFire` (rounds/min), `MuzzleVelocity`, `Damage`, `Ammo`, `Spread` (degrees), `Drag`, `Lifetime` s, `HeatPerShot`, `CoolRate` |
+| Missile fields | `MotorBurnTime`, `MotorAccel` (m/s²), `Drag`, `MaxG`, `MinSpeed` (stops guiding below it), `MaxRange`, `MinRange`, `SeekerCone` and `Gimbal` (degrees), `LockTime`, `NavConstant`, `FlareResistance` 0–1, `ChaffResistance` 0–1, `ProximityFuse` m, `Damage`, `Lifetime` s, `ActiveRange` (ARH only), `Loft?` (§13.2), `Model` (one of six missile model families) and `Length` m (the family model is scaled to it) |
 
 ### 5.5 Tasks
 
@@ -654,6 +748,7 @@ Collects raw input from keyboard and mouse, gamepad and touch, and outputs a sin
 | Pitch | Mouse | Left stick Y | Virtual stick |
 | Yaw | A / D | LB / RB | Optional buttons |
 | Limiter override (hold) | Left Shift | L3 | — |
+| Mouse Aim / Direct | M | — | — |
 | Fire gun | LMB | A | Fire button |
 | Fire missile | Space | X | Missile button |
 | Next missile | R | D-pad up | Weapon icon tap |
@@ -831,6 +926,11 @@ Each airframe's `Era` picks a style from `Config/HUDStyles` (tested in `HUDStyle
 - Every era keeps the same box size: a smaller analogue box made the corner readouts overlap.
 - Checked in play: F-5E (analogue) and Tempest (helmet, bank scale), no errors.
 
+### 9.5 As built: kill feed and hit markers (November 2026)
+
+- **Kill feed** (top right, `HUDController`): CSGO style, newest at the bottom, 5 lines, each gone after 7 s. Each line sits on its own dark box: the killer and any assisters ("+ name"), the weapon or cause in brackets, dimmer, then the victim. Names are in the HUD colour. A line you're in (your kill, assist or death) gets a red outline and a darker box, and your name is in bold white. The `KillFeed` remote carries the killer's, victim's and assisters' UserIds as well as their shown names (0 for none or an AI pilot), so your lines are found even under a callsign or squadron tag; `RadioController`'s splash calls and the lessons' kill checks use the same ids.
+- **Hit marker:** a ✕ at the centre of the HUD box for 0.12 s on each `HitConfirm` (gun or missile), with a hit sound; your kills also play a kill-confirm sound (`CombatFxController`).
+
 ---
 
 ## 10. Aircraft lifecycle (AIR)
@@ -848,7 +948,7 @@ AircraftService.JetDestroyed: Signal  -- (jet, killer?, cause)
 ```
 
 Spawn steps:
-1. Clone the model from `Assets.Aircraft`. Apply the camo. Set attributes (Appendix B). Tag it `Jet`.
+1. Clone the model from `Assets.Aircraft`. Apply the camo. Set attributes (Appendix B). (Jets are found through the `workspace.Jets` folder, not a tag.)
 2. Add `LinearVelocity`, `AngularVelocity` and their attachments to `Root`.
 3. Set the initial velocity (airborne spawn: cruise speed along the spawn direction).
 4. Parent to `workspace.Jets`. Set `ModelStreamingMode = Persistent`.
@@ -1023,7 +1123,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 ### 13.1 Lifecycle
 
 1. **Lock** (§14): the client shows the lock. The server validates it when firing.
-2. **Fire request:** `MissileFire(weaponIndex, targetJetId?)`. The server checks: has the missile, alive, target in seeker/radar cone and range, lock time satisfied (the server tracks lock start times too), and the rate limit.
+2. **Fire request:** `MissileFire(targetJetId)` (0 = no target) fires the missile type picked with `SelectWeapon`. The server checks: has the missile, alive, target in seeker/radar cone and range, lock time satisfied (the server tracks lock start times too), and the rate limit.
 3. **Spawn:** the server creates a missile state record (no part), starting at the hardpoint with the jet's velocity plus a small ejection push.
 4. **Simulate** every server tick (§13.2).
 5. **Replicate:** missile states are packed (§4.3) and sent at 15 Hz *(tune)* over `MissileState` (unreliable) to players within range. Spawn and detonation events go on reliable remotes.
@@ -1187,12 +1287,14 @@ Because the pilot's client owns their jet's physics, the server must check what 
 |---|---|---|
 | Max speed | Speed ≤ airframe max × 1.15 | Strike |
 | Acceleration | Change in velocity ≤ physically possible (from thrust + dive) × 1.5 | Strike |
-| Teleport | Position change ≤ speed × dt × 1.5 + 50 studs | Correct + strike |
+| Teleport | Position change ≤ speed × dt × 1.5 + 17 studs | Correct + strike |
 | Turn rate / G | Turn rate consistent with ≤ MaxG + 2 | Strike |
 | Fuel | Server fuel estimate (assuming max burn when unsure) | Force engine-out when empty |
 | Noclip | Jet passes through terrain (raycast between samples) | Destroy jet |
 
 **Strikes:** strikes decay over time. 3 strikes in 10 s → reset the jet to its last valid state (set the network owner to the server briefly, set the CFrame, return ownership). Repeated resets → kick, and log to the analytics/moderation sink. Never ban automatically at launch. Log and review.
+
+*As built (`Shared/MovementCheck`, `AntiCheatService`):* the speed (MaxMach at sea-level speed of sound × 1.15, from the jet's upgraded figures), teleport and acceleration checks run 10× a second; a sudden stop counts as a crash, not a strike. 3 strikes in 10 s reset the jet (the server holds it 0.5 s); 3 resets in 60 s kick. The turn-rate, fuel and noclip checks aren't built: crashes into terrain are the server's own path checks (§10.3).
 
 ### 16.2 Remote checks
 
@@ -1255,6 +1357,8 @@ type Mode = {
 }
 ```
 
+*As built:* there is no `Services/Modes/`. Each mode is a data table in `Shared/MatchRules.MODES` (score and time limits, respawn rule, AI fill, teams, `Objective = "Zones"`, `GunsOnly`), and `MatchService` runs them all; Air Superiority's zones and tickets are `Shared/AirSuperiority`. Modes: Free Flight, Dogfight (15 kills or 10 min), Team Deathmatch (30 team kills or 10 min), Air Superiority (tickets, or the team ahead at 12 min), Guns Only, and the test-only Stress mode (24 jets). A match server runs the one mode in its matchmaker record (§25.6); elsewhere (the test environment's `DebugSetMode`) modes rotate Dogfight, Team Deathmatch, Air Superiority, Guns Only (`MatchRules.ROTATION`).
+
 ### 17.3 Modes
 
 | Mode | Specific logic | Phase |
@@ -1274,6 +1378,8 @@ type Mode = {
 Build respawning as a **config option per mode** from day one, so the playtest can compare:
 - `Respawn = { Type = "Timer", Delay = 5 }`
 - `Respawn = { Type = "LineupLives" }` (one life per jet in the lineup)
+
+*As built:* `{ Type = "Timer", Delay }` and `{ Type = "Lives", Lives, Delay }` (the player's `LivesLeft` and `RespawnIn` attributes drive the menu). Every mode uses a 5 s timer for now.
 
 ### 17.5 Scoreboard and results
 
@@ -1325,7 +1431,7 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 | Aim error (deg) | 4 | 2 | 1 | 0.5 |
 | Uses flares well | Rarely | Sometimes | Usually | Always |
 | Energy management | None | Basic | Good | Excellent |
-| Max G used | 5 | 7 | MaxG − 0.5 | MaxG |
+| Max G used (share of MaxG) | 65% | 85% | 95% | 100% |
 
 - **Filler bots** in PvP matches use Normal difficulty and are labelled `[AI]`. They give reduced rewards when killed *(tune: 50%)* to stop farming.
 
@@ -1379,7 +1485,7 @@ The full workflow is in [docs/art/AIRCRAFT_PIPELINE.md](art/AIRCRAFT_PIPELINE.md
 4. Paint skins with `tools/blender/f5e_paint.py` (procedural PBR textures from the same `.blend`), upload them and store each as `Assets.Skins.<Id>.<Skin>`.
 5. Save the place and commit the place file.
 
-The F-5E is the first jet through this pipeline. The other airframes still use the greybox models from `tools/GreyboxBuilder`.
+All 27 jets have come through this pipeline (§37.2), each with its own `<jet>_generate.py` and `<jet>_paint.py`; `tools/GreyboxBuilder` only made the early placeholders.
 
 ### 19.5 Tasks
 
@@ -1502,17 +1608,22 @@ The schema from DESIGN §9.3, plus:
 
 - `Version` (number) and a `Migrations` table: `Migrations[n](data)` upgrades version `n-1` to `n`. Run on load. Covered by unit tests with fixtures of every old version.
 - Bounded lists. For example, `ProcessedReceipts` keeps the most recent 100 purchase IDs. Roblox only re-sends a receipt until it's been marked granted, so a recent-history list is enough to stop double grants (§27.3).
-- A `Flags` table for one-off things (`TutorialComplete`, `FirstPurchaseOffered`, and `AllUnlocked` for full access, §31.2).
+- A `Flags` table for one-off things (`TutorialComplete`, `Onboarded` (§28.2), and `AllUnlocked` for full access, §31.2).
+- *As built:* still schema version 1 with no migrations yet; new fields reach old saves by `PlayerData.reconcile` filling them from the template. Besides the currencies and jets the save holds `Stats`, `Challenges`, `Achievements`, `Titles`, `Streak`, `Spin`, `Season`, `Squadron`, `TestPilot`, `Weekly`, `Cosmetics`, `Passes`, `Boosters`, the pending Tier Unlock and Starter choices, `Settings` and `Callsign` (each described in its own section).
 - Per airframe, `Aircraft[id]` holds `Owned`, `Researched`, `RP`, `Modules` (`true` = fitted, `false` = owned but taken off), `Mastery`, `Skins` (skins bought; the default is always owned) and `Camo` (the skin in use).
 
 ### 22.3 Other DataStores
 
 | Store | Use |
 |---|---|
-| `OrderedDataStore` `Leaderboard_Kills_Season<n>` | Seasonal leaderboards |
-| `OrderedDataStore` `Ranked_Elo_Season<n>` | Ranked ladder |
-| `DataStore` `Squadrons` | Squadron records (§26.4) |
-| `DataStore` `LiveConfig` | Live config overrides (§31) |
+| `OrderedDataStore` `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`, `LB_Season_<id>`, `LB_KillsAll`, `LB_SquadronWeek_<week>` | Leaderboards (§26.8, §26.4) |
+| `DataStore` `Squadrons` | Squadron records and tags (§26.4) |
+| `DataStore` `LiveConfig` | Live config overrides, the event schedule and the audit (§31) |
+| `DataStore` `Reports`, `OrderedDataStore` `ReportCounts` | Cheater reports (§32.1) |
+| `DataStore` `Feedback` | Bug reports (§32.4) |
+| `MemoryStoreSortedMap` `MatchQueue`, `MemoryStoreHashMap` `Matchmaking` | The queue, the matchmaker lease, match records and hand-offs (§25.6) |
+
+The ranked ladder (`Ranked_Elo_Season<n>`) waits for Ranked Duels (MCH-09).
 
 ### 22.4 Tasks
 
@@ -1546,13 +1657,13 @@ All of these are server-side. The client calls them through remotes with IDs onl
 ### 23.2 Reward calculation
 
 - `MatchService` records events (kill, assist, missile defeated, zone captured, survived, win).
-- `ProgressionService` turns events into XP/RP/Credits using `server/Config/Economy.luau` (the values from DESIGN §7.2), multiplied by: the tier multiplier, the win bonus, first-win-of-the-day, VIP (§27), active boosters (capped at ×2 total) and the premium-jet RP bonus.
+- `ProgressionService` turns events into XP/RP/Credits using `shared/Config/Economy.luau` (the values from DESIGN §7.2), multiplied by: the tier multiplier, the win bonus, first-win-of-the-day, VIP (§27), active boosters (capped at ×2 total) and the premium-jet RP bonus.
 - RP goes to the airframe that earned it. A small share *(tune: 10%)* goes to a "free RP" pool spendable anywhere, so players aren't stuck.
 - Anti-farming: rewards per kill on the same victim drop after 3 kills in a match. Kills of AI give 50%. AFK detection (no input for 60 s) gives no survival or win bonus.
 
 ### 23.3 Research and purchase rules
 
-- The research graph is in `shared/TechTree.luau`: `{ node: airframeId, requires: {airframeId}, rpCost, creditCost }`.
+- The research graph is in `shared/TechTree.luau`: `{ Id, Tier, Branch, Requires = { airframeId }, RP, Credits }`, with the costs scaled per tier by `Economy.TECH_COST_SCALE` (§23.6). Each jet requires the whole tier below (the F-14A follows the F-16A or MiG-29A; the Mirage III, the third Tier I jet, needs either starter). Tier VII jets also accept another Tier VII jet (`TIER_VI_OR_VII`).
 - To research: own at least one prerequisite (any branch, same or lower tier) and have enough RP on it (or free RP).
 - To buy: researched and enough Credits.
 - The starter jets (F-5E and MiG-21bis) are owned by default.
@@ -1562,7 +1673,7 @@ All of these are server-side. The client calls them through remotes with IDs onl
 ### 23.4 Pilot level
 
 - XP curve: `xpToNext(level) = 500 + 150 × level^1.35` *(tune)*.
-- Level rewards table in config: lineup slots (level 5 and 15), Ranked (20), titles and cosmetics.
+- Level rewards table in config: lineup slots (level 5 and 15), titles and cosmetics (as built: §26.2a, Level rewards). Ranked waits for Ranked Duels.
 
 ### 23.5 Upgrade modules
 
@@ -1627,6 +1738,8 @@ A script simulates a player's progression with average match results, so the pla
 | **Settings** | §29 |
 | **Results** | Match results with rewards and progress animations |
 
+*As built:* the top bar's tabs are HANGAR, TECH TREE, CAREER, SEASON, SHOP and SETTINGS. The Hangar holds the lineup, the challenges panel, the free spin and, in a lobby, the mode picker over PLAY and the PARTY and MATCHMAKING panels; there's no separate mode-select screen. **Career** is the profile: stats, the level track, the title picker and callsign, the ranked series cards, and a lower panel that switches between ACHIEVEMENTS, LEADERBOARDS and SQUADRON. The aircraft detail screen has stock-vs-upgraded bars, modules, skins and mastery; under the skins, **SHOP CAMOS** ("Camos paint every jet you fly") opens the Shop at its camos. Training servers have their own home screen (`Screens/Training`, §28.2).
+
 ### 24.3 Rules
 
 - UI reads data from the **client replica** (§22.1) and only sends **intents** (`Research(airframeId)`), never values.
@@ -1666,7 +1779,7 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 ### 25.2 Queue design (MemoryStoreService)
 
 - Queue key: `queue:{mode}:{brBand}` using a `MemoryStoreSortedMap` (entries: `userId → {lineupBR, partyId, joinTime, region?}`), or `MemoryStoreQueue` per bucket.
-- BR bands are fixed-width buckets (for example 0.33 wide) so matching can look at neighbouring buckets as the wait grows (±1.0 to start, ±1.7 at most, DESIGN §5.2).
+- BR bands are fixed-width buckets (for example 0.33 wide) so matching can look at neighbouring buckets as the wait grows (±1.0 to start, ±1.7 at most, DESIGN §5.2; as built it widens on to 3.0 for long waits, §25.6).
 - One matchmaker at a time: lobby servers try to take a lease (`MemoryStoreHashMap` key `matchmaker:lease` written with `UpdateAsync` and a short expiry). The lease holder runs the matching loop every 2 s. If it disappears, another server takes over when the lease expires.
 - When a match forms:
   1. Write the match record to `MemoryStoreHashMap` `match:{matchId}` (mode, map, players, teams, BR band, AI fill count).
@@ -1743,11 +1856,11 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **Challenges** (`Challenges.luau`, tests in `Challenges.spec`): 12 daily and 6 weekly in the pools. 3 dailies a day (the same 3 for everyone, seeded by the UTC day), 2 weeklies (new on Monday 00:00 UTC), one reroll a day. Events: Kill (weapon class Gun / IR / Radar, tier of the jet flown), Assist, MissileDefeated, Capture, MatchFinished (survived?), Win. A completed challenge pays its Credits and XP at once (dailies 1,200–2,000 Cr, weeklies 8,000–12,000).
 - **Achievements** (`Achievements.luau`): First Blood, Guns Only, Victor, Ace in a Day, Untouchable, Notched (a radar missile defeated), Zone Hunter, Veteran (50 matches), Test Pilot (the Tempest in a match). Pilots who played before achievements existed get the ones their lifetime stats already show when they join.
 - **ChallengeService** watches scored matches only (not training servers, the stress test or free flight) and saves `data.Challenges` and `data.Achievements`; lifetime `Stats` stay with the match rewards (`Progression.applyRewards`). Each completion sends `ChallengeNotice`, shown by `ToastController`.
-- **Badges**: put each achievement's badge id in `Config/Badges` (per universe). They'll be made on the production experience at launch (release checklist §35.3 step 6); the test experience has none. Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
-- **20 achievements** since November 2026: the nine above plus Fox One, Fox Three, Double Trouble (2 kills in 10 s), Hat Trick (3 in a life), Flawless (3 kills, not shot down), Team Player (3 assists), Escape Artist (3 missiles defeated in a life), Top of the Table (first in a free-for-all), Centurion (100 kills), Collector (10 jets), High Flyer (level 25).
-- **Always something new to earn (Will, November 2026):** every achievement now pays when it's earned, by rarity (`Achievements.REWARDS`): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings; the toast says what it paid. Twelve **ranked series** (`Achievements.SERIES`, 70 levels in all, rarer as they climb; the top level is always Legendary) put the next one in reach: Hunter (jets shot down), Dogfighter (players shot down), Champion (wins), Frequent Flyer (matches), Wingman (assists), Evader (missiles defeated), Zone Commander (captures), Fleet (jets owned), Rising Star (pilot level), Taskmaster (challenges completed), Mechanic (upgrades bought) and Promotion (Tier II Pilot … Prestige Pilot). They're checked with the other lifetime totals at the end of every match and on joining (`Achievements.career`, now shared so Career can show progress); `Stats` gained `Assists`, `MissilesDefeated`, `Captures` and `Challenges`. Series levels have no Roblox badges. Career shows one card per series (the level reached, the next goal and a bar toward it) ahead of the one-off achievements. Tested in `AchievementSeries.spec`; checked in Studio (Will's save earned five levels on joining, 8,000 Credits, then was put back).
+- **Badges**: each achievement's badge id goes in `Config/Badges` (per universe). The live experience has 15 so far (Roblox gives 5 free a day, so the rest are added as they're made): the first nine above plus Hat Trick, Fox One, Fox Three, Double Trouble, Flawless and Team Player. The test experience has none. Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
+- **The one-off achievements** since November 2026: the nine above plus Fox One, Fox Three, Double Trouble (2 kills in 10 s), Hat Trick (3 in a life), Flawless (3 kills, not shot down), Team Player (3 assists), Escape Artist (3 missiles defeated in a life), Top of the Table (first in a free-for-all), Centurion (100 kills), Collector (10 jets), High Flyer (level 25). Then 11 for the hangar and the bank: Full Hangar (every jet), Fully Kitted (every upgrade for one jet), Master Mechanic (every upgrade for every jet), Rainy Day Fund, High Roller and Tycoon (50,000 / 250,000 / 1,000,000 Credits at once), Researcher and Boffin (10,000 / 100,000 RP banked), Sharp Dresser, Fashion Icon and Walk-in Wardrobe (5 / 25 / 50 skins). With the secret Threading the Needle that's **32 one-offs**; the ranked series below add 67 levels, so **99 achievements** in all.
+- **Always something new to earn (Will, November 2026):** every achievement now pays when it's earned, by rarity (`Achievements.REWARDS`): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings; the toast says what it paid. Twelve **ranked series** (`Achievements.SERIES`, 67 levels in all, rarer as they climb; the top level is always Legendary) put the next one in reach: Hunter (jets shot down), Dogfighter (players shot down), Champion (wins), Frequent Flyer (matches), Wingman (assists), Evader (missiles defeated), Zone Commander (captures), Fleet (jets owned), Rising Star (pilot level), Taskmaster (challenges completed), Mechanic (upgrades bought) and Promotion (Tier II Pilot … Prestige Pilot). They're checked with the other lifetime totals at the end of every match and on joining (`Achievements.career`, now shared so Career can show progress); `Stats` gained `Assists`, `MissilesDefeated`, `Captures` and `Challenges`. Series levels have no Roblox badges. Career shows one card per series (the level reached, the next goal and a bar toward it) ahead of the one-off achievements. Tested in `AchievementSeries.spec`; checked in Studio (Will's save earned five levels on joining, 8,000 Credits, then was put back).
 - **Rarity**: every achievement is Common, Uncommon, Rare, Epic or Legendary (`Achievements.RARITIES`), shown loot-style in Career (grey, green, blue, purple, gold; `Theme.Rarity`): the card's border and name, faint until earned, and its toast's colour.
-- **Bridge runs** (`BridgeRun.luau`, `BridgeRun.spec`): ChallengeService checks each player's jet ten times a second against both bridges, in each bridge's own frame; crossing its line below the deck's underside (a parabola from 46 m at midspan, about a metre under the real deck), between the anchorages and clear of the towers, pays 100 XP (scored matches only, once a minute) and the secret achievement Threading the Needle (anywhere you fly; the first run shows only the achievement's toast, with the XP in it) (hidden in Career until earned, not in the "/ 20").
+- **Bridge runs** (`BridgeRun.luau`, `BridgeRun.spec`): ChallengeService checks each player's jet ten times a second against both bridges, in each bridge's own frame; crossing its line below the deck's underside (a parabola from 46 m at midspan, about a metre under the real deck), between the anchorages and clear of the towers, pays 100 XP (scored matches only, once a minute) and the secret achievement Threading the Needle (anywhere you fly; the first run shows only the achievement's toast, with the XP in it) (hidden in Career until earned, and counted apart from the total: "N / 98 + 1 secret").
 - **Login streak** (LIV-03, `Streak.luau`, `Streak.spec`): one claim per UTC day from the DAILY REWARD window the menu shows once a day (its own ScreenGui above the menu; gamepad selects CLAIM). A 7-day week: 250, 350, 450, 600, 750, 1,000, 1,500 Credits (+500 Free RP on day 7), repeating. Day 7 (first time) unlocks the title Regular, day 30 Devoted plus 5,000 Credits; these live in `data.Titles` and show in Career's picker once owned. One missed day is forgiven; a longer break goes back to the first day of that week, never to day 1. Saved as `data.Streak`; paid by `ChallengeService` (`ClaimDailyReward`); telemetry `DailyReward` (value: streak day).
 - **Level rewards** (`Config/LevelRewards`): besides 250 Credits a level, milestones pay Credits or Free RP once (`Progression.claimLevelRewards`, also on joining for levels reached earlier), open the lineup slots, unlock titles (picked in Career, shown after your name on the scoreboard, checked on the server), extra HUD colours (Pink 7, Blue 18, Violet 40; the server refuses a locked one) and three **level skins** (Squadron Black 10, Ace Gold 25, Legend Chrome 50) that work on every jet. A level skin appears in a jet's picker once its paint is installed under `Assets.Skins.<Airframe>.<SkinId>`; AI never fly them.
 - **UI**: the challenges panel on the right of the Hangar (progress, rewards, REROLL, time to reset) and the CAREER tab: stats and the level track (milestones reached, the next one, the title picker) on top, the achievements below.
@@ -1829,6 +1942,8 @@ Follows DESIGN §8: **never pay-to-win.**
 
 Product IDs live in `server/Config/Products.luau`, with **separate IDs for the test and production experiences**.
 
+*As built:* the ids live in `shared/Config/Products.luau` and `shared/Config/Passes.luau` (shared so the client shows prices), and every product and pass below is created in both experiences. Three game passes exist: VIP Pilot (399 R$), Extra Lineup Slot (149) and Custom Callsign (99); Loadout Presets isn't made (jets have no loadout choice yet). Developer products: four Wings packs, Tier Unlocks IV and V, the two boosters, the Season Pass and the Starter Bundle. No premium jets exist yet.
+
 ### 27.2 ShopService
 
 ```lua
@@ -1839,7 +1954,7 @@ ShopService:OwnsPass(player, passKey) -> boolean  -- cached, verified with UserO
 
 - The catalogue (prices, rotation, bundles) is served from config, with the weekly rotation chosen deterministically from the week number.
 - Wings purchases (cosmetics, premium jets) are transactions inside `DataService:Update`: check the balance → deduct → grant → log.
-- Skins exist ahead of the shop. `Config/Skins.luau` defines each airframe's skins (name, Credit price, which one is the default) and `Progression` handles ownership: `BuySkin` buys and fits one, `SetSkin` switches between owned skins. The aircraft detail screen has the picker. The server paints each jet as it spawns with the pilot's skin (`Shared.Skins.apply`), and AI jets get a random one. The F-5E has Ghost Grey (default), Desert, Pacific and Lizard aggressor schemes at 5,000 Credits each; Robux and Wings prices come with this shop.
+- Skins exist ahead of the shop. `Config/Skins.luau` defines each airframe's skins (name, Credit price, which one is the default) and `Progression` handles ownership: `BuySkin` buys and fits one, `SetSkin` switches between owned skins. The aircraft detail screen has the picker. The server paints each jet as it spawns with the pilot's skin (`Shared.Skins.apply`), and AI jets get a random one. Every jet has a default skin and two or three more at 5,000 Credits each (the F-5E: Ghost Grey, then Desert, Pacific and Lizard aggressor schemes); each can also be bought for 150 Wings (§27.6).
 
 ### 27.3 ProcessReceipt (critical)
 
@@ -1880,7 +1995,7 @@ end
 
 ### 27.6 As built: products, receipts and Tier Unlocks (SHP-01/02)
 
-- **`Config/Products`** (shared, so the client shows prices): each developer product's kind, Robux price and what it grants, and its id per experience (`idFor` / `keyFor`; none created yet). Wings packs: 150 for 149 R$ (the smallest buys at least one skin), 550 for 499, 1,200 for 999, 2,500 for 1,999. Tier Unlocks IV and V: 299 and 399 R$ (II and III were dropped in November 2026: those tiers now come in under two hours of play; their dashboard products should be taken off sale). Game passes stay in `Config/Passes` (`PassService`, CMP-01).
+- **`Config/Products`** (shared, so the client shows prices): each developer product's kind, Robux price and what it grants, and its id per experience (`idFor` / `keyFor`; all created in both experiences). Wings packs: 150 for 149 R$ (the smallest buys at least one skin), 550 for 499, 1,200 for 999, 2,500 for 1,999. Tier Unlocks IV and V: 299 and 399 R$ (II and III were dropped in November 2026: those tiers now come in under two hours of play; their dashboard products should be taken off sale). Game passes stay in `Config/Passes` (`PassService`, CMP-01).
 - **`Shared/Shop`** (pure): `grant` applies a product to a save; `processReceipt` is the exactly-once rule: a purchase id already in `ProcessedReceipts` is never granted again; otherwise the grant runs on a deep copy of the save, which replaces the save (with the id remembered) only if the grant succeeded, so an error leaves the save untouched.
 - **`ShopService`** sets the one `MarketplaceService.ProcessReceipt`: no loaded save, an unknown product id or any error → `NotProcessedYet`; a grant → `DataService:Save` straight away (ProfileStore's `Profile:Save`), an analytics economy event and a `Purchase` telemetry event, then `PurchaseGranted`.
 - **Tier Unlock:** `Shop.tierUnlockOffer` is the tier above the player's highest owned jet, only when that's Tier IV or V (`Products.MIN_UNLOCK_TIER` / `MAX_UNLOCK_TIER`). The Tech Tree shows a "SKIP AHEAD: UNLOCK TIER N" banner; CHOOSE JETS lists that tier's jets, the player picks two and BUY calls `ChooseTierUnlock`, which checks the pick (`Shop.checkTierUnlockChoice`), saves it as `PendingTierUnlock` and prompts the purchase (the receipt can't carry a choice). The grant makes the two jets researched and owned (stock) and clears the choice; if the choice was lost, the first two unowned jets of the tier.
@@ -1890,7 +2005,7 @@ end
 
 ### 27.7 As built: passes and boosters (SHP-03)
 
-- **What they give** (`Shared/Perks`): **VIP Pilot** (399 R$) +25% Credits from every match, a VIP tag before the name (scoreboard and jet labels) and one more daily challenge reroll; **Extra Lineup Slot** (149 R$) one more lineup slot; **boosters** (75 R$ developer products, `CreditsBooster` / `RPBooster`) double Credits or RP from matches for an hour, and another adds an hour. A player's own perks never multiply rewards past ×2 (VIP with a Credits booster is ×2, not ×2.5); they show as their own line in the match rewards ("VIP + Booster"). The VIP camo comes with the cosmetics batch (SHP-07).
+- **What they give** (`Shared/Perks`): **VIP Pilot** (399 R$) +25% Credits from every match, a VIP tag before the name (scoreboard and jet labels) and one more daily challenge reroll; **Extra Lineup Slot** (149 R$) one more lineup slot; **boosters** (75 R$ developer products, `CreditsBooster` / `RPBooster`) double Credits or RP from matches for an hour, and another adds an hour. A player's own perks never multiply rewards past ×2 (VIP with a Credits booster is ×2, not ×2.5); they show as their own line in the match rewards ("VIP + Booster"). VIP also brings the VIP Gold camo and contrails (§27.8).
 - **Ownership:** `PassService` checks Roblox on every join and purchase, keeps the `Pass_<name>` player attributes, and mirrors ownership into the save as `data.Passes` (replicated, so the client's lineup slot count matches). The experience's creator owns every pass. Boosters are `data.Boosters` (unix time each runs out). The top bar shows running boosters with a countdown; the Shop has a Boosters section.
 - **Ids:** both experiences have all three passes and both boosters (`Config/Passes`, `Config/Products`), managed pricing off. Test servers: admin `booster.clear`.
 - Tested in `Perks.spec` (each perk, the ×2 cap, booster time adding up, the reward line) and in play.
@@ -1906,7 +2021,7 @@ end
 - **On the jet:** `ProgressionService` gives `AircraftService.cosmeticsFor` the equipped set; `AircraftService.dress` sets the jet's `Trail` attribute, paints kill markers in their style and lays the wing art, at spawn and again when the pilot buys or equips something mid-flight. Everyone sees contrails (`EffectsController` reads `Trail`), kill markers and wing art; HUD themes are only on your own HUD. The hangar and aircraft page previews show your markers and wing art.
 - **Decals:** `Shared/HullDecal` lays a thin invisible plate on the visible skin by ray-casting onto it, and `fits` checks that a plate's corners and edge midpoints all land on the skin, so paint never hangs off a curve. `KillMarkers` casts in from each side under the canopy (`CockpitEye`). `WingArt` casts down onto each wing from the `WingtipL` / `WingtipR` attachments, trying spots across the span and along the chord, and uses the biggest decal that fits both wings.
 - **Shop:** a section per kind under the Wings packs: the price, EQUIP, or EQUIPPED (TAKE OFF).
-- **Camos** (October 2026): bought once, they paint every jet you fly (Will), over each jet's own skin; taking one off goes back to the jet's skins. VIP Gold (white, gold leading edges, fin tips and pinstripes) comes with the VIP Pilot pass; Arctic Splinter (angular white, grey and ice-blue patches) and Tiger Stripe (orange with swept black stripes) are 400 Wings, and so is Midnight Digital (small pixel blocks of navy, grey and light blue, very mixed; Will: camos should look cool, not realistic), and Arachnida (white orb webs over glossy blue-black with polished silver spiders, on the underside too: `camo_under`), and Galaxy (swirled purple, electric-blue and magenta nebula over deep space with stars; the stars and brightest streaks glow). `livery_paint.SCHEMES` holds them, so every painter (`jet_paint`, `f5e_paint`, `mig21_paint`) paints them like the level liveries; `f5e_paint.camouflage` gained the `splinter`, `tiger` and `digital` styles (`digital`: noise sampled on a grid of `camo_pixel` blocks, plus `camo_scatter` for single stray blocks); `web`, `f5e_paint.spider_webs`: web centres from a hashed 3D grid of `camo_scale` cells so every texture set gets the same webs, each texel on its nearest centre's web, spokes and straight-segment rings in the plane across the web's axis (the main direction of the skin's normals in that cell, split by which way the skin faces), shared threads measured along the skin; `camouflage` takes the normals for it and `camo_shine` gives the spiders a metal finish). `galaxy`, `f5e_paint.galaxy`: domain-warped noise (sampled through itself twice) for the swirls, stars from a hashed 3D grid; it also leaves a glow mask in `CAMO_GLOW`, which the painters save as `_Emissive` and the install sets as each SurfaceAppearance's `EmissiveMaskContent`, with the `CamoGlow` tag. `CamoGlowController` (client) breathes every tagged copy outside `Assets` between EmissiveStrength 0.6 and 2.2 every 4 s and drifts its tint violet to pink every 11 s (`Shared/CamoGlow`), each jet offset by a hash of its name; with Reduce Flashing on it holds at 1.2 and only the tint drifts. Previews and the shop card show the mask as emission. They live in `Assets.Skins.<Jet>.<Skin>` like any skin (135 skins; Galaxy added 172 unique textures, 54 of them glow masks; Midnight Digital added 129 unique textures and reused 189 already uploaded). `Progression.skinFor` puts an equipped camo first (if it's installed for that jet); `ProgressionService` repaints a flying jet when one goes on or off. The shop card has a banner across the top: the F-16A in the camo on a transparent background (`tools/blender/camo_cards.py`), over a soft glow in the card's colour; a camo with no preview is "Coming soon" (`Cosmetics.ready`). The jet page's skins panel says when a camo is on. AI pilots never wear them. The 550 Wings pack says it covers a camo on every jet. More camos: add a scheme, paint all jets, upload, install, add the catalogue item.
+- **Camos** (October 2026): bought once, they paint every jet you fly (Will), over each jet's own skin; taking one off goes back to the jet's skins. VIP Gold (white, gold leading edges, fin tips and pinstripes) comes with the VIP Pilot pass; Arctic Splinter (angular white, grey and ice-blue patches) and Tiger Stripe (orange with swept black stripes) are 400 Wings, and so is Midnight Digital (small pixel blocks of navy, grey and light blue, very mixed; Will: camos should look cool, not realistic), and Arachnida (white orb webs over glossy blue-black with polished silver spiders, on the underside too: `camo_under`), and Galaxy (swirled purple, electric-blue and magenta nebula over deep space with stars; the stars and brightest streaks glow). `livery_paint.SCHEMES` holds them, so every painter (`jet_paint`, `f5e_paint`, `mig21_paint`) paints them like the level liveries; `f5e_paint.camouflage` gained the `splinter`, `tiger` and `digital` styles (`digital`: noise sampled on a grid of `camo_pixel` blocks, plus `camo_scatter` for single stray blocks); `web`, `f5e_paint.spider_webs`: web centres from a hashed 3D grid of `camo_scale` cells so every texture set gets the same webs, each texel on its nearest centre's web, spokes and straight-segment rings in the plane across the web's axis (the main direction of the skin's normals in that cell, split by which way the skin faces), shared threads measured along the skin; `camouflage` takes the normals for it and `camo_shine` gives the spiders a metal finish). `galaxy`, `f5e_paint.galaxy`: domain-warped noise (sampled through itself twice) for the swirls, stars from a hashed 3D grid; it also leaves a glow mask in `CAMO_GLOW`, which the painters save as `_Emissive` and the install sets as each SurfaceAppearance's `EmissiveMaskContent`, with the `CamoGlow` tag. `CamoGlowController` (client) breathes every tagged copy outside `Assets` between EmissiveStrength 0.6 and 2.2 every 4 s and drifts its tint violet to pink every 11 s (`Shared/CamoGlow`), each jet offset by a hash of its name; with Reduce Flashing on it holds at 1.2 and only the tint drifts. Previews and the shop card show the mask as emission. They live in `Assets.Skins.<Jet>.<Skin>` like any skin (162 camo skins, six on each of the 27 jets; Galaxy added 172 unique textures, 54 of them glow masks; Midnight Digital added 129 unique textures and reused 189 already uploaded). `Progression.skinFor` puts an equipped camo first (if it's installed for that jet); `ProgressionService` repaints a flying jet when one goes on or off. The shop card has a banner across the top: the F-16A in the camo on a transparent background (`tools/blender/camo_cards.py`), over a soft glow in the card's colour; a camo with no preview is "Coming soon" (`Cosmetics.ready`). The jet page's skins panel says when a camo is on. AI pilots never wear them. The 550 Wings pack says it covers a camo on every jet. More camos: add a scheme, paint all jets, upload, install, add the catalogue item.
 - Tested in `Cosmetics.spec` (buying, equipping, pass items lapsing, old saves, the catalogue) and in Studio (the remotes, the save).
 
 ### 27.10 As built: the Starter Bundle, weekly bundles and premium jets (SHP-05/06)
@@ -2029,13 +2144,13 @@ Outside the Shop, the match results say what VIP would have added this match ("�
 - Overridable values: BR per airframe, economy multipliers, event flags (double XP weekend), shop rotation, featured mode, message of the day.
 - Changes are written by admins through admin commands, and recorded with who changed what and when.
 
-- **As built (OPS-01, November 2026):** `LiveConfig.luau` (shared) lists what can change and validates it: `br.<Jet>` (1–15), `economy.xp` / `economy.credits` / `economy.rp` (0.5–3, applied to match rewards with their own line on the results screen, labelled with the event), `event` (60 characters) and `motd` (160), both shown as a banner at the top of the hangar. `ConfigService` keeps the overrides in the `LiveConfig` DataStore with the last 50 changes (who, when, old, new), puts each on ReplicatedStorage as an `LC_<key>` attribute for server and clients, loads them as the server starts, every 5 minutes, and at once when another server changes one (MessagingService `LiveConfigChanged`). Every BR read in the game goes through `LiveConfig.battleRating`. Admin commands, live and test: `config.set { key, value }`, `config.clear { key }`, `config.show` (overrides and recent changes). Not overridable yet: shop rotation and featured mode (they come with the shop and mode select).
+- **As built (OPS-01, November 2026):** `LiveConfig.luau` (shared) lists what can change and validates it: `br.<Jet>` (1–15), `economy.xp` / `economy.credits` / `economy.rp` (0.5–3, applied to match rewards with their own line on the results screen, labelled with the event), `event` (60 characters) and `motd` (160), both shown as a banner at the top of the hangar. `ConfigService` keeps the overrides in the `LiveConfig` DataStore with the last 50 changes (who, when, old, new), puts each on ReplicatedStorage as an `LC_<key>` attribute for server and clients, loads them as the server starts, every 5 minutes, and at once when another server changes one (MessagingService `LiveConfigChanged`). Every BR read in the game goes through `LiveConfig.battleRating`. Admin commands, live and test: `config.set { key, value }`, `config.clear { key }`, `config.show` (overrides and recent changes). Not overridable: the weekly bundle (it rotates by week, §27.10) and a featured mode (the player picks a mode or Any over PLAY, §25.6). Event weekends are scheduled ahead (§31.4).
 
 ### 31.2 AdminService
 
 - Admins (`AdminService:IsAdmin`) are everyone in Studio plus the game's owners (`IsOwner`): the creator, the owner of the group that owns the game, and the `ADMINS` list of user IDs.
 - Owners get full access when their save loads, in test and live (`Progression.unlockEverything`): every jet, every module (owned, not fitted), every skin and all lineup slots (`Flags.AllUnlocked`). Currency is left alone. It re-applies on every join, so new content shows up for them at once. Studio's local test players are not owners, so a fresh account can still be tested.
-- Commands run through the `AdminCommand` remote; the debug panel (test environment) is the UI. Built: `data.inspect`, `data.reset`, `give.credits`, `give.xp`, `give.rp`, `unlock` and `kick`. Data-changing commands only run in the test environment; inspection and kicks work everywhere. Planned with ConfigService and live ops: `setbr`, event flags (double XP), `announce`, `spawnbot`, `matchend`.
+- Commands run through the `AdminCommand` remote; the debug panel (test environment) is the UI. Built, live and test: `data.inspect`, `kick`, `server.info`, `telemetry.recent`, `config.set` / `config.clear` / `config.show` (a BR is `config.set { key = "br.<Jet>" }`), `event.add` / `event.remove` / `event.list`, `announce`, `matchmaking.stats`, `reports.top` / `reports.show`, `feedback.recent`, `leaderboard.remove` and `erasure.run`. Test environment only (they change saves): `data.reset`, `data.set`, `unlock`, `give.credits` / `give.xp` / `give.rp` / `give.pass`, `take.credits` / `take.wings` / `take.pass`, `shop.grant`, `booster.clear`, `spin.give`, `mastery.add` / `mastery.set`, `career.reset`, `onboarding.restart` and `season.preview`. Bots and match ends are the debug panel's (`DebugSpawnDrone`, `DebugSetMode "EndMatch"`), test only.
 - Every admin action is logged.
 
 ### 31.3 Live ops calendar
@@ -2091,10 +2206,9 @@ Outside the Shop, the match results say what VIP would have added this match ("�
 
 ### 32.2 As built: text filtering and callsigns (CMP-01)
 
-- **`TextFilterService:Filter(text, fromUserId)`:** Roblox's `FilterStringAsync`, read back for broadcast (one copy fit for everyone on the server), three tries; if the filter can't be reached it returns nil and the text is refused, never shown unfiltered. Use it for any future player-written text (squadron names).
+- **`TextFilterService:Filter(text, fromUserId)`:** Roblox's `FilterStringAsync`, read back for broadcast (one copy fit for everyone on the server), three tries; if the filter can't be reached it returns nil and the text is refused, never shown unfiltered. Squadron names and tags use it too (§26.4).
 - **Callsigns** (Career screen, under the level track): typed text is cleaned by `Shared/Callsign` (3–16 characters, letters, numbers, spaces, - and _, at least one letter), filtered, and accepted only if the filter left it exactly as typed (no callsigns full of #s). Saved as `Callsign` in the player's data, shown through the player's `Callsign` attribute, and filtered again on every join (filters change; one now refused is cleared). `Callsign.nameOf` gives a pilot's shown name: the jet's `PilotName`, the scoreboard and the kill feed use it; report lists show "callsign (@username)". `SetCallsign` remote ("" = back to the username), 3 then 1 per 5 s.
-- **Behind the Custom Callsign game pass** (99 R$, Will: not for everyone): `Config/Passes` holds each pass's id per experience (none created yet, so nobody owns it and the Career row says it's coming); `PassService` checks ownership with Roblox on join and after an in-game purchase, shows it as the `Pass_CustomCallsign` attribute, and fires `Changed`. Without the pass `SetCallsign` refuses and a saved callsign isn't shown (it comes back if the pass is bought); clearing is always allowed. With an id set, the Career row offers the pass (`PromptGamePassPurchase`). Test servers: admin `give.pass { name = "CustomCallsign" }` / `take.pass`. SHP-03 builds on `PassService` for the other passes.
-- **To go live:** create the pass on the Creator Dashboard (Monetization → Passes) in each experience at 99 R$ and put its id in `Config/Passes`.
+- **Behind the Custom Callsign game pass** (99 R$, Will: not for everyone): `Config/Passes` holds each pass's id per experience (created in both); `PassService` checks ownership with Roblox on join and after an in-game purchase, shows it as the `Pass_CustomCallsign` attribute, and fires `Changed`. Without the pass `SetCallsign` refuses and a saved callsign isn't shown (it comes back if the pass is bought); clearing is always allowed. Without the pass, the Career row offers it (`PromptGamePassPurchase`). Test servers: admin `give.pass { name = "CustomCallsign" }` / `take.pass`. SHP-03 builds on `PassService` for the other passes.
 - **Studio doesn't filter:** `FilterStringAsync` returns text unchanged in Studio, so a refusal can only be seen on a live server. The rule that refuses changed text is unit-tested (`Callsign.spec`).
 
 
@@ -2167,7 +2281,7 @@ MemoryStore entries (the queue, match records) expire by themselves within minut
 
 - `scripts/run-tests.luau` (Lune) loads the committed `Afterburner.rbxl` (for its models and assets), replaces the seven Rojo-managed code subtrees with a fresh `rojo build`, and runs the same `ServerStorage.Tests.TestRunner` Studio runs. ModuleScripts load from their `Source` with their own `script` and an instance-aware `require`. It exits non-zero on any failure. CI runs it after the Rojo build: `lune run scripts/run-tests.luau build/Afterburner.rbxl Afterburner.rbxl` (about 30 s). Locally, `rojo build -o build/Afterburner.rbxl` first; a third argument filters spec names.
 - **Shims for what Lune lacks:** `WaitForChild` (the child must already exist), `RunService:IsStudio()` (false), `game.GameId` / `PlaceId` (0, so the environment resolves to Prod), `CFrame.lookAt` and the two-point `CFrame.new` (Lune 0.10.5 builds them pointing the wrong way along Z), and `Random`, a seeded generator with Roblox's API but not its exact sequence (seeds and outputs go through MurmurHash3's finalizer, because `Countermeasures.roll` seeds a fresh generator per roll). So the statistical tests (Engagement, Dogfight) see different samples than in Studio and still pass inside their bands (for example idle + break + flares: 85% defeated in Studio, 70% headless).
-- **Engine-only tests:** a test that needs physics or terrain calls `ctx.engineOnly()` first; headless it counts as *skipped* (shown in the summary), in Studio it runs. Only Place.spec's terrain raycast does so far. Result: 594 passed, 1 skipped headless; 595 passed in Studio.
+- **Engine-only tests:** a test that needs physics or terrain calls `ctx.engineOnly()` first; headless it counts as *skipped* (shown in the summary), in Studio it runs. Two do so far: Place.spec's terrain raycast and an Events.spec test that needs HttpService's JSON. Result (November 2026, 64 specs): 794 passed, 2 skipped headless; Studio runs the two skipped ones too.
 
 ---
 
@@ -2199,12 +2313,12 @@ Use the **MicroProfiler** (with custom labels via `debug.profilebegin/profileend
 
 On every push and PR:
 1. Install tools with Rokit.
-2. `bash scripts/ci-checks.sh` (place file present, strict mode, no conflict markers, Rojo paths, every remote declared and used).
+2. `bash scripts/ci-checks.sh` (place file present, strict mode, no conflict markers, Rojo paths, every remote used is declared, a changelog section for the version).
 3. `lune run scripts/validate-models.luau` (the aircraft models in the committed place follow the model contract).
 4. `stylua --check src tests tools`
 5. `selene src tests tools`
 6. `rojo build default.project.json -o build/Afterburner.rbxl` (proves the project builds).
-7. (Later) run unit tests headlessly.
+7. `lune run scripts/run-tests.luau build/Afterburner.rbxl Afterburner.rbxl` (the unit tests, headless: §33.1).
 
 ### 35.2 Versioning
 
@@ -2219,7 +2333,7 @@ On every push and PR:
 3. Check data migrations against a copy of real data shapes.
 4. Publish the place(s) to production from Studio (or with Open Cloud in CI later). The environment follows the experience (§0.6), so production picks the production save store and turns off debug and admin data tools by itself.
 5. Store art: the experience icon is [`docs/art/marketing/icon.png`](art/marketing/icon.png) (512 × 512, rendered by `tools/marketing/icon_render.py` from the game's F-22A and composed with the wordmark by `icon_compose.py`; set on the live experience by Will, 30 October 2026). The experience thumbnail is [`docs/art/marketing/cover.png`](art/marketing/cover.png) (1920 × 1080, rendered by `tools/marketing/cover_render.py`, which builds the scene from `scene.py` and `dogfight.py`, and finished by `cover_compose.py`; it replaces the older `thumbnail.jpg`). A 15-second trailer, [`docs/art/marketing/trailer.mp4`](art/marketing/trailer.mp4), comes from the same scene (`trailer_render.py`, then `trailer_compose.py`, which encodes the MP4 with Blender). Upload the thumbnail in the Creator Dashboard (the production experience → Configure → Places → the start place → Thumbnails), or in Studio under Game Settings → Basic Info. The test experience keeps its default thumbnail.
-6. First launch only: badges. Create one badge per achievement in `Achievements.LIST` on the production experience (Creator Dashboard → Monetization → Badges) and put their ids under the production universe in `Config/Badges`. Players who already hold an achievement get its badge on their next join. The test experience has none (Will's call, November 2026).
+6. Badges: the one-off achievements in `Achievements.LIST` get a badge each on the production experience (Creator Dashboard → Monetization → Badges), with their ids under the production universe in `Config/Badges`. 15 are made; Roblox allows 5 free a day, so make the rest before launch (series levels have none). Players who already hold an achievement get its badge on their next join. The test experience has none (Will's call, November 2026).
 7. Tag the commit, update the changelog.
 8. Watch analytics and errors for the first hour. Keep the previous version ready to roll back (Roblox's place version history allows reverting).
 
@@ -2307,8 +2421,8 @@ same work against the task IDs.
 - New weapons along the way: AIM-54A, AIM-9M/9X, AIM-120C/D, R-27ER, R-74M, R-77-1, R-77M, Magic II, Super 530D,
   Skyflash, ASRAAM, IRIS-T, MICA IR, Meteor, and the DEFA 554, BK-27, GIAT 30M791 and GAU-22 guns. High off-boresight
   heat-seekers are the `IR_Adv` class with wide seeker cones and gimbals, helmet cueing and imaging seekers (MSL-09, §15.5).
-- The Tempest's figures are invented, as DESIGN says. It is researched from any one Tier VII jet; the two-jet rule
-  and the Test Pilot chain are LIV-07.
+- The Tempest's figures are invented, as DESIGN says. It is researched from any one Tier VII jet, once two Tier VII
+  jets are researched and the Test Pilot trials are flown (LIV-07, §23.3).
 - Tier V+ jets carry a missile approach warner (`RWR.LaunchWarning = true`).
 
 ### 37.3 Installing art in Studio (the routine that works)
@@ -2357,60 +2471,82 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 
 ## Appendix A: Remote catalogue
 
-| Remote | Direction | Type | Arguments | Rate limit *(tune)* | Section |
-|---|---|---|---|---|---|
-| `PlayerDataUpdate` | S→C | Reliable | `delta: table` | n/a | §22 |
-| `RequestSpawn` | C→S | Reliable | `airframeId: string` | 1/s | §10 |
-| `RequestGroundRoamer` | C→S | Function | `takeOut: boolean, skin: string?` → `ok, reason?` | 0.5/s | §36 |
-| `JetSpawned` | S→C | Reliable | `jetId, airframeId, pilotUserId` | n/a | §10 |
-| `JetDestroyed` | S→All | Reliable | `jetId, killerId?, cause` | n/a | §10 |
-| `DamageState` | S→C (pilot) | Reliable | `components: {[string]: number}` | n/a | §12 |
-| `GunFire` | C→S | Reliable | `isStart: boolean, serverTime: number, seed: number` | 10/s | §11 |
-| `GunFireFx` | S→Others | Reliable | `jetId, isStart, seed, serverTime` | n/a | §11 |
-| `HitConfirm` | S→C | Reliable | `targetJetId, component` | n/a | §11 |
-| `SelectWeapon` | C→S | Reliable | `slotIndex: number` | 5/s | §11 |
-| `RadarLockRequest` | C→S | Reliable | `targetJetId: number?` (nil = unlock) | 5/s | §14 |
-| `LockState` | S→C | Reliable | `targetJetId?, state` | n/a | §14 |
-| `RWRUpdate` | S→C | Reliable | `threats: {...}` | n/a | §14 |
-| `DataLinkContacts` | S→C | Unreliable | packed contacts | n/a | §14 |
-| `MissileFire` | C→S | Reliable | `slotIndex, targetJetId?` | 4/s | §13 |
-| `MissileSpawned` | S→All (in range) | Reliable | `missileId, weaponId, ownerJetId, pos, vel` | n/a | §13 |
-| `MissileState` | S→C (in range) | Unreliable | packed buffer | n/a | §13 |
-| `MissileDetonated` | S→All (in range) | Reliable | `missileId, pos, hitJetId?` | n/a | §13 |
-| `MissileWarning` | S→C (target) | Reliable | `missileId, bearing, type` | n/a | §13 |
-| `CountermeasureDeploy` | C→S | Reliable | `kind: "Flare" \| "Chaff"` | 8/s | §15 |
-| `CountermeasureFx` | S→Others | Reliable | `jetId, kind, serverTime` | n/a | §15 |
-| `MatchState` | S→All | Reliable | `state, timeLeft, scores` | n/a | §17 |
-| `KillFeed` | S→All | Reliable | `killer, victim, weapon, assists` | n/a | §17 |
-| `MatchResults` | S→C | Reliable | `results, rewards` | n/a | §17 |
-| `ResearchAircraft` / `BuyAircraft` / `BuyModule` | Function | Reliable | IDs only → (ok, error) | 2/s | §23 |
-| `SetLineup` / `SetLoadout` / `EquipCosmetic` | C→S | Reliable | IDs only | 2/s | §23–27 |
-| `QueueJoin` / `QueueLeave` | C→S | Reliable | `modeId` | 1/s | §25 |
-| `QueueStatus` | S→C | Reliable | `state, waitTime, estimate` | n/a | §25 |
-| `ShopPurchase` | C→S | Reliable | `itemId` (Wings items) | 2/s | §27 |
-| `PromptProduct` | C→S | Reliable | `productKey` | 2/s | §27 |
-| `GetCatalogue` | C→S | RemoteFunction | none | 1/5s | §27 |
-| `ClaimReward` | C→S | Reliable | `source, id` (season tier, challenge) | 2/s | §26 |
-| `RerollChallenge` | C→S | Reliable | `challengeId` | 1/s | §26 |
-| `SaveSettings` | C→S | Reliable | `settings: table` (validated per field) | 1/s | §29 |
-| `TutorialProgress` | C→S | Reliable | `lessonId, step` | 2/s | §28 |
-| `ReportPlayer` | C→S | Reliable | `targetUserId, reason` | 1/30s | §32 |
-| `SendFeedback` | C→S | Function | `kind, text, deviceInfo: table` (cleaned) | 1/20s | §32.4 |
-| `ChooseStarter` | Function | Reliable | `camoId` → (ok, why not); opens the purchase | 0.5/s | §27.10 |
-| `BuyBundle` | Function | Reliable | `bundleId` (this week's) → (ok, why not) | 1/s | §27.10 |
-| `BuySeasonPass` | Function | Reliable | `"Wings"` or `"Robux"` → (ok, why not) | 0.5/s | §26.7 |
-| `ClaimSeason` | Function | Reliable | none → (ok, message) | 1/s | §26.7 |
-| `PartyInvite` / `PartyKick` | Function | Reliable | `userId` → (ok, why not) | 1/s | §25.3 |
-| `PartyRespond` | Function | Reliable | `inviterId, yes` → (ok, why not) | 1/s | §25.3 |
-| `PartyLeave` | C→S | Reliable | none | 1/s | §25.3 |
-| `PartyState` | S→C | Reliable | `{ leader, members, invites, max }` | n/a | §25.3 |
-| `Announcement` | S→All | Reliable | `{ text, seconds }` | n/a | §31.4 |
-| `GetLeaderboard` | Function | Reliable | `boardId` → ({ board, entries, mine }, why not) | 1/s | §26.8 |
-| `SquadronGet` | Function | Reliable | none → your squadron view | 1/s | §26.4 |
-| `SquadronAction` | Function | Reliable | `action, a?, b?` → (ok, message) | 1/s | §26.4 |
-| `SquadronChanged` | S→C | Reliable | none (ask again) | n/a | §26.4 |
-| `DataLinkContacts` | S→C | Reliable | `{ jetId }` | n/a | §14.4 |
-| `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
+As built: every remote is declared in `Shared/Net/Definitions.luau`, which is the source of truth (CI fails on a remote that's used but not declared). C→S remotes are `RemoteEvent`s; **Function** is a client → server `RemoteFunction` that returns `(ok, message)` or a result. Rate limits are a token bucket per player per remote: refill per second (burst).
+
+| Remote | Direction | Arguments | Rate limit | Section |
+|---|---|---|---|---|
+| `RequestSpawn` | C→S | `airframeId` | 1/s (2) | §10 |
+| `ReportCrash` | C→S | none | 1/s (2) | §10.3 |
+| `RequestGroundRoamer` | Function | `takeOut, skin?` → `ok, reason?` | 0.5/s (3) | §36 |
+| `FlightTelemetry` | C→S, unreliable | `throttle, afterburner, gLoad` (5 Hz) | 8/s (10) | §10 |
+| `StreamPace` | C→S, unreliable | `fps` (map warm-up) | 2/s (3) | §19.3 |
+| `ReturnToHangar` | C→S | none | 0.5/s (2) | §10 |
+| `SpawnRefused` | S→C | `reason` | n/a | §10 |
+| `GunFire` | C→S | `isStart, serverTime, seed` | 8/s (10) | §11 |
+| `GunFireFx` | S→C | `jetId, isStart, seed, serverTime` | n/a | §11 |
+| `HitConfirm` | S→C | `targetJetId, component` | n/a | §11 |
+| `HitFx` | S→C, unreliable | `jetId, position` | n/a | §20 |
+| `DamageState` | S→C (pilot) | `{ [component]: fraction }` | n/a | §12 |
+| `JetDestroyed` | S→C | `jetId, killerUserId, cause, position, killerJetId` | n/a | §10 |
+| `KillFeed` | S→C | `killer, victim, weapon, assists, killerUserId, victimUserId, assistUserIds` | n/a | §9.5 |
+| `SelectWeapon` | C→S | `missileIndex` | 4/s (6) | §13 |
+| `RadarLockRequest` | C→S | `targetJetId` (0 = unlock) | 4/s (6) | §14 |
+| `IRCue` | C→S | `jetId` looked at (0 = none) | 6/s (8) | §15.5 |
+| `LockState` | S→C | `targetJetId, state` | n/a | §14 |
+| `RWRUpdate` | S→C | `{ { id, kind, position } }` | n/a | §14.3 |
+| `DataLinkContacts` | S→C | `{ jetId }` (on change) | n/a | §14.4 |
+| `MissileFire` | C→S | `targetJetId` (0 = none) | 2/s (3) | §13 |
+| `MissileSpawned` | S→C | `missileId, weaponId, ownerJetId, position, velocity` | n/a | §13 |
+| `MissileState` | S→C, unreliable | packed buffer (~15 Hz) | n/a | §13 |
+| `MissileDetonated` | S→C | `missileId, position, hitJetId` | n/a | §13 |
+| `CountermeasureDeploy` | C→S | `"Flare"` \| `"Chaff"` | 6/s (6) | §15 |
+| `CountermeasureFx` | S→C | `jetId, kind, position, velocity` | n/a | §15 |
+| `MatchState` | S→C | `{ mode, state, time left, ranking, winner, zones… }` (~2 Hz) | n/a | §17 |
+| `MatchRewards` | S→C | `{ XP, Credits, RP, FreeRP, Lines, Levels, … }` | n/a | §23 |
+| `PlayerDataUpdate` | S→C | `changes, isFull` | n/a | §22 |
+| `GetPlayerData` | Function | none → full replica | 0.5/s (3) | §22 |
+| `ResearchAircraft` / `BuyAircraft` | Function | `airframeId` | 2/s (4) | §23 |
+| `BuyModule` | Function | `airframeId, moduleId` | 2/s (4) | §23.5 |
+| `SetModuleFitted` | Function | `airframeId, moduleId, fitted` | 2/s (4) | §23.5 |
+| `BuySkin` / `SetSkin` | Function | `airframeId, skinId, currency?` | 2/s (4) | §27.2 |
+| `BuyCosmetic` / `EquipCosmetic` | Function | `itemId` / `kind, itemId` | 2/s (4) / 3/s (6) | §27.8 |
+| `SetLineup` | Function | `{ airframeId }` | 2/s (4) | §23 |
+| `SetTitle` | Function | `titleId` ("" = none) | 0.5/s (3) | §26.2a |
+| `SetCallsign` | Function | `callsign` ("" = username) | 0.2/s (3) | §32.2 |
+| `SettingsUpdate` | C→S | `settings` (validated per key) | 1/s (5) | §29 |
+| `RerollChallenge` | Function | `index` | 0.5/s (3) | §26.1 |
+| `ChallengeNotice` | S→C | `{ kind, text, detail?, credits?, xp? }` (toasts) | n/a | §26.2a |
+| `ClaimDailyReward` | Function | none → reward or nil | 0.5/s (3) | §26.2a |
+| `SpinWheel` | Function | none → prize | 0.5/s (2) | §26.6 |
+| `BuySeasonPass` | Function | `"Wings"` \| `"Robux"` | 0.5/s (3) | §26.7 |
+| `ClaimSeason` | Function | none | 1/s (3) | §26.7 |
+| `GetLeaderboard` | Function | `boardId` → `{ board, entries, mine }` | 1/s (6) | §26.8 |
+| `SquadronGet` | Function | none → your squadron view | 1/s (4) | §26.4 |
+| `SquadronAction` | Function | `action, a?, b?` | 1/s (4) | §26.4 |
+| `SquadronChanged` | S→C | none (ask again) | n/a | §26.4 |
+| `ChooseTierUnlock` | Function | the two picked `{ airframeId }`; opens the purchase | 0.5/s (3) | §27.6 |
+| `ChooseStarter` | Function | `camoId`; opens the purchase | 0.5/s (3) | §27.10 |
+| `BuyBundle` | Function | this week's `bundleId` | 1/s (3) | §27.10 |
+| `QueueJoin` | C→S | `mode` ("Any" or a mode id), `airframeId?` | 0.5/s (3) | §25.6 |
+| `QueueLeave` | C→S | none | 0.5/s (3) | §25.6 |
+| `QueueState` | S→C | `{ state, mode, waited, message }` | n/a | §25.6 |
+| `Travel` | C→S | `"Training"` \| `"Lobby"` | 0.2/s (2) | §25.6 |
+| `TrainingSetup` | C→S | `mode` ("FreeFlight" or a mode id), `difficulty, aiCount` | 0.5/s (3) | §28 |
+| `TrainingBout` | C→S | `start` (lesson 6) | 0.5/s (2) | §28 |
+| `LessonCompleted` | C→S | `lessonId` | 0.2/s (3) | §30.3 |
+| `FinishOnboarding` / `SkipOnboarding` | C→S | none | 0.2/s (2) | §28.2 |
+| `PartyInvite` / `PartyKick` | Function | `userId` | 1/s (4) / 1/s (3) | §25.3 |
+| `PartyRespond` | Function | `inviterId, yes` | 1/s (4) | §25.3 |
+| `PartyLeave` | C→S | none | 1/s (3) | §25.3 |
+| `PartyState` | S→C | `{ leader, members, invites, max }` | n/a | §25.3 |
+| `Announcement` | S→C | `{ text, seconds }` | n/a | §31.4 |
+| `ReportPlayer` | Function | `targetUserId, reason` | 1/30 s (2) | §32.1 |
+| `SendFeedback` | Function | `kind, text, deviceInfo` | 1/20 s (2) | §32.4 |
+| `AdminCommand` | Function | `command, args?` (admins only) | 2/s (5) | §31.2 |
+| `DebugSetMode` / `DebugLaunchAtMe` / `DebugSpawnDrone` | C→S | `mode` / `weaponId` / `"ahead"` \| `"circle"` (test only) | 0.5/s (2) / 0.5/s (2) / 1/s (3) | §6.5 |
+| `DebugPing` / `DebugPong` / `DebugEcho` | C→S / S→C / Function | diagnostics (test only) | 2/s (5) / n/a / 1/s (3) | §4 |
+
+Game passes and developer products are prompted on the client with `MarketplaceService` (no remote); the server grants them in `PassService` and `ProcessReceipt` (§27).
 
 ---
 
@@ -2423,17 +2559,36 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | Jet model | `JetId` | number | Unique per spawn |
 | Jet model | `AirframeId` | string | |
 | Jet model | `PilotUserId` | number | 0 for AI |
-| Jet model | `Team` | string | |
+| Jet model | `PilotName` | string | Shown name (`Callsign.nameOf`: callsign, squadron tag, VIP tag) |
+| Jet model | `Team` | string | `West` / `East` in team modes |
 | Jet model | `IsAI` | boolean | |
-| Jet model | `Afterburner` | boolean | Drives other players' afterburner FX. Set by the server from the pilot's throttle report (5 Hz) |
+| Jet model | `Afterburner`, `Throttle`, `GLoad` | boolean, number, number | Drive other players' effects. Set by the server from the pilot's `FlightTelemetry` (5 Hz) |
+| Jet model | `Modules` | string | Fitted upgrade modules |
+| Jet model | `Mastery` | number | Mastery stars, for the kill markers (§23.8) |
+| Jet model | `Trail` | string | Equipped contrail cosmetic (§27.8) |
+| Jet model | `Gun`, `Ammo`, `GunHeat` | | Gun state for the HUD |
+| Jet model | `SelectedMissile`, `Msl_<id>`, `Flares`, `Chaff` | | Weapon and countermeasure counts |
+| Jet model | `Reload_<key>` | number | Server time a store finishes reloading (§15.3a) |
+| Jet model | `BayOpenUntil` | number | Server time a stealth jet's bays close (§14.5) |
+| Jet model | `OnFire`, `Smoking` | boolean | Damage effects |
+| Jet model | `OutOfBoundsAt` | number? | Server time an out-of-bounds jet is destroyed (§10.4) |
+| Player | `Callsign`, `SquadronTag`, `Title`, `PilotLevel` | | Shown beside the name |
+| Player | `Pass_<name>` | boolean | Game pass owned (`PassService`) |
+| Player | `PolicyPaidRandom`, `PolicyLinks`, `PolicyPaidTrading`, `PolicyChecked` | boolean | Roblox policy answers (§32.5) |
+| Player | `MapReady` | boolean | Map warmed up; gates PLAY (§19.3) |
+| Player | `SpinsBanked`, `SpinNextAt` | number | Free spins (§26.6) |
+| Player | `LivesLeft`, `RespawnIn` | number | Respawn state in a match (§17.4) |
 | Ground Roamer model | `OwnerUserId` | number | The driver; their DriveController drives it |
 | Ground Roamer model | `Skin` | string | Its skin |
 | Ground Roamer part | `TextureSet` | string | Body, Canvas, Details, Glass or Decals: which SurfaceAppearance it wears |
+| ReplicatedStorage | `ServerRole` | string | `"Lobby"` / `"Match"` / `"Training"` / `"Pending"` (§25.6) |
+| ReplicatedStorage | `GameMode` | string | The running mode |
+| ReplicatedStorage | `LC_<key>`, `LiveEvents` | | Live config overrides and the event schedule (§31) |
+| ReplicatedStorage | `SeasonPreview` | number | Test servers: a season previewed from this time (§26.7) |
 | ReplicatedStorage | `Environment` | string | Studio only: `"Prod"` tries production behaviour (live servers go by the experience, §0.6) |
-| ReplicatedStorage | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"` (missing = Single) |
+| ReplicatedStorage | `PlaceRole` | string | `"Lobby"` / `"Battle"` / `"Single"`; missing = worked out from `Config/Places` |
 | ReplicatedStorage | `ServerReady` | boolean | Boot finished |
 | SpawnPoint parts | `Team`, `Type`, `Altitude` | | §19 |
-| CaptureZone parts | `Name`, `Radius`, `MinAlt`, `MaxAlt` | | §19 |
 
 > Client-set attributes don't replicate to the server, so any visual state other clients need (throttle/afterburner, control surface positions) is either derived from the replicated physics (speed, orientation) or reported to the server at a low rate and set by the server.
 
@@ -2441,11 +2596,10 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 
 | Tag | On | Used by |
 |---|---|---|
-| `Jet` | Jet models | Everything |
-| `SpawnPoint` | Spawn parts | MatchService |
-| `CaptureZone` | Zone parts | Air Superiority |
-| `Airbase` | Airbase models | Rearm/landing (later), AI RTB |
-| `MapBoundary` | Optional boundary markers | AIR out-of-bounds |
+| `SpawnPoint` | Airborne spawn parts (`StraitBuilder`: six per coast) | MatchService, StreamingService |
+| `CamoGlow` | Galaxy camo SurfaceAppearances | CamoGlowController |
+
+Jets aren't tagged: they live in `workspace.Jets`. Air Superiority's zones are defined in `Shared/AirSuperiority`, not as tagged parts, and nothing uses the planned `Airbase` or `MapBoundary` tags.
 
 ---
 
@@ -2465,4 +2619,4 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 
 ---
 
-*Next step: Phase 0. Start with CORE-01 (folder tree and boot loaders), CORE-02 (toolchain) and REL-01 (CI), then go straight into Phase 1's flight model.*
+*Where things stand: Phases 0–5 and 7 are done, Phase 6 is mostly done (the rest waits for the live multiplayer test, art or mobile), and Phase 8 is about half built. [PROGRESS.md](PROGRESS.md) tracks each task.*
