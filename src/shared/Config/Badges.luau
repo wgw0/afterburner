@@ -20,6 +20,11 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		Notched = 382988331028907,
 		Veteran = 3249765653485432,
 		TestPilot = 4020009935250881,
+		FoxOne = 150169737820363,
+		FoxThree = 1691382039070789,
+		DoubleTrouble = 4123972696428656,
+		Flawless = 546288875820281,
+		TeamPlayer = 3287878670062475,
 	},
 }
 
