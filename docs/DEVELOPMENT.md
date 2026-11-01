@@ -258,7 +258,7 @@ scripts/                             -- CI: ci-checks.sh, validate-models.luau (
 docs/art/                            -- art pipeline; reference images are kept out of git
 ```
 
-Planned for later phases and not built yet: `ConfigService` (§31.1), `ChallengeService`, `SeasonService`, `SquadronService`, `ShopService`, `MatchmakingService`, `AfterburnerTeleport` (the TeleportService wrapper), `ModerationService`, and per-mode modules if modes outgrow the data in `MatchRules`.
+Planned for later phases and not built yet: `SquadronService`, `AfterburnerTeleport` (the TeleportService wrapper), `ModerationService`, and per-mode modules if modes outgrow the data in `MatchRules`.
 
 > Some module names would clash with Roblox service names (`TeleportService`, `AnalyticsService`). Those are named `AfterburnerTeleport` and `Telemetry`.
 
@@ -1745,6 +1745,16 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - Season XP comes from matches and challenges. The pass has free and premium tracks.
 - At a season change: archive the pass progress, reset the ranked ladder and leaderboards (new store keys with the season number).
 
+### 26.7 As built: seasons and the season pass (LIV-04, UI-08)
+
+- **Seasons** (`Config/Seasons`): about 8 weeks each, 30 tiers of 2,500 season XP (*tune*). Season 1, "First Light", runs from Monday 2 November to Monday 28 December 2026 (UTC). Season XP is every bit of pilot XP earned while the season runs (`Progression.addXP` adds it: matches, challenges, bridge runs).
+- **Rewards:** every tier has a free reward (Credits and Free RP, growing; the title First Light at 15; 100 Wings at 30) and a premium one: season-only cosmetics at 1 (Lime HUD theme), 5 (Diamonds kill markers), 10 (Comet wing art), 20 (Aurora contrails) and 25 (Sunburst wing art), the title Dawnbreaker at 30, 800 Wings across the track (so a finished pass almost pays for the next) and double the free Credits or Free RP in between. Season cosmetics (`Season = 1` in `Config/Cosmetics`) are never sold and are kept for good. The two wing arts are drawn by `tools/cosmetics/wing_art.py`.
+- **The premium track:** 900 Wings (`BuySeasonPass "Wings"`) or 449 R$ (`BuySeasonPass "Robux"` opens the `SeasonPass` product, created in both experiences). A Robux pass bought twice, or after its season ended, gives 900 Wings instead (it can't be undone).
+- **Rules** (`Shared/Season`, tested in `Season.spec`): saved as `data.Season = { Id, XP, Premium, FreeClaimed, PremiumClaimed }` (the highest tier claimed on each track). CLAIM takes every reward reached, on both tracks; premium bought later still pays the premium tiers already reached. When a new season starts (on join, or with the first XP), whatever was reached but not claimed in the old one is handed out first, then the pass starts afresh.
+- **SeasonService:** syncs each save to the running season when it loads, handles `ClaimSeason` and `BuySeasonPass`, and logs Credits and Wings paid as economy sources (`Season`) and the Wings pass as a sink.
+- **The SEASON tab** (`UI/Screens/Season`, between Career and Shop; the tabs are now 108 wide): the season's name, time left (or when it starts), the tier and XP to the next, the premium price or PREMIUM ✓, CLAIM N REWARDS, and the track (a column per tier, free over premium; claimed ✓, READY, locked or 🔒 PREMIUM), scrolled to the first reward waiting. Today's and this week's challenges sit on the right. The tab reads SEASON ● while rewards wait. The Shop has a Season Pass panel that opens the tab.
+- **Testing:** test servers can preview a season before it starts: admin `season.preview` sets `ReplicatedStorage.SeasonPreview` and the first season runs for a week from then, on that server only (`Seasons.at` checks it, on both sides). Admin `data.set { fields = { Name = value } }` puts save fields back after a test.
+
 ### 26.4 Squadrons (v1.2)
 
 - Data in a `Squadrons` DataStore: `{ id, name, tag, ownerId, members = { userId → role }, weeklyScore }`.
@@ -1868,6 +1878,13 @@ end
 - **Shop:** a section per kind under the Wings packs: the price, EQUIP, or EQUIPPED (TAKE OFF).
 - **Camos** (October 2026): bought once, they paint every jet you fly (Will), over each jet's own skin; taking one off goes back to the jet's skins. VIP Gold (white, gold leading edges, fin tips and pinstripes) comes with the VIP Pilot pass; Arctic Splinter (angular white, grey and ice-blue patches) and Tiger Stripe (orange with swept black stripes) are 400 Wings, and so is Midnight Digital (small pixel blocks of navy, grey and light blue, very mixed; Will: camos should look cool, not realistic), and Arachnida (white orb webs over glossy blue-black with polished silver spiders, on the underside too: `camo_under`), and Galaxy (swirled purple, electric-blue and magenta nebula over deep space with stars; the stars and brightest streaks glow). `livery_paint.SCHEMES` holds them, so every painter (`jet_paint`, `f5e_paint`, `mig21_paint`) paints them like the level liveries; `f5e_paint.camouflage` gained the `splinter`, `tiger` and `digital` styles (`digital`: noise sampled on a grid of `camo_pixel` blocks, plus `camo_scatter` for single stray blocks); `web`, `f5e_paint.spider_webs`: web centres from a hashed 3D grid of `camo_scale` cells so every texture set gets the same webs, each texel on its nearest centre's web, spokes and straight-segment rings in the plane across the web's axis (the main direction of the skin's normals in that cell, split by which way the skin faces), shared threads measured along the skin; `camouflage` takes the normals for it and `camo_shine` gives the spiders a metal finish). `galaxy`, `f5e_paint.galaxy`: domain-warped noise (sampled through itself twice) for the swirls, stars from a hashed 3D grid; it also leaves a glow mask in `CAMO_GLOW`, which the painters save as `_Emissive` and the install sets as each SurfaceAppearance's `EmissiveMaskContent`, with the `CamoGlow` tag. `CamoGlowController` (client) breathes every tagged copy outside `Assets` between EmissiveStrength 0.6 and 2.2 every 4 s and drifts its tint violet to pink every 11 s (`Shared/CamoGlow`), each jet offset by a hash of its name; with Reduce Flashing on it holds at 1.2 and only the tint drifts. Previews and the shop card show the mask as emission. They live in `Assets.Skins.<Jet>.<Skin>` like any skin (135 skins; Galaxy added 172 unique textures, 54 of them glow masks; Midnight Digital added 129 unique textures and reused 189 already uploaded). `Progression.skinFor` puts an equipped camo first (if it's installed for that jet); `ProgressionService` repaints a flying jet when one goes on or off. The shop card has a banner across the top: the F-16A in the camo on a transparent background (`tools/blender/camo_cards.py`), over a soft glow in the card's colour; a camo with no preview is "Coming soon" (`Cosmetics.ready`). The jet page's skins panel says when a camo is on. AI pilots never wear them. The 550 Wings pack says it covers a camo on every jet. More camos: add a scheme, paint all jets, upload, install, add the catalogue item.
 - Tested in `Cosmetics.spec` (buying, equipping, pass items lapsing, old saves, the catalogue) and in Studio (the remotes, the save).
+
+### 27.10 As built: the Starter Bundle, weekly bundles and premium jets (SHP-05/06)
+
+- **Starter Bundle** (`Starter`, 99 R$, created in both experiences; DESIGN §8.4): once per player, a camo they pick from the ones sold for Wings, 3 hours of 2x Credits and 300 Wings (on their own: 700 Wings and 225 R$ of boosters). The Shop shows it under the VIP banner until it's bought: a strip of the camos to pick from and GET IT. `ChooseStarter` checks the pick, keeps it as `PendingStarter` and prompts the purchase, like the Tier Unlock. A lost choice, or a player who owns every camo, gets a camo's worth of Wings instead; bought twice, its Wings. `data.StarterBought` (replicated).
+- **Weekly bundle** (`Config/Bundles`): six themed bundles of three cosmetics (Display Team, Arctic Patrol, Tiger Meet, Night Raider, Black Widow, Deep Space), one featured each week in turn, changing on Monday at 00:00 UTC, the same for everyone (`Shop.bundleFor`). Bought with Wings (`BuyBundle`, which names the bundle so a purchase can't land on next week's), 25% off the items you don't own yet; owned items are crossed out and not charged. The panel says the real day it changes, with no countdown.
+- **Premium jets** (SHP-06): a premium airframe module names the free jet it's a variant of (`StatsFrom`) and may only set `Id`, `DisplayName`, `NameStatus`, `FallbackName` and `ModelName`; `AircraftData` copies every stat, the tier and the BR from that jet when it loads, and stops boot if a premium module sets anything else or points at a missing or premium jet. Premium jets aren't in the tech tree. None exist yet.
+- **Never pay-to-win, tested** (`PayToWin.spec`): premium jets' stats match their free jet; every product grants only Wings, boosters, Tier Unlocks up to Tier V, the season pass or the Starter Bundle; every cosmetic carries only looks (a fixed list of fields).
 
 **Acceptance:** in the test experience, buying each product grants it exactly once. Forcing an error mid-grant leads to `NotProcessedYet` and a correct grant on retry. Rejoining shows everything owned.
 
@@ -2077,6 +2094,13 @@ MemoryStore entries (the queue, match records) expire by themselves within minut
 - **Rules (`Shared/Feedback`, tested):** a known type, 3–500 characters of readable text, 2 minutes between a player's reports, 5 a day. The `SendFeedback` remote is also rate-limited (2 burst, then 1 per 20 s).
 - **What's stored (`FeedbackService`):** DataStore `Feedback`, key `day:<n>` (days since 1970): that day's reports, oldest first, up to 500, each with the time, UserId, type, text, device info, place and job. Key `n:<UserId>:<day>` counts a player's reports that day, so the daily limit holds across servers. Only UserIds are stored. Telemetry `Feedback` (type).
 - **Reading them:** admin command `feedback.recent { count?, kind? }` (today's and yesterday's, newest first, up to 100). Older days can be read in Studio from the `Feedback` store.
+
+
+### 32.5 As built: policy checks (CMP-02)
+
+- `PolicyChecksService` asks `PolicyService:GetPolicyInfoForPlayerAsync` when a player joins (three tries, backing off) and shows the answer as player attributes (`PolicyPaidRandom`, `PolicyLinks`, `PolicyPaidTrading`, `PolicyChecked`). `Shared/Policy` reads it on either side: `Policy.of(player)`, `Policy.linkAllowed(rules, "Discord")`.
+- Until Roblox answers, or if it can't, everything regulated is off (`Policy.STRICT`), and only an explicit "not restricted" allows paid random items.
+- Nothing regulated is in the game yet (no paid random items, DESIGN §8.1; no external links). Anything like that added later must ask `Policy` first and hide itself when it isn't allowed. Tested in `Policy.spec`.
 
 ## 33. Testing strategy (TST)
 
@@ -2332,6 +2356,10 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `TutorialProgress` | C→S | Reliable | `lessonId, step` | 2/s | §28 |
 | `ReportPlayer` | C→S | Reliable | `targetUserId, reason` | 1/30s | §32 |
 | `SendFeedback` | C→S | Function | `kind, text, deviceInfo: table` (cleaned) | 1/20s | §32.4 |
+| `ChooseStarter` | Function | Reliable | `camoId` → (ok, why not); opens the purchase | 0.5/s | §27.10 |
+| `BuyBundle` | Function | Reliable | `bundleId` (this week's) → (ok, why not) | 1/s | §27.10 |
+| `BuySeasonPass` | Function | Reliable | `"Wings"` or `"Robux"` → (ok, why not) | 0.5/s | §26.7 |
+| `ClaimSeason` | Function | Reliable | none → (ok, message) | 1/s | §26.7 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

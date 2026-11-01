@@ -92,6 +92,29 @@ function Seasons.get(id: number): Season?
 	return nil
 end
 
+-- Test servers can preview a season before it starts (admin season.preview): this ReplicatedStorage attribute
+-- holds the time the preview began, and the first season then runs for a week from it, for everyone on the
+-- server.
+Seasons.PREVIEW_ATTRIBUTE = "SeasonPreview"
+Seasons.PREVIEW_LENGTH = 7 * 86400
+
+local previews: { [number]: Season } = {}
+
+local function preview(now: number): Season?
+	local ok, began = pcall(function()
+		return game:GetService("ReplicatedStorage"):GetAttribute(Seasons.PREVIEW_ATTRIBUTE)
+	end)
+	if not ok or type(began) ~= "number" or now < began or now >= began + Seasons.PREVIEW_LENGTH then
+		return nil
+	end
+	if not previews[began] then
+		local copy = table.clone(Seasons.LIST[1])
+		copy.Start, copy.End = began, began + Seasons.PREVIEW_LENGTH
+		previews[began] = table.freeze(copy)
+	end
+	return previews[began]
+end
+
 -- The season running at a time, or nil between seasons.
 function Seasons.at(now: number): Season?
 	for _, season in Seasons.LIST do
@@ -99,7 +122,7 @@ function Seasons.at(now: number): Season?
 			return season
 		end
 	end
-	return nil
+	return preview(now)
 end
 
 return Seasons

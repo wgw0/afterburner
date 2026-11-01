@@ -350,8 +350,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 
 - [x] **UI-07** Shop screen
   - Built: the §27.9 layout (DEVELOPMENT.md): VIP banner, passes still to buy, boosters, Tier Unlock while there is one, Wings packs, cosmetics, owned passes in one line, coming later; rows wrap on narrow screens. Checked in Studio as an owner and as a new player (pass flags off on the test client).
-- [ ] **UI-08** Season pass and challenges screens
-- [ ] **LIV-04** Season framework and pass progression
+- [x] **UI-08** Season pass and challenges screens
+  - Built: the SEASON tab (`UI/Screens/Season`): the season, time left, tier and XP, the premium price (Wings or Robux) or PREMIUM ✓, CLAIM, and the 30-tier track, with the challenges beside it; the tab shows a dot while rewards wait (DEVELOPMENT.md §26.7). Checked in Studio with a test season (admin `season.preview`) and Will's test save restored afterwards.
+- [x] **LIV-04** Season framework and pass progression
+  - Built: `Config/Seasons` (Season 1 "First Light", 2 November to 28 December 2026, 30 tiers), `Shared/Season` (all XP counts, claim everything reached, unclaimed rewards handed out when the next season starts), `SeasonService`; the premium track for 900 Wings or 449 R$ (the `SeasonPass` product, both experiences); five season-only cosmetics and two titles (§26.7). Tested in `Season.spec`. Checked in Studio with a test season (admin `season.preview`) and Will's test save restored afterwards.
 - [x] **SHP-01** Product config (test + prod IDs) and ShopService skeleton
   - Built: `Config/Products` (Wings packs, Tier Unlocks II–V) with per-experience ids, `ShopService` (DEVELOPMENT.md §27.6). Checked in Studio and by Will; real purchases need the products created on the dashboard.
 - [x] **SHP-02** ProcessReceipt with idempotency and failure safety
@@ -360,11 +362,14 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: VIP Pilot (+25% Credits, VIP tag, extra reroll), Extra Lineup Slot and Custom Callsign passes, and 2x Credits / RP boosters, created in both experiences (DEVELOPMENT.md §27.7). The VIP tag is bold gold. The VIP camo waits for SHP-07. Checked in Studio and by Will.
 - [x] **SHP-04** Wings transactions and cosmetics granting
   - Built: Wings balance in the top bar and on the Shop tab; every Credits skin can also be bought for 150 Wings (DEVELOPMENT.md §27.6); Wings-only cosmetics are bought, granted, saved and equipped through BuyCosmetic / EquipCosmetic, each spend logged as an economy sink (§27.8). Checked in play (saved data read back through `data.inspect`) and by Will.
-- [ ] **SHP-05** Weekly rotation, bundles, first-purchase offer
-- [ ] **SHP-06** Premium jet validator and blocked-category test
+- [x] **SHP-05** Weekly rotation, bundles, first-purchase offer
+  - Built: the Starter Bundle (99 R$, once per player: a camo they pick, 3 hours of 2x Credits, 300 Wings; the `Starter` product, both experiences) and a weekly featured bundle bought with Wings, 25% off the items you don't own, changing on Monday 00:00 UTC (`Config/Bundles`, §27.10). Tested in `Shop.spec`; the Shop panels checked in Studio as an owner and as a new player.
+- [x] **SHP-06** Premium jet validator and blocked-category test
+  - Built: a premium airframe names its free jet (`StatsFrom`) and may only set its name and model; the registry copies everything else and refuses to boot otherwise (§27.10). `PayToWin.spec` checks premium jets, that every product grants only allowed kinds and that cosmetics carry only looks. No premium jets exist yet.
 - [x] **SHP-07** Cosmetics system: camos, trails, kill markers, nose art, HUD themes applied to jets
   - Built: contrail colours (with display smoke on afterburner), kill-marker styles, HUD themes, four wing-art decals (moved from the nose after Will's test; placed on all 27 jets), the VIP Gold contrail, and Shop buy / equip (DEVELOPMENT.md §27.8). Checked in Studio and by Will. Camos built (October 2026): VIP Gold (with the VIP pass), Arctic Splinter and Tiger Stripe (400 Wings each), painted on all 27 jets; checked in Studio (shop, equip, hangar, spawn, mid-flight repaint) and by Will.
-- [ ] **CMP-02** Policy checks wrapper
+- [x] **CMP-02** Policy checks wrapper
+  - Built: `PolicyChecksService` asks Roblox's PolicyService on join (retried) and shows the answer as player attributes; `Shared/Policy` reads it, strict until it's known (§32.5). Nothing regulated is sold or linked yet; anything that is must ask it first. Tested in `Policy.spec`.
 
 ## Phase 8: Launch and live ops
 

@@ -598,6 +598,36 @@ render = function()
 			MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, id)
 			return true, nil
 		end,
+		-- The Starter Bundle: pick its camo, then the server opens the purchase (SHP-05)
+		OnChooseStarter = function(camoId: string): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "ChooseStarter", camoId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnBuyBundle = function(bundleId: string): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "BuyBundle", bundleId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		-- The season pass (LIV-04): buy the premium track with "Wings" or "Robux"; claim what's reached
+		OnBuySeasonPass = function(how: string): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "BuySeasonPass", how)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnClaimSeason = function(): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "ClaimSeason")
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
 		OnChooseTierUnlock = function(picks: { string }): (boolean, string?)
 			local ok, result, message = pcall(Net.Client.invoke, "ChooseTierUnlock", picks)
 			if not ok then
@@ -633,7 +663,7 @@ end
 
 -- Gamepad (UI-09): keep a button selected while the menu is up: PLAY (or FLY), else the first one. Run after
 -- renders and device changes, since a screen change can remove the selected button.
-local TABS = { "Hangar", "TechTree", "Career", "Shop", "Settings" }
+local TABS = { "Hangar", "TechTree", "Career", "Season", "Shop", "Settings" }
 
 local function gamepadSelect()
 	if not (MenuController.visible and InputController.device == "Gamepad") then

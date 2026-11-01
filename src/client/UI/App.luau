@@ -11,6 +11,7 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Economy = require(Shared.Config.Economy)
 local Perks = require(Shared.Perks)
+local Season = require(Shared.Season)
 
 local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
@@ -19,6 +20,7 @@ local AircraftDetail = require(Screens.AircraftDetail)
 local Career = require(Screens.Career)
 local Hangar = require(Screens.Hangar)
 local Results = require(Screens.Results)
+local SeasonScreen = require(Screens.Season)
 local ShopScreen = require(Screens.Shop)
 local SettingsScreen = require(Screens.Settings)
 local Training = require(Screens.Training)
@@ -206,7 +208,7 @@ local function TopBar(props: any)
 		return e(C.Button, {
 			Text = label,
 			Style = if props.Screen == name then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(124, 40),
+			Size = UDim2.fromOffset(108, 40),
 			TextSize = 14,
 			LayoutOrder = order,
 			OnClick = function()
@@ -229,17 +231,19 @@ local function TopBar(props: any)
 			Color = Theme.Accent,
 		}),
 		Tabs = e("Frame", {
-			Size = UDim2.fromOffset(668, 40),
+			Size = UDim2.fromOffset(6 * 108 + 5 * 10, 40),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
 		}, {
-			Layout = C.List({ Horizontal = true, Gap = 12, Align = "Center" }),
+			Layout = C.List({ Horizontal = true, Gap = 10, Align = "Center" }),
 			Hangar = tab("Hangar", "HANGAR", 1),
 			Tree = tab("TechTree", "TECH TREE", 2),
 			Career = tab("Career", "CAREER", 3),
-			Shop = tab("Shop", "SHOP", 4),
-			Settings = tab("Settings", "SETTINGS", 5),
+			-- A dot while season rewards are waiting to be claimed
+			Season = tab("Season", if Season.claimable(data) > 0 then "SEASON  ●" else "SEASON", 4),
+			Shop = tab("Shop", "SHOP", 5),
+			Settings = tab("Settings", "SETTINGS", 6),
 		}),
 		Boosters = e(BoosterChip, { Data = data }),
 		Wallet = e("Frame", {
@@ -354,9 +358,21 @@ local function App(props: any)
 			OnBuyPass = props.OnBuyPass,
 			OnBuyCosmetic = props.OnBuyCosmetic,
 			OnEquipCosmetic = props.OnEquipCosmetic,
+			OnChooseStarter = props.OnChooseStarter,
+			OnBuyBundle = props.OnBuyBundle,
 			OnTechTree = function()
 				props.Navigate("TechTree")
 			end,
+			OnSeason = function()
+				props.Navigate("Season")
+			end,
+		})
+	elseif screen == "Season" then
+		body = e(SeasonScreen, {
+			Data = data,
+			OnClaimSeason = props.OnClaimSeason,
+			OnBuySeasonPass = props.OnBuySeasonPass,
+			OnReroll = props.OnReroll,
 		})
 	elseif screen == "Career" then
 		body = e(Career, { Data = data, OnSetTitle = props.OnSetTitle, OnSetCallsign = props.OnSetCallsign })
