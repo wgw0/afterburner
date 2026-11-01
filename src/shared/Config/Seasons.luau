@@ -76,8 +76,8 @@ Seasons.LIST = {
 	table.freeze({
 		Id = 1,
 		Name = "First Light",
-		Start = 1793577600, -- Monday 2 November 2026, 00:00 UTC
-		End = 1798416000, -- Monday 28 December 2026, 00:00 UTC (8 weeks)
+		Start = 1794182400, -- Monday 9 November 2026, 00:00 UTC
+		End = 1799020800, -- Monday 4 January 2027, 00:00 UTC (8 weeks)
 		Free = free1,
 		Premium = premium1,
 	}),
