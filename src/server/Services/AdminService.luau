@@ -28,6 +28,7 @@ local Progression = require(Shared.Progression)
 local ServerRole = require(Shared.ServerRole)
 local TechTree = require(Shared.TechTree)
 local Version = require(Shared.Version)
+local Erasure = require(ServerScriptService.Server.Lib.Erasure)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local ConfigService = require(script.Parent.ConfigService)
@@ -162,6 +163,19 @@ local COMMANDS: { [string]: Command } = {
 				)
 			end
 			return true, if #lines > 0 then table.concat(lines, "\n") else "No events scheduled"
+		end,
+	},
+	-- Right to Erasure (CMP-04, §32.3): removes everything stored under a UserId. erasure.run { userId }
+	["erasure.run"] = {
+		testOnly = false,
+		run = function(_, args)
+			local userId = tonumber(args.userId)
+			if not userId or userId <= 0 then
+				return false, "Usage: erasure.run { userId }"
+			end
+			local lines = Erasure.run(userId)
+			print(`[Erasure] {userId}:\n  {table.concat(lines, "\n  ")}`)
+			return true, `Erasure for {userId}:\n{table.concat(lines, "\n")}`
 		end,
 	},
 	-- Takes a player off every current leaderboard (a cheater): leaderboard.remove { userId }
