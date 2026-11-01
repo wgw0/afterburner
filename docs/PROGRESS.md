@@ -375,8 +375,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 
 - [x] **ACD-08** Remaining tiers (V–VIII) data and models
   - Done early, with Phase 6's roster work: the F-16C, F-15E, Su-30SM, MiG-29SMT, Gripen C, F/A-18E, Su-35S, Typhoon, Rafale C, F-22A, F-35A, Su-57 and the Tempest-class concept, each spawned in play with its loadout and skin. Tech tree runs to Tier VIII.
-- [ ] **FLT-09** Thrust vectoring behaviour
-  - Partly done: `ThrustVectoring` jets (Su-30SM, Su-35S, F-22A, Su-57, Tempest) keep more control authority at low speed. Post-stall rotation and the faster energy bleed are not built.
+- [x] **FLT-09** Thrust vectoring behaviour
+  - Built: `ThrustVectoring` jets (Su-30SM, Su-35S, F-22A, Su-57, Tempest) keep more control authority at low speed, and with the AoA limiter off can haul the nose up to 80° past the stall at up to twice their pitch rate, paying for it with a fast airspeed bleed (DEVELOPMENT.md §6; `FlightModel.spec`). *Feel to check in play.*
 - [ ] **SNS-08** Data link
 - [ ] **SNS-09** Stealth RCS and weapon bay effect
   - Partly done: the airframe `Stealth` factor shrinks radar detection range on both server and client (`Missiles.spec` checks it). Aspect-dependent RCS and the weapon-bay effect are not built.
