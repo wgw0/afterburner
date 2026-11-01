@@ -1,6 +1,9 @@
 --!strict
 -- Airframe registry (DEVELOPMENT.md §5.1). Each sibling module defines one airframe.
 -- Every airframe is validated when this module loads; any problem stops boot with a clear message.
+-- Premium jets (DESIGN §8.2, SHP-06) are never stronger: a premium module names the free jet it's a variant
+-- of (StatsFrom) and may only set its own name and model (PREMIUM_OWN); every stat, the tier and the BR are
+-- copied from that jet when the registry loads.
 
 local Types = require(script.Parent.Types)
 
@@ -68,6 +71,7 @@ local OPTIONAL: { [string]: Rule } = {
 	RWR = TABLE, -- { LaunchWarning = boolean (IR missile approach warner), Resolution = "Coarse" | "Fine" }
 	Countermeasures = TABLE, -- { Flares = n, Chaff = n }
 	VariableGeometry = TABLE, -- swing wings (FLT-08); checked in detail by validateSweep
+	StatsFrom = STRING, -- premium jets: the free jet whose stats it has (resolvePremium)
 }
 
 -- The coefficients a swing wing may blend, with the range each must stay in.
@@ -117,6 +121,16 @@ local function validateSweep(vg: any, problems: { string }, id: string)
 		table.insert(problems, `{id}: VariableGeometry needs ModelSweep (degrees) and Pivot (Vector3)`)
 	end
 end
+
+-- What a premium jet may set itself; everything else comes from its StatsFrom jet
+local PREMIUM_OWN = table.freeze({
+	Id = true,
+	DisplayName = true,
+	NameStatus = true,
+	FallbackName = true,
+	ModelName = true,
+	StatsFrom = true,
+})
 
 local function check(field: string, value: any, rule: Rule): string?
 	if rule.kind == "string" then
@@ -191,23 +205,66 @@ function AircraftData.validate(id: string, data: any): { string }
 	return problems
 end
 
+-- A premium jet's full airframe: its own fields over a copy of its StatsFrom jet (base: that jet's module,
+-- or nil if there's no such airframe). Returns the airframe, or nil and the problems.
+function AircraftData.resolvePremium(id: string, data: any, base: any): (any, { string })
+	local problems = {}
+	if type(data.StatsFrom) ~= "string" then
+		return nil, { `{id}: StatsFrom must name a free airframe` }
+	end
+	if type(base) ~= "table" then
+		return nil, { `{id}: StatsFrom "{data.StatsFrom}" isn't an airframe` }
+	end
+	if base.StatsFrom ~= nil then
+		table.insert(problems, `{id}: StatsFrom "{data.StatsFrom}" is premium itself; it must be a free airframe`)
+	end
+	for field in data do
+		if not PREMIUM_OWN[field] then
+			table.insert(problems, `{id}: a premium jet can't set {field}; its stats come from {data.StatsFrom}`)
+		end
+	end
+	if #problems > 0 then
+		table.sort(problems)
+		return nil, problems
+	end
+	local full = table.clone(base)
+	for field, value in data do
+		full[field] = value
+	end
+	return full, {}
+end
+
 -- Loads and validates every airframe module in a folder. Errors listing every problem found.
 function AircraftData.load(folder: Instance): { [string]: Airframe }
 	local loaded: { [string]: Airframe } = {}
 	local allProblems = {}
+	local modules, premium = {}, {}
 	for _, child in folder:GetChildren() do
 		if child:IsA("ModuleScript") then
 			local ok, data = pcall(require, child)
 			if not ok then
 				table.insert(allProblems, `{child.Name}: failed to load ({data})`)
-				continue
-			end
-			local problems = AircraftData.validate(child.Name, data)
-			if #problems > 0 then
-				table.move(problems, 1, #problems, #allProblems + 1, allProblems)
+			elseif type(data) == "table" and data.StatsFrom ~= nil then
+				premium[child.Name] = data
 			else
-				loaded[child.Name] = table.freeze(data)
+				modules[child.Name] = data
 			end
+		end
+	end
+	for id, data in premium do
+		local full, problems = AircraftData.resolvePremium(id, data, modules[data.StatsFrom])
+		if full then
+			modules[id] = full
+		else
+			table.move(problems, 1, #problems, #allProblems + 1, allProblems)
+		end
+	end
+	for id, data in modules do
+		local problems = AircraftData.validate(id, data)
+		if #problems > 0 then
+			table.move(problems, 1, #problems, #allProblems + 1, allProblems)
+		else
+			loaded[id] = table.freeze(data)
 		end
 	end
 	if #allProblems > 0 then
