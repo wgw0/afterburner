@@ -1779,6 +1779,14 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - Data in a `Squadrons` DataStore: `{ id, name, tag, ownerId, members = { userId → role }, weeklyScore }`.
 - Name and tag go through `TextService:FilterStringAsync` (§32).
 - Member limit 30 *(tune)*. Weekly squadron challenge. Leaderboard via `OrderedDataStore`.
+- **As built (LIV-06, November 2026):**
+  - **Rules** (`Shared/Squadron`, tested in `Squadron.spec`): a name (3–24 characters) and a tag (2–4 letters or digits, in capitals); 10,000 Credits to create one; up to 30 pilots; roles Owner, Officer, Member. Open squadrons can be joined by tag; invite-only ones need an invite from the owner or an officer on the same server (it lasts 2 minutes). Officers can remove members; only the owner sets roles or hands over ownership (the old owner becomes an officer). If the owner leaves, the longest-standing officer (else member) takes over; the last one out disbands it.
+  - **SquadronService:** records in the `Squadrons` DataStore: `s:<id>` (the record, members keyed by UserId as text) and `tag:<TAG>` (its id, so tags are unique and joinable). The name and tag go through Roblox's text filter and are refused if it changes them. A member's save holds `Squadron = { Id, ClaimWeek }` (replicated); when it loads the record is checked, so someone removed while away is cleared. Records are cached 30 s per server. `SquadronGet` returns the view; `SquadronAction` does Create / CreateClosed / Join / Leave / Kick / Role / Open / Invite / Respond / Claim; `SquadronChanged` tells a player to ask again (an invite).
+  - **The tag:** the member's `SquadronTag` attribute; `Callsign.nameOf` puts it before their name everywhere names are shown ("[ACE] Will": scoreboard, jet labels, kill feed).
+  - **Weekly goal:** each scored match's new player kills (1 point each) and win (3) are added to the squadron's score in the `LB_SquadronWeek_<week>` OrderedDataStore (a new one every Monday 00:00 UTC); at 100 points every member can claim 5,000 Credits once that week. The leaderboards gained a fifth board, Squadrons this week, listing "[TAG] Name" with your squadron lit.
+  - **UI** (`UI/SquadronPanel`): a SQUADRON tab beside ACHIEVEMENTS and LEADERBOARDS on the Career screen: invites, JOIN by tag and CREATE when you're not in one; the tag and name, the week's points and CLAIM, the members (online dot, role, MAKE OFFICER / REMOVE), INVITE, open / invite-only and LEAVE when you are.
+  - Erasure: `erasure.run` takes the player out of their squadron (disbanding it if they were the last).
+  - Checked in Studio: created [TST] Test Wing (10,000 Credits taken, the tag before the name), the panel, LEAVE disbanding it and freeing the tag; Will's Credits put back.
 
 ### 26.6 As built: the free spin (retention)
 
@@ -2395,6 +2403,10 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `PartyState` | S→C | Reliable | `{ leader, members, invites, max }` | n/a | §25.3 |
 | `Announcement` | S→All | Reliable | `{ text, seconds }` | n/a | §31.4 |
 | `GetLeaderboard` | Function | Reliable | `boardId` → ({ board, entries, mine }, why not) | 1/s | §26.8 |
+| `SquadronGet` | Function | Reliable | none → your squadron view | 1/s | §26.4 |
+| `SquadronAction` | Function | Reliable | `action, a?, b?` → (ok, message) | 1/s | §26.4 |
+| `SquadronChanged` | S→C | Reliable | none (ask again) | n/a | §26.4 |
+| `DataLinkContacts` | S→C | Reliable | `{ jetId }` | n/a | §14.4 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

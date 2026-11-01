@@ -17,6 +17,7 @@ local Net = require(Shared.Net)
 
 local DataService = require(script.Parent.DataService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local SquadronService = require(script.Parent.SquadronService)
 
 local LeaderboardService = {
 	Priority = 72, -- after ProgressionService
@@ -24,7 +25,7 @@ local LeaderboardService = {
 
 local CACHE = 60 -- seconds a board's top entries are kept before reading again
 
-type Entry = { rank: number, userId: number, name: string, score: number }
+type Entry = { rank: number, userId: number, name: string, score: number, squadronId: string? }
 
 local written: { [Player]: { [string]: number } } = {} -- store name → score last written for the player
 local cache: { [string]: { at: number, entries: { Entry } } } = {} -- by store name
@@ -126,16 +127,30 @@ function LeaderboardService:Top(boardId: string): ({ Entry }?, string?)
 	end
 	local entries: { Entry } = {}
 	local ids = {}
+	local squadrons = (Leaderboards.get(boardId) :: Leaderboards.Board).squadron == true
 	for i, item in (pages :: DataStorePages):GetCurrentPage() do
-		local userId = tonumber(item.key)
-		if userId then
-			table.insert(entries, { rank = i, userId = userId, name = "", score = item.value })
-			table.insert(ids, userId)
+		if squadrons then
+			-- Keyed by squadron id (LIV-06)
+			table.insert(entries, {
+				rank = i,
+				userId = 0,
+				squadronId = item.key,
+				name = SquadronService:Label(item.key),
+				score = item.value,
+			})
+		else
+			local userId = tonumber(item.key)
+			if userId then
+				table.insert(entries, { rank = i, userId = userId, name = "", score = item.value })
+				table.insert(ids, userId)
+			end
 		end
 	end
 	fillNames(ids)
 	for _, entry in entries do
-		entry.name = names[entry.userId] or `Pilot {entry.userId}`
+		if not entry.squadronId then
+			entry.name = names[entry.userId] or `Pilot {entry.userId}`
+		end
 	end
 	cache[name] = { at = now, entries = entries }
 	return entries, nil
@@ -169,12 +184,16 @@ function LeaderboardService:Init()
 			return nil, why
 		end
 		local data = DataService:GetData(player)
-		return {
-			board = boardId,
-			entries = entries,
-			mine = if data then Leaderboards.score(data, boardId, os.time()) else 0,
-		},
-			nil
+		local mine = if data then Leaderboards.score(data, boardId, os.time()) else 0
+		local squadronId = data and data.Squadron and data.Squadron.Id
+		if boardId == "SquadronWeek" and type(squadronId) == "string" and squadronId ~= "" then
+			for _, entry in entries do
+				if entry.squadronId == squadronId then
+					mine = entry.score
+				end
+			end
+		end
+		return { board = boardId, entries = entries, mine = mine, squadronId = squadronId }, nil
 	end)
 	ProgressionService.MatchRewarded:Connect(function(player: Player, data: { [string]: any })
 		task.spawn(push, player, data)

@@ -393,7 +393,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: parties of up to 3 in a lobby (invite players here or friends through Roblox's invite window), queueing as one entry at the party's highest BR, the same team in team modes, home together and re-formed after the match (`Party.luau`, `PartyService`, `UI/PartyPanel`, DEVELOPMENT.md §25.3; 13 tests in `Party.spec`). Checked in Studio on one player. *To tick after the live test with two or more players.*
 - [x] **LIV-05** Leaderboards
   - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters Only player kills count, not bots (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
-- [ ] **LIV-06** Squadrons
+- [x] **LIV-06** Squadrons
+  - Built: create (name and tag, filtered, 10,000 Credits), join by tag or invite, roles (owner, officers, members), up to 30 pilots, the tag before members' names, a weekly goal of 100 points (1 per player shot down, 3 per win) worth 5,000 Credits each, and a Squadrons this week leaderboard; on the Career screen's SQUADRON tab (`Shared/Squadron`, `SquadronService`, `UI/SquadronPanel`, DEVELOPMENT.md §26.4; `Squadron.spec`). Checked in Studio.
 - [x] **LIV-07** Test Pilot challenge chain and the Tempest unlock
   - Built: the Test Pilot trials open after two Tier VII jets are researched: five steps in Tier VII jets (5 matches, 10 kills, 5 missiles defeated, 3 wins, a match without being shot down), each paying Credits and XP, shown in the Hangar's challenges panel; the Tempest can only be researched once they're done (`Shared/TestPilot`, DEVELOPMENT.md §23.3; `TestPilot.spec`).
 - [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process

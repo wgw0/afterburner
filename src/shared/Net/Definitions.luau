@@ -158,6 +158,15 @@ local definitions: { [string]: Definition } = {
 	QueueJoin = { direction = "ClientToServer", args = { "string", "string?" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- Squadrons (LIV-06): your squadron's view; an action (Create / CreateClosed / Join / Leave / Kick / Role /
+	-- Open / Invite / Respond / Claim, with up to two arguments) -> (ok, message); SquadronChanged: ask again
+	SquadronGet = { direction = "Function", args = {}, rate = { burst = 4, perSecond = 1 } },
+	SquadronAction = {
+		direction = "Function",
+		args = { "string", "any?", "any?" },
+		rate = { burst = 4, perSecond = 1 },
+	},
+	SquadronChanged = { direction = "ServerToClient", args = {} },
 	-- Data link (SNS-08): the jet ids your team's data-link jets see on radar, when it changes
 	DataLinkContacts = { direction = "ServerToClient", args = { "table" } },
 	-- A leaderboard's top entries and your score (LIV-05): boardId -> ({ board, entries, mine }, why not)

@@ -13,13 +13,14 @@ Leaderboards.TOP = 50 -- entries shown per board
 Leaderboards.WEEK = 7 * 86400
 local MONDAY = 4 * 86400 -- the unix epoch was a Thursday
 
-export type Board = { id: string, name: string, unit: string }
+export type Board = { id: string, name: string, unit: string, squadron: boolean? } -- squadron: keyed by squadron id
 
 Leaderboards.BOARDS = table.freeze({
 	{ id = "KillsWeek", name = "Kills this week", unit = "kills" },
 	{ id = "WinsWeek", name = "Wins this week", unit = "wins" },
 	{ id = "Season", name = "Season XP", unit = "XP" },
 	{ id = "KillsAll", name = "All-time kills", unit = "kills" },
+	{ id = "SquadronWeek", name = "Squadrons this week", unit = "points", squadron = true },
 }) :: { Board }
 
 function Leaderboards.get(id: string): Board?
@@ -38,7 +39,7 @@ end
 
 -- The OrderedDataStore a board uses at a time, or nil if it has none then (Season between seasons).
 function Leaderboards.storeName(id: string, now: number): string?
-	if id == "KillsWeek" or id == "WinsWeek" then
+	if id == "KillsWeek" or id == "WinsWeek" or id == "SquadronWeek" then
 		return `LB_{id}_{Leaderboards.week(now)}`
 	elseif id == "Season" then
 		local season = Seasons.at(now)

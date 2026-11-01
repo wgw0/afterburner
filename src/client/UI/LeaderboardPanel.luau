@@ -46,7 +46,7 @@ local function LeaderboardPanel(props: any)
 		picker[b.id] = e(C.Button, {
 			Text = string.upper(b.name),
 			Style = if b.id == boardId then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(180, 32),
+			Size = UDim2.fromOffset(176, 32),
 			TextSize = 13,
 			LayoutOrder = i,
 			OnClick = function()
@@ -59,7 +59,7 @@ local function LeaderboardPanel(props: any)
 	local inTop = false
 	if result then
 		for _, entry in result.entries do
-			local isMe = entry.userId == me
+			local isMe = entry.userId == me or (entry.squadronId ~= nil and entry.squadronId == result.squadronId)
 			inTop = inTop or isMe
 			local medal = MEDALS[entry.rank]
 			rows[`R{entry.rank}`] = e("Frame", {
@@ -79,7 +79,7 @@ local function LeaderboardPanel(props: any)
 					Color = medal or Theme.Dim,
 				}),
 				Name = e(C.Label, {
-					Text = entry.name .. (if isMe then "  (you)" else ""),
+					Text = entry.name .. (if isMe then (if entry.squadronId then "  (yours)" else "  (you)") else ""),
 					Size = UDim2.new(1, -260, 1, 0),
 					Position = UDim2.fromOffset(76, 0),
 					Bold = true,

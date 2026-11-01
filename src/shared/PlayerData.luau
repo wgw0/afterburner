@@ -51,6 +51,7 @@ PlayerData.REPLICATED = table.freeze({
 	"Season",
 	"StarterBought",
 	"TestPilot",
+	"Squadron",
 })
 
 local function deepCopy<T>(value: T): T
@@ -105,6 +106,7 @@ function PlayerData.template(): { [string]: any }
 		TopTier = 0, -- highest tier owned, for the progression event
 		Season = Season.newState(), -- the season pass (Shared/Season)
 		StarterBought = false, -- the Starter Bundle (once per player, Shop)
+		Squadron = { Id = "", ClaimWeek = 0 }, -- your squadron's id ("" for none) and the week you last claimed its reward
 		TestPilot = TestPilot.newState(), -- the Test Pilot trials toward the Tempest (Shared/TestPilot)
 		Weekly = Leaderboards.newWeekly(), -- this week's kills and wins for the leaderboards (Shared/Leaderboards)
 		PendingStarter = false, -- the camo chosen before a Starter Bundle purchase (Shop), false for none
