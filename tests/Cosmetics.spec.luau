@@ -80,10 +80,10 @@ return function(ctx)
 	end)
 
 	describe("catalogue", function()
-		it("every item has a kind, a price or a pass, and what its kind needs", function()
+		it("every item has a kind, a price, a pass or a season, and what its kind needs", function()
 			for id, item in Catalogue.LIST do
 				expect(table.find(Catalogue.KINDS, item.Kind) ~= nil).toBe(true)
-				expect(item.Wings ~= nil or item.Pass ~= nil).toBe(true)
+				expect(item.Wings ~= nil or item.Pass ~= nil or item.Season ~= nil).toBe(true)
 				if item.Wings then
 					expect(item.Wings >= 100 and item.Wings <= 600).toBe(true)
 				end

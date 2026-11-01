@@ -6,6 +6,8 @@
 --   3. the save is written straight away, then PurchaseGranted.
 -- Tier Unlocks: the client picks two jets first (ChooseTierUnlock); the choice is checked, kept in the save
 -- as PendingTierUnlock and the server prompts the purchase, so the receipt knows what to grant.
+-- The Starter Bundle works the same way: the camo is picked first (ChooseStarter, kept as PendingStarter).
+-- The weekly bundle is bought with Wings (BuyBundle).
 -- Test servers can grant any product without Robux (admin shop.grant), through the same receipt path.
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -96,10 +98,51 @@ function ShopService:ChooseTierUnlock(player: Player, picks: { any }): (boolean,
 	return true, nil
 end
 
+-- Picks the camo for the Starter Bundle and opens the purchase ("" when they own every camo).
+function ShopService:ChooseStarter(player: Player, camoId: string): (boolean, string?)
+	local data = DataService:GetData(player)
+	if not data then
+		return false, "Your data isn't loaded yet"
+	end
+	local ok, why = Shop.checkStarterChoice(data, camoId)
+	if not ok then
+		return false, why
+	end
+	local id = Products.idFor("Starter")
+	if not id then
+		return false, "Coming soon"
+	end
+	DataService:Update(player, function(d)
+		d.PendingStarter = if camoId == "" then false else camoId
+	end)
+	MarketplaceService:PromptProductPurchase(player, id)
+	return true, nil
+end
+
+-- Buys this week's featured bundle with Wings.
+function ShopService:BuyBundle(player: Player, bundleId: string): (boolean, string?)
+	local before = DataService:GetData(player)
+	local wingsBefore = before and before.Wings or 0
+	local ok, why = DataService:Update(player, function(data)
+		return Shop.buyBundle(data, bundleId, os.time())
+	end)
+	local data = DataService:GetData(player)
+	if ok and data then
+		Telemetry.economy(player, "Sink", "Wings", wingsBefore - data.Wings, data.Wings, "BuyBundle", bundleId)
+	end
+	return ok == true, why
+end
+
 function ShopService:Init()
 	MarketplaceService.ProcessReceipt = processReceipt
 	Net.Server.handle("ChooseTierUnlock", function(player: Player, picks: { any })
 		return self:ChooseTierUnlock(player, picks)
+	end)
+	Net.Server.handle("ChooseStarter", function(player: Player, camoId: string)
+		return self:ChooseStarter(player, camoId)
+	end)
+	Net.Server.handle("BuyBundle", function(player: Player, bundleId: string)
+		return self:BuyBundle(player, bundleId)
 	end)
 end
 

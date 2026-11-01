@@ -9,6 +9,7 @@ local CosmeticsCatalogue = require(script.Parent.Config.Cosmetics)
 local Economy = require(script.Parent.Config.Economy)
 local LevelRewards = require(script.Parent.Config.LevelRewards)
 local Perks = require(script.Parent.Perks)
+local Season = require(script.Parent.Season)
 local PlayerData = require(script.Parent.PlayerData)
 local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
@@ -226,10 +227,12 @@ function Progression.claimLevelRewards(data: { [string]: any }): { LevelRewards.
 	return paid
 end
 
--- Adds XP, levelling up as needed (each level pays Economy.LEVEL_CREDITS, plus its milestones).
+-- Adds XP, levelling up as needed (each level pays Economy.LEVEL_CREDITS, plus its milestones), and the same
+-- season XP while a season runs.
 -- Returns levels gained.
 function Progression.addXP(data: { [string]: any }, amount: number): number
 	data.TotalXP += amount
+	Season.addXP(data, amount, os.time()) -- all XP counts toward the season pass
 	data.PilotXP += amount
 	local gained = 0
 	while data.PilotLevel < Economy.MAX_LEVEL and data.PilotXP >= Economy.xpToNext(data.PilotLevel) do

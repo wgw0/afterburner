@@ -1,11 +1,15 @@
 --!strict
 -- What Robux purchases grant, and the receipt rule that makes each grant happen exactly once
--- (DEVELOPMENT.md §27, SHP-01/02). Pure: ShopService wraps it around MarketplaceService.ProcessReceipt and
--- the save; the tests drive it directly.
+-- (DEVELOPMENT.md §27, SHP-01/02), plus the Starter Bundle and the weekly bundle (SHP-05). Pure: ShopService
+-- wraps it around MarketplaceService.ProcessReceipt and the save; the tests drive it directly.
 
+local Bundles = require(script.Parent.Config.Bundles)
+local Catalogue = require(script.Parent.Config.Cosmetics)
+local Cosmetics = require(script.Parent.Cosmetics)
 local Perks = require(script.Parent.Perks)
 local Products = require(script.Parent.Config.Products)
 local PlayerData = require(script.Parent.PlayerData)
+local Season = require(script.Parent.Season)
 local TechTree = require(script.Parent.TechTree)
 
 local Shop = {}
@@ -92,6 +96,127 @@ local function unlockJets(data: { [string]: any }, tier: number): { string }
 	return jets
 end
 
+-- The Starter Bundle (DESIGN §8.4): once per player, a camo they pick (from the ones sold for Wings), hours
+-- of double Credits and some Wings, for far less than they'd cost on their own.
+Shop.STARTER = table.freeze({ BoosterHours = 3, Wings = 300 })
+
+-- The camos the player could pick for the Starter Bundle (sold for Wings, ready, not owned yet), or nil once
+-- they've bought it.
+function Shop.starterOffer(data: { [string]: any }): { string }?
+	if data.StarterBought == true then
+		return nil
+	end
+	local camos = {}
+	for _, id in Catalogue.ofKind("Camo") do
+		local item = Catalogue.LIST[id]
+		if item.Wings and Cosmetics.ready(id) and not Cosmetics.owns(data, id) then
+			table.insert(camos, id)
+		end
+	end
+	return camos
+end
+
+-- Whether camoId is a valid pick for the player's Starter Bundle. Returns ok, or false and why not.
+function Shop.checkStarterChoice(data: { [string]: any }, camoId: any): (boolean, string?)
+	local offer = Shop.starterOffer(data)
+	if not offer then
+		return false, "You've already got the Starter Bundle"
+	elseif #offer == 0 and camoId == "" then
+		return true, nil -- they own every camo: the bundle gives a camo's Wings instead
+	elseif type(camoId) ~= "string" or not table.find(offer, camoId) then
+		return false, "Pick a camo"
+	end
+	return true, nil
+end
+
+local function cheapestCamo(): number
+	local price = math.huge
+	for _, id in Catalogue.ofKind("Camo") do
+		price = math.min(price, Catalogue.LIST[id].Wings or math.huge)
+	end
+	return price
+end
+
+local function grantStarter(data: { [string]: any }, now: number): string
+	if data.StarterBought == true then
+		-- Bought twice somehow: Roblox has taken the Robux, so give its Wings rather than nothing
+		data.Wings = (data.Wings or 0) + Shop.STARTER.Wings
+		return `+{Shop.STARTER.Wings} Wings (Starter Bundle already bought)`
+	end
+	local camo = data.PendingStarter
+	local granted
+	if type(camo) == "string" and Shop.checkStarterChoice(data, camo) and camo ~= "" then
+		data.Cosmetics = data.Cosmetics or { Owned = {}, Equipped = {} }
+		data.Cosmetics.Owned[camo] = true
+		data.Cosmetics.Equipped = data.Cosmetics.Equipped or {}
+		data.Cosmetics.Equipped.Camo = camo
+		granted = camo
+	else
+		-- The choice was lost (or they own every camo): a camo's worth of Wings instead
+		local price = cheapestCamo()
+		data.Wings = (data.Wings or 0) + (if price < math.huge then price else 0)
+		granted = "a camo's Wings"
+	end
+	for _ = 1, Shop.STARTER.BoosterHours do
+		Perks.extendBooster(data, "Credits", now)
+	end
+	data.Wings = (data.Wings or 0) + Shop.STARTER.Wings
+	data.StarterBought = true
+	data.PendingStarter = false
+	return `Starter Bundle: {granted}, {Shop.STARTER.BoosterHours}h Credits booster, +{Shop.STARTER.Wings} Wings`
+end
+
+-- The weekly bundle ------------------------------------------------------------------------------
+
+local WEEK = 7 * 86400
+local MONDAY = 4 * 86400 -- the unix epoch was a Thursday; weeks start on Monday 00:00 UTC
+
+-- The week number (changes on Monday at 00:00 UTC) and when the next one starts.
+function Shop.week(now: number): (number, number)
+	local week = (now - MONDAY) // WEEK
+	return week, MONDAY + (week + 1) * WEEK
+end
+
+-- This week's featured bundle: the same for everyone, in Config/Bundles' order.
+function Shop.bundleFor(now: number): Bundles.Bundle
+	local week = Shop.week(now)
+	return Bundles.LIST[week % #Bundles.LIST + 1]
+end
+
+-- What a bundle costs this player: DISCOUNT off the items they don't own yet (rounded to 10 Wings). Returns
+-- the price, the items it would give, and the items' full price.
+function Shop.bundlePrice(data: { [string]: any }, bundle: Bundles.Bundle): (number, { string }, number)
+	local items, full = {}, 0
+	for _, id in bundle.Items do
+		local item = Catalogue.get(id)
+		if item and item.Wings and Cosmetics.ready(id) and not Cosmetics.owns(data, id) then
+			table.insert(items, id)
+			full += item.Wings
+		end
+	end
+	return math.round(full * (1 - Bundles.DISCOUNT) / 10) * 10, items, full
+end
+
+-- Buys this week's bundle (bundleId must be it, so a purchase can't land on next week's by accident).
+function Shop.buyBundle(data: { [string]: any }, bundleId: string, now: number): (boolean, string?)
+	local bundle = Shop.bundleFor(now)
+	if bundle.Id ~= bundleId then
+		return false, "That bundle isn't on this week"
+	end
+	local price, items = Shop.bundlePrice(data, bundle)
+	if #items == 0 then
+		return false, "You already own all of it"
+	elseif (data.Wings or 0) < price then
+		return false, "Not enough Wings"
+	end
+	data.Wings -= price
+	data.Cosmetics = data.Cosmetics or { Owned = {}, Equipped = {} }
+	for _, id in items do
+		data.Cosmetics.Owned[id] = true
+	end
+	return true, nil
+end
+
 -- Applies a product to a save. Returns a short description of what was granted, or errors.
 -- now: the unix time (boosters start from it); os.time() if not given.
 function Shop.grant(data: { [string]: any }, key: string, now: number?): string
@@ -117,6 +242,10 @@ function Shop.grant(data: { [string]: any }, key: string, now: number?): string
 	elseif product.Kind == "Booster" then
 		Perks.extendBooster(data, product.Booster :: string, now or os.time())
 		return `{product.Booster} booster, +1 hour`
+	elseif product.Kind == "SeasonPass" then
+		return Season.grantPremium(data, now or os.time())
+	elseif product.Kind == "Starter" then
+		return grantStarter(data, now or os.time())
 	end
 	error(`no grant for {product.Kind}`)
 end

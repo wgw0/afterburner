@@ -8,9 +8,11 @@
 --   PilotXP is XP into the current level (TotalXP keeps the lifetime sum).
 --   Challenges: today's and this week's challenges and their progress (Challenges.luau); Achievements:
 --     { [id] = { At, Badge } } (Achievements.luau). Stats are lifetime counts (Progression.applyRewards).
+--   Season: the season pass (Shared/Season). StarterBought: the Starter Bundle's been bought (Shop).
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
 local Challenges = require(script.Parent.Challenges)
+local Season = require(script.Parent.Season)
 local Spin = require(script.Parent.Spin)
 local Streak = require(script.Parent.Streak)
 local Economy = require(script.Parent.Config.Economy)
@@ -44,6 +46,8 @@ PlayerData.REPLICATED = table.freeze({
 	"Lessons",
 	"Streak",
 	"Titles",
+	"Season",
+	"StarterBought",
 })
 
 local function deepCopy<T>(value: T): T
@@ -96,7 +100,9 @@ function PlayerData.template(): { [string]: any }
 		Titles = {}, -- titles unlocked other than by level, e.g. the streak's [titleId] = true
 		Onboarding = {}, -- onboarding funnel steps already logged (ANL-02)
 		TopTier = 0, -- highest tier owned, for the progression event
-		Season = { Id = 1, XP = 0, Premium = false, Claimed = {} },
+		Season = Season.newState(), -- the season pass (Shared/Season)
+		StarterBought = false, -- the Starter Bundle (once per player, Shop)
+		PendingStarter = false, -- the camo chosen before a Starter Bundle purchase (Shop), false for none
 		Flags = {},
 		LastWinDay = 0, -- os.time() // 86400 of the last win (first win of the day bonus)
 	}

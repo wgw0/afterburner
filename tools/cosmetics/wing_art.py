@@ -103,7 +103,61 @@ def eight():
     return img
 
 
-ART = {"WingShark": shark, "WingAce": ace, "WingBolt": bolt, "WingEight": eight}
+def comet():
+    """Season 1: a comet streaking forward, its tail fanning out behind in cyan and violet."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    head = (800, 250)
+    # The tail: soft wedges from the head back, widening and fading, cyan inside violet
+    for colour, spread, alpha in (((170, 90, 255), 150, 150), ((70, 200, 255), 95, 200), ((235, 250, 255), 40, 255)):
+        layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        for i in range(60):
+            t = i / 60
+            x = head[0] - 700 * t
+            half = 18 + spread * t
+            a = int(alpha * (1 - t) ** 1.3)
+            ld.ellipse((x - 30, head[1] - half, x + 30, head[1] + half), fill=colour + (a,))
+        img.alpha_composite(layer)
+    d = ImageDraw.Draw(img)
+    # Sparks trailing off the tail
+    for x, y, r in ((420, 170, 9), (330, 330, 7), (560, 345, 6), (250, 215, 5), (610, 150, 6)):
+        d.ellipse((x - r, y - r, x + r, y + r), fill=(235, 250, 255, 230))
+    # The head: an outlined bright core
+    r = 62
+    d.ellipse((head[0] - r - 8, head[1] - r - 8, head[0] + r + 8, head[1] + r + 8), fill=OUTLINE)
+    d.ellipse((head[0] - r, head[1] - r, head[0] + r, head[1] + r), fill=(120, 225, 255, 255))
+    d.ellipse((head[0] - 36, head[1] - 36, head[0] + 30, head[1] + 30), fill=(250, 255, 255, 255))
+    return img
+
+
+def sunburst():
+    """Season 1: a sun with rays all round, longest pointing forward, orange and gold, outlined."""
+    img, d = canvas()
+    cx, cy = 380, 256
+    rays = 16
+    for i in range(rays):
+        a0 = 2 * math.pi * i / rays
+        a1 = 2 * math.pi * (i + 0.5) / rays
+        mid = (a0 + a1) / 2
+        reach = 200 + 360 * max(0.0, math.cos(mid)) ** 2  # longer towards the nose (+x)
+        pts = [(cx, cy)] + [(cx + reach * math.cos(a), cy + reach * 0.62 * math.sin(a)) for a in (a0, a1)]
+        d.polygon(pts, fill=OUTLINE)
+        inner = [(cx, cy)] + [((x - cx) * 0.95 + cx, (y - cy) * 0.95 + cy) for x, y in pts[1:]]
+        d.polygon(inner, fill=(255, 140, 40, 255) if i % 2 == 0 else (255, 200, 60, 255))
+    r = 120
+    d.ellipse((cx - r - 12, cy - r - 12, cx + r + 12, cy + r + 12), fill=OUTLINE)
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 215, 80, 255))
+    d.ellipse((cx - r + 28, cy - r + 28, cx + r - 28, cy + r - 28), fill=(255, 240, 170, 255))
+    return img
+
+ART = {
+    "WingShark": shark,
+    "WingAce": ace,
+    "WingBolt": bolt,
+    "WingEight": eight,
+    "WingComet": comet,
+    "WingSunburst": sunburst,
+}
 
 
 def main():

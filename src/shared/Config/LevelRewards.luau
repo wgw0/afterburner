@@ -37,8 +37,11 @@ LevelRewards.TITLES = table.freeze({
 	-- Not from levels: the login streak (Streak.MILESTONES), unlocked in data.Titles
 	Regular = "Regular",
 	Devoted = "Devoted",
+	-- Not from levels: season passes (Config/Seasons), unlocked in data.Titles
+	FirstLight = "First Light",
+	Dawnbreaker = "Dawnbreaker",
 })
-LevelRewards.OTHER_TITLES = table.freeze({ "Regular", "Devoted" })
+LevelRewards.OTHER_TITLES = table.freeze({ "Regular", "Devoted", "FirstLight", "Dawnbreaker" })
 
 LevelRewards.HUD_COLOURS = table.freeze({ Pink = 7, Blue = 18, Violet = 40 }) -- colour → level
 
