@@ -32,12 +32,14 @@ function Callsign.accepted(callsign: string, filtered: string?): boolean
 	return filtered ~= nil and filtered == callsign
 end
 
--- The name to show for a pilot: a player's callsign if they have one, else their username; an AI pilot
--- record's Name.
+-- The name to show for a pilot: a player's callsign if they have one, else their username, after their
+-- squadron's tag if they're in one ("[ACE] Will", LIV-06); an AI pilot record's Name.
 function Callsign.nameOf(identity: any): string
 	if typeof(identity) == "Instance" and identity:IsA("Player") then
 		local callsign = identity:GetAttribute("Callsign")
-		return if type(callsign) == "string" and callsign ~= "" then callsign else identity.Name
+		local name = if type(callsign) == "string" and callsign ~= "" then callsign else identity.Name
+		local tag = identity:GetAttribute("SquadronTag")
+		return if type(tag) == "string" and tag ~= "" then `[{tag}] {name}` else name
 	end
 	return if type(identity) == "table" and type(identity.Name) == "string" then identity.Name else "?"
 end

@@ -45,7 +45,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 
 | Check | Status |
 |---|---|
-| Callsigns go through `TextService` filtering for every viewer (CMP-01) | Done |
+| Callsigns, squadron names and tags go through `TextService` filtering for every viewer (CMP-01) | Done |
 | Chat is `TextChatService` (Roblox filters it) | Done |
 | Report a cheater in game (CMP-03), Roblox's own report flow for everything else | Done |
 | Admin announcements and event names are written by admins only | Done |

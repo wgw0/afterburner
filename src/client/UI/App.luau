@@ -384,6 +384,9 @@ local function App(props: any)
 			OnSetTitle = props.OnSetTitle,
 			OnSetCallsign = props.OnSetCallsign,
 			OnLeaderboard = props.OnLeaderboard,
+			OnSquadron = props.OnSquadron,
+			OnSquadronAction = props.OnSquadronAction,
+			SquadronVersion = props.SquadronVersion,
 		})
 	elseif screen == "Settings" then
 		body = e(SettingsScreen, {

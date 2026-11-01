@@ -2,8 +2,9 @@
 -- Career (PRG-03, LIV-02). Top: your lifetime stats, and the level track: your level and XP, then every
 -- milestone (Config/LevelRewards) in a row, the ones reached lit, the next one marked, later ones dimmed,
 -- with your callsign (CMP-01) and title picker under it. Bottom: the achievements, earned ones lit with the date,
--- or the leaderboards (LIV-05: UI/LeaderboardPanel).
--- props: Data, OnSetTitle(titleId) -> (ok, err), OnSetCallsign(text) -> (ok, err), OnLeaderboard(boardId).
+-- or the leaderboards (LIV-05: UI/LeaderboardPanel), or your squadron (LIV-06: UI/SquadronPanel).
+-- props: Data, OnSetTitle(titleId) -> (ok, err), OnSetCallsign(text) -> (ok, err), OnLeaderboard(boardId),
+--   OnSquadron(), OnSquadronAction(action, a, b), SquadronVersion.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -21,6 +22,7 @@ local Passes = require(Shared.Config.Passes)
 
 local C = require(script.Parent.Parent.Components)
 local LeaderboardPanel = require(script.Parent.Parent.LeaderboardPanel)
+local SquadronPanel = require(script.Parent.Parent.SquadronPanel)
 local Theme = require(script.Parent.Parent.Theme)
 
 local e = React.createElement
@@ -528,6 +530,16 @@ local function Career(props: any)
 						setView("Leaderboards")
 					end,
 				}),
+				Squadron = e(C.Button, {
+					Text = "SQUADRON",
+					Style = if view == "Squadron" then "Primary" else "Ghost",
+					Size = UDim2.fromOffset(180, 34),
+					TextSize = 14,
+					LayoutOrder = 3,
+					OnClick = function()
+						setView("Squadron")
+					end,
+				}),
 			}),
 			Cards = if view == "Achievements"
 				then e("Frame", {
@@ -539,6 +551,14 @@ local function Career(props: any)
 				else nil,
 			Boards = if view == "Leaderboards"
 				then e(LeaderboardPanel, { OnLeaderboard = props.OnLeaderboard, Order = 1 })
+				else nil,
+			Squadron = if view == "Squadron"
+				then e(SquadronPanel, {
+					OnSquadron = props.OnSquadron,
+					OnSquadronAction = props.OnSquadronAction,
+					Version = props.SquadronVersion,
+					Order = 1,
+				})
 				else nil,
 		}),
 	})

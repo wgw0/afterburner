@@ -98,6 +98,7 @@ local state = {
 	-- Your party (lobby only), from PartyState (MMK-05)
 	party = { leader = nil :: number?, members = {} :: { any }, invites = {} :: { any }, max = 3 },
 	teleportScreen = false,
+	squadronVersion = 0, -- bumped when the server says your squadron view changed (LIV-06)
 	autoLaunch = false, -- a match server: launch in the selected jet when the match starts
 }
 local myJetId: number? = nil
@@ -708,6 +709,19 @@ render = function()
 			end
 			return result == true, message
 		end,
+		-- Your squadron (LIV-06)
+		OnSquadron = function(): any
+			local ok, view = pcall(Net.Client.invoke, "SquadronGet")
+			return if ok then view else nil
+		end,
+		OnSquadronAction = function(action: string, a: any, b: any): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "SquadronAction", action, a, b)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		SquadronVersion = state.squadronVersion,
 		-- A leaderboard's top entries and your score (LIV-05)
 		OnLeaderboard = function(boardId: string): (any, string?)
 			local ok, result, why = pcall(Net.Client.invoke, "GetLeaderboard", boardId)
@@ -886,6 +900,10 @@ function MenuController:Start()
 	Net.Client.on("SpawnRefused", function(reason: string)
 		state.teleportScreen = false -- a failed trip; the next one sets its own
 		setStatus(reason)
+	end)
+	Net.Client.on("SquadronChanged", function()
+		state.squadronVersion += 1 -- an invite arrived: the SQUADRON tab asks again
+		render()
 	end)
 	Net.Client.on("PartyState", function(payload: any)
 		state.party = payload
