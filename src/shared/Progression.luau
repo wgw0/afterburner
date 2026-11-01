@@ -289,6 +289,12 @@ function Progression.applyRewards(data: { [string]: any }, rewards: Rewards, sum
 			else
 				stats.Kills += 1
 			end
+		elseif event.Kind == "Assist" then
+			stats.Assists = (stats.Assists or 0) + 1
+		elseif event.Kind == "MissileDefeated" then
+			stats.MissilesDefeated = (stats.MissilesDefeated or 0) + 1
+		elseif event.Kind == "ZoneCaptured" then
+			stats.Captures = (stats.Captures or 0) + 1
 		end
 	end
 	-- This week's leaderboard counts (LIV-05)

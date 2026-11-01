@@ -2,16 +2,175 @@
 -- Achievements (DEVELOPMENT.md §26.2, LIV-02; DESIGN §10). Each has a Roblox badge once its id is set in
 -- Config/Badges. Pure: ChallengeService decides from match events which ones a player has just earned.
 -- Saved per player as data.Achievements = { [id] = { At = unix, Badge = true once the badge was awarded } }.
+-- Something new to earn all the time (Will, November 2026): every achievement pays a reward by its rarity
+-- (REWARDS), and ranked series (SERIES: Hunter I, II, III…) put the next one always in reach.
+
+local AircraftData = require(script.Parent.AircraftData)
+local Economy = require(script.Parent.Config.Economy)
+local LevelRewards = require(script.Parent.Config.LevelRewards)
 
 -- rarity: how hard it is, Common → Legendary (Achievements.RARITIES); shown as the card's colour in Career.
--- secret: hidden until earned.
-export type Def = { id: string, rarity: string, name: string, text: string, secret: boolean? }
+-- secret: hidden until earned. series / level / target / stat: one level of a ranked series (SERIES).
+export type Def = {
+	id: string,
+	rarity: string,
+	name: string,
+	text: string,
+	secret: boolean?,
+	series: string?,
+	level: number?,
+	target: number?,
+	stat: string?,
+}
 
 local Achievements = {}
 
 Achievements.RARITIES = table.freeze({ "Common", "Uncommon", "Rare", "Epic", "Legendary" })
 
-Achievements.LIST = table.freeze({
+-- What each achievement pays when it's earned, by rarity
+Achievements.REWARDS = table.freeze({
+	Common = { credits = 1000, wings = 0 },
+	Uncommon = { credits = 2500, wings = 0 },
+	Rare = { credits = 5000, wings = 10 },
+	Epic = { credits = 10000, wings = 25 },
+	Legendary = { credits = 25000, wings = 50 },
+})
+
+function Achievements.reward(def: Def): { credits: number, wings: number }
+	return Achievements.REWARDS[def.rarity] or Achievements.REWARDS.Common
+end
+
+local ROMAN = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" }
+Achievements.ROMAN = ROMAN
+
+-- Ranked series: one achievement per level, rarer as it climbs. stat: a field of Achievements.career.
+-- names: a name per level instead of "<name> I/II/…"; textRoman: the level's target written as a numeral.
+export type Series = {
+	id: string,
+	name: string,
+	stat: string,
+	text: string,
+	levels: { number },
+	names: { string }?,
+	textRoman: boolean?,
+}
+
+Achievements.SERIES = table.freeze({
+	{
+		id = "Hunter",
+		name = "Hunter",
+		stat = "totalKills",
+		text = "Shoot down %s jets.",
+		levels = { 10, 25, 50, 250, 500, 1000, 2500 },
+	},
+	{
+		id = "Dogfighter",
+		name = "Dogfighter",
+		stat = "playerKills",
+		text = "Shoot down %s other players.",
+		levels = { 5, 25, 100, 250, 500, 1000 },
+	},
+	{
+		id = "Champion",
+		name = "Champion",
+		stat = "wins",
+		text = "Win %s matches.",
+		levels = { 5, 10, 25, 50, 100, 250, 500 },
+	},
+	{
+		id = "FrequentFlyer",
+		name = "Frequent Flyer",
+		stat = "matches",
+		text = "Finish %s matches.",
+		levels = { 10, 25, 100, 250, 500, 1000 },
+	},
+	{
+		id = "Wingman",
+		name = "Wingman",
+		stat = "assists",
+		text = "Get %s assists.",
+		levels = { 10, 50, 150, 500, 1000 },
+	},
+	{
+		id = "Evader",
+		name = "Evader",
+		stat = "missilesDefeated",
+		text = "Defeat %s missiles.",
+		levels = { 10, 50, 150, 500 },
+	},
+	{
+		id = "ZoneCommander",
+		name = "Zone Commander",
+		stat = "captures",
+		text = "Capture %s zones.",
+		levels = { 10, 50, 150, 500 },
+	},
+	{ id = "Fleet", name = "Fleet", stat = "ownedJets", text = "Own %s jets.", levels = { 3, 5, 15, 20 } },
+	{
+		id = "RisingStar",
+		name = "Rising Star",
+		stat = "level",
+		text = "Reach pilot level %s.",
+		levels = { 5, 10, 15, 40, 50, 75, 100 },
+	},
+	{
+		id = "Taskmaster",
+		name = "Taskmaster",
+		stat = "challengesDone",
+		text = "Complete %s challenges.",
+		levels = { 5, 25, 100, 250 },
+	},
+	{
+		id = "Mechanic",
+		name = "Mechanic",
+		stat = "modulesFitted",
+		text = "Buy %s upgrades.",
+		levels = { 1, 10, 25, 50, 100, 250 },
+	},
+	{
+		id = "Promotion",
+		name = "Promotion",
+		stat = "topTier",
+		text = "Own a Tier %s jet.",
+		textRoman = true,
+		levels = { 2, 3, 4, 5, 6, 7, 8 },
+		names = {
+			"Tier II Pilot",
+			"Tier III Pilot",
+			"Tier IV Pilot",
+			"Tier V Pilot",
+			"Tier VI Pilot",
+			"Tier VII Pilot",
+			"Prestige Pilot",
+		},
+	},
+}) :: { Series }
+
+local function commas(n: number): string
+	local text = tostring(math.floor(n))
+	return (text:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+end
+
+-- One achievement per series level (rarer as the series climbs)
+local seriesDefs: { Def } = {}
+for _, series in Achievements.SERIES do
+	local count = #series.levels
+	for i, target in series.levels do
+		local rank = math.clamp(math.ceil(i / count * #Achievements.RARITIES), 1, #Achievements.RARITIES)
+		table.insert(seriesDefs, {
+			id = `{series.id}{i}`,
+			rarity = Achievements.RARITIES[rank],
+			name = if series.names then series.names[i] else `{series.name} {ROMAN[i]}`,
+			text = string.format(series.text, if series.textRoman then ROMAN[target] else commas(target)),
+			series = series.id,
+			level = i,
+			target = target,
+			stat = series.stat,
+		})
+	end
+end
+
+local BASE: { Def } = {
 	{ id = "FirstBlood", rarity = "Common", name = "First Blood", text = "Shoot down your first jet." },
 	{ id = "GunsOnly", rarity = "Common", name = "Guns Only", text = "Shoot a jet down with your guns." },
 	{ id = "Victor", rarity = "Common", name = "Victor", text = "Win a match." },
@@ -72,7 +231,24 @@ Achievements.LIST = table.freeze({
 		text = "Fly under a bridge.",
 		secret = true,
 	},
-} :: { Def })
+}
+
+local list = table.clone(BASE)
+for _, def in seriesDefs do
+	table.insert(list, def)
+end
+Achievements.LIST = table.freeze(list) :: { Def }
+
+-- The levels of a series, in order.
+function Achievements.seriesLevels(seriesId: string): { Def }
+	local levels = {}
+	for _, def in seriesDefs do
+		if def.series == seriesId then
+			table.insert(levels, def)
+		end
+	end
+	return levels
+end
 
 Achievements.ACE_KILLS = 5
 Achievements.HAT_TRICK_KILLS = 3
@@ -121,6 +297,14 @@ export type Event = {
 	rp: number?, -- Career: Free RP plus every jet's RP
 	skins: number?, -- Career: skins owned, bought or earned
 	level: number?, -- Career: pilot level
+	playerKills: number?, -- Career: lifetime kills of other players
+	wins: number?, -- Career: lifetime wins
+	assists: number?, -- Career: lifetime assists
+	missilesDefeated: number?, -- Career: lifetime missiles defeated
+	captures: number?, -- Career: lifetime zones captured
+	challengesDone: number?, -- Career: daily and weekly challenges completed
+	modulesFitted: number?, -- Career: upgrades bought, on every jet
+	topTier: number?, -- Career: the highest tier owned
 	airframe: string?, -- Spawn
 }
 
@@ -216,8 +400,81 @@ function Achievements.earned(event: Event): { string }
 				end
 			end
 		end
+		-- Every series level reached
+		for _, def in seriesDefs do
+			if ((event :: any)[def.stat :: string] or 0) >= (def.target :: number) then
+				table.insert(ids, def.id)
+			end
+		end
 	end
 	return ids
+end
+
+-- A player's lifetime totals, as a Career event (checked at the end of every match and on joining; the
+-- Career screen shows series progress from it). Full access (testing) owns everything without earning it,
+-- so the hangar and bank totals count nothing for it.
+function Achievements.career(data: { [string]: any }): Event
+	local owned, kitted, skins, totalJets, fitted, topTier = 0, 0, 0, 0, 0, 1
+	local rp = data.FreeRP or 0
+	for _ in AircraftData.getAll() do
+		totalJets += 1
+	end
+	for id, entry in data.Aircraft or {} do
+		rp += entry.RP or 0
+		if entry.Owned then
+			owned += 1
+			local airframe = AircraftData.get(id) :: any
+			if airframe and airframe.Tier > topTier then
+				topTier = airframe.Tier
+			end
+			local all = true
+			for _, def in Economy.MODULES do
+				if entry.Modules == nil or entry.Modules[def.Id] == nil then
+					all = false
+				else
+					fitted += 1
+				end
+			end
+			if all then
+				kitted += 1
+			end
+		end
+		for _, bought in entry.Skins or {} do
+			if bought then
+				skins += 1
+			end
+		end
+	end
+	for _, skin in LevelRewards.SKINS do -- the level liveries count, on every jet you own
+		if (data.PilotLevel or 1) >= skin.Level then
+			skins += owned
+		end
+	end
+	local full = data.Flags and data.Flags.AllUnlocked == true
+	if full then
+		totalJets, kitted, rp, skins, fitted, topTier, owned = math.huge, 0, 0, 0, 0, 1, 0
+	end
+	local stats = data.Stats or {}
+	return {
+		kind = "Career",
+		matches = stats.Matches or 0,
+		totalKills = (stats.Kills or 0) + (stats.AIKills or 0),
+		playerKills = stats.Kills or 0,
+		wins = stats.Wins or 0,
+		assists = stats.Assists or 0,
+		missilesDefeated = stats.MissilesDefeated or 0,
+		captures = stats.Captures or 0,
+		challengesDone = stats.Challenges or 0,
+		modulesFitted = fitted,
+		topTier = topTier,
+		ownedJets = owned,
+		totalJets = totalJets,
+		fullyKitted = kitted,
+		credits = if full then 0 else data.Credits,
+		rp = rp,
+		skins = skins,
+		level = data.PilotLevel,
+	}
 end
 
 return Achievements

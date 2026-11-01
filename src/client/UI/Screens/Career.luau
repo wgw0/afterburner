@@ -429,6 +429,75 @@ local function card(def: any, earned: any, order: number)
 	})
 end
 
+-- A ranked series (Hunter I, II…): the level reached, the next one's goal and a bar toward it, in the next
+-- level's rarity colour (green and full once the series is done).
+local function seriesCard(series: any, earned: any, career: any, order: number)
+	local levels = Achievements.seriesLevels(series.id)
+	local reached = 0
+	for i, def in levels do
+		if earned[def.id] then
+			reached = i
+		end
+	end
+	local nextDef = levels[reached + 1]
+	local current = (career :: any)[series.stat] or 0
+	local done = nextDef == nil
+	local shown = nextDef or levels[#levels]
+	local colour = Theme.Rarity[shown.rarity] or Theme.Accent
+	local previous = if reached > 0 then levels[reached].target else 0
+	local progress = if done then 1 else math.clamp((current - previous) / (shown.target - previous), 0, 1)
+	return e(C.Panel, {
+		Size = UDim2.fromOffset(CARD_W, CARD_H),
+		Color = if reached > 0 then Theme.PanelLight else Theme.Background,
+		Transparency = if reached > 0 then 0 else 0.3,
+		Padding = 12,
+		LayoutOrder = order,
+		StrokeColor = colour,
+		StrokeThickness = if reached > 0 then 2 else 1,
+		StrokeTransparency = if reached > 0 then 0 else 0.6,
+	}, {
+		Name = e(C.Label, {
+			Text = if reached > 0 then levels[reached].name else series.name,
+			Size = UDim2.new(1, -60, 0, 22),
+			Bold = true,
+			TextSize = 16,
+			Color = if reached > 0 then colour else Theme.Dim,
+		}),
+		Level = e(C.Label, {
+			Text = `{reached}/{#levels}`,
+			Size = UDim2.fromOffset(56, 22),
+			Position = UDim2.new(1, -56, 0, 0),
+			Bold = true,
+			TextSize = 13,
+			Align = "Right",
+			Color = if done then Theme.Good else Theme.Dim,
+		}),
+		Text = e(C.Label, {
+			Text = if done then "Every level done." else `Next: {shown.text}`,
+			Size = UDim2.new(1, 0, 0, 30),
+			Position = UDim2.fromOffset(0, 24),
+			TextSize = 12,
+			Wrap = true,
+			Color = Theme.Text,
+		}),
+		Bar = e(C.Bar, {
+			Value = progress,
+			Size = UDim2.new(1, -70, 0, 8),
+			Position = UDim2.new(0, 0, 1, -10),
+			Color = if done then Theme.Good else colour,
+		}),
+		Count = e(C.Label, {
+			Text = if done then "✓" else `{C.number(math.min(current, shown.target))}/{C.number(shown.target)}`,
+			Size = UDim2.fromOffset(66, 14),
+			Position = UDim2.new(1, -66, 1, -14),
+			TextSize = 11,
+			Bold = true,
+			Align = "Right",
+			Color = if done then Theme.Good else Theme.Dim,
+		}),
+	})
+end
+
 local function Career(props: any)
 	local data = props.Data
 	local view, setView = React.useState("Achievements")
@@ -457,11 +526,16 @@ local function Career(props: any)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}
-	-- In rarity order (Common first, Legendary last), then in list order within a rarity
+	-- The ranked series first (one card each, with progress to the next level), then the one-offs in rarity
+	-- order (Common first, Legendary last), then in list order within a rarity
+	local career = Achievements.career(data)
+	for i, series in Achievements.SERIES do
+		cards[series.id] = seriesCard(series, earned, career, i)
+	end
 	for i, def in Achievements.LIST do
-		if not def.secret or earned[def.id] then
+		if not def.series and (not def.secret or earned[def.id]) then
 			local rank = table.find(Achievements.RARITIES, def.rarity) or #Achievements.RARITIES
-			cards[def.id] = card(def, earned[def.id], rank * 100 + i)
+			cards[def.id] = card(def, earned[def.id], 1000 + rank * 100 + i)
 		end
 	end
 

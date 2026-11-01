@@ -146,16 +146,18 @@ return function(ctx)
 			for _, id in { "Veteran", "Centurion", "Collector", "HighFlyer" } do
 				expect(has(career, id)).toBe(true)
 			end
-			expect(#Achievements.earned({ kind = "Career", matches = 49, totalKills = 99, ownedJets = 9, level = 24 })).toBe(
-				0
-			)
+			local short =
+				Achievements.earned({ kind = "Career", matches = 49, totalKills = 99, ownedJets = 9, level = 24 })
+			for _, id in { "Veteran", "Centurion", "Collector", "HighFlyer" } do
+				expect(has(short, id)).toBe(false)
+			end
 			local visible = 0
 			for _, def in Achievements.LIST do
-				if not def.secret then
+				if not def.secret and not def.series then
 					visible += 1
 				end
 			end
-			expect(visible).toBe(31)
+			expect(visible).toBe(31) -- the one-off achievements (the ranked series come on top)
 			expect(table.find(Achievements.earned({ kind = "BridgeRun" }), "ThreadTheNeedle") ~= nil).toBe(true)
 		end)
 	end)

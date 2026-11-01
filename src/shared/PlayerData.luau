@@ -91,7 +91,18 @@ function PlayerData.template(): { [string]: any }
 		Boosters = { Credits = 0, RP = 0 }, -- unix time each booster runs out (Shared/Perks)
 		ProcessedReceipts = {},
 		Settings = Settings.defaults(),
-		Stats = { Kills = 0, AIKills = 0, Deaths = 0, Matches = 0, Wins = 0 },
+		-- Lifetime counts (Assists, MissilesDefeated, Captures and Challenges feed the achievement series)
+		Stats = {
+			Kills = 0,
+			AIKills = 0,
+			Deaths = 0,
+			Matches = 0,
+			Wins = 0,
+			Assists = 0,
+			MissilesDefeated = 0,
+			Captures = 0,
+			Challenges = 0,
+		},
 		Challenges = Challenges.newState(),
 		Achievements = {},
 		Title = "", -- the title shown on the scoreboard (Config/LevelRewards), "" for none
