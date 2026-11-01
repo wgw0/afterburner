@@ -1103,6 +1103,7 @@ Simulated on the server (DESIGN §9.2). Clients only draw them.
 ### 14.4 Data link (Tier V+)
 
 - Radar contacts and spotted enemies from teammates with data link are shared to other data-link teammates as HUD/MFD contacts (`DataLinkContacts` remote at 2 Hz, built by SensorService).
+- **As built (SNS-08, November 2026):** Tier V+ jets with a radar have data link (`Signature.hasDataLink`). In team modes, twice a second, `SensorService` puts together what each team's data-link jets (AI teammates too) can see on radar (`SensorService:CanTrack`: range, cone, clutter or notch, stealth, terrain; `Signature.dataLinkPicture`) and sends the jet ids to every human pilot on that team whose own jet has data link, only when the list changes. The client shows them as `linked` contacts: faint dots on the situation display and a HUD marker at any range labelled "DL ·". They're never lockable: a lock needs your own radar. Tested in `DataLink.spec`; *to see in a team match*.
 - Data-link contacts can't be hard-locked (you still need your own radar), but they let you point your radar or fire TWS shots.
 
 ### 14.5 Signatures (`shared/Signature.luau`)

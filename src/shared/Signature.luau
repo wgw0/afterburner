@@ -92,6 +92,37 @@ end
 export type RadarSpec = { Range: number, Cone: number, CanNotch: boolean, CanTWS: boolean? }
 
 Signature.TWS_TIER = 4
+Signature.DATA_LINK_TIER = 5 -- Tier V+ jets share radar contacts with data-link teammates (SNS-08, DESIGN §4.3)
+
+-- Data link (SNS-08): what a team's data-link jets can see on radar, shared with each other. trackers: the
+-- team's data-link jets; enemies: everyone they might see; canSee(tracker, enemy) asks the radar (and terrain).
+-- Returns the ids of the enemies any of them can see.
+function Signature.dataLinkPicture<T>(
+	trackers: { T },
+	enemies: { T },
+	canSee: (T, T) -> boolean,
+	idOf: (T) -> number
+): { number }
+	local ids, seen = {}, {}
+	for _, enemy in enemies do
+		for _, tracker in trackers do
+			if canSee(tracker, enemy) then
+				local id = idOf(enemy)
+				if not seen[id] then
+					seen[id] = true
+					table.insert(ids, id)
+				end
+				break
+			end
+		end
+	end
+	table.sort(ids)
+	return ids
+end
+
+function Signature.hasDataLink(tier: number, radar: RadarSpec?): boolean
+	return radar ~= nil and tier >= Signature.DATA_LINK_TIER
+end
 
 -- Track-while-scan (SNS-07): pulse-Doppler radars on Tier IV+ jets track what they see while scanning, so
 -- an active radar missile can be fired at any contact without a hard lock. A radar's CanTWS overrides.
