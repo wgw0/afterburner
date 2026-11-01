@@ -11,7 +11,7 @@ Passes.LIST = table.freeze({
 	VIP = table.freeze({
 		DisplayName = "VIP Pilot",
 		Price = 399, -- Robux
-		Description = "+25% Credits from every match, a VIP tag by your name and an extra daily challenge reroll.",
+		Description = "+25% Credits from every match, a VIP tag by your name, an extra daily challenge reroll, and the VIP Gold camo and VIP Gold contrails.",
 		Benefits = {
 			"+25% Credits from every match",
 			"Gold VIP tag by your name",
