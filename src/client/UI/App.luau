@@ -419,6 +419,9 @@ local function App(props: any)
 			OnBuySkin = props.OnBuySkin,
 			OnSetSkin = props.OnSetSkin,
 			OnLineup = props.OnLineup,
+			OnShop = function()
+				props.Navigate("Shop", "Camo")
+			end,
 		})
 	elseif props.Role == "Training" then
 		body = e(Training, {

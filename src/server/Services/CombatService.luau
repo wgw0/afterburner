@@ -377,11 +377,22 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 	local quiet = killer == nil and (cause == "Respawn" or cause == "PilotLeft" or cause == "Despawn")
 	if not quiet then
 		local weapon = if killer and state and cause == "Shot" then state.attackerWeapon[killer] or "Gun" else cause
-		local assistNames = {}
+		local assistNames, assistIds = {}, {}
 		for _, assist in credit.assists do
 			table.insert(assistNames, Callsign.nameOf(assist))
+			table.insert(assistIds, if typeof(assist) == "Instance" then (assist :: Player).UserId else 0)
 		end
-		Net.Server.fireAll("KillFeed", if killer then Callsign.nameOf(killer) else "", jet.name, weapon, assistNames)
+		local victimId = if typeof(jet.identity) == "Instance" then (jet.identity :: Player).UserId else 0
+		Net.Server.fireAll(
+			"KillFeed",
+			if killer then Callsign.nameOf(killer) else "",
+			jet.name,
+			weapon,
+			assistNames,
+			killerUserId,
+			victimId,
+			assistIds
+		)
 	end
 	CombatService.Kill:Fire(jet, credit, cause)
 end

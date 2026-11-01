@@ -55,8 +55,12 @@ local definitions: { [string]: Definition } = {
 	DamageState = { direction = "ServerToClient", args = { "table" } },
 	-- A jet was destroyed: jetId, killer's UserId (0 = none or AI), cause, world position, killer's jet (0 = none)
 	JetDestroyed = { direction = "ServerToClient", args = { "integer", "integer", "string", "Vector3", "integer" } },
-	-- Kill feed line: killer name ("" = none), victim name, weapon or cause, assist names
-	KillFeed = { direction = "ServerToClient", args = { "string", "string", "string", "table" } },
+	-- Kill feed line: killer name ("" = none), victim name, weapon or cause, assist names, then the killer's,
+	-- victim's and assisters' UserIds (0 for none or an AI pilot), so each client can find its own lines
+	KillFeed = {
+		direction = "ServerToClient",
+		args = { "string", "string", "string", "table", "integer", "integer", "table" },
+	},
 
 	-- Missiles, sensors and countermeasures (§13–15)
 	-- Pick which missile type Space fires: index into the airframe's Missiles list

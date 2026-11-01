@@ -102,7 +102,8 @@ local leadMarker: Frame
 local hitMarker: TextLabel
 local hitUntil = 0
 local killFeed: Frame
-local feedLines: { { label: TextLabel, expires: number } } = {}
+-- A kill feed entry: its box, text and outline, faded out together when it expires
+local feedLines: { { box: Frame, label: TextLabel, stroke: UIStroke, back: number, expires: number } } = {}
 local targetMarkers: { [Model]: any } = {}
 -- Gunsights (GUN-07): each target's smoothed acceleration for the LCOS pipper, and the last second of where
 -- your gun pointed for the EEGS funnel
@@ -130,6 +131,10 @@ local TARGET_RANGE = 5000 -- real metres: show markers on jets within this
 local LEAD_CONE = 30 -- degrees off the nose
 local FEED_SECONDS = 7
 local FEED_LINES = 5
+local FEED_BACK = 0.55 -- a kill feed line's box
+local FEED_MINE_BACK = 0.3 -- a line you're in: darker, so it stands out
+local FEED_ME = Color3.new(1, 1, 1) -- your name in the kill feed
+local FEED_DIM = Color3.fromRGB(190, 190, 190) -- the weapon and "+" between names
 
 ---------------------------------------------------------------------------
 -- Building blocks
@@ -474,9 +479,10 @@ local function build(): ScreenGui
 	killFeed.BackgroundTransparency = 1
 	killFeed.AnchorPoint = Vector2.new(1, 0)
 	killFeed.Position = UDim2.new(1, -20, 0, 70)
-	killFeed.Size = UDim2.fromOffset(420, FEED_LINES * 22)
+	killFeed.Size = UDim2.fromOffset(520, FEED_LINES * 28)
 	killFeed.Parent = gui
 	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 4)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = killFeed
@@ -582,15 +588,39 @@ local function styleMarker(m: Marker, state: string)
 	m.label.Position = m.box.Position + UDim2.fromOffset(0, style.size / 2 + 4)
 end
 
-local function addFeedLine(message: string, colour: Color3)
-	local l = text(killFeed, 15, Enum.TextXAlignment.Right)
-	l.Size = UDim2.fromOffset(420, 20)
+-- A kill feed entry, CSGO style: each line on its own dark box; a line you're in (your kill, assist or death)
+-- gets a red outline and a darker box, with your name picked out in white (the message's rich text).
+local function addFeedLine(message: string, mine: boolean)
+	local back = if mine then FEED_MINE_BACK else FEED_BACK
+	local box = Instance.new("Frame")
+	box.AutomaticSize = Enum.AutomaticSize.X
+	box.Size = UDim2.fromOffset(0, 24)
+	box.BackgroundColor3 = Color3.new(0, 0, 0)
+	box.BackgroundTransparency = back
+	box.BorderSizePixel = 0
+	box.LayoutOrder = math.floor(os.clock() * 1000)
+	box.Parent = killFeed
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 3)
+	corner.Parent = box
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 8)
+	padding.PaddingRight = UDim.new(0, 8)
+	padding.Parent = box
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Color = RED
+	stroke.Thickness = 2
+	stroke.Transparency = if mine then 0 else 1
+	stroke.Parent = box
+	local l = text(box, 15)
+	l.AutomaticSize = Enum.AutomaticSize.X
+	l.Size = UDim2.fromScale(0, 1)
+	l.RichText = true
 	l.Text = message
-	l.TextColor3 = colour
-	l.LayoutOrder = math.floor(os.clock() * 1000)
-	table.insert(feedLines, { label = l, expires = os.clock() + FEED_SECONDS })
+	table.insert(feedLines, { box = box, label = l, stroke = stroke, back = back, expires = os.clock() + FEED_SECONDS })
 	while #feedLines > FEED_LINES do
-		table.remove(feedLines, 1).label:Destroy()
+		table.remove(feedLines, 1).box:Destroy()
 	end
 end
 
@@ -1202,10 +1232,15 @@ local function update(dt: number)
 		local entry = feedLines[i]
 		local left = entry.expires - now
 		if left <= 0 then
-			entry.label:Destroy()
+			entry.box:Destroy()
 			table.remove(feedLines, i)
 		else
-			entry.label.TextTransparency = math.clamp(1 - left, 0, 1)
+			local fade = math.clamp(1 - left, 0, 1)
+			entry.label.TextTransparency = fade
+			entry.box.BackgroundTransparency = entry.back + (1 - entry.back) * fade
+			if entry.stroke.Transparency < 1 then
+				entry.stroke.Transparency = fade
+			end
 		end
 	end
 
@@ -1295,14 +1330,31 @@ function HUDController:Start()
 	Net.Client.on("HitConfirm", function()
 		hitUntil = os.clock() + 0.12
 	end)
-	Net.Client.on("KillFeed", function(killer: string, victim: string, weapon: string, assists: { string })
-		local me = Players.LocalPlayer.Name
-		local message = if killer ~= "" then `{killer} ▸ {victim}  [{weapon}]` else `{victim}  [{weapon}]`
-		if #assists > 0 then
-			message ..= `  +{table.concat(assists, ", ")}`
+	-- Killer + assisters  [weapon]  victim, like CSGO: names in the HUD colour, the weapon dimmer, yours in white
+	Net.Client.on("KillFeed", function(...)
+		local killer, victim, weapon, assists, killerId, victimId, assistIds = ...
+		local me = Players.LocalPlayer.UserId
+		local function escape(raw: string): string
+			return (raw:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
 		end
-		local involved = killer == me or victim == me or table.find(assists, me) ~= nil
-		addFeedLine(message, if involved then AMBER else GREEN)
+		local function name(raw: string, id: number): string
+			if id == me then
+				return `<font color="#{FEED_ME:ToHex()}"><b>{escape(raw)}</b></font>`
+			end
+			return `<font color="#{GREEN:ToHex()}">{escape(raw)}</font>`
+		end
+		local dim = FEED_DIM:ToHex()
+		local parts = {}
+		if killer ~= "" then
+			table.insert(parts, name(killer, killerId))
+		end
+		for i, assist in assists do
+			table.insert(parts, `<font color="#{dim}">+</font> {name(assist, assistIds[i] or 0)}`)
+		end
+		table.insert(parts, `<font color="#{dim}">[{escape(weapon)}]</font>`)
+		table.insert(parts, name(victim, victimId))
+		local mine = killerId == me or victimId == me or table.find(assistIds, me) ~= nil
+		addFeedLine(table.concat(parts, "  "), mine)
 	end)
 	-- After the camera has moved this frame, so projections match what's on screen.
 	RunService:BindToRenderStep("AfterburnerHUD", Enum.RenderPriority.Camera.Value + 2, update)
