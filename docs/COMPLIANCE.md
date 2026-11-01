@@ -19,15 +19,15 @@ background. **Done** items were checked in November 2026; **Will** items need th
 | Check | Status |
 |---|---|
 | Jet models, textures, camos, wing art, badges and shop cards are our own (Blender and Python tools in `tools/`) | Done |
-| Sounds are our own or from Roblox's library with the right to use them (AUD tasks) | Done |
-| No marketplace asset with unclear rights in the place | **Will: one last look** in Studio (Toolbox inserts show in the Explorer) |
+| Sounds are our own or from Roblox's library with the right to use them (AUD tasks) | Done. Checked 1 November 2026: Betty, RWR, UI, radio and kill-confirm sounds are Will's own uploads (Will confirmed he made them); music and stings are APM / DistroKid tracks from Roblox's licensed library; the engine, wind, gun, explosion, impact and missile-launch sounds are public Creator Store audio from other creators |
+| No marketplace asset with unclear rights in the place | Done (1 November 2026): every scripted instance is in our code folders; a sample of 400 mesh and texture ids were all uploaded by Will; sky, grass and road textures are ours; the sun and moon images are public Creator Store images |
 
 ## 3. Experience questionnaire and settings (Creator Hub, live experience)
 
 | Check | Status |
 |---|---|
 | Maturity and compliance questionnaire answered honestly: stylised aircraft combat, no blood or gore, no real-world violence, cosmetic purchases, no paid random items | Done (Will, 1 November 2026) |
-| Genre and description say what the game is; no promises it doesn't keep | **Will** |
+| Genre and description say what the game is; no promises it doesn't keep | Done (1 November 2026): Shooter › Deathmatch Shooter (changeable every 3 months); description lists the modes, training, parties, squadrons, leaderboards and the season pass |
 | Private servers price set, if wanted (DESIGN §8.2) | **Will** (optional) |
 
 ## 4. Purchases (DESIGN §8, DEVELOPMENT.md §27)
@@ -36,6 +36,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 |---|---|
 | Never pay-to-win: `PayToWin.spec` fails if a product or cosmetic could give power; premium jets copy a free jet's stats | Done |
 | No paid random items. The free spin is earned only, never sold; its odds are behind the (i) button | Done |
+| Tier II and III Unlocks (dropped from the game) are off sale in both experiences (1 November 2026) | Done |
 | Every developer product has a name, a price matching `Config/Products` and a description saying exactly what you get (all 12 on the live experience read back from Roblox) | Done |
 | Every game pass description says exactly what you get | Done (2026-11-01): VIP Pilot now reads "+25% Credits from every match, a VIP tag by your name, an extra daily challenge reroll, and the VIP Gold camo and VIP Gold contrails." in both experiences (saved and read back from Creator Hub), matching `Config/Passes`. Extra Lineup Slot and Custom Callsign are fine. |
 | Real prices before the purchase window; no fake timers (the weekly bundle and events show real dates) | Done |
@@ -56,7 +57,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 |---|---|
 | Only Roblox UserIds are stored, never names or other personal data | Done |
 | `erasure.run { userId }` removes everything stored under a UserId: the save (every store version), reports against them and their id in others' reports, their bug reports and daily counts, every leaderboard entry, their squadron membership | Done |
-| Right to Erasure webhook set up in Creator Hub, on the account or group that owns the live experience (steps in §32.3) | **Will** |
+| Right to Erasure webhook set up in Creator Hub, on the account or group that owns the live experience (steps in §32.3) | Done (1 November 2026): account webhook "Afterburner erasure requests" posts to the private #alerts Discord channel; test notification received |
 | Each request handled within 30 days: run `erasure.run` for each UserId (live server, as an admin), note the date | **Will**, as requests arrive |
 
 ## 7. Badges and achievements
@@ -64,3 +65,21 @@ background. **Done** items were checked in November 2026; **Will** items need th
 | Check | Status |
 |---|---|
 | Every achievement has a badge on the live experience (`Config/Badges`) | In progress (5 free a day) |
+
+## When a Right to Erasure request arrives
+
+Roblox posts it to the private #alerts Discord channel ("Roblox Webhooks"). A real one names the UserId(s) and the
+experience (universe) id(s); the test one says "Sample Notification" and needs nothing.
+
+1. Check it's for the live Afterburner (universe 10773807904). Requests for other experiences need nothing here.
+2. Join the live game (or any live server), press **F9** to open the Developer Console, pick **Server**, and type
+   in the command line at the bottom, with the UserId from the request:
+   `print(table.concat(require(game.ServerScriptService.Server.Lib.Erasure).run(123456789), "
+"))`
+3. It prints one line per store. Every line should say it removed something or found nothing; a line saying
+   FAILED means run it again.
+4. Note the UserId and the date in a reply under the alert in Discord. Roblox expects it done within 30 days.
+
+There is nothing to reply to Roblox. The player never needs to have played: running it for an unknown UserId just
+finds nothing.
+
