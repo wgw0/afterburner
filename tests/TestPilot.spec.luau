@@ -1,7 +1,7 @@
 --!strict
 -- LIV-07: the Test Pilot trials and the Tempest unlock (Shared/TestPilot).
 return function(ctx)
-	local describe, it, expect = ctx.describe, ctx.it, ctx.expect
+	local it, expect = ctx.it, ctx.expect
 	local PlayerData = require(ctx.Shared.PlayerData)
 	local Progression = require(ctx.Shared.Progression)
 	local TechTree = require(ctx.Shared.TechTree)
@@ -64,7 +64,7 @@ return function(ctx)
 	it("runs the steps in order and finishes", function()
 		local data = pilot(2)
 		local first = TestPilot.STEPS[1]
-		for i = 1, first.target - 1 do
+		for _ = 1, first.target - 1 do
 			expect(TestPilot.record(data, { kind = first.event, tier = 7 })).toBe(nil)
 		end
 		expect(TestPilot.record(data, { kind = first.event, tier = 7 })).toBe(first)
