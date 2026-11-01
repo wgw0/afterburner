@@ -148,6 +148,15 @@ Cosmetics.LIST = table.freeze({
 		Images = { "rbxassetid://80619780902880" },
 		Order = 5,
 	},
+	CamoGalaxy = {
+		Kind = "Camo",
+		DisplayName = "Galaxy",
+		Wings = 400,
+		Skin = "Galaxy",
+		Colours = { rgb(176, 120, 255) },
+		Images = { "rbxassetid://97770736693695" },
+		Order = 6,
+	},
 
 	-- Wing art (DESIGN: 250 R$). Made by tools/cosmetics/wing_art.py; Images = { right wing, left wing }.
 	WingShark = {

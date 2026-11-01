@@ -486,6 +486,7 @@ def spider_webs(P, N, scheme):
 
 
 CAMO_SHINE = None  # where the last camouflage() call wants a metal finish (Arachnida's spiders), else None
+CAMO_GLOW = None  # the last camouflage() call's glow mask (0..1, the Galaxy's stars), else None: saved as _Emissive
 
 
 def camo_shine(rough, metal):
@@ -495,17 +496,71 @@ def camo_shine(rough, metal):
     return rough * (1 - CAMO_SHINE) + 0.22 * CAMO_SHINE, metal * (1 - CAMO_SHINE) + 0.9 * CAMO_SHINE
 
 
+def _stars(P, cell, chance, radius, seed):
+    """Point stars on a hashed 3D grid of `cell` metres: returns (core, halo), each 0..1 (halo is a soft glow
+    round the core, out to 4 radii). chance: each cell's odds of a star (array or number)."""
+    q = P / cell
+    base = np.floor(q).astype(np.int64)
+    core = np.zeros(P.shape[:-1], np.float32)
+    halo = np.zeros(P.shape[:-1], np.float32)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                k = base + np.array([dx, dy, dz])
+                jitter = np.stack([_hash(k[..., 0], k[..., 1], k[..., 2], seed + i) for i in range(3)], -1)
+                on = _hash(k[..., 0], k[..., 1], k[..., 2], seed + 3) < chance
+                r = radius * (0.5 + _hash(k[..., 0], k[..., 1], k[..., 2], seed + 4))
+                d = np.linalg.norm(P - (k + jitter) * cell, axis=-1)
+                core = np.maximum(core, np.where(on, 1 - smooth(r * 0.6, r, d), 0))
+                halo = np.maximum(halo, np.where(on, np.exp(-d / (r * 1.6)), 0) * (d < r * 4))
+    return core, halo
+
+
+def galaxy(P, scheme):
+    """Galaxy (camo_style "galaxy"): swirled nebula streaks over deep space, with stars. Returns (colour,
+    glow): glow marks the stars (full) and the brightest nebula (part), for the emissive mask."""
+    space, purple, blue = scheme["camo"]
+    magenta = scheme["camo_magenta"]
+    scale = scheme["camo_scale"]
+    # Domain warping: the noise is sampled through itself twice, which swirls it into streaks
+    stretch = (1.0, 0.45, 1.0)  # longer along the jet
+    w1 = np.stack([fbm(P, 1 / scale, 3, seed=301 + i, stretch=stretch) for i in range(3)], -1) - 0.5
+    w2 = np.stack([fbm(P + 2.2 * scale * w1, 1 / scale, 3, seed=311 + i, stretch=stretch) for i in range(3)], -1) - 0.5
+    n = fbm(P + 2.6 * scale * w2, 1 / scale, 5, seed=321, stretch=stretch)
+    density = smooth(0.3, 0.64, n)
+    core = smooth(0.58, 0.84, n)
+    # Colour across the nebula: purple, electric blue and magenta, each in its own swirl
+    to_blue = smooth(0.42, 0.6, fbm(P + 1.5 * scale * w1, 0.6 / scale, 3, seed=331))[..., None]
+    to_magenta = smooth(0.5, 0.68, fbm(P + 1.5 * scale * w2, 0.7 / scale, 3, seed=341))[..., None]
+    neb = purple * (1 - to_blue) + blue * to_blue
+    neb = neb * (1 - to_magenta) + magenta * to_magenta
+    colour = space * (1 - density[..., None]) + neb * density[..., None]
+    colour = colour + (np.array([1.0, 0.85, 1.0]) - colour) * (core[..., None] * 0.55)  # bright cores
+    # Stars: many small ones (more in the bright streaks), a few big ones with a halo
+    small, _ = _stars(P, 0.07, 0.25 + 0.5 * density, 0.008, 351)
+    big, halo = _stars(P, 0.6, 0.35, 0.02, 361)
+    star = np.maximum(small, big)
+    colour = colour + (1 - colour) * np.maximum(star, halo * 0.45)[..., None]
+    glow = np.clip(np.maximum.reduce([star, halo * 0.7, core * 0.55]), 0, 1)
+    return colour.astype(np.float32), glow.astype(np.float32)
+
+
 def camouflage(P, scheme, N=None):
     """Hard-edged, wavy camouflage bands from 3D noise, so they wrap continuously over the airframe.
     The two thresholds split the noise into three roughly equal areas. camo_style "splinter" cuts angular,
     straight-edged patches instead; "tiger" paints stripes of the second colour across the first; "digital"
     cuts the bands into square pixels (the noise is sampled at the centre of each pixel cube); "web" draws
-    spider webs and spiders (spider_webs; needs N, the surface normals)."""
+    spider webs and spiders (spider_webs; needs N, the surface normals); "galaxy" paints nebula and stars and
+    leaves a glow mask in CAMO_GLOW."""
     scale = scheme["camo_scale"]
     style = scheme.get("camo_style", "bands")
     c0, c1, c2 = scheme["camo"]
-    global CAMO_SHINE
+    global CAMO_SHINE, CAMO_GLOW
     CAMO_SHINE = None
+    CAMO_GLOW = None
+    if style == "galaxy":
+        colour, CAMO_GLOW = galaxy(P, scheme)
+        return colour
     if style == "web":
         # Arachnida: c0 underneath, c1 web threads, c2 spiders (polished metal: camo_shine). Needs the normals.
         thread, spider = spider_webs(P, N, scheme)
@@ -865,6 +920,9 @@ def bake_normal(set_name, objs, height_full, size, path):
     target.save()
 
 
+PREVIEW_GLOW = 2.0  # emission strength for a glow mask in previews
+
+
 def apply_preview_material(set_name, paths):
     mat = bpy.data.materials.get(f"{gen.AIRFRAME}_{set_name}")
     nodes, links = mat.node_tree.nodes, mat.node_tree.links
@@ -882,6 +940,15 @@ def apply_preview_material(set_name, paths):
     nmap = nodes.new("ShaderNodeNormalMap")
     links.new(tex(paths["Normal"], "Non-Color").outputs["Color"], nmap.inputs["Color"])
     links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    if "Emissive" in paths:  # as Roblox does it: the colour map, glowing where the mask is
+        glow = nodes.new("ShaderNodeMix")
+        glow.data_type = "RGBA"
+        glow.blend_type = "MULTIPLY"
+        glow.inputs["Factor"].default_value = 1.0
+        links.new(tex(paths["Color"], "sRGB").outputs["Color"], glow.inputs[6])
+        links.new(tex(paths["Emissive"], "Non-Color").outputs["Color"], glow.inputs[7])
+        links.new(glow.outputs[2], bsdf.inputs["Emission Color"])
+        bsdf.inputs["Emission Strength"].default_value = PREVIEW_GLOW
 
 
 def render_preview(out_dir, prefix):
@@ -950,10 +1017,13 @@ def main():
         full = size * SUPERSAMPLE
         maps, ids, objs = bake_maps(set_name, full)
         P, N, part, ao, valid = maps["P"], maps["N"], maps["ID"], maps["AO"], maps["valid"]
+        global CAMO_GLOW
+        CAMO_GLOW = None
         if set_name == "Details":
             colour, rough, metal, height = paint_details(P, N, part, ids, ao, scheme)
         else:
             colour, rough, metal, height = paint_airframe(P, N, part, ids, ao, scheme)
+        glow = CAMO_GLOW
         # Outside every UV island: a neutral fill so mipmaps don't bleed dark edges
         colour = np.where(valid[..., None], colour, scheme["upper"] if set_name != "Details" else scheme["lower"])
         rough = np.where(valid, rough, 0.6)
@@ -971,6 +1041,9 @@ def main():
         save_png(paths["Roughness"], downsample(rough), "Non-Color")
         save_png(paths["Metalness"], downsample(metal), "Non-Color")
         bake_normal(set_name, objs, height.astype(np.float32), size, paths["Normal"])
+        if glow is not None:  # the Galaxy's glow mask (SurfaceAppearance EmissiveMaskContent)
+            paths["Emissive"] = base + "_Emissive.png"
+            save_png(paths["Emissive"], downsample(np.where(valid, glow, 0)), "Non-Color")
         written[set_name] = paths
         print(f"painted {set_name}: {size}px, {len(objs)} parts")
 

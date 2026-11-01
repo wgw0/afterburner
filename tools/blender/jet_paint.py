@@ -345,7 +345,9 @@ def main(L, schemes, default_skin):
         maps, ids, objs = paint.bake_maps(set_name, size * paint.SUPERSAMPLE)
         P, N, part, ao, valid = maps["P"], maps["N"], maps["ID"], maps["AO"], maps["valid"]
         fn = paint_details if set_name == "Details" else paint_airframe
+        paint.CAMO_GLOW = None
         colour, rough, metal, height = fn(L, P, N, part, ids, ao, scheme)
+        glow = paint.CAMO_GLOW
         colour = np.where(valid[..., None], colour, scheme["upper"])
         rough, metal, height = np.where(valid, rough, 0.6), np.where(valid, metal, 0), np.where(valid, height, 0)
         base = os.path.join(args.out, f"{kit.AIRFRAME}_{args.skin}_{set_name}")
@@ -354,6 +356,9 @@ def main(L, schemes, default_skin):
         paint.save_png(paths["Roughness"], paint.downsample(rough), "Non-Color")
         paint.save_png(paths["Metalness"], paint.downsample(metal), "Non-Color")
         paint.bake_normal(set_name, objs, height.astype(np.float32), size, paths["Normal"])
+        if glow is not None:  # the Galaxy's glow mask (SurfaceAppearance EmissiveMaskContent)
+            paths["Emissive"] = f"{base}_Emissive.png"
+            paint.save_png(paths["Emissive"], paint.downsample(np.where(valid, glow, 0)), "Non-Color")
         written[set_name] = paths
         print(f"painted {set_name}: {size}px, {len(objs)} parts")
 
