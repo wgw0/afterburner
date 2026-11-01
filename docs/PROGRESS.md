@@ -393,8 +393,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **LIV-05** Leaderboards
   - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters Only player kills count, not bots (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
 - [ ] **LIV-06** Squadrons
-- [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
-  - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
+- [x] **LIV-07** Test Pilot challenge chain and the Tempest unlock
+  - Built: the Test Pilot trials open after two Tier VII jets are researched: five steps in Tier VII jets (5 matches, 10 kills, 5 missiles defeated, 3 wins, a match without being shot down), each paying Credits and XP, shown in the Hangar's challenges panel; the Tempest can only be researched once they're done (`Shared/TestPilot`, DEVELOPMENT.md §23.3; `TestPilot.spec`).
 - [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
   - Partly done: events checked against Roblox's limits, onboarding funnel reordered and a Training funnel added, every Credits/Wings source now in the economy log; how to read the dashboard in `docs/ANALYTICS.md`. Not yet seen arriving on the published game.
 - [x] **OPS-03** Event flags (double XP etc.)

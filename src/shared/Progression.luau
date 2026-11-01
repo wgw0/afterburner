@@ -14,6 +14,7 @@ local Season = require(script.Parent.Season)
 local PlayerData = require(script.Parent.PlayerData)
 local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
+local TestPilot = require(script.Parent.TestPilot)
 
 local Progression = {}
 
@@ -316,6 +317,13 @@ function Progression.researchPlan(data: { [string]: any }, id: string): (Researc
 	local entry = data.Aircraft[id]
 	if entry and entry.Researched then
 		return nil, "Already researched"
+	end
+	if id == TestPilot.JET then
+		-- The Tempest: two Tier VII jets and the Test Pilot trials first (LIV-07)
+		local ok, why = TestPilot.canResearch(data)
+		if not ok then
+			return nil, why
+		end
 	end
 	local best, bestRP = nil, -1
 	for _, requirement in node.Requires do

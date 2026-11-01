@@ -16,7 +16,7 @@ export type Def = {
 	xp: number,
 	filter: Filter?,
 }
-export type Filter = { weapon: string?, maxTier: number?, mode: string?, survived: boolean? }
+export type Filter = { weapon: string?, maxTier: number?, minTier: number?, mode: string?, survived: boolean? }
 export type Event = {
 	kind: string,
 	weapon: string?, -- "Gun" | "IR" | "Radar" (kills, missiles defeated)
@@ -259,6 +259,9 @@ function Challenges.matches(def: Def, event: Event): boolean
 		return false
 	end
 	if filter.maxTier and (event.tier == nil or event.tier > filter.maxTier) then
+		return false
+	end
+	if filter.minTier and (event.tier == nil or event.tier < filter.minTier) then
 		return false
 	end
 	if filter.mode and filter.mode ~= event.mode then
