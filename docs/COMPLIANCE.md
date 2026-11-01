@@ -37,7 +37,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 | Never pay-to-win: `PayToWin.spec` fails if a product or cosmetic could give power; premium jets copy a free jet's stats | Done |
 | No paid random items. The free spin is earned only, never sold; its odds are behind the (i) button | Done |
 | Every developer product has a name, a price matching `Config/Products` and a description saying exactly what you get (all 12 on the live experience read back from Roblox) | Done |
-| Every game pass description says exactly what you get | **Will: VIP Pilot** (both experiences, Creator Hub → Passes → VIP Pilot → Basic Settings) leaves out the camo and contrails. Suggested: "+25% Credits from every match, a VIP tag by your name, an extra daily challenge reroll, and the VIP Gold camo and VIP Gold contrails." Extra Lineup Slot and Custom Callsign are fine. |
+| Every game pass description says exactly what you get | Done (2026-11-01): VIP Pilot now reads "+25% Credits from every match, a VIP tag by your name, an extra daily challenge reroll, and the VIP Gold camo and VIP Gold contrails." in both experiences (saved and read back from Creator Hub), matching `Config/Passes`. Extra Lineup Slot and Custom Callsign are fine. |
 | Real prices before the purchase window; no fake timers (the weekly bundle and events show real dates) | Done |
 | Policy checks: anything regulated asks `Shared/Policy` first (CMP-02) | Done (nothing regulated yet) |
 
