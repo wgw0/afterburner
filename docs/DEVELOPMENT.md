@@ -2095,7 +2095,10 @@ Under GDPR a player can ask Roblox to erase their data. Roblox passes the reques
 | `PlayerData_Prod_v<N>` (ProfileStore, `DataService:StoreName()`; also any older `_v` stores still holding data) | `Player_<UserId>` | the save |
 | `Reports` (`ReportService`) | `u<UserId>` | reports against the player |
 | `ReportCounts` (OrderedDataStore) | the player's entry | how often they've been reported |
-| `Reports`, other players' records | the reporter's UserId inside `reporters` and `entries` | reports the player made |
+| `Reports`, other players' records | the reporter's UserId inside `entries` | reports the player made |
+| `Feedback` | `day:<n>` entries with `user` = the UserId; `n:<UserId>:<day>` | bug reports the player sent |
+| `LB_KillsAll`, `LB_Season_<id>`, `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>` (OrderedDataStores) | the UserId | leaderboard entries |
+| `Squadrons` | the member's UserId | squadron membership |
 
 MemoryStore entries (the queue, match records) expire by themselves within minutes, and the analytics are Roblox's own, so neither needs anything. The `LiveConfig` audit only holds admins' UserIds.
 
@@ -2104,9 +2107,9 @@ MemoryStore entries (the queue, match records) expire by themselves within minut
 1. Make somewhere for the notifications to land. The simplest is a private Discord channel: Channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.
 2. Creator Hub → the account or group that owns Afterburner → **Webhooks** (in the account/group settings, not the experience) → **Add Webhook**.
 3. Paste the URL, give it a name ("Afterburner erasure requests"), optionally a secret, and tick the **Right to erasure request** trigger. Save, then use **Test Response** if offered, to see a test message arrive.
-4. Each request lists the UserId(s) and the universe id(s). For each one on the live Afterburner, delete the stores above (by hand in Studio's command bar or the DataStore manager, or with an admin command, still to be written), then note the date done.
+4. Each request lists the UserId(s) and the universe id(s). For each one on the live Afterburner, run the admin command `erasure.run { userId = <id> }` on a live server (it works in live and test), then note the date done.
 
-*Still to build (optional): an `erasure.run { userId }` admin command that removes all four in one go, so step 4 is one line.*
+**As built (CMP-04):** `Lib/Erasure` removes everything in the table above in one go: the save from every `PlayerData_<env>_v1..vN` store, the reports against them and their entries in other pilots' records (found with `ListKeysAsync`), their bug reports (400 days back) and daily counts, their entry on every leaderboard (each weekly store since 2 November 2026, every season, all-time) and their squadron membership. Each step is tried even if another fails and the reply lists what each did ("FAILED … run again" for one that didn't), so it can simply be run again. Checked in Studio on an id with no data. The full pre-launch list is [COMPLIANCE.md](COMPLIANCE.md).
 
 ---
 
