@@ -386,10 +386,12 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **MCH-10** BVR Battles
 - [ ] **AI-06** AI bombers and escort formations (Strike Escort, PvE)
 - [ ] **MAP-05** Additional maps (Desert Range, Arctic Fjord, Islands)
-- [ ] **DAT-04** Leaderboard stores
+- [x] **DAT-04** Leaderboard stores
+  - Built: an `OrderedDataStore` per board (weekly stores per week, a season store per season, all-time), written after each scored match and on leaving, only when a score changed (`LeaderboardService`, DEVELOPMENT.md §26.8). Checked in Studio.
 - [ ] **MMK-05** Parties
   - Built: parties of up to 3 in a lobby (invite players here or friends through Roblox's invite window), queueing as one entry at the party's highest BR, the same team in team modes, home together and re-formed after the match (`Party.luau`, `PartyService`, `UI/PartyPanel`, DEVELOPMENT.md §25.3; 13 tests in `Party.spec`). Checked in Studio on one player. *To tick after the live test with two or more players.*
-- [ ] **LIV-05** Leaderboards
+- [x] **LIV-05** Leaderboards
+  - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
 - [ ] **LIV-06** Squadrons
 - [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
   - Partly done: the Tempest is in the tech tree, researched from any one Tier VII jet. The two-jet rule and the challenge chain are not built.
