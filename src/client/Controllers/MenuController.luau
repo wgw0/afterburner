@@ -11,6 +11,7 @@
 local GuiService = game:GetService("GuiService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
+local SocialService = game:GetService("SocialService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
@@ -93,6 +94,8 @@ local state = {
 	lastAirframe = nil :: string?,
 	-- The matchmaking queue (lobby only), from QueueState
 	queue = { state = "Idle", mode = "Any", startedAt = 0, message = nil :: string? },
+	-- Your party (lobby only), from PartyState (MMK-05)
+	party = { leader = nil :: number?, members = {} :: { any }, invites = {} :: { any }, max = 3 },
 	teleportScreen = false,
 	autoLaunch = false, -- a match server: launch in the selected jet when the match starts
 }
@@ -145,8 +148,11 @@ local function play(airframeId: string?)
 		return
 	end
 	local queue = state.queue
+	local leader = state.party.leader
 	if queue.state == "Searching" then
-		Net.Client.fire("QueueLeave")
+		Net.Client.fire("QueueLeave") -- in a party, this stops the party's search
+	elseif queue.state == "Idle" and leader and leader ~= Players.LocalPlayer.UserId then
+		setStatus("Your party's leader starts the search.")
 	elseif queue.state == "Idle" then
 		queue.message = nil
 		-- the jet you click PLAY with sets your BR in the queue (Queue, MMK-03)
@@ -493,8 +499,59 @@ render = function()
 			then nil
 			elseif queue.state == "Searching" then "CANCEL"
 			elseif queue.state == "Found" then "JOINING…"
+			elseif state.party.leader and state.party.leader ~= Players.LocalPlayer.UserId then "LEADER STARTS"
 			else "PLAY",
 		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Any" else nil,
+		Party = if lobby then state.party else nil,
+		PartyCandidates = (function()
+			local list = {}
+			local mine = {}
+			for _, member in state.party.members do
+				mine[member.userId] = true
+			end
+			for _, player in Players:GetPlayers() do
+				if player ~= Players.LocalPlayer and not mine[player.UserId] then
+					table.insert(list, { userId = player.UserId, name = player.DisplayName })
+				end
+			end
+			return list
+		end)(),
+		OnPartyInvite = function(userId: number): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "PartyInvite", userId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnPartyRespond = function(userId: number, yes: boolean): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "PartyRespond", userId, yes)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnPartyKick = function(userId: number): (boolean, string?)
+			local ok, result, message = pcall(Net.Client.invoke, "PartyKick", userId)
+			if not ok then
+				return false, "Try again in a moment."
+			end
+			return result == true, message
+		end,
+		OnPartyLeave = function()
+			Net.Client.fire("PartyLeave")
+		end,
+		-- Roblox's invite window; a friend who joins with it lands in your party (PartyService)
+		OnInviteFriends = function()
+			local options = Instance.new("ExperienceInviteOptions")
+			options.PromptMessage = "Fly with me in Afterburner"
+			options.LaunchData = `party:{Players.LocalPlayer.UserId}`
+			local ok, canInvite = pcall(SocialService.CanSendGameInviteAsync, SocialService, Players.LocalPlayer)
+			if ok and canInvite then
+				pcall(SocialService.PromptGameInvite, SocialService, Players.LocalPlayer, options)
+			else
+				setStatus("Roblox can't send invites from here.")
+			end
+		end,
 		OnQueueMode = function(mode: string)
 			SettingsController:Set("QueueMode", mode)
 			if state.queue.state == "Searching" then
@@ -805,6 +862,16 @@ function MenuController:Start()
 	Net.Client.on("SpawnRefused", function(reason: string)
 		state.teleportScreen = false -- a failed trip; the next one sets its own
 		setStatus(reason)
+	end)
+	Net.Client.on("PartyState", function(payload: any)
+		state.party = payload
+		render()
+	end)
+	Players.PlayerAdded:Connect(function()
+		render() -- someone new to invite
+	end)
+	Players.PlayerRemoving:Connect(function()
+		task.defer(render)
 	end)
 	Net.Client.on("QueueState", function(payload: any)
 		local queue = state.queue

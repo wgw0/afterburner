@@ -1673,6 +1673,14 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 ### 25.3 Parties
 
 - A player can invite friends into a party (lobby only). Parties queue as one entry. The lineup BR = the party's highest.
+- **As built (November 2026, MMK-05):**
+  - **Rules** (`Shared/Party`, tested in `Party.spec`): up to 3 pilots (so two parties always fit a 6-pilot match). A solo pilot or a party's leader invites someone not in a party; invites last 60 s; accepting makes a party led by the inviter, or joins theirs if there's room, and drops your other invites. If the leader leaves, the longest-standing member leads; a party of one breaks up. The leader can REMOVE a member.
+  - **PartyService** (server): each lobby server keeps its own parties. `PartyInvite` (anyone on this server), `PartyRespond`, `PartyKick`, `PartyLeave`; every change goes to the members as `PartyState`. **INVITE FRIENDS** opens Roblox's invite window with launch data `party:<inviter>`: a friend who joins with it is moved to the inviter's lobby server if they landed on another (`GetPlayerPlaceInstanceAsync`, then a teleport to that server with `joinParty`), and joins the party. Launch and teleport data are only hints: joining this way needs the two to be Roblox friends.
+  - **Queueing** (`MatchmakingService`, `Queue`): the leader's PLAY queues the whole party as one entry (`members`); its BR is the highest of each member's jet: the one PLAY was clicked with for the leader, the jet selected in the hangar for the others (the `SelectedJet` setting). Members see LEADER STARTS on PLAY and the same search timer; any member's CANCEL stops the search; a party that changes stops searching ("Your party changed"). The matchmaker counts a party's seats and never splits one: a party that doesn't fit the seats left waits for the next match.
+  - **In the match:** the record carries `parties` and, in team modes, each player's team (`Party.splitTeams`: biggest groups first onto the smaller side), which MatchService uses instead of its own pick. In free-for-all modes a party is simply in the same match.
+  - **Afterwards:** each party is sent home in its own teleport, so it lands on one lobby server, with `{ party = { leader, members } }` in the teleport data; the lobby puts it back together once its members arrive (or after 30 s with whoever made it).
+  - **UI** (`UI/PartyPanel`): a PARTY panel on the right of the lobby's Hangar above MATCHMAKING: the members (leader starred, REMOVE for the leader), INVITE (a list of players here), INVITE FRIENDS and LEAVE. Invites for you pop up at the top of the screen with ACCEPT / DECLINE.
+  - Checked in Studio on one player (the panel, refused invites, solo queueing unchanged). Inviting, queueing and flying as a party need two or more real players: part of the live test.
 
 ### 25.4 Teleport reliability
 
@@ -2360,6 +2368,10 @@ clone (`script.Parent.X`). The same cache once gave `AircraftAssembler` a pre-Te
 | `BuyBundle` | Function | Reliable | `bundleId` (this week's) → (ok, why not) | 1/s | §27.10 |
 | `BuySeasonPass` | Function | Reliable | `"Wings"` or `"Robux"` → (ok, why not) | 0.5/s | §26.7 |
 | `ClaimSeason` | Function | Reliable | none → (ok, message) | 1/s | §26.7 |
+| `PartyInvite` / `PartyKick` | Function | Reliable | `userId` → (ok, why not) | 1/s | §25.3 |
+| `PartyRespond` | Function | Reliable | `inviterId, yes` → (ok, why not) | 1/s | §25.3 |
+| `PartyLeave` | C→S | Reliable | none | 1/s | §25.3 |
+| `PartyState` | S→C | Reliable | `{ leader, members, invites, max }` | n/a | §25.3 |
 | `AdminCommand` | C→S | Reliable | `command, args` (admins only) | 2/s | §31 |
 
 ---

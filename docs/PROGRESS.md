@@ -388,6 +388,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **MAP-05** Additional maps (Desert Range, Arctic Fjord, Islands)
 - [ ] **DAT-04** Leaderboard stores
 - [ ] **MMK-05** Parties
+  - Built: parties of up to 3 in a lobby (invite players here or friends through Roblox's invite window), queueing as one entry at the party's highest BR, the same team in team modes, home together and re-formed after the match (`Party.luau`, `PartyService`, `UI/PartyPanel`, DEVELOPMENT.md §25.3; 19 tests in `Party.spec`). Checked in Studio on one player. *To tick after the live test with two or more players.*
 - [ ] **LIV-05** Leaderboards
 - [ ] **LIV-06** Squadrons
 - [ ] **LIV-07** Test Pilot challenge chain and the Tempest unlock
