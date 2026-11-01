@@ -46,7 +46,8 @@ function Cosmetics.canBuy(data: { [string]: any }, id: string): (boolean, string
 	if not item then
 		return false, "Unknown item"
 	elseif item.Wings == nil then
-		return false, if item.Pass then "Comes with a game pass" else "Not for sale"
+		return false,
+			if item.Pass then "Comes with a game pass" elseif item.Season then "A season pass reward" else "Not for sale"
 	elseif not Cosmetics.ready(id) then
 		return false, "Coming soon"
 	elseif Cosmetics.owns(data, id) then

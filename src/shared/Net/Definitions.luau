@@ -140,6 +140,14 @@ local definitions: { [string]: Definition } = {
 	SpinWheel = { direction = "Function", args = {}, rate = { burst = 2, perSecond = 0.5 } },
 	-- Pick the two jets for your Tier Unlock and open its purchase (SHP, DESIGN §8.2): (ok, why not)
 	ChooseTierUnlock = { direction = "Function", args = { "table" }, rate = { burst = 3, perSecond = 0.5 } },
+	-- Pick the camo for your Starter Bundle and open its purchase (SHP-05): (ok, why not)
+	ChooseStarter = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	-- Buy this week's featured bundle with Wings (SHP-05; its id, so a purchase can't land on next week's)
+	BuyBundle = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
+	-- The season pass (LIV-04): buy the premium track ("Wings", or "Robux" to open the purchase); claim every
+	-- reward reached: (ok, why not / what was claimed)
+	BuySeasonPass = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.5 } },
+	ClaimSeason = { direction = "Function", args = {}, rate = { burst = 3, perSecond = 1 } },
 	-- Your custom callsign ("" = your username); filtered by Roblox before anyone sees it (CMP-01)
 	SetCallsign = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 0.2 } },
 	-- Leave the current flight for the hangar (HangarButtonController)

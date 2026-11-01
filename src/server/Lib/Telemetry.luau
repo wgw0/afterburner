@@ -115,6 +115,7 @@ Telemetry.SOURCES = table.freeze({
 	Spin = "Spin", -- the free spin
 	Training = Enum.AnalyticsEconomyTransactionType.Onboarding.Name, -- lessons 1–3, once
 	Purchase = Enum.AnalyticsEconomyTransactionType.IAP.Name, -- Wings bought with Robux
+	Season = "Season", -- season pass rewards
 })
 
 -- A Credits or Wings source or sink. amount is positive either way; balance is the player's balance after

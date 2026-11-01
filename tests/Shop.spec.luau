@@ -18,9 +18,15 @@ return function(ctx)
 	end
 
 	describe("products", function()
-		it("grant only Wings, Tier Unlocks or boosters (never modules, performance or top-tier jets)", function()
+		it("grant only Wings, Tier Unlocks, boosters, the season pass or the starter bundle (never power)", function()
 			for key, product in Products.LIST do
-				expect(product.Kind == "Wings" or product.Kind == "TierUnlock" or product.Kind == "Booster").toBe(true)
+				expect(
+					product.Kind == "Wings"
+						or product.Kind == "TierUnlock"
+						or product.Kind == "Booster"
+						or product.Kind == "SeasonPass"
+						or product.Kind == "Starter"
+				).toBe(true)
 				expect(product.Price > 0).toBe(true)
 				if product.Kind == "TierUnlock" then
 					expect((product.Tier :: number) <= Products.MAX_UNLOCK_TIER).toBe(true)
@@ -148,6 +154,91 @@ return function(ctx)
 			expect(string.find(why :: string, "Wings", 1, true) ~= nil).toBe(true)
 			expect(data.Wings).toBe(Skins.WINGS_PRICE - 1)
 			expect(Progression.ownsSkin(data, "F5E", "Pacific")).toBe(false)
+		end)
+	end)
+	describe("Starter Bundle (SHP-05)", function()
+		local Catalogue = require(ctx.Shared.Config.Cosmetics)
+		local NOW = 1793577600
+
+		it("grants the camo picked, the booster hours and the Wings, once per player", function()
+			local data = fresh()
+			local offer = Shop.starterOffer(data) :: { string }
+			expect(#offer > 0).toBe(true)
+			expect(table.find(offer, "CamoVIP")).toBe(nil) -- a pass camo isn't sold, so it isn't offered
+			expect((Shop.checkStarterChoice(data, "CamoNope"))).toBe(false)
+			expect((Shop.checkStarterChoice(data, offer[1]))).toBe(true)
+			data.PendingStarter = offer[1]
+			Shop.processReceipt(data, "s1", "Starter", NOW)
+			expect(data.Cosmetics.Owned[offer[1]]).toBe(true)
+			expect(data.Cosmetics.Equipped.Camo).toBe(offer[1])
+			expect(data.Wings).toBe(Shop.STARTER.Wings)
+			expect(data.Boosters.Credits).toBe(NOW + Shop.STARTER.BoosterHours * 3600)
+			expect(data.StarterBought).toBe(true)
+			expect(Shop.starterOffer(data)).toBe(nil)
+		end)
+
+		it("with its choice lost, gives a camo's worth of Wings instead", function()
+			local data = fresh()
+			Shop.processReceipt(data, "s1", "Starter", NOW)
+			expect(data.Wings).toBe(Shop.STARTER.Wings + Catalogue.LIST.CamoArctic.Wings)
+		end)
+
+		it("is far cheaper than its parts", function()
+			local camo = Catalogue.LIST.CamoArctic.Wings :: number
+			local booster = Products.LIST.CreditsBooster.Price * Shop.STARTER.BoosterHours
+			expect(Products.LIST.Starter.Price * 3 < camo + Shop.STARTER.Wings + booster).toBe(true)
+		end)
+	end)
+
+	describe("weekly bundle (SHP-05)", function()
+		local Bundles = require(ctx.Shared.Config.Bundles)
+		local Catalogue = require(ctx.Shared.Config.Cosmetics)
+		local MONDAY = 1793577600 -- Monday 2 November 2026, 00:00 UTC
+
+		it("changes on Monday at midnight UTC, the same for everyone, through the whole list", function()
+			local week, nextAt = Shop.week(MONDAY)
+			expect(nextAt).toBe(MONDAY + 7 * 86400)
+			expect(Shop.week(MONDAY - 1)).toBe(week - 1)
+			expect(Shop.week(MONDAY + 7 * 86400 - 1)).toBe(week)
+			local seen = {}
+			for i = 0, #Bundles.LIST - 1 do
+				seen[Shop.bundleFor(MONDAY + i * 7 * 86400).Id] = true
+			end
+			for _, bundle in Bundles.LIST do
+				expect(seen[bundle.Id]).toBe(true)
+			end
+		end)
+
+		it("every bundle is cosmetics sold for Wings, and costs less than its items", function()
+			for _, bundle in Bundles.LIST do
+				expect(#bundle.Items >= 2).toBe(true)
+				for _, id in bundle.Items do
+					local item = Catalogue.get(id)
+					expect(item ~= nil and item.Wings ~= nil).toBe(true)
+				end
+				local price, items, full = Shop.bundlePrice(fresh(), bundle)
+				expect(#items).toBe(#bundle.Items)
+				expect(price < full).toBe(true)
+			end
+		end)
+
+		it("charges only for what you don't own, and only this week's bundle", function()
+			local data = fresh()
+			local bundle = Shop.bundleFor(MONDAY)
+			local fullPrice = Shop.bundlePrice(data, bundle)
+			data.Cosmetics.Owned[bundle.Items[1]] = true
+			local price, items = Shop.bundlePrice(data, bundle)
+			expect(price < fullPrice).toBe(true)
+			expect(#items).toBe(#bundle.Items - 1)
+			data.Wings = price
+			local other = Shop.bundleFor(MONDAY + 7 * 86400)
+			expect((Shop.buyBundle(data, other.Id, MONDAY))).toBe(false)
+			expect((Shop.buyBundle(data, bundle.Id, MONDAY))).toBe(true)
+			expect(data.Wings).toBe(0)
+			for _, id in bundle.Items do
+				expect(data.Cosmetics.Owned[id]).toBe(true)
+			end
+			expect((Shop.buyBundle(data, bundle.Id, MONDAY))).toBe(false) -- nothing left to buy
 		end)
 	end)
 end

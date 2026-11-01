@@ -14,6 +14,7 @@
 --     Assets.Skins.<Jet>, painted for every jet by tools/blender/livery_paint.py; Images: the shop picture, the
 --     F-16A in it on a transparent background, from tools/blender/camo_cards.py).
 -- Pass: free with that game pass, and can't be bought (VIP Gold).
+-- Season: won on that season's pass (Config/Seasons) and kept for good; never sold.
 
 export type Kind = "Trail" | "Marker" | "HUD" | "WingArt" | "Camo"
 
@@ -22,6 +23,7 @@ export type Cosmetic = {
 	DisplayName: string,
 	Wings: number?, -- price; nil = not for sale (a pass item)
 	Pass: string?, -- free with this pass (Config/Passes)
+	Season: number?, -- a reward on this season's pass (Config/Seasons)
 	Colours: { Color3 }?, -- Trail (along the trail), HUD (the first)
 	Glyph: string?, -- Marker
 	Colour: Color3?, -- Marker
@@ -67,6 +69,13 @@ Cosmetics.LIST = table.freeze({
 		Order = 5,
 	},
 	TrailVIP = { Kind = "Trail", DisplayName = "VIP Gold", Pass = "VIP", Colours = { GOLD }, Order = 6 },
+	TrailAurora = { -- Season 1
+		Kind = "Trail",
+		DisplayName = "Aurora",
+		Season = 1,
+		Colours = { rgb(80, 255, 170), rgb(110, 150, 255), rgb(200, 90, 255) },
+		Order = 7,
+	},
 
 	-- Kill-marker styles (DESIGN: 100 R$)
 	MarkerBars = {
@@ -94,12 +103,21 @@ Cosmetics.LIST = table.freeze({
 		Order = 3,
 	},
 	MarkerGold = { Kind = "Marker", DisplayName = "Gold Stars", Wings = 150, Glyph = "★", Colour = GOLD, Order = 4 },
+	MarkerDiamonds = { -- Season 1
+		Kind = "Marker",
+		DisplayName = "Diamonds",
+		Season = 1,
+		Glyph = "◆",
+		Colour = rgb(90, 220, 255),
+		Order = 5,
+	},
 
 	-- HUD themes (DESIGN: 150 R$). Colours the free HUDColour presets don't have.
 	HUDAmber = { Kind = "HUD", DisplayName = "Amber", Wings = 150, Colours = { rgb(255, 176, 60) }, Order = 1 },
 	HUDGold = { Kind = "HUD", DisplayName = "Gold", Wings = 150, Colours = { GOLD }, Order = 2 },
 	HUDIce = { Kind = "HUD", DisplayName = "Ice", Wings = 150, Colours = { rgb(190, 235, 255) }, Order = 3 },
 	HUDMint = { Kind = "HUD", DisplayName = "Mint", Wings = 150, Colours = { rgb(150, 255, 210) }, Order = 4 },
+	HUDLime = { Kind = "HUD", DisplayName = "Lime", Season = 1, Colours = { rgb(190, 255, 90) }, Order = 5 }, -- Season 1
 
 	-- Camos (DESIGN: 150-600 R$): bought once, on every jet (Will). VIP Gold comes with the VIP Pilot pass.
 	CamoVIP = {
@@ -186,6 +204,20 @@ Cosmetics.LIST = table.freeze({
 		Wings = 250,
 		Images = { "rbxassetid://72432997988103", "rbxassetid://140078804130604" },
 		Order = 4,
+	},
+	WingComet = { -- Season 1
+		Kind = "WingArt",
+		DisplayName = "Comet",
+		Season = 1,
+		Images = { "rbxassetid://130396819397967", "rbxassetid://97472957082175" },
+		Order = 5,
+	},
+	WingSunburst = { -- Season 1
+		Kind = "WingArt",
+		DisplayName = "Sunburst",
+		Season = 1,
+		Images = { "rbxassetid://79498579035753", "rbxassetid://99653673653965" },
+		Order = 6,
 	},
 }) :: { [string]: Cosmetic }
 

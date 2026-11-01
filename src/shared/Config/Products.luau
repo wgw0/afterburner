@@ -11,9 +11,12 @@
 --     rules: only the tier above your highest owned jet, never past Tier V).
 --   Booster: doubles Credits or RP from matches for an hour (Shared/Perks: another adds an hour; capped at
 --     ×2 with VIP).
+--   SeasonPass: the premium track of the season running now (Shared/Season; it can also be bought with Wings).
+--   Starter: the Starter Bundle, once per player (Shop.STARTER: a camo the buyer picks, a Credits booster
+--     and Wings).
 
 export type Product = {
-	Kind: "Wings" | "TierUnlock" | "Booster",
+	Kind: "Wings" | "TierUnlock" | "Booster" | "SeasonPass" | "Starter",
 	DisplayName: string,
 	Price: number, -- Robux, as set on the dashboard
 	Amount: number?, -- Wings
@@ -43,6 +46,8 @@ Products.LIST = table.freeze({
 		Booster = "Credits",
 	}),
 	RPBooster = table.freeze({ Kind = "Booster", DisplayName = "2x RP (1 hour)", Price = 75, Booster = "RP" }),
+	SeasonPass = table.freeze({ Kind = "SeasonPass", DisplayName = "Season Pass", Price = 449 }),
+	Starter = table.freeze({ Kind = "Starter", DisplayName = "Starter Bundle", Price = 99 }),
 }) :: { [string]: Product }
 
 local BY_UNIVERSE: { [number]: { [string]: number } } = {
