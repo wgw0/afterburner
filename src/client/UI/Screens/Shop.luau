@@ -1,7 +1,8 @@
 --!strict
 -- Shop (UI-07; DESIGN §8; layout for conversion in DEVELOPMENT.md §27.9). Top to bottom: VIP Pilot as a
--- banner (or a thank-you once owned), the game passes as big cards with their benefits, boosters, the Tier
--- Unlock, Wings packs, cosmetics bought with Wings (SHP-07: buy, equip, take off), then what's coming. Every
+-- banner (or a thank-you once owned), the game passes still to buy as big cards with their benefits,
+-- boosters, the next Tier Unlock (while there is one), Wings packs, cosmetics bought with Wings (SHP-07: buy,
+-- equip, take off), the passes you own in one line, then what's coming. Rows wrap on narrow screens. Every
 -- price is shown before the purchase window; nothing is random or on a fake timer. A product or pass that
 -- isn't created on the dashboard yet says "Coming soon" instead of a buy button. What's still to come (the
 -- season pass, the starter bundle, premium jets) is listed at the bottom.
@@ -281,10 +282,9 @@ local function VipBanner(props: { Owned: boolean, Buyable: boolean, OnBuy: () ->
 	})
 end
 
--- A game pass: a coloured card with a big icon, its benefits and the price, or OWNED.
+-- A game pass still to buy: a coloured card with a big icon, its benefits and the price.
 local function PassCard(props: {
 	Key: string,
-	Owned: boolean,
 	Buyable: boolean,
 	Order: number,
 	OnBuy: () -> (boolean, string?),
@@ -297,10 +297,10 @@ local function PassCard(props: {
 		Size = UDim2.fromOffset(PASS_W, PASS_H),
 		Padding = 16,
 		LayoutOrder = props.Order,
-		StrokeColor = if props.Owned then Theme.Good else style.Colour,
+		StrokeColor = style.Colour,
 		Color = UNDER_WASH,
 	}, {
-		Wash = wash(style.Colour, if props.Owned then 0.1 else 0.25),
+		Wash = wash(style.Colour, 0.25),
 		Icon = e(C.Label, {
 			Text = style.Icon,
 			Size = UDim2.fromOffset(44, 44),
@@ -330,17 +330,8 @@ local function PassCard(props: {
 			Position = UDim2.fromOffset(0, 58),
 			BackgroundTransparency = 1,
 		}, bullets(message and { message } or pass.Benefits, style.Colour, 14)),
-		Action = if props.Owned
-			then e(C.Label, {
-				Text = "OWNED  ✓",
-				Size = UDim2.new(1, 0, 0, 42),
-				Position = UDim2.new(0, 0, 1, -42),
-				Bold = true,
-				TextSize = 16,
-				Align = "Center",
-				Color = Theme.Good,
-			})
-			elseif props.Buyable then e(C.Button, {
+		Action = if props.Buyable
+			then e(C.Button, {
 				Text = `R$ {pass.Price}`,
 				Style = "Primary",
 				Color = style.Colour,
@@ -363,19 +354,11 @@ local function PassCard(props: {
 	})
 end
 
-local function row(order: number, cards: { [string]: any })
-	cards.Layout = C.List({ Horizontal = true, Gap = 14 })
-	return e("Frame", {
-		Size = UDim2.new(1, 0, 0, CARD_H),
-		BackgroundTransparency = 1,
-		LayoutOrder = order,
-	}, cards)
-end
-
--- Cards that wrap onto as many lines as they need (taller ones for camos, which carry a banner)
-local function grid(order: number, cards: { [string]: any }, height: number?)
+-- Cards that wrap onto as many lines as they need (taller ones for camos, which carry a banner; wider ones
+-- for the passes), so a narrow screen stacks them instead of cutting them off
+local function grid(order: number, cards: { [string]: any }, height: number?, width: number?)
 	cards.Layout = e("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CARD_W, height or CARD_H),
+		CellSize = UDim2.fromOffset(width or CARD_W, height or CARD_H),
 		CellPadding = UDim2.fromOffset(14, 14),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	})
@@ -540,7 +523,7 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Packs = row(11, packCards)
+	children.Packs = grid(11, packCards)
 
 	-- Cosmetics (SHP-07), a section per kind
 	for k, kind in Catalogue.KINDS do
@@ -554,29 +537,22 @@ local function ShopScreen(props: any)
 
 	-- Tier Unlock: the next one, if there is one
 	local offer = Shop.tierUnlockOffer(data)
-	children.UnlockTitle = section("SKIP AHEAD", 7)
-	local unlockCards = {}
 	if offer then
+		children.UnlockTitle = section("SKIP AHEAD", 7)
 		local key = Products.tierUnlockKey(offer.tier) :: string
-		unlockCards.Next = e(Card, {
-			Title = `Unlock Tier {TIER_NAMES[offer.tier]}`,
-			Detail = `Pick {Products.UNLOCK_JETS} Tier {TIER_NAMES[offer.tier]} jets to own straight away. R$ {Products.LIST[key].Price}.`,
-			Action = "PICK JETS",
-			Order = 1,
-			OnClick = function()
-				props.OnTechTree()
-				return true, nil
-			end,
-		})
-	else
-		unlockCards.Done = e(Card, {
-			Title = "Tier Unlocks",
-			Detail = "You're past Tier V: from here every jet is earned in the air.",
-			Status = "Done",
-			Order = 1,
+		children.Unlock = grid(8, {
+			Next = e(Card, {
+				Title = `Unlock Tier {TIER_NAMES[offer.tier]}`,
+				Detail = `Pick {Products.UNLOCK_JETS} Tier {TIER_NAMES[offer.tier]} jets to own straight away. R$ {Products.LIST[key].Price}.`,
+				Action = "PICK JETS",
+				Order = 1,
+				OnClick = function()
+					props.OnTechTree()
+					return true, nil
+				end,
+			}),
 		})
 	end
-	children.Unlock = row(8, unlockCards)
 
 	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
 	children.BoosterTitle = section("BOOSTERS", 5)
@@ -597,7 +573,7 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Boosters = row(6, boosterCards)
+	children.Boosters = grid(6, boosterCards)
 
 	-- VIP Pilot up top, then every pass as a big card (owned ones last)
 	local function owns(key: string): boolean
@@ -611,26 +587,46 @@ local function ShopScreen(props: any)
 			return props.OnBuyPass("VIP")
 		end,
 	})
-	children.PassTitle = section("GAME PASSES  ·  BUY ONCE, KEEP FOREVER", 3)
-	local passCards = {}
+	local passCards, ownedNames = {}, {}
 	for i, key in PASS_ORDER do
+		if owns(key) then
+			local style = PASS_STYLE[key]
+			table.insert(
+				ownedNames,
+				`<font color="#{style.Colour:ToHex()}">{style.Icon}</font>  {Passes.LIST[key].DisplayName}`
+			)
+			continue
+		elseif key == "VIP" then
+			continue -- the banner above is its card
+		end
 		passCards[key] = e(PassCard, {
 			Key = key,
-			Owned = owns(key),
 			Buyable = Passes.idFor(key) ~= nil,
-			Order = if owns(key) then 10 + i else i,
+			Order = i,
 			OnBuy = function()
 				return props.OnBuyPass(key)
 			end,
 		})
 	end
-	passCards.Layout = C.List({ Horizontal = true, Gap = 14 })
-	children.Passes =
-		e("Frame", { Size = UDim2.new(1, 0, 0, PASS_H), BackgroundTransparency = 1, LayoutOrder = 4 }, passCards)
+	if next(passCards) then
+		children.PassTitle = section("GAME PASSES  ·  BUY ONCE, KEEP FOREVER", 3)
+		children.Passes = grid(4, passCards, PASS_H, PASS_W)
+	end
+	if #ownedNames > 0 then
+		children.Owned = e(C.Label, {
+			Text = `<font color="#{Theme.Good:ToHex()}">YOUR PASSES  ✓</font>     {table.concat(ownedNames, "     ")}`,
+			Rich = true,
+			Size = UDim2.new(1, 0, 0, 24),
+			Bold = true,
+			TextSize = 15,
+			Color = Theme.Text,
+			LayoutOrder = 39,
+		})
+	end
 
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)
-	children.Soon = row(41, {
+	children.Soon = grid(41, {
 		Season = e(Card, { Title = "Season Pass", Detail = "A free and a premium track of rewards.", Order = 3 }),
 		Starter = e(Card, { Title = "Starter Bundle", Detail = "A camo, a booster and Wings, once.", Order = 4 }),
 		Premium = e(Card, { Title = "Premium Jets", Detail = "Named variants with a unique camo.", Order = 5 }),
