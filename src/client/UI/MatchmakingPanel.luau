@@ -72,9 +72,9 @@ local function MatchmakingPanel(props: { AirframeId: string? })
 			TextSize = 13,
 		}),
 		How = e(C.Label, {
-			Text = `You're matched by the jet you click PLAY with, against jets near its level (after a long wait, up to {rating(
+			Text = `You're matched by the jet you click PLAY with, against jets near its level. The longer you wait, the wider the search: up to {rating(
 				Queue.SPREAD_MAX
-			)} BR away). In the match you can fly it or a lower jet. Empty seats get AI pilots at that level.`,
+			)} BR away, and any mode after {Queue.ANY_MODE_AFTER // 60} minutes. Empty seats get AI pilots.`,
 			Size = UDim2.new(1, 0, 0, 86),
 			Position = UDim2.fromOffset(0, 64),
 			TextSize = 13,

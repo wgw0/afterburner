@@ -73,10 +73,15 @@ return function(ctx)
 			expect(#matches).toBe(2)
 		end)
 
-		it("the spread widens from 1.0 to 1.7 with waiting", function()
+		it("the spread widens from 1.0 to 1.7 over a minute, then on to 3.0", function()
 			expect(Queue.spreadFor(0)).toBe(1.0)
 			expect(math.abs(Queue.spreadFor(60) - 1.7) < 1e-6).toBe(true)
-			expect(math.abs(Queue.spreadFor(600) - 1.7) < 1e-6).toBe(true)
+			expect(math.abs(Queue.spreadFor(105) - 2.35) < 1e-6).toBe(true)
+			expect(math.abs(Queue.spreadFor(150) - 3.0) < 1e-6).toBe(true)
+			expect(math.abs(Queue.spreadFor(600) - 3.0) < 1e-6).toBe(true)
+			local far = { entry(1, 2.0, "Any", 0), entry(2, 4.5, "Any", 0) }
+			expect(#Queue.form(far, { now = 60 })).toBe(2)
+			expect(#Queue.form(far, { now = 150 })).toBe(1)
 			-- 1.5 apart: separate early, together after a minute
 			local entries = { entry(1, 4.0, "Any", 0), entry(2, 5.5, "Any", 0) }
 			local early = Queue.form(entries, { now = Queue.FILL_AFTER })
@@ -135,6 +140,14 @@ return function(ctx)
 				end,
 			})
 			expect(matches[1].mode).toBe("AirSuperiority")
+		end)
+
+		it("after a long wait, a player who picked a mode takes any mode", function()
+			local entries = { entry(1, 4.7, "Dogfight", 0), entry(2, 4.7, "TeamDeathmatch", 1) }
+			expect(#Queue.form(entries, { now = Queue.ANY_MODE_AFTER - 5 })).toBe(2)
+			local matches = Queue.form(entries, { now = Queue.ANY_MODE_AFTER + 2 })
+			expect(#matches).toBe(1)
+			expect(matches[1].entries[1].mode).toBe("Dogfight") -- the entries handed back are the originals
 		end)
 
 		it("only known modes are valid", function()

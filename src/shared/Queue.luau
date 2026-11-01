@@ -4,9 +4,11 @@
 --   Each entry is one player or one party (MMK-05: members, keyed by its leader): its BR (a party's is its
 --   highest), the mode asked for ("Any" or a mode id) and when it joined. The longest-waiting entry anchors a
 --   group: entries whose mode fits and whose BR is within the spread join it (closest BR first, while their
---   pilots still fit in MATCH_SIZE seats). The spread starts at BR 1.0 and widens to 1.7 over
---   a minute of waiting (DESIGN §5.2). A full group becomes a match at once; a smaller one once its anchor
---   has waited FILL_AFTER seconds, and AI fills the empty seats on the battle server.
+--   pilots still fit in MATCH_SIZE seats). The longer the wait, the looser the rules (Will): the spread
+--   starts at BR 1.0, widens to 1.7 over the first minute (DESIGN §5.2), then on to 3.0 by two and a half
+--   minutes (SPREAD_STAGES); after ANY_MODE_AFTER seconds a player who picked a mode takes any mode. A full
+--   group becomes a match at once; a smaller one once its anchor has waited FILL_AFTER seconds, and AI
+--   fills the empty seats on the battle server.
 
 local Matchmaking = require(script.Parent.Matchmaking)
 
@@ -14,9 +16,11 @@ local Queue = {}
 
 Queue.MATCH_SIZE = 6 -- pilots in a match (Will: 6), so at most this many players
 Queue.FILL_AFTER = 30 -- seconds before a match starts short-handed, with AI in the empty seats
-Queue.SPREAD_MIN = 1.0
-Queue.SPREAD_MAX = 1.7
-Queue.SPREAD_GROW_SECONDS = 60
+-- { seconds waited, BR spread }: the spread grows linearly between these and stops at the last
+Queue.SPREAD_STAGES = table.freeze({ { 0, 1.0 }, { 60, 1.7 }, { 150, 3.0 } })
+Queue.SPREAD_MIN = Queue.SPREAD_STAGES[1][2]
+Queue.SPREAD_MAX = Queue.SPREAD_STAGES[#Queue.SPREAD_STAGES][2]
+Queue.ANY_MODE_AFTER = 120 -- seconds before a player who picked a mode will take any mode
 Queue.MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
 
 export type Entry = {
@@ -45,8 +49,20 @@ export type Options = {
 
 -- The BR spread allowed for a group whose anchor has waited `waited` seconds.
 function Queue.spreadFor(waited: number): number
-	local t = math.clamp(waited / Queue.SPREAD_GROW_SECONDS, 0, 1)
-	return Queue.SPREAD_MIN + (Queue.SPREAD_MAX - Queue.SPREAD_MIN) * t
+	local stages = Queue.SPREAD_STAGES
+	for i = 2, #stages do
+		local from, to = stages[i - 1], stages[i]
+		if waited < to[1] then
+			local t = math.clamp((waited - from[1]) / (to[1] - from[1]), 0, 1)
+			return from[2] + (to[2] - from[2]) * t
+		end
+	end
+	return stages[#stages][2]
+end
+
+-- The mode a player is matched as after waiting: their pick, or "Any" once they've waited ANY_MODE_AFTER.
+function Queue.modeAfter(mode: string, waited: number): string
+	return if waited >= Queue.ANY_MODE_AFTER then "Any" else mode
 end
 
 function Queue.validMode(mode: string): boolean
@@ -94,7 +110,19 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 		return Queue.MODES[1]
 	end
 
-	local waiting = table.clone(entries)
+	-- Players who've waited long enough take any mode (the match keeps their original entry)
+	local waiting = {}
+	local original: { [Entry]: Entry } = {}
+	for _, entry in entries do
+		local mode = Queue.modeAfter(entry.mode, now - entry.joinedAt)
+		local view = entry
+		if mode ~= entry.mode then
+			view = table.clone(entry)
+			view.mode = mode
+		end
+		original[view] = entry
+		table.insert(waiting, view)
+	end
 	table.sort(waiting, function(a, b)
 		if a.joinedAt ~= b.joinedAt then
 			return a.joinedAt < b.joinedAt
@@ -147,12 +175,14 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 		end
 
 		if count >= Queue.MATCH_SIZE or waited >= fillAfter then
+			local kept = {}
 			for _, entry in group do
 				taken[entry.userId] = true
+				table.insert(kept, original[entry])
 			end
 			table.insert(matches, {
 				mode = mode,
-				entries = group,
+				entries = kept,
 				band = Matchmaking.bandFor(high),
 				spread = high - low,
 				longestWait = waited,
