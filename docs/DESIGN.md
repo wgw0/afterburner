@@ -342,15 +342,21 @@ Tier multiplier: higher-tier jets earn more RP and Credits per action but cost m
 
 ### 7.3 Progression pacing (targets to tune)
 
-| Milestone | Target playtime (free player) |
-|---|---|
-| First new jet (Tier I sidegrade) | 20–30 minutes |
-| Reach Tier II | 2–3 hours |
-| Reach Tier III | 8–10 hours |
-| Reach Tier IV | 20–25 hours |
-| Reach Tier V | 40–50 hours |
-| First Tier VII (F-22) | about 100–130 hours |
-| Tempest (prestige) | about 150+ hours, plus the challenge chain |
+Retuned November 2026 (Will): Tier II in 20–30 minutes, then scaling up, the way Roblox players expect. The
+middle column is the economy simulation's modest player (tools/EconomySim: 1.5 kills a match, mostly AI, a
+win 1 in 10, about 2 hours a day, climbing the tree); challenges, the streak, the season pass and squadron
+rewards come on top, so most players are quicker.
+
+| Milestone | Target playtime (free player) | Simulated |
+|---|---|---|
+| First new jet (Tier I sidegrade) | about 10 minutes | 11 min |
+| Reach Tier II | 20–30 minutes | 22 min |
+| Reach Tier III | about 1½ hours | 1.5 h |
+| Reach Tier IV | about 4 hours | 3.7 h |
+| Reach Tier V | about 9 hours | 8.6 h |
+| Reach Tier VI | about 18 hours | 17 h |
+| First Tier VII | about 30–35 hours | 31 h |
+| Tempest (prestige) | about 50–60 hours, plus the Test Pilot trials | 57 h (owned) |
 
 Early unlocks come fast to hook players. Late unlocks are aspirational. Paying players get there sooner but not instantly (see §8). These numbers should be revisited with real retention data. If day-7 retention is weak, speed up Tiers I–III first.
 

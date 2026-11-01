@@ -405,9 +405,12 @@ function Progression.moduleDef(moduleId: string): Economy.ModuleDef?
 end
 
 -- RP and Credits for a module on a given jet (costs scale with its tier).
+-- A module's cost on a jet: its Tier I price × the jet's tier multiplier (what that tier earns), × the tier's
+-- Economy.TECH_COST_SCALE so upgrades keep pace with how fast jets come (Will, November 2026).
 function Progression.moduleCost(airframeId: string, def: Economy.ModuleDef): (number, number)
-	local tier = tierMultiplier(airframeId)
-	return math.floor(def.RP * tier + 0.5), math.floor(def.Credits * tier + 0.5)
+	local airframe = AircraftData.get(airframeId) :: any
+	local scale = tierMultiplier(airframeId) * ((airframe and Economy.TECH_COST_SCALE[airframe.Tier]) or 1)
+	return math.max(1, math.floor(def.RP * scale + 0.5)), math.max(1, math.floor(def.Credits * scale + 0.5))
 end
 
 function Progression.canBuyModule(data: { [string]: any }, airframeId: string, moduleId: string): (boolean, string?)
