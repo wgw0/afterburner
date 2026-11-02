@@ -195,6 +195,8 @@ src/
 │   ├── AdaptiveAI.luau              -- Vs AI bots that ease off or sharpen with the player's form
 │   ├── MatchRules.luau              -- modes as data, scoring, respawn rules
 │   ├── AirSuperiority.luau          -- pure: zones and tickets (MCH-06)
+│   ├── Duel.luau                    -- pure: duel rounds, Elo ratings and ranks (MCH-09)
+│   ├── Strike.luau                  -- pure: Strike Escort, PvE waves and how bombers fly (MCH-07/08, AI-06)
 │   ├── LessonRunner.luau            -- pure: tutorial lesson steps
 │   ├── Matchmaking.luau             -- BR bands, queue BR, Vs AI airframe choice
 │   ├── Queue.luau                   -- forming matches from the queue (MMK-03)
@@ -231,7 +233,7 @@ src/
 │   ├── WorldEdge.luau               -- what lies past the map's edge
 │   ├── Version.luau                 -- the game's version (REL-03)
 │   ├── AircraftModelContract.luau   -- model validator (§5.3)
-│   ├── AircraftData/                -- one module per airframe (27) + init (registry)
+│   ├── AircraftData/                -- one module per airframe (27 jets + the AI-only B1B) + init (registry)
 │   ├── WeaponData/                  -- one module per weapon (38) + init (registry)
 │   ├── Net/
 │   │   ├── init.luau                -- typed remote wrapper (§4)
@@ -326,7 +328,7 @@ src/
                                             report, feedback) and Screens/ (Hangar, TechTree, AircraftDetail,
                                             Career, Season, Shop, Settings, Results, Training)
 
-tests/                               → ServerStorage.Tests (TestRunner, 64 *.spec, Smoke)
+tests/                               → ServerStorage.Tests (TestRunner, 66 *.spec including Duel and Strike, Smoke)
 tools/                               → ServerStorage.Tools (Studio tools, run from the command bar)
 ├── GreyboxBuilder.luau, TerrainBuilder.luau, StraitBuilder.luau, EconomySim.luau, ExploitTest.luau
 ├── AircraftAssembler.luau           -- imported FBX + manifest -> game-ready jet (and its cockpit)
@@ -340,7 +342,7 @@ tools/                               → ServerStorage.Tools (Studio tools, run 
 ├── audio/, badges/, cosmetics/, marketing/ -- Python generators: UI sounds, badge images, wing art,
 │                                       the icon, cover and trailer
 └── blender/                         -- Blender scripts (not synced): <jet>_generate.py and <jet>_paint.py for
-                                        every airframe, jet_paint.py, livery_paint.py, cockpit_*.py,
+                                        every airframe (b1b_* for the bomber), jet_paint.py, livery_paint.py, cockpit_*.py,
                                         missiles_generate.py, bridge_*.py, groundroamer_*.py, camo_cards.py,
                                         scenery_generate.py, woods_merge.py, sky_paint.py, terrain_paint.py,
                                         overlay_reference.py, render_views.py; art in out/ (Git LFS)
@@ -1101,6 +1103,7 @@ The server pushes the component state to the **pilot** (`DamageState` remote) so
 - The killer is the last player to damage the jet within 15 s *(tune)*. If none, and the death was a crash, the last damager within 30 s gets a "forced crash" kill.
 - An assist is any other player who did ≥ 25% of total damage in the last 30 s.
 - Suicide (crash, out of bounds) with no recent damage: a death with no kill.
+- *As built (November 2026):* cause `Struck`, a bomber that reached its target (§17.9), gives no kill and no assists whatever damage it took (`DamageModel.resolveCredit`).
 
 ### 12.5 Tasks
 
@@ -1357,7 +1360,7 @@ type Mode = {
 }
 ```
 
-*As built:* there is no `Services/Modes/`. Each mode is a data table in `Shared/MatchRules.MODES` (score and time limits, respawn rule, AI fill, teams, `Objective = "Zones"`, `GunsOnly`), and `MatchService` runs them all; Air Superiority's zones and tickets are `Shared/AirSuperiority`. Modes: Free Flight, Dogfight (15 kills or 10 min), Team Deathmatch (30 team kills or 10 min), Air Superiority (tickets, or the team ahead at 12 min), Guns Only, and the test-only Stress mode (24 jets). A match server runs the one mode in its matchmaker record (§25.6); elsewhere (the test environment's `DebugSetMode`) modes rotate Dogfight, Team Deathmatch, Air Superiority, Guns Only (`MatchRules.ROTATION`).
+*As built:* there is no `Services/Modes/`. Each mode is a data table in `Shared/MatchRules.MODES` (score and time limits, respawn rule, AI fill, teams, `Objective` = `"Zones"` / `"Strike"` / `"Waves"`, `GunsOnly`, `Duel`, `Ranked`, `MissileClasses`, `MinTier`, `Bvr`), and `MatchService` runs them all; Air Superiority's zones and tickets are `Shared/AirSuperiority`, duels `Shared/Duel` and the missions `Shared/Strike`. Modes: Free Flight, Dogfight (15 kills or 10 min), Team Deathmatch (30 team kills or 10 min), Air Superiority (tickets, or the team ahead at 12 min), Guns Only, Ranked Duel and Casual Duel (§17.7), BVR Battle (§17.8), Strike Escort and PvE Waves (§17.9), and the test-only Stress mode (24 jets). A match server runs the one mode in its matchmaker record (§25.6); elsewhere (the test environment's `DebugSetMode`) modes rotate Dogfight, Team Deathmatch, Air Superiority, Guns Only (`MatchRules.ROTATION`).
 
 ### 17.3 Modes
 
@@ -1373,13 +1376,15 @@ type Mode = {
 | **Ranked Duels** | 1v1 merge start (head-on spawn 8 km apart), best of 3 rounds, Elo rating | 8 (v1.2) |
 | **BVR Battles** | Tier VI+ only, large spawn separation, data link on | 8 (v1.2) |
 
+*As built:* the last four rows were built differently from the plan: Strike Escort with waves of bombers flying straight at the airbases rather than a spline route, PvE as ten waves with no revive tokens, duels as best of five from about 6 km, and BVR from Tier IV with radar missiles only. See §17.7–17.9.
+
 ### 17.4 Respawn rules (decision deferred, DESIGN §11)
 
 Build respawning as a **config option per mode** from day one, so the playtest can compare:
 - `Respawn = { Type = "Timer", Delay = 5 }`
 - `Respawn = { Type = "LineupLives" }` (one life per jet in the lineup)
 
-*As built:* `{ Type = "Timer", Delay }` and `{ Type = "Lives", Lives, Delay }` (the player's `LivesLeft` and `RespawnIn` attributes drive the menu). Every mode uses a 5 s timer for now.
+*As built:* `{ Type = "Timer", Delay }` and `{ Type = "Lives", Lives, Delay }` (the player's `LivesLeft` and `RespawnIn` attributes drive the menu). Most modes use a 5 s timer for now; BVR uses 8 s, Strike Escort and PvE 6 s. Duels set the delay to `math.huge`: only the round start puts a jet back up, and `RespawnIn` counts down the intermission instead.
 
 ### 17.5 Scoreboard and results
 
@@ -1402,6 +1407,38 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 | MCH-10 | BVR Battles | 8 |
 
 **Acceptance:** a full FFA match with 4 players plus bots runs from countdown to results, and the results match what happened (verified against a log of kill events).
+
+### 17.7 As built: duels (MCH-09, November 2026)
+
+Will: duels are the main mode. Two modes in `MatchRules`: `Duel` ("Ranked Duel", `Ranked = true`) and `DuelCasual` ("Casual Duel"). Both have `Duel = true`, `AIFill = 2`, no score or time limit and a 6 s countdown.
+
+- **Rounds** (`Shared/Duel`, pure, tested in `Duel.spec`): `Duel.State` holds the two seated pilots, their round wins, the round number and a phase: `Intermission` → `Fight` → `Deciding` → `Intermission` … → `Over`. One life a round. When the first jet goes down the round goes to `Deciding` and is settled `GRACE` (2 s) later, so a trade (a missile already on its way when its shooter died) is a drawn round. Both down, or `ROUND_TIME` (150 s) up, is also a drawn round. First to `ROUNDS_TO_WIN` (3) wins; drawn rounds don't count, so after `MAX_ROUNDS` (7) the pilot ahead wins, else it's a draw. `INTERMISSION` is 4 s.
+- **Spawning**: `Duel.spawnPair` puts both jets head-on over the map centre, `SEPARATION` (2,400 studs) apart at the usual spawn height, seat 1 in the west. `MatchService.startDuelRound` clears the jets and spawns both at the round start. A player's jet is the one they last asked for (they can pick another between rounds), else the one they clicked PLAY with (the record's `jets`), else the hangar's selected jet, else the first in their lineup. `canSpawn` lets a late auto-launch through in a round's first 10 s, once; otherwise a jet lost is out until the next round. Back to the hangar mid-round (a quiet cause with nobody's damage) gives the round away. AI pilots don't respawn in a duel.
+- **Scoring**: after each round the board's score is round wins × 1,000 + kills × 100 + assists × 50, and at the end the duel's winner is put top even on a tie in points. End reasons: `Rounds`, `Draw` (winner `"Draw"`; ProgressionService, ChallengeService and TelemetryService then count no winner) and `Forfeit` (a seated player leaving mid-duel: `Duel.forfeit` gives the other pilot the duel at once).
+- **Ratings** (Elo): `Duel.change` is K × (result − expected), K = 48 for a pilot's first 10 duels (`PROVISIONAL_GAMES`), then 32; whole points, at least 1 either way for a win or a loss. `settleDuel` (match servers only) reads both ratings first, then `Duel.apply` updates each save: `data.Duel = { Rating, Peak, Played, Won, Lost, Drawn }` (start 1,000; replicated). Only a `Ranked` duel between two players moves ratings; casual and AI duels still count in Played / Won / Lost / Drawn. Ranks (`Duel.RANKS`): Bronze 0, Silver 1,100, Gold 1,250, Platinum 1,400, Diamond 1,600, Ace 1,800. The first time the peak passes a rank above Bronze the save gets the title `Duelist<Rank>` in `data.Titles` (names in `LevelRewards.TITLES` / `OTHER_TITLES`) and `Duel.RANK_CREDITS` (2,500 / 5,000 / 10,000 / 20,000 / 40,000).
+- **The AI duelist**: with one player on a match server, `syncAIFill` creates one AI pilot whose difficulty follows the player's rating: Normal, Hard from 1,100, Ace from 1,400. It's unranked.
+- **Vs AI**: `DuelCasual` is a Vs AI choice on training servers (1V1 DUEL, always one opponent, adaptive like the other Vs AI bots). Nothing goes on the record there.
+- **Client**: `MatchState.duel` (Appendix A) drives the banner (`MatchController`: mode, round, both pilots' round wins, first to 3, the round clock), a call in the middle of the screen ("ROUND 2", "YOU WIN THE ROUND", "ROUND TO X", "ROUND DRAWN") and the spawn button's text between rounds. `UI/MatchmakingPanel` shows a duel panel when a duel is picked: rank and rating in the rank's colour, the next rank, the win–loss record and how a duel works. `Screens/Results` shows the round score and, for a ranked duel, the rating change, the rank and NEW RANK; an AI duel reads "unranked: an AI opponent".
+- **Elsewhere**: the default `QueueMode` setting is `Duel`, and RANKED DUEL and CASUAL DUEL come first in the Hangar's mode picker. Queueing is in §25.7, the leaderboard and the Duelist series in §26.9.
+
+### 17.8 As built: BVR Battles (MCH-10, November 2026)
+
+- **Mode** `BVR` ("BVR Battle"): West and East, 15 team kills or 12 minutes (10 ended a match with AI in about four minutes), 8 s respawn, AI fill to 6 (3v3). `MinTier = 4`, `MissileClasses = MatchRules.RADAR_CLASSES` (`SARH`, `ARH`), `Bvr = true`.
+- **Jets**: `MatchRules.jetAllowed(mode, airframeId)` says whether a jet may fly and, if not, why ("BVR Battle needs a Tier IV or higher jet", "... needs a jet with radar missiles"). The lobby refuses to queue a wrong jet (§25.7), `spawnGate` refuses to spawn one in a scored match, and `aiChoices` keeps only allowed jets for the AI (all allowed jets if the band has none).
+- **Racks** (`MissileService`): `MatchRules.missileAllowed(mode, class)` sets each rack's count, so heat-seekers carry 0. The first carried rack is selected at spawn, and weapon selection skips the empty racks. The gun is unchanged.
+- **Spawns**: each team's start line is `BVR_SEPARATION / 2` (3,800 studs) either side of the centre, five slots 500 studs apart, at the usual spawn height and facing the other team.
+- Pick-only (`Queue.PICK_ONLY`): never chosen for ANY. Also a Vs AI choice. Tested in `MatchRules.spec` and `Queue.spec`.
+
+### 17.9 As built: Strike Escort and PvE Waves (MCH-07, MCH-08, November 2026)
+
+The rules are in `Shared/Strike` (pure, tested in `Strike.spec`); `MatchService.stepMissions` runs them each tick and AIService flies the bombers (§18.5).
+
+- **Targets**: each team's airbase is the centre of `workspace.Map.AirbaseWest` / `AirbaseEast`, else a point on that coast (`findStrikeTargets`). In a match they're broadcast in `MatchState.zones` (ids `W` / `E`, radius `Strike.TARGET_RADIUS`), so `ZonesController` draws them in their team's colour. A bomber within `TARGET_RADIUS` (700 studs, measured flat) of its target has struck it.
+- **Strike Escort** (`StrikeEscort`, `Objective = "Strike"`): West and East, 12 minutes, 6 s respawn, AI fill to 6 (3v3). The first wave launches as the match starts, then every `WAVE_INTERVAL` (150 s): `WAVE_BOMBERS` (2) per team, from 85% of the map's half-extent over their own side at cruise height, heading for the other airbase. A strike scores for the bomber's team; first to `STRIKE_LIMIT` (6) ends it (reason `Strikes`). At the time limit the winner has the most strikes, then the most team kills (`Strike.escortWinner`); level is a draw. In ANY (`Queue.ANY_MODES`), not in the rotation.
+- **PvE Waves** (`Waves`, `Objective = "Waves"`): the players are West (up to `Queue.PVE_SIZE` = 3), `AIFill = 0`, 6 s respawn, 15 s results. `Strike.newPve` waits about 7 s, then each wave launches; once every mission pilot of a wave is gone there's a `WAVE_BREAK` (12 s) before the next. Wave n (`Strike.waveSpec`): min(1 + n, 8) fighters and 1 + ⌊(n − 1) / 3⌋ bombers, Normal pilots, Hard from wave 4, Ace from wave 7. Wave fighters come in from the east and head for the players' base; their jets come from the match's band. Each bomber strike costs the base one of `BASE_HITS` (5). Clearing wave 10 wins ("Base held"), the fifth strike loses ("Base lost"); reason `Waves`. Pick-only.
+- **Mission pilots** are outside the AI fill and don't respawn: shot down, they're removed. A bomber that strikes is despawned with cause `Struck`: nobody's kill (`DamageModel.resolveCredit`), not a death on the board, nothing in the kill feed (`CombatService` treats it as a quiet cause, like `Despawn`).
+- **AI fighters** go for the mission (`objectiveFor`): in PvE the East fighters head for the West airbase. In Strike Escort odd-numbered AI pilots hunt (`pilot.hunter`: they commit to the nearest enemy bomber at any range and are steered to where it will be), even-numbered ones escort their own team's nearest bomber; with no bomber of that kind up, they take the other job.
+- **Client**: `MatchState.mission` (Appendix A) drives the banner: STRIKE ESCORT with the time, both teams' strikes, the limit, the next wave and your team; PVE with the wave and enemies left (or WAVE n IN x) and the base's hits left. The Results screen reads "strike limit reached", "every wave beaten" or "the base fell". Both are in the Hangar's mode picker (STRIKE, PVE), the matchmaking panel and Vs AI (STRIKE, PVE WAVES).
 
 ---
 
@@ -1447,6 +1484,14 @@ Build respawning as a **config option per mode** from day one, so the playtest c
 | AI-06 | AI bombers and escort formations (Strike Escort, PvE) | 8 |
 
 **Acceptance:** a Normal bot beats a new player in a guns-only 1v1 but loses to a tester who uses energy tactics. 8 bots fighting keep the server heartbeat above 50 Hz.
+
+### 18.5 As built: mission pilots and the B-1B bomber (AI-06, November 2026)
+
+- **Mission pilots** (`AIService`): a pilot with a `role`, `"Bomber"` or `"Wave"`, made by `CreateMissionPilot(role, difficulty, airframeId, target?)` and listed by `GetMissionPilots(role?)`. `GetMatchPilots` leaves them out, so MatchService's AI fill, respawns and scoring only see the filler pilots. `launched` is set once one is put up, so losing its jet removes it (§17.9). A bomber is named "Bomber NN [AI]", its identity has `IsBomber = true`, and its jet model gets the `Bomber` attribute (Appendix B; nothing on the client reads it yet).
+- **How a bomber flies** (`Strike.bomberDecision`, every decision tick): straight for its `strikeTarget` at `CRUISE_ALTITUDE` (900 m real), climbing hard below 250 m of ground clearance, at `CRUISE_THROTTLE` (0.5, no afterburner) so fighters can catch it, G limit 3. It never picks a target or fires. While `MissileService:IncomingFor` reports a missile it drops a flare and chaff every 0.7 s.
+- **Fighters and bombers**: every AI fighter's target choice favours an enemy bomber (looked for out to 1.5× the usual range, at 0.4× the cost). A Strike Escort hunter (`pilot.hunter`, set by `objectiveFor`) takes the nearest enemy bomber at any range. No escort formations: escorts fly to their bomber and fight whoever comes.
+- **The B-1B Lancer** (`AircraftData/B1B.luau`, Id `B1B`, `AIOnly = true`): `AircraftData.getAll()` leaves AI-only airframes out, so it's not in the hangar, the tech tree or the AI fighters' picks; `getEverything()` includes it, so `AircraftService` still checks its model at boot. Heavy and slow to turn: mass 40,000 kg and 92,000 N dry thrust (scaled down together so thrust-to-weight stays about 0.23), MaxG 3, roll 35°/s, MaxMach 1.25, swing wings on the F-14A's `VariableGeometry` (15° slow to 67° fast), 60 flares and 60 chaff, an RWR with launch warning, no weapons (the `Gun` field is only for the schema). Tier 6 and BR 10 are nominal. `Strike.BOMBER_AIRFRAME` is `B1B`; MatchService falls back to the F-15E (`FALLBACK_BOMBER`) if the airframe is missing.
+- **Model and skins**: built by `tools/blender/b1b_generate.py` and painted by `b1b_paint.py` (24 parts, 13,412 triangles, four nozzle attachments), installed in the place. Skins in `Config/Skins`: Strategic (default) and Ember. Details in [AIRCRAFT_PIPELINE.md §34](art/AIRCRAFT_PIPELINE.md).
 
 ---
 
@@ -1609,21 +1654,21 @@ The schema from DESIGN §9.3, plus:
 - `Version` (number) and a `Migrations` table: `Migrations[n](data)` upgrades version `n-1` to `n`. Run on load. Covered by unit tests with fixtures of every old version.
 - Bounded lists. For example, `ProcessedReceipts` keeps the most recent 100 purchase IDs. Roblox only re-sends a receipt until it's been marked granted, so a recent-history list is enough to stop double grants (§27.3).
 - A `Flags` table for one-off things (`TutorialComplete`, `Onboarded` (§28.2), and `AllUnlocked` for full access, §31.2).
-- *As built:* still schema version 1 with no migrations yet; new fields reach old saves by `PlayerData.reconcile` filling them from the template. Besides the currencies and jets the save holds `Stats`, `Challenges`, `Achievements`, `Titles`, `Streak`, `Spin`, `Season`, `Squadron`, `TestPilot`, `Weekly`, `Cosmetics`, `Passes`, `Boosters`, the pending Tier Unlock and Starter choices, `Settings` and `Callsign` (each described in its own section).
+- *As built:* still schema version 1 with no migrations yet; new fields reach old saves by `PlayerData.reconcile` filling them from the template. Besides the currencies and jets the save holds `Stats`, `Challenges`, `Achievements`, `Titles`, `Streak`, `Spin`, `Season`, `Squadron`, `TestPilot`, `Duel` (§17.7), `Weekly`, `Cosmetics`, `Passes`, `Boosters`, the pending Tier Unlock and Starter choices, `Settings` and `Callsign` (each described in its own section).
 - Per airframe, `Aircraft[id]` holds `Owned`, `Researched`, `RP`, `Modules` (`true` = fitted, `false` = owned but taken off), `Mastery`, `Skins` (skins bought; the default is always owned) and `Camo` (the skin in use).
 
 ### 22.3 Other DataStores
 
 | Store | Use |
 |---|---|
-| `OrderedDataStore` `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`, `LB_Season_<id>`, `LB_KillsAll`, `LB_SquadronWeek_<week>` | Leaderboards (§26.8, §26.4) |
+| `OrderedDataStore` `LB_KillsWeek_<week>`, `LB_WinsWeek_<week>`, `LB_Season_<id>`, `LB_KillsAll`, `LB_SquadronWeek_<week>`, `LB_DuelRating` | Leaderboards (§26.8, §26.4, §26.9) |
 | `DataStore` `Squadrons` | Squadron records and tags (§26.4) |
 | `DataStore` `LiveConfig` | Live config overrides, the event schedule and the audit (§31) |
 | `DataStore` `Reports`, `OrderedDataStore` `ReportCounts` | Cheater reports (§32.1) |
 | `DataStore` `Feedback` | Bug reports (§32.4) |
 | `MemoryStoreSortedMap` `MatchQueue`, `MemoryStoreHashMap` `Matchmaking` | The queue, the matchmaker lease, match records and hand-offs (§25.6) |
 
-The ranked ladder (`Ranked_Elo_Season<n>`) waits for Ranked Duels (MCH-09).
+The ranked ladder is `LB_DuelRating` (§26.9), one store for now; a per-season store (`Ranked_Elo_Season<n>`) comes with a seasonal reset.
 
 ### 22.4 Tasks
 
@@ -1673,7 +1718,7 @@ All of these are server-side. The client calls them through remotes with IDs onl
 ### 23.4 Pilot level
 
 - XP curve: `xpToNext(level) = 500 + 150 × level^1.35` *(tune)*.
-- Level rewards table in config: lineup slots (level 5 and 15), titles and cosmetics (as built: §26.2a, Level rewards). Ranked waits for Ranked Duels.
+- Level rewards table in config: lineup slots (level 5 and 15), titles and cosmetics (as built: §26.2a, Level rewards). Duels have no level gate (§17.7).
 
 ### 23.5 Upgrade modules
 
@@ -1836,6 +1881,16 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **Vs AI pays pilot XP** (`Progression.vsAIRewards`, `Economy.VS_AI_XP` = 50%) so a pilot with nobody to play can still level up: XP only (no Credits or RP, since the jet flown needn't be yours), no first win of the day, and it doesn't count toward match stats. Levelling up still pays its level rewards. Free Flight and lessons still earn nothing. Telemetry: `VsAIRewards`.
 - **Scale**: one sorted map is read 200 at a time up to 2,000 queued players. Past that, shard the queue by BR bucket (§25.2).
 
+### 25.7 As built: modes in the queue, and duels (November 2026)
+
+- **Modes** (`Queue.MODES`): `Duel`, `DuelCasual`, `Dogfight`, `TeamDeathmatch`, `AirSuperiority`, `StrikeEscort`, `BVR`, `GunsOnly`, `Waves`. **ANY** (`Queue.ANY_MODES`) is Dogfight, Team Deathmatch, Air Superiority, Strike Escort or Guns Only; an all-ANY group rotates through those (`MatchmakingService.pickMode`). **Pick-only** (`Queue.PICK_ONLY`): the duels, BVR and Waves are only for players who pick them; `Queue.modeAfter` never turns them into ANY, and a most-asked count ignores them.
+- **Seats** (`Queue.sizeFor`): 2 for a duel (`Queue.DUEL_MODES`), `PVE_SIZE` (3) for Waves, `MATCH_SIZE` (6) otherwise. `MatchFormed` telemetry and `matchmaking.stats` count AI seats from it.
+- **Duels**: one pilot per entry: the lobby refuses to queue a party for a duel ("Duels are one on one: leave your party to duel."), and `Queue.form` skips a party anchor. Entries carry `rating` (the player's duel rating) and `airframe` (the jet PLAY was clicked with). Pairing uses the usual BR spread and, for `Duel` only, `Duel.ratingSpread(waited)`: 150 rating points at first, growing to 300 at 30 s and 600 at 45 s (`Duel.RATING_STAGES`); `DuelCasual` ignores rating. A duel anchor alone after `Duel.AI_AFTER` (45 s; 4 s in Studio, `duelFillAfter`) gets a one-pilot match, and the match server's AI fill gives them an AI duelist (§17.7).
+- **The record's jets**: `makeMatch` writes `jets = { [tostring(userId)] = airframe }` into the match record, so a duel launches each player in the jet they clicked PLAY with.
+- **BVR**: `join` refuses a jet `MatchRules.jetAllowed` turns down ("BVR Battle needs a Tier IV or higher jet. Pick one in your lineup.").
+- **UI**: the Hangar's mode picker is RANKED DUEL, CASUAL DUEL, DOGFIGHT, TEAMS, ZONES, STRIKE, BVR, GUNS ONLY, PVE, ANY; the `QueueMode` setting defaults to `Duel` (Will). `UI/MatchmakingPanel` changes with the mode: the duel panel (§17.7), a line for Strike Escort and PvE, and for BVR whether your jet can fly it.
+- Tested in `Queue.spec` (two-seat duels, rating pairing and its loosening, casual duels ignoring rating, the AI duel after 45 s, parties refused, duels and BVR never reached from ANY).
+
 ---
 
 ## 26. Challenges, achievements, seasons, squadrons (LIV)
@@ -1857,10 +1912,10 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **Achievements** (`Achievements.luau`): First Blood, Guns Only, Victor, Ace in a Day, Untouchable, Notched (a radar missile defeated), Zone Hunter, Veteran (50 matches), Test Pilot (the Tempest in a match). Pilots who played before achievements existed get the ones their lifetime stats already show when they join.
 - **ChallengeService** watches scored matches only (not training servers, the stress test or free flight) and saves `data.Challenges` and `data.Achievements`; lifetime `Stats` stay with the match rewards (`Progression.applyRewards`). Each completion sends `ChallengeNotice`, shown by `ToastController`.
 - **Badges**: each achievement's badge id goes in `Config/Badges` (per universe). The live experience has 15 so far (Roblox gives 5 free a day, so the rest are added as they're made): the first nine above plus Hat Trick, Fox One, Fox Three, Double Trouble, Flawless and Team Player. The test experience has none. Awarding retries three times; a badge not yet awarded (or with no id yet) is tried again the next time the player joins.
-- **The one-off achievements** since November 2026: the nine above plus Fox One, Fox Three, Double Trouble (2 kills in 10 s), Hat Trick (3 in a life), Flawless (3 kills, not shot down), Team Player (3 assists), Escape Artist (3 missiles defeated in a life), Top of the Table (first in a free-for-all), Centurion (100 kills), Collector (10 jets), High Flyer (level 25). Then 11 for the hangar and the bank: Full Hangar (every jet), Fully Kitted (every upgrade for one jet), Master Mechanic (every upgrade for every jet), Rainy Day Fund, High Roller and Tycoon (50,000 / 250,000 / 1,000,000 Credits at once), Researcher and Boffin (10,000 / 100,000 RP banked), Sharp Dresser, Fashion Icon and Walk-in Wardrobe (5 / 25 / 50 skins). With the secret Threading the Needle that's **32 one-offs**; the ranked series below add 67 levels, so **99 achievements** in all.
-- **Always something new to earn (Will, November 2026):** every achievement now pays when it's earned, by rarity (`Achievements.REWARDS`): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings; the toast says what it paid. Twelve **ranked series** (`Achievements.SERIES`, 67 levels in all, rarer as they climb; the top level is always Legendary) put the next one in reach: Hunter (jets shot down), Dogfighter (players shot down), Champion (wins), Frequent Flyer (matches), Wingman (assists), Evader (missiles defeated), Zone Commander (captures), Fleet (jets owned), Rising Star (pilot level), Taskmaster (challenges completed), Mechanic (upgrades bought) and Promotion (Tier II Pilot … Prestige Pilot). They're checked with the other lifetime totals at the end of every match and on joining (`Achievements.career`, now shared so Career can show progress); `Stats` gained `Assists`, `MissilesDefeated`, `Captures` and `Challenges`. Series levels have no Roblox badges. Career shows one card per series (the level reached, the next goal and a bar toward it) ahead of the one-off achievements. Tested in `AchievementSeries.spec`; checked in Studio (Will's save earned five levels on joining, 8,000 Credits, then was put back).
+- **The one-off achievements** since November 2026: the nine above plus Fox One, Fox Three, Double Trouble (2 kills in 10 s), Hat Trick (3 in a life), Flawless (3 kills, not shot down), Team Player (3 assists), Escape Artist (3 missiles defeated in a life), Top of the Table (first in a free-for-all), Centurion (100 kills), Collector (10 jets), High Flyer (level 25). Then 11 for the hangar and the bank: Full Hangar (every jet), Fully Kitted (every upgrade for one jet), Master Mechanic (every upgrade for every jet), Rainy Day Fund, High Roller and Tycoon (50,000 / 250,000 / 1,000,000 Credits at once), Researcher and Boffin (10,000 / 100,000 RP banked), Sharp Dresser, Fashion Icon and Walk-in Wardrobe (5 / 25 / 50 skins). With the secret Threading the Needle that's **32 one-offs**; the ranked series below add 72 levels, so **104 achievements** in all.
+- **Always something new to earn (Will, November 2026):** every achievement now pays when it's earned, by rarity (`Achievements.REWARDS`): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings; the toast says what it paid. Twelve **ranked series** (thirteen with Duelist, §26.9) (`Achievements.SERIES`, 72 levels in all, rarer as they climb; the top level is always Legendary) put the next one in reach: Hunter (jets shot down), Dogfighter (players shot down), Champion (wins), Frequent Flyer (matches), Wingman (assists), Evader (missiles defeated), Zone Commander (captures), Fleet (jets owned), Rising Star (pilot level), Taskmaster (challenges completed), Mechanic (upgrades bought) and Promotion (Tier II Pilot … Prestige Pilot). They're checked with the other lifetime totals at the end of every match and on joining (`Achievements.career`, now shared so Career can show progress); `Stats` gained `Assists`, `MissilesDefeated`, `Captures` and `Challenges`. Series levels have no Roblox badges. Career shows one card per series (the level reached, the next goal and a bar toward it) ahead of the one-off achievements. Tested in `AchievementSeries.spec`; checked in Studio (Will's save earned five levels on joining, 8,000 Credits, then was put back).
 - **Rarity**: every achievement is Common, Uncommon, Rare, Epic or Legendary (`Achievements.RARITIES`), shown loot-style in Career (grey, green, blue, purple, gold; `Theme.Rarity`): the card's border and name, faint until earned, and its toast's colour.
-- **Bridge runs** (`BridgeRun.luau`, `BridgeRun.spec`): ChallengeService checks each player's jet ten times a second against both bridges, in each bridge's own frame; crossing its line below the deck's underside (a parabola from 46 m at midspan, about a metre under the real deck), between the anchorages and clear of the towers, pays 100 XP (scored matches only, once a minute) and the secret achievement Threading the Needle (anywhere you fly; the first run shows only the achievement's toast, with the XP in it) (hidden in Career until earned, and counted apart from the total: "N / 98 + 1 secret").
+- **Bridge runs** (`BridgeRun.luau`, `BridgeRun.spec`): ChallengeService checks each player's jet ten times a second against both bridges, in each bridge's own frame; crossing its line below the deck's underside (a parabola from 46 m at midspan, about a metre under the real deck), between the anchorages and clear of the towers, pays 100 XP (scored matches only, once a minute) and the secret achievement Threading the Needle (anywhere you fly; the first run shows only the achievement's toast, with the XP in it) (hidden in Career until earned, and counted apart from the total: "N / 103 + 1 secret").
 - **Login streak** (LIV-03, `Streak.luau`, `Streak.spec`): one claim per UTC day from the DAILY REWARD window the menu shows once a day (its own ScreenGui above the menu; gamepad selects CLAIM). A 7-day week: 250, 350, 450, 600, 750, 1,000, 1,500 Credits (+500 Free RP on day 7), repeating. Day 7 (first time) unlocks the title Regular, day 30 Devoted plus 5,000 Credits; these live in `data.Titles` and show in Career's picker once owned. One missed day is forgiven; a longer break goes back to the first day of that week, never to day 1. Saved as `data.Streak`; paid by `ChallengeService` (`ClaimDailyReward`); telemetry `DailyReward` (value: streak day).
 - **Level rewards** (`Config/LevelRewards`): besides 250 Credits a level, milestones pay Credits or Free RP once (`Progression.claimLevelRewards`, also on joining for levels reached earlier), open the lineup slots, unlock titles (picked in Career, shown after your name on the scoreboard, checked on the server), extra HUD colours (Pink 7, Blue 18, Violet 40; the server refuses a locked one) and three **level skins** (Squadron Black 10, Ace Gold 25, Legend Chrome 50) that work on every jet. A level skin appears in a jet's picker once its paint is installed under `Assets.Skins.<Airframe>.<SkinId>`; AI never fly them.
 - **UI**: the challenges panel on the right of the Hangar (progress, rewards, REROLL, time to reset) and the CAREER tab: stats and the level track (milestones reached, the next one, the title picker) on top, the achievements below.
@@ -1889,6 +1944,13 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **LeaderboardService:** writes a player's scores after each scored match (`ProgressionService.MatchRewarded`) and when they leave, only the ones that changed (and never 0). `GetLeaderboard(boardId)` returns the top 50 (cached 60 s per server, display names looked up in one `UserService` request and remembered) and the asking player's own score. Without DataStore access (Studio without API access) a board shows the players on the server. Admin `leaderboard.remove { userId }` takes a player off every current board (a cheater).
 - **UI** (`UI/LeaderboardPanel`): the Career screen's lower panel switches between ACHIEVEMENTS and LEADERBOARDS: a button per board, the top 50 (rank, pilot, score; gold, silver and bronze for the top three; your row lit) and a line with your own score.
 - Checked in Studio: a score written as the player left and read back as #1 on the board (that entry was bot kills from before bots stopped counting, so it was removed again with `leaderboard.remove`).
+
+### 26.9 As built: duels in the leaderboards, achievements and titles (MCH-09, November 2026)
+
+- **Duel rating board**: a sixth board, `Duel` ("Duel rating", store `LB_DuelRating`, one store with no weekly or seasonal reset yet). `Leaderboards.score` is the saved `data.Duel.Rating`, floored, for pilots with at least one duel played (ranked, casual or against AI); 0 otherwise, so they're not written. `Erasure` removes the player from it with `LB_KillsAll`.
+- **Duelist series** (`Achievements.SERIES`): Win 1, 10, 50, 150 and 500 duels; the stat is `duelWins` from `data.Duel.Won` in `Achievements.career`. Duels against an AI duelist count, Vs AI duels on training servers don't (nothing is saved there). That makes 13 series and 104 achievements.
+- **Titles**: `DuelistSilver` … `DuelistAce` ("Silver Duelist" … "Ace Duelist") in `LevelRewards.TITLES` and `OTHER_TITLES`, unlocked in `data.Titles` by `Duel.apply` (§17.7) and picked in Career like the others.
+- **A drawn duel has no winner**: on reason `Draw`, ProgressionService, ChallengeService and TelemetryService treat nobody as the winner (no win bonus, no Win challenge or achievement progress).
 
 ### 26.4 Squadrons (v1.2)
 
@@ -2487,7 +2549,7 @@ As built: every remote is declared in `Shared/Net/Definitions.luau`, which is th
 | `HitConfirm` | S→C | `targetJetId, component` | n/a | §11 |
 | `HitFx` | S→C, unreliable | `jetId, position` | n/a | §20 |
 | `DamageState` | S→C (pilot) | `{ [component]: fraction }` | n/a | §12 |
-| `JetDestroyed` | S→C | `jetId, killerUserId, cause, position, killerJetId` | n/a | §10 |
+| `JetDestroyed` | S→C | `jetId, killerUserId, cause, position, killerJetId` (cause `Struck`: a bomber that got through, §17.9) | n/a | §10 |
 | `KillFeed` | S→C | `killer, victim, weapon, assists, killerUserId, victimUserId, assistUserIds` | n/a | §9.5 |
 | `SelectWeapon` | C→S | `missileIndex` | 4/s (6) | §13 |
 | `RadarLockRequest` | C→S | `targetJetId` (0 = unlock) | 4/s (6) | §14 |
@@ -2501,7 +2563,7 @@ As built: every remote is declared in `Shared/Net/Definitions.luau`, which is th
 | `MissileDetonated` | S→C | `missileId, position, hitJetId` | n/a | §13 |
 | `CountermeasureDeploy` | C→S | `"Flare"` \| `"Chaff"` | 6/s (6) | §15 |
 | `CountermeasureFx` | S→C | `jetId, kind, position, velocity` | n/a | §15 |
-| `MatchState` | S→C | `{ mode, state, time left, ranking, winner, zones… }` (~2 Hz) | n/a | §17 |
+| `MatchState` | S→C | `{ mode, modeName, state, timeLeft, scoreLimit, scored, ranking, winner, reason, teams, teamScores, zones, tickets, br, arrived, expected, duel, mission }` (~2 Hz). `duel` (duels only): `{ round, phase, seats = { { name, userId, wins, alive } }, toWin, ranked, roundLeft, lastWinner, lastReason, ratings }`, where `ratings` (at the end) is `{ [tostring(userId)] = { change, rating, ranked, promoted } }`. `mission` (Strike Escort): `{ kind = "Strike", strikes, limit, nextWave, bombers }`; (PvE): `{ kind = "Waves", wave, waves, baseHits, maxHits, phase, enemies, breakLeft }`. In both mission modes `zones` carries the two airbases | n/a | §17, §17.7, §17.9 |
 | `MatchRewards` | S→C | `{ XP, Credits, RP, FreeRP, Lines, Levels, … }` | n/a | §23 |
 | `PlayerDataUpdate` | S→C | `changes, isFull` | n/a | §22 |
 | `GetPlayerData` | Function | none → full replica | 0.5/s (3) | §22 |
@@ -2527,7 +2589,7 @@ As built: every remote is declared in `Shared/Net/Definitions.luau`, which is th
 | `ChooseTierUnlock` | Function | the two picked `{ airframeId }`; opens the purchase | 0.5/s (3) | §27.6 |
 | `ChooseStarter` | Function | `camoId`; opens the purchase | 0.5/s (3) | §27.10 |
 | `BuyBundle` | Function | this week's `bundleId` | 1/s (3) | §27.10 |
-| `QueueJoin` | C→S | `mode` ("Any" or a mode id), `airframeId?` | 0.5/s (3) | §25.6 |
+| `QueueJoin` | C→S | `mode` ("Any" or a mode id from `Queue.MODES`), `airframeId?` | 0.5/s (3) | §25.6, §25.7 |
 | `QueueLeave` | C→S | none | 0.5/s (3) | §25.6 |
 | `QueueState` | S→C | `{ state, mode, waited, message }` | n/a | §25.6 |
 | `Travel` | C→S | `"Training"` \| `"Lobby"` | 0.2/s (2) | §25.6 |
@@ -2562,6 +2624,7 @@ Game passes and developer products are prompted on the client with `MarketplaceS
 | Jet model | `PilotName` | string | Shown name (`Callsign.nameOf`: callsign, squadron tag, VIP tag) |
 | Jet model | `Team` | string | `West` / `East` in team modes |
 | Jet model | `IsAI` | boolean | |
+| Jet model | `Bomber` | boolean | An AI mission bomber (Strike Escort, PvE; §18.5), for the HUD and scopes to mark. Not read on the client yet |
 | Jet model | `Afterburner`, `Throttle`, `GLoad` | boolean, number, number | Drive other players' effects. Set by the server from the pilot's `FlightTelemetry` (5 Hz) |
 | Jet model | `Modules` | string | Fitted upgrade modules |
 | Jet model | `Mastery` | number | Mastery stars, for the kill markers (§23.8) |
@@ -2577,7 +2640,7 @@ Game passes and developer products are prompted on the client with `MarketplaceS
 | Player | `PolicyPaidRandom`, `PolicyLinks`, `PolicyPaidTrading`, `PolicyChecked` | boolean | Roblox policy answers (§32.5) |
 | Player | `MapReady` | boolean | Map warmed up; gates PLAY (§19.3) |
 | Player | `SpinsBanked`, `SpinNextAt` | number | Free spins (§26.6) |
-| Player | `LivesLeft`, `RespawnIn` | number | Respawn state in a match (§17.4) |
+| Player | `LivesLeft`, `RespawnIn` | number | Respawn state in a match (§17.4); in a duel `RespawnIn` is the seconds to the next round, −1 mid-round (§17.7) |
 | Ground Roamer model | `OwnerUserId` | number | The driver; their DriveController drives it |
 | Ground Roamer model | `Skin` | string | Its skin |
 | Ground Roamer part | `TextureSet` | string | Body, Canvas, Details, Glass or Decals: which SurfaceAppearance it wears |

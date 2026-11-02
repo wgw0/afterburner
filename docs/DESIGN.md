@@ -230,12 +230,29 @@ Locking on:
 | **Guns Only** | 6 | A free-for-all with no missiles of any kind: guns only, with four times the usual rounds (Will, October 2026). First to 15 kills or 10 minutes. Also on training servers against AI. | Built |
 | **Team Deathmatch** | 3v3 | Team score race to 30 kills or 10 minutes. Airborne spawns over each team's coast, no friendly fire. | Built |
 | **Air Superiority** | 3v3 | Capture three airspace zones. Holding zones drains enemy tickets, so it rewards teamwork and positioning, not just K/D. 12 minutes. | Built |
-| **Strike Escort** | 8v8 | One team escorts AI bombers along a route and the other intercepts. Air-to-air only: the bombers are the objective, not ground targets. | v1.1 |
-| **PvE Missions** | 1–4 co-op | Wave defence against AI flights and scripted missions with bosses (a heavily armed bomber, an AWACS). A good on-ramp and a mobile-friendly option. | v1.1 |
-| **Ranked Duels** | 1v1 | Merge-start dogfight at a set tier, guns only or with IR missiles. Seasonal ladder. | v1.2 |
-| **BVR Battles** | 6v6 | Top tiers only. Big map, long-range missiles, data link. The endgame for high-tier players. | v1.2 |
+| **Duels** (Ranked and Casual) | 1v1 | **The main mode** (Will, November 2026). Best of five rounds. Each round both jets start head-on, level and about 6 km apart, with one life each; the last one flying takes the round. Both down within 2 s of each other (a missile already on its way still counts) is a drawn round, and so is a round still going after 2½ minutes. First to three round wins takes the duel. Ranked moves your duel rating; Casual moves nothing. Fly any jet in your lineup, and change it between rounds. Leaving forfeits the duel. | Built |
+| **BVR Battles** | 3v3 | The team match fought at range. Tier IV and up only, with radar missiles only (no heat-seekers; the gun stays for a merge). The teams start about 20 km apart, facing each other, so radar, locks, notching, chaff and the data link decide it. First team to 15 kills or 12 minutes. | Built |
+| **Strike Escort** | 3v3 | Every 2½ minutes each team sends two AI bombers at the other team's airbase. Escort yours, shoot theirs down. AI fighters split the jobs: half hunt the enemy bombers, half stay with their own. A bomber that reaches its target scores a strike for its team. First to six strikes, else the most strikes (then team kills) at 12 minutes. Air-to-air only: the bombers are the objective, not ground targets. | Built |
+| **PvE Waves** | 1–3 co-op | You and up to two friends hold your airbase against ten waves of AI fighters and bombers, each bigger and sharper than the last. Five bombers through and the base is lost; clear all ten waves to win. A good on-ramp and a mobile-friendly option. Scripted missions with bosses (an AWACS) can come later. | Built |
 
-A match seats 6 pilots (Will, October 2026), so matches fill quickly at low population. AI pilots take any empty seats. Respawns are on a 5 s timer for now (decision log #3).
+A match seats 6 pilots (Will, October 2026), so matches fill quickly at low population. AI pilots take any empty seats. Duels seat 2 and PvE Waves 3 players (the waves are the enemy, so no AI fill). Respawns are on a timer (5 s in most modes, 8 s in BVR, 6 s in Strike Escort and PvE; decision log #3); in a duel the round start is the only respawn.
+
+Duels, BVR and PvE Waves are only for players who pick them: ANY never puts you in one, and a long wait never turns them into another mode. Every mode except Free Flight can also be flown against AI on a training server (Vs AI).
+
+**Duel ratings and ranks.** Everyone starts at 1,000. A ranked duel between two players moves both ratings (Elo): beating a higher-rated pilot gains more than beating a lower one, and a win or a loss always moves you at least a point. Your first 10 duels move it faster, so a new pilot finds their level quickly. Ratings fall into six ranks:
+
+| Rank | Rating | First time reached |
+|---|---|---|
+| Bronze | 0+ | (start) |
+| Silver | 1,100+ | "Silver Duelist" title, 2,500 Credits |
+| Gold | 1,250+ | "Gold Duelist" title, 5,000 Credits |
+| Platinum | 1,400+ | "Platinum Duelist" title, 10,000 Credits |
+| Diamond | 1,600+ | "Diamond Duelist" title, 20,000 Credits |
+| Ace | 1,800+ | "Ace Duelist" title, 40,000 Credits |
+
+Rank rewards go by your best-ever rating, so dropping back and climbing again doesn't pay twice. The hangar shows your rank, rating, next rank and win–loss record when a duel is picked, and the results screen shows the rating change and any new rank.
+
+**Bombers.** The bomber in Strike Escort and PvE is the **B-1B Lancer**, flown only by AI. It flies straight for its target at about 900 m, at a speed fighters can catch, and never fights back: no gun, no missiles. It throws flares and chaff while a missile is coming, so a clean shot takes work. Shooting one down is a kill as usual. One that gets through drops its bombs and leaves the fight: nobody gets a kill for it, and it isn't in the kill feed.
 
 ### 5.2 Matchmaking by battle rating (BR)
 
@@ -244,6 +261,9 @@ Without battle ratings an F-22 would farm F-5s and new players would quit. So:
 - Every aircraft has a **Battle Rating** (for example 1.0 to 13.0).
 - A player brings a **lineup** of up to three jets (four with the Extra Lineup Slot pass; one at a time, swapped on respawn). The lineup's BR is its highest jet. Matchmaking uses the jet you click PLAY with.
 - The matchmaker puts lineups within **±1.0 BR** into the same match. The longer the wait, the looser the rules (Will, November 2026): the spread widens to ±1.7 over the first minute, then to ±3.0 by two and a half minutes, and after two minutes a player who picked a mode takes any mode. A match starts short-handed after 30 s, with AI pilots in the empty seats.
+- **Duels** pair two pilots by BR the same way and, for a ranked duel, by duel rating too: within 150 rating points at first, 300 after 30 s and 600 after 45 s. Nobody to duel within 45 s? An AI pilot takes the other seat, as sharp as your rating suggests (Normal, Hard from 1,100, Ace from 1,400), and the duel is unranked (Will, November 2026). Casual duels don't look at rating. Parties can't queue for a duel.
+- **BVR** needs a Tier IV or higher jet with radar missiles: PLAY refuses any other, and the matchmaking panel says so before you click.
+- The mode picker under PLAY lists RANKED DUEL first (the default), then CASUAL DUEL, DOGFIGHT, TEAMS, ZONES, STRIKE, BVR, GUNS ONLY, PVE and ANY. ANY means Dogfight, Team Deathmatch, Air Superiority, Strike Escort or Guns Only.
 - **Parties** of up to 3 queue as one, at the party's highest BR, fly on the same team and go home together. Three is the most so two parties always fit a 6-pilot match.
 - BR values are **tuned from live data**: win rate, K/D and average survival time per aircraft, reviewed every patch. Live config can change a jet's BR on live servers without an update.
 - Roblox servers are separate instances, so matchmaking uses **reserved servers** plus `MemoryStoreService` queues. See §9.4. *Built, October 2026: lobby servers, a queue for any mode or a chosen one, match servers and training servers; waiting on the live test.*
@@ -271,7 +291,7 @@ Cross-branch research is allowed. Every jet needs Research Points (RP) from the 
 
 ### 6.2 The roster (all 27 jets built)
 
-The plan was about 15 jets at launch, growing to about 30. In the end the whole roster was built in October 2026: all 27 jets have flight data, weapons, a final model, their own cockpit and skins, and all can be researched. BR values are starting points and will be tuned in testing.
+The plan was about 15 jets at launch, growing to about 30. In the end the whole roster was built in October 2026: all 27 jets have flight data, weapons, a final model, their own cockpit and skins, and all can be researched. BR values are starting points and will be tuned in testing. The B-1B Lancer isn't part of the roster: it's the AI bomber of Strike Escort and PvE (§5.1), and nobody flies it.
 
 | Tier | Era | NATO / US | Soviet / Russia | Europe | BR range | Signature unlock |
 |---|---|---|---|---|---|---|
@@ -392,9 +412,10 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 
 ### 7.5 Pilot Level and mastery
 
-- Pilot Level (1–100): XP-driven account level, with 250 Credits for every level. Unlocks: lineup slot 2 (level 5), slot 3 (level 15), titles, HUD colours (Pink, Blue, Violet), Credits and free RP milestones, and the level liveries Squadron Black (10), Ace Gold (25) and Legend Chrome (50), painted for every jet. Ranked Duels (level 20) comes with that mode.
+- Pilot Level (1–100): XP-driven account level, with 250 Credits for every level. Unlocks: lineup slot 2 (level 5), slot 3 (level 15), titles, HUD colours (Pink, Blue, Violet), Credits and free RP milestones, and the level liveries Squadron Black (10), Ace Gold (25) and Legend Chrome (50), painted for every jet. Duels have no level gate: as the main mode they're open from the start.
+- Duel ranks (§5.1): Silver to Ace each give a title ("Gold Duelist") and Credits the first time you reach them. The title shows after your name like any other.
 - Aircraft Mastery (per jet, 1–5 stars): stars at 5, 15, 40, 80 and 150 kills in that jet. Each star pays Credits; from 2 stars the jet carries kill markers under the canopy, and 5 stars gives the "<jet> Ace" title. A mastery camo and a cockpit trinket come later with art (Will, November 2026). Rewards loyalty to favourite jets even after moving up.
-- Achievements: 99 in all, shown by rarity (Common to Legendary) on the Career screen. 32 are one-offs, such as Ace in a Day (5 kills in one life), Guns Only, Notched (defeat a radar missile), Full Hangar and the secret Threading the Needle (fly under a bridge); these get Roblox badges, good for discoverability. The other 67 are levels of 12 ranked series (Hunter, Dogfighter, Champion, Promotion and so on), so the next one is always in reach. Every achievement pays by rarity (Will, November 2026): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings.
+- Achievements: 104 in all, shown by rarity (Common to Legendary) on the Career screen. 32 are one-offs, such as Ace in a Day (5 kills in one life), Guns Only, Notched (defeat a radar missile), Full Hangar and the secret Threading the Needle (fly under a bridge); these get Roblox badges, good for discoverability. The other 72 are levels of 13 ranked series (Hunter, Dogfighter, Champion, Promotion and so on), so the next one is always in reach. The Duelist series counts duels won: 1, 10, 50, 150 and 500. Every achievement pays by rarity (Will, November 2026): Common 1,000 Credits, Uncommon 2,500, Rare 5,000 + 10 Wings, Epic 10,000 + 25 Wings, Legendary 25,000 + 50 Wings.
 
 ### 7.6 Retention systems
 
@@ -404,7 +425,7 @@ BR accounts for fully upgraded performance, so stock jets are briefly underpower
 - Free spin: one per 20 minutes played, up to 3 saved, with a prize by rarity (Credits, a free module, Wings or a jet skin). Spins are earned only, never sold, because a paid random prize is gambling (§8.1).
 - Seasons (about 8 weeks): a new headline jet, a map or mode, a season pass, and a ranked reset. *Season 1, "First Light", starts on Monday 9 November 2026 and runs 8 weeks: a 30-tier pass with a free and a premium track (§8.2).*
 - Squadrons: player groups with a shared tag, weekly squadron goals and a leaderboard. This builds the social retention that keeps Roblox games alive. *Built, November 2026: 10,000 Credits to start one, up to 30 pilots, an owner, officers and members, and the tag before members' names. Members' scored matches earn points (1 per player shot down, 3 per win); at 100 points in a week every member can claim 5,000 Credits.*
-- Leaderboards: kills and wins this week, season XP, all-time kills and squadrons this week. Only other players shot down count, not AI pilots (Will, November 2026).
+- Leaderboards: kills and wins this week, season XP, all-time kills, squadrons this week and duel rating (pilots who've flown at least one duel). Only other players shot down count, not AI pilots (Will, November 2026). Duel ratings don't reset with the season yet.
 - Scheduled events (such as a double XP weekend) start and stop on their own, and announcements reach every server at once.
 
 ## 8. Monetisation strategy
@@ -624,7 +645,7 @@ Exit test: every purchase path is tested in Studio with test purchases, and a re
 - [ ] Public launch. Thumbnails and an icon (a jet mid-turn with vapour trails sells the game). First thumbnail: [`docs/art/marketing/thumbnail.jpg`](art/marketing/thumbnail.jpg), uploaded at launch (release checklist step 5).
 - [ ] Weekly balance patches from BR data.
 - [ ] Season cadence: new jets, maps and modes every about 8 weeks. *Tiers V–VII came early, in October 2026, so seasons start from the full roster.*
-- [ ] Squadrons, Ranked Duels, BVR mode and PvE missions as post-launch content. *Squadrons are built (November 2026), with parties, leaderboards, scheduled events and announcements.*
+- [x] Squadrons, Ranked Duels, BVR mode and PvE missions as post-launch content. *Squadrons are built (November 2026), with parties, leaderboards, scheduled events and announcements. Built early too, in November 2026: Duels (ranked and casual, now the main mode), BVR Battles, Strike Escort and PvE Waves, with the B-1B as the AI bomber (§5.1). All need the live multiplayer test; a seasonal reset for duel ratings is still to do.*
 - [x] Tempest prestige unlock as a headline update once Tier VII is live and balanced. *Built early: the Test Pilot trials (§6.2), November 2026.*
 
 Timeline note: the weeks assume one dedicated developer with AI assistance. Phases 1 and 3 are where time overruns are most likely, and that's fine. They're the game.
@@ -636,7 +657,7 @@ Timeline note: the weeks assume one dedicated developer with AI assistance. Phas
 | Flight model isn't fun, or feels floaty on Roblox | Critical | Phase 1 is dedicated to it, with a live tuning panel and early playtests. Mouse Aim smooths out rough edges. |
 | Network jitter makes dogfights feel unfair | High | Client-owned flight, server lag compensation, and interpolated missiles. Test with simulated latency in Studio. |
 | Exploiters (speed hacks, teleporting) | High | Server sanity checks on every jet, server-authoritative damage and missiles, and rate-limited remotes. |
-| Low player counts split across BR bands | High | 6-pilot matches, AI filler pilots after 30 s, a BR spread and mode choice that loosen the longer a player waits, and fewer modes at launch. |
+| Low player counts split across BR bands | High | 6-pilot matches, AI filler pilots after 30 s, a BR spread and mode choice that loosen the longer a player waits, and fewer modes at launch. Duels need only two players, and an AI duelist steps in after 45 s. |
 | Mobile performance and controls | Medium–High | Low-poly assets, a strict performance budget, and touch controls built in Phase 4 rather than at the end. |
 | Long grind drives players away | Medium | Fast early tiers, contribution-based rewards, and data-driven pacing adjustments. |
 | Trademark complaints over real aircraft names | Medium | Data-driven display names (one-line rename), no manufacturer logos, and fictionalised "concept" jets. |
@@ -650,8 +671,13 @@ Timeline note: the weeks assume one dedicated developer with AI assistance. Phas
 | 2 | Aircraft names | Decided. **Real names wherever allowed**, otherwise semi-fictionalised but recognisable. See §6.4. |
 | 3 | Respawn model | **Deferred.** Decide after playtesting the Phase 4 match loop. Candidates: unlimited respawns on a timer, or one life per jet in the lineup. Every mode uses a 5 s respawn timer meanwhile. |
 | 4 | Camera | Decided. **Cockpit view first**, with third person as a fallback if the cockpit proves too hard for general players. See §2.4. |
-| 5 | Ground targets | Decided. **Not for now.** Air-to-air only until after launch. Strike missions are a possible future update. |
+| 5 | Ground targets | Decided. **Not for now.** Air-to-air only until after launch. Strike Escort keeps to this: the bombers are the targets, and a bomber that reaches the airbase simply scores. |
 | 6 | Match size | Decided. **6 pilots a match** (Will, October 2026), with AI in empty seats. See §5.1. |
 | 7 | Pacing | Decided. **Tier II in 20–30 minutes**, then scaling up to the Tempest at about 50–60 hours (Will, November 2026). See §7.3. |
 | 8 | Tier Unlocks | Decided. **Tiers IV and V only** (Will, November 2026). Tiers II and III come in under two hours of play. See §8.2. |
 | 9 | Reloading | Decided. **Stores refill on a timer** when they run dry (Will, October 2026). Not realistic, on purpose. See §4.1. |
+| 10 | Main mode | Decided. **Duels are the main mode** (Will, November 2026): first in the mode picker and the default for PLAY. See §5.1. |
+| 11 | Duel format | Decided. **Rounds**: best of five, head-on starts, one life a round, with a 2 s grace so trades are drawn rounds (Will, November 2026). See §5.1. |
+| 12 | Duel ladder | Decided. **Ranked and Casual**: Ranked moves an Elo rating with six ranks; Casual moves nothing (Will, November 2026). See §5.1. |
+| 13 | Nobody to duel | Decided. **An AI duelist after 45 s**, sized to the player's rating and unranked (Will, November 2026). See §5.2. |
+| 14 | Strike bomber | Decided. **A real bomber model**, the B-1B Lancer, flown only by AI, rather than a fighter standing in (Will, November 2026). See §5.1. |
