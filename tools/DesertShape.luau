@@ -9,6 +9,9 @@
 --   * Mesas and buttes scattered over the floor: flat tops and banded, terraced cliffs (terrain masking).
 --   * A dry lake bed of white salt in the west.
 --   * A ridge of bare mountains along the north and east edges.
+--   * Clusters of hoodoos (rock spires), a small town on flattened ground, and a road from the west airbase
+--     through the town and across to the east airbase (tools/DesertScenery puts the buildings, cacti, poles
+--     and derricks on top).
 
 local DesertShape = {}
 
@@ -27,6 +30,22 @@ DesertShape.AIRBASES = {
 }
 
 local SEED = DesertShape.SEED
+
+DesertShape.TOWN = Vector3.new(-2350, 0, -700) -- the town's centre (y unused)
+DesertShape.TOWN_RADIUS = 330
+DesertShape.TOWN_HEIGHT = 25
+DesertShape.ROAD_HALF = 7 -- half the road's width
+-- The road: west airbase, the town, past the lake's north shore, across the floor to the east airbase
+DesertShape.ROAD = {
+	Vector3.new(-2900, 0, -2500),
+	Vector3.new(-2500, 0, -1500),
+	Vector3.new(-2350, 0, -700),
+	Vector3.new(-1700, 0, 100),
+	Vector3.new(-200, 0, 550),
+	Vector3.new(1500, 0, 900),
+	Vector3.new(2600, 0, 1500),
+	Vector3.new(3040, 0, 2380),
+}
 
 local function smoothstep(a: number, b: number, x: number): number
 	local t = math.clamp((x - a) / (b - a), 0, 1)
@@ -83,6 +102,40 @@ local function plateauMask(x: number, z: number): number
 	return smoothstep(south + 160, south - 160, z) * smoothstep(west - 160, west + 160, x)
 end
 
+-- Horizontal distance from (x, z) to the road's centre line, and how far along the road that point is
+function DesertShape.roadDistance(x: number, z: number): number
+	local best = math.huge
+	local road = DesertShape.ROAD
+	for i = 1, #road - 1 do
+		local a, b = road[i], road[i + 1]
+		local abx, abz = b.X - a.X, b.Z - a.Z
+		local t = math.clamp(((x - a.X) * abx + (z - a.Z) * abz) / (abx * abx + abz * abz), 0, 1)
+		local px, pz = a.X + abx * t, a.Z + abz * t
+		best = math.min(best, math.sqrt((x - px) ^ 2 + (z - pz) ^ 2))
+	end
+	return best
+end
+
+-- Hoodoo clusters: { x, z, radius of the cluster, count }; each spire { x, z, radius, height }
+local SPIRES = {}
+do
+	local rng = Random.new(SEED + 30)
+	for _, cluster in
+		{ { -600, -1000, 260, 9 }, { 1900, -200, 300, 11 }, { -3900, 1900, 240, 8 }, { 300, 2900, 280, 10 } }
+	do
+		for _ = 1, cluster[4] do
+			local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, cluster[3])
+			table.insert(SPIRES, {
+				cluster[1] + math.cos(a) * d,
+				cluster[2] + math.sin(a) * d,
+				rng:NextNumber(12, 26),
+				rng:NextNumber(45, 125),
+			})
+		end
+	end
+end
+DesertShape.SPIRES = SPIRES
+
 -- Mesas and buttes on the open floor: { x, z, radius, height }
 local MESAS = {}
 do
@@ -100,6 +153,15 @@ do
 		end
 		if ((x + 1500) / 1300) ^ 2 + ((z - 1300) / 850) ^ 2 < 1.5 then
 			clear = false -- the dry lake
+		end
+		if DesertShape.roadDistance(x, z) < r * 1.4 + 160 then
+			clear = false -- keep the road clear
+		end
+		if
+			math.sqrt((x - DesertShape.TOWN.X) ^ 2 + (z - DesertShape.TOWN.Z) ^ 2)
+			< r + DesertShape.TOWN_RADIUS + 300
+		then
+			clear = false -- and the town
 		end
 		for _, m in MESAS do
 			if math.sqrt((x - m[1]) ^ 2 + (z - m[2]) ^ 2) < r + m[3] + 260 then
@@ -198,6 +260,27 @@ function DesertShape.height(x: number, z: number): number
 		h = lerp(h, DesertShape.LAKE_HEIGHT, lake)
 	end
 
+	-- Hoodoos: narrow banded spires with a slightly wider cap
+	for _, spire in SPIRES do
+		local d = math.sqrt((x - spire[1]) ^ 2 + (z - spire[2]) ^ 2)
+		if d < spire[3] * 1.6 then
+			local shape = smoothstep(spire[3] * 1.5, spire[3] * 0.7, d)
+			local top = DesertShape.FLOOR + spire[4] * (0.85 + 0.15 * fbm(x, z, 30, 2, SEED + 31))
+			h = math.max(h, terrace(lerp(h, top, shape), 9, 4))
+		end
+	end
+
+	-- The town sits on flattened ground; the road is levelled into the land around it
+	local town = math.sqrt((x - DesertShape.TOWN.X) ^ 2 + (z - DesertShape.TOWN.Z) ^ 2)
+	if town < DesertShape.TOWN_RADIUS + 160 then
+		h = lerp(h, DesertShape.TOWN_HEIGHT, smoothstep(DesertShape.TOWN_RADIUS + 160, DesertShape.TOWN_RADIUS, town))
+	end
+	local road = DesertShape.roadDistance(x, z)
+	if road < DesertShape.ROAD_HALF + 40 then
+		local level = DesertShape.FLOOR + 2 + 6 * fbm(x, z, 900, 2, SEED + 32) -- a gentle grade, not the dunes
+		h = lerp(h, level, smoothstep(DesertShape.ROAD_HALF + 40, DesertShape.ROAD_HALF + 4, road))
+	end
+
 	-- Airbases are flattened
 	local base = DesertShape.airbaseAt(x, z)
 	if base > 0 then
@@ -211,6 +294,12 @@ function DesertShape.material(x: number, z: number, h: number, slope: number): s
 	local _, base = DesertShape.airbaseAt(x, z)
 	if base then
 		return base
+	end
+	if DesertShape.roadDistance(x, z) < DesertShape.ROAD_HALF then
+		return "Asphalt"
+	end
+	if math.sqrt((x - DesertShape.TOWN.X) ^ 2 + (z - DesertShape.TOWN.Z) ^ 2) < DesertShape.TOWN_RADIUS then
+		return "Ground" -- packed earth under the town
 	end
 	if lakeAt(x, z) > 0.6 then
 		return "Salt"
