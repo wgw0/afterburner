@@ -374,7 +374,8 @@ local function onJetDestroyed(jet: Jet, cause: string, position: Vector3)
 	Net.Server.fireAll("JetDestroyed", jet.id, killerUserId, cause, position, killerJetId)
 
 	-- Quiet removals (respawning or leaving with nobody's damage on you) don't go in the kill feed.
-	local quiet = killer == nil and (cause == "Respawn" or cause == "PilotLeft" or cause == "Despawn")
+	local quiet = killer == nil
+		and (cause == "Respawn" or cause == "PilotLeft" or cause == "Despawn" or cause == "Struck")
 	if not quiet then
 		local weapon = if killer and state and cause == "Shot" then state.attackerWeapon[killer] or "Gun" else cause
 		local assistNames, assistIds = {}, {}

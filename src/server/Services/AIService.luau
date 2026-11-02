@@ -52,6 +52,7 @@ export type Pilot = {
 	role: string?, -- a mission pilot: "Bomber" or "Wave" (outside the match's AI fill)
 	strikeTarget: Vector3?, -- a bomber's target
 	launched: boolean?, -- a mission pilot has been put up (so losing its jet removes it)
+	hunter: boolean?, -- Strike Escort: goes after the nearest enemy bomber at any range (MatchService sets it)
 }
 
 local CALLSIGNS = {
@@ -215,6 +216,25 @@ local function chooseTarget(pilot: Pilot): Jet?
 	local me = pilot.jet :: Jet
 	if pilot.training then
 		return AircraftService:GetJet(pilot.training) -- a training opponent only fights its trainee
+	end
+	-- A hunter commits to the nearest enemy bomber, however far
+	if pilot.hunter then
+		local nearest, nearestRange = nil, math.huge
+		for id, other in AircraftService:GetJets() do
+			if
+				id ~= me.id
+				and (other.identity :: any).IsBomber == true
+				and not Teams.areFriends(pilot.identity, other.identity)
+			then
+				local range = (other.root.Position - me.root.Position).Magnitude
+				if range < nearestRange then
+					nearest, nearestRange = other, range
+				end
+			end
+		end
+		if nearest then
+			return nearest
+		end
 	end
 	local best, bestCost = nil, math.huge
 	for id, other in AircraftService:GetJets() do

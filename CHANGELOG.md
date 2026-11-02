@@ -13,6 +13,12 @@ the release date when the release is tagged.
 The soft-launch build: the first version published to the live experience.
 
 ### Added
+- Duels, the main mode: 1v1, best of five rounds, head-on starts. Ranked duels with a rating and six ranks
+  (Bronze to Ace, each with a title the first time), or Casual duels for practice; an AI opponent if nobody's
+  about. A duel rating leaderboard and a Duelist achievement series.
+- BVR Battles: 3v3 at long range in Tier IV+ jets, radar missiles only.
+- Strike Escort: escort your team's B-1B bombers to the enemy airbase and shoot theirs down.
+- PvE waves: up to three friends hold their airbase against ten waves of fighters and bombers.
 - The whole roster: 27 jets across eight tiers, from the F-5E to the Tempest-class concept, each with a final
   model, moving control surfaces, its own cockpit and skins, plus the level-reward liveries (Squadron Black,
   Ace Gold, Legend Chrome).

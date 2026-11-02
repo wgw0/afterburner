@@ -130,6 +130,9 @@ end
 -- Who gets credit for a destroyed jet. history maps attacker -> { damage, time }.
 -- cause: "Shot" | "Crash" | "Collision" | "OutOfBounds" | "PilotLeft"
 function DamageModel.resolveCredit(history: { [any]: DamageRecord }, now: number, cause: string): Credit
+	if cause == "Struck" then
+		return { killer = nil, assists = {}, forcedCrash = false } -- a bomber that got through: nobody's kill
+	end
 	local total = 0
 	local latest: any? = nil
 	local latestTime = -math.huge
