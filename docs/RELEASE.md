@@ -8,6 +8,25 @@ Players can see the version and build at the bottom of **Settings** ("Afterburne
 "build" is Roblox's place version for the server they're on. The admin command `server.info` gives the
 same for a server, with its save version, role and uptime.
 
+## Every place, every time
+
+Each map is its own place in the experience (`Config/Places`, `Config/Maps`): the lobby place (which is
+also the Strait) and **Desert Range**. Every place runs the code it was last published with, and only the
+place open in Studio gets new code from Rojo. So whenever the code changes, **every place** has to be
+published again, or a match on that map runs old code next to a lobby on the new code:
+
+| Experience | Places to publish |
+|---|---|
+| *Afterburner (TEST)* | Afterburner (TEST) (72582604278324), Desert Range (105532168384050) |
+| *Afterburner* (live) | Afterburner (95037764806358); Desert Range once it's added there |
+
+For each place: open it in Studio, **Connect** Rojo (wait for it to sync), **File → Publish to Roblox**, then
+**File → Download a Copy** over its file in the repo (`Afterburner.rbxl`, `DesertRange.rbxl`) and commit it.
+
+The jets, skins, sounds and other assets live in the place files, not the code. A new or changed asset has to
+be put into every place too (copy it across in Studio), or that map won't have it: `validate-models.luau`
+on each downloaded place file catches a missing jet model.
+
 ## Before release day
 
 1. **Everything for the release is merged and ticked** in [PROGRESS.md](PROGRESS.md), each tested.
@@ -23,14 +42,15 @@ same for a server, with its save version, role and uptime.
 
 ## Release day
 
-1. **Playtest the release build in the test experience.** Publish from Studio to *Afterburner (TEST)*,
-   join from the Roblox app (not Studio), and play: the hangar, a match, training, a purchase, the menus.
-   Check Settings shows the new version, "· Test" and the new build.
-2. **Note the current production build** before publishing: in the Creator Dashboard, the production
-   experience → the start place → Version History; write down the newest version number. That is the build
-   to roll back to.
-3. **Publish to production** from Studio (File → Publish to Roblox As… → the production experience). If the
-   experience has more than one place (a separate Battle place in `Config/Places`), publish every place.
+1. **Playtest the release build in the test experience.** Publish **every place** of *Afterburner (TEST)*
+   ([Every place](#every-place-every-time)), join from the Roblox app (not Studio), and play: the hangar,
+   matches on each map, training, a purchase, the menus. Check Settings shows the new version, "· Test" and
+   the new build.
+2. **Note the current production builds** before publishing: in the Creator Dashboard, the production
+   experience → each place → Version History; write down each place's newest version number. Those are the
+   builds to roll back to.
+3. **Publish to production** from Studio (File → Publish to Roblox As… → the production experience), **every
+   place** in the table above, each over its own production place (never over the start place by mistake).
    Production is worked out from the experience (`Config/Environment`): there is no switch to flip.
 4. **Restart the servers** so nobody stays on the old version: the experience's ⋯ menu in the Creator
    Dashboard → **Restart servers** (Roblox has also called it "Restart Servers for Updates" and "Migrate to
