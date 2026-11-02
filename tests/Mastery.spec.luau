@@ -6,6 +6,8 @@ return function(ctx)
 	local Mastery = require(ctx.Shared.Mastery)
 	local LevelRewards = require(ctx.Shared.Config.LevelRewards)
 	local PlayerData = require(ctx.Shared.PlayerData)
+	local Progression = require(ctx.Shared.Progression)
+	local Skins = require(ctx.Shared.Skins)
 
 	local function kill(airframe: string, victim: string): any
 		return { Kind = "Kill", Airframe = airframe, Victim = victim, VictimAI = true }
@@ -73,6 +75,49 @@ return function(ctx)
 			local data = PlayerData.template()
 			local gains = Mastery.record(data, { kill("NotAJet", "a") })
 			expect(#gains).toBe(0)
+		end)
+	end)
+
+	describe("rewards", function()
+		it("unlock the charm at 3 stars and the Ace Mastery livery at 4", function()
+			expect(Mastery.unlockText(Mastery.TRINKET_STARS)).toBe("Gold wings charm in the cockpit")
+			expect(Mastery.unlockText(Mastery.CAMO_STARS)).toBe("Ace Mastery livery")
+			expect(Mastery.unlockText(1)).toBe(nil)
+		end)
+
+		it("the livery is owned from 4 stars on that jet, and never sold", function()
+			-- Stand in for the installed paint if this place doesn't have it
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+			local assets = ReplicatedStorage:FindFirstChild("Assets") or Instance.new("Folder")
+			assets.Name = "Assets"
+			assets.Parent = ReplicatedStorage
+			local skins = assets:FindFirstChild("Skins") or Instance.new("Folder")
+			skins.Name = "Skins"
+			skins.Parent = assets
+			local jet = skins:FindFirstChild("F5E") or Instance.new("Folder")
+			jet.Name = "F5E"
+			jet.Parent = skins
+			local made = nil
+			if not jet:FindFirstChild(Mastery.CAMO_ID) then
+				made = Instance.new("Folder")
+				made.Name = Mastery.CAMO_ID
+				made.Parent = jet
+			end
+
+			local skin = Skins.get("F5E", Mastery.CAMO_ID)
+			expect(skin ~= nil).toBe(true)
+			expect(Skins.wingsPrice(skin :: any)).toBe(nil)
+			local data = PlayerData.template()
+			data.Aircraft.F5E.Mastery = Mastery.STARS[Mastery.CAMO_STARS] - 1
+			expect(Progression.ownsSkin(data, "F5E", Mastery.CAMO_ID)).toBe(false)
+			local ok, reason = Progression.canBuySkin(data, "F5E", Mastery.CAMO_ID)
+			expect(ok).toBe(false)
+			expect(reason).toBe("Unlocks at 4★ mastery in this jet")
+			data.Aircraft.F5E.Mastery += 1
+			expect(Progression.ownsSkin(data, "F5E", Mastery.CAMO_ID)).toBe(true)
+			if made then
+				made:Destroy()
+			end
 		end)
 	end)
 

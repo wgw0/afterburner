@@ -9,6 +9,7 @@ local CosmeticsCatalogue = require(script.Parent.Config.Cosmetics)
 local Economy = require(script.Parent.Config.Economy)
 local LevelRewards = require(script.Parent.Config.LevelRewards)
 local Leaderboards = require(script.Parent.Leaderboards)
+local Mastery = require(script.Parent.Mastery)
 local Perks = require(script.Parent.Perks)
 local Season = require(script.Parent.Season)
 local PlayerData = require(script.Parent.PlayerData)
@@ -615,6 +616,9 @@ function Progression.ownsSkin(data: { [string]: any }, airframeId: string, skinI
 	if skin.Level then
 		return data.PilotLevel >= skin.Level or (data.Flags and data.Flags.AllUnlocked == true)
 	end
+	if skin.Mastery then
+		return Mastery.stars(entry.Mastery or 0) >= skin.Mastery or (data.Flags and data.Flags.AllUnlocked == true)
+	end
 	return skinId == Skins.default(airframeId) or (entry.Skins ~= nil and entry.Skins[skinId] == true)
 end
 
@@ -653,6 +657,9 @@ function Progression.canBuySkin(
 	end
 	if skin.Level then
 		return false, `Unlocks at pilot level {skin.Level}`
+	end
+	if skin.Mastery then
+		return false, `Unlocks at {skin.Mastery}★ mastery in this jet`
 	end
 	if currency == "Wings" then
 		local price = Skins.wingsPrice(skin)

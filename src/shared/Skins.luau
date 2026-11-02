@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LevelRewards = require(script.Parent.Config.LevelRewards)
+local Mastery = require(script.Parent.Mastery)
 local SkinConfig = require(script.Parent.Config.Skins)
 
 local Skins = {}
@@ -19,7 +20,7 @@ local function folderFor(airframeId: string, skinId: string): Instance?
 	return airframe and airframe:FindFirstChild(skinId)
 end
 
--- A jet's skins: its own, then the level skins whose paint for it is installed.
+-- A jet's skins: its own, then the level skins whose paint for it is installed, then its Ace Mastery livery.
 function Skins.list(airframeId: string): { SkinConfig.Skin }
 	local own = SkinConfig[airframeId]
 	if not own then
@@ -30,6 +31,9 @@ function Skins.list(airframeId: string): { SkinConfig.Skin }
 		if folderFor(airframeId, skin.Id) then
 			table.insert(list, { Id = skin.Id, DisplayName = skin.DisplayName, Level = skin.Level })
 		end
+	end
+	if folderFor(airframeId, Mastery.CAMO_ID) then
+		table.insert(list, { Id = Mastery.CAMO_ID, DisplayName = "Ace Mastery", Mastery = Mastery.CAMO_STARS })
 	end
 	return list
 end
@@ -82,9 +86,9 @@ end
 -- Wings for a skin that's sold for Credits, unless it sets its own price (DESIGN §8.2: 75-600 R$ worth; SHP-04)
 Skins.WINGS_PRICE = 150
 
--- A skin's price in Wings, or nil if it isn't sold (it comes with the jet, or with a pilot level).
+-- A skin's price in Wings, or nil if it isn't sold (it comes with the jet, a pilot level or mastery).
 function Skins.wingsPrice(skin: SkinConfig.Skin): number?
-	if skin.Default or skin.Level then
+	if skin.Default or skin.Level or skin.Mastery then
 		return nil
 	end
 	return skin.Wings or (if skin.Credits then Skins.WINGS_PRICE else nil)

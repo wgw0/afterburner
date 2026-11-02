@@ -1,8 +1,9 @@
 --!strict
 -- Aircraft mastery (DESIGN §7.5, DEVELOPMENT.md §23.8, PRG-07). Each jet earns up to 5 stars from kills made
 -- in it during scored matches (data.Aircraft[id].Mastery holds the count). Each star pays Credits; from 2 stars
--- the jet carries kill markers under the canopy (KillMarkers), and 5 stars gives the "<jet> Ace" title.
--- A mastery camo and a cockpit trinket come later with art (Will, November 2026). Pure.
+-- the jet carries kill markers under the canopy (KillMarkers), 3 stars hangs a gold wings charm in the cockpit
+-- (CockpitController), 4 stars unlocks that jet's Ace Mastery livery (Skins.list) and 5 stars gives the
+-- "<jet> Ace" title (Will, November 2026). Pure.
 
 local AircraftData = require(script.Parent.AircraftData)
 local Economy = require(script.Parent.Config.Economy)
@@ -12,6 +13,9 @@ local Mastery = {}
 Mastery.STARS = table.freeze({ 5, 15, 40, 80, 150 }) -- kills for each star
 Mastery.CREDITS = table.freeze({ 2000, 4000, 8000, 12000, 20000 }) -- paid on reaching each star
 Mastery.MARKERS_FROM = 2 -- stars before the jet shows kill markers
+Mastery.TRINKET_STARS = 3 -- stars for the gold wings charm in the cockpit
+Mastery.CAMO_STARS = 4 -- stars for the jet's Ace Mastery livery
+Mastery.CAMO_ID = "Mastery" -- its skin id (Assets.Skins.<Airframe>.Mastery)
 Mastery.TITLE_PREFIX = "Mastery:" -- title ids are "Mastery:<airframe id>"
 
 -- What the 5-star title calls each jet; others fall back to "<DisplayName> Ace".
@@ -65,6 +69,24 @@ function Mastery.progress(kills: number): (number?, number?)
 	end
 	local from = Mastery.STARS[stars] or 0
 	return kills - from, nextAt - from
+end
+
+-- A jet's stars in a save (0 if the jet isn't in it)
+function Mastery.starsFor(data: { [string]: any }, airframeId: string): number
+	local entry = data.Aircraft and data.Aircraft[airframeId]
+	return Mastery.stars(entry and entry.Mastery or 0)
+end
+
+-- What reaching a star unlocks besides Credits and the title ("Gold wings charm"), or nil
+function Mastery.unlockText(stars: number): string?
+	if stars == Mastery.TRINKET_STARS then
+		return "Gold wings charm in the cockpit"
+	elseif stars == Mastery.CAMO_STARS then
+		return "Ace Mastery livery"
+	elseif stars == Mastery.MARKERS_FROM then
+		return "Kill markers"
+	end
+	return nil
 end
 
 -- "★★★☆☆"
