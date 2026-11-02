@@ -5,7 +5,9 @@ camo from a chosen angle, on a transparent background, cropped to the jet.
   blender -b tools/blender/out/F16A_base.blend --python tools/blender/pass_icons.py -- \
       --textures <dir with F16A_<Camo>_<Set>_<Map>.png> --out <dir>
 
-Writes PassJet_<Shot>.png, 1024 x 1024 at most, one per SHOTS entry.
+Writes PassJet_<Shot>.png, 1024 x 1024 at most, one per SHOTS entry. The look is dramatic on purpose (Will:
+cool over realistic): a glossy clear coat that catches the sky, a strong rim light in the icon's own colour,
+and lit afterburners.
 """
 
 import argparse
@@ -23,14 +25,16 @@ import f5e_paint as paint  # noqa: E402
 
 SETS = ("Body", "Wings", "Details")
 SIZE = 1024
-# name: (camo, camera position, look-at point, roll in degrees about the view)
+# name: (camo, camera position, look-at point, roll in degrees about the view, rim light colour)
+GOLD, ICE, MINT = (1.0, 0.72, 0.25), (0.35, 0.65, 1.0), (0.35, 1.0, 0.6)
 SHOTS = {
-    "VIP": ("VIPGold", (17.0, 12.0, -4.5), (0, 0.8, 0.4), -24),  # from below the nose, banking hard
-    "LineupA": ("VIPGold", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -12),
-    "LineupB": ("ArcticSplinter", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -12),
-    "LineupC": ("TigerStripe", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -12),
-    "Callsign": ("TigerStripe", (21.0, 9.0, 3.5), (0, 1.0, 0.2), -8),  # side-on, room above for the name
+    "VIP": ("VIPGold", (15.0, 13.0, -5.5), (0, 0.8, 0.4), -32, GOLD),  # from below the nose, banking hard
+    "LineupA": ("VIPGold", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -14, ICE),
+    "LineupB": ("ArcticSplinter", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -14, ICE),
+    "LineupC": ("TigerStripe", (18.0, 15.0, 6.0), (0, 0.0, 0.2), -14, ICE),
+    "Callsign": ("TigerStripe", (20.0, 9.5, 2.5), (0, 1.0, 0.2), -10, MINT),  # side-on, room above for the name
 }
+AFTERBURNER_GLOW = (1.0, 0.55, 0.15)
 
 
 def setup(scene):
@@ -41,18 +45,55 @@ def setup(scene):
     world = scene.world or bpy.data.worlds.new("World")
     scene.world = world
     world.use_nodes = True
-    bg = world.node_tree.nodes.get("Background")
-    bg.inputs["Color"].default_value = (0.55, 0.62, 0.8, 1)
-    bg.inputs["Strength"].default_value = 0.8
+    # A real sky to reflect in the clear coat (the background itself stays transparent)
+    nodes, links = world.node_tree.nodes, world.node_tree.links
+    bg = nodes.get("Background")
+    try:
+        sky = nodes.new("ShaderNodeTexSky")
+        sky.sky_type = "NISHITA"
+        sky.sun_elevation = math.radians(25)
+        links.new(sky.outputs["Color"], bg.inputs["Color"])
+        bg.inputs["Strength"].default_value = 0.35
+    except Exception:
+        bg.inputs["Color"].default_value = (0.55, 0.62, 0.8, 1)
+        bg.inputs["Strength"].default_value = 0.8
+    try:
+        scene.view_settings.look = "AgX - High Contrast"  # punchier than the default
+    except Exception:
+        pass
     key = bpy.data.objects.new("Key", bpy.data.lights.new("Key", "SUN"))
-    key.data.energy = 5.0
+    key.data.energy = 4.5
+    key.data.color = (1.0, 0.95, 0.88)
+    key.data.angle = math.radians(2)
     key.rotation_euler = (math.radians(40), math.radians(15), math.radians(130))
     scene.collection.objects.link(key)
+    fill = bpy.data.objects.new("Fill", bpy.data.lights.new("Fill", "SUN"))
+    fill.data.energy = 0.8
+    fill.data.color = (0.6, 0.7, 1.0)
+    fill.rotation_euler = (math.radians(60), 0, math.radians(-60))
+    scene.collection.objects.link(fill)
     rim = bpy.data.objects.new("Rim", bpy.data.lights.new("Rim", "SUN"))
-    rim.data.energy = 2.5
-    rim.data.color = (1.0, 0.85, 0.6)
-    rim.rotation_euler = (math.radians(110), 0, math.radians(-40))  # from behind and below: a warm edge
+    rim.data.energy = 9.0
+    rim.data.angle = math.radians(1)
+    rim.rotation_euler = (math.radians(118), 0, math.radians(-25))  # from behind: a hard coloured edge
     scene.collection.objects.link(rim)
+    scene["rim"] = rim.name
+    # Glossy clear coat on the paint, and lit afterburners
+    for mat in bpy.data.materials:
+        bsdf = mat.node_tree and mat.node_tree.nodes.get("Principled BSDF")
+        if bsdf and "Coat Weight" in bsdf.inputs:
+            bsdf.inputs["Coat Weight"].default_value = 0.55
+            bsdf.inputs["Coat Roughness"].default_value = 0.06
+    glow = bpy.data.materials.new("PassAfterburner")
+    glow.use_nodes = True
+    gb = glow.node_tree.nodes.get("Principled BSDF")
+    gb.inputs["Base Color"].default_value = (*AFTERBURNER_GLOW, 1)
+    gb.inputs["Emission Color"].default_value = (*AFTERBURNER_GLOW, 1)
+    gb.inputs["Emission Strength"].default_value = 60
+    for o in bpy.data.objects:
+        if o.type == "MESH" and o.get("afterburner_kind") == "Afterburner":
+            o.data.materials.clear()
+            o.data.materials.append(glow)
     for o in bpy.data.objects:
         if o.type == "MESH" and o.get("afterburner_kind") in ("Gear", "GearWheel", "GearDoor"):
             o.hide_render = True  # gear up, as in flight
@@ -101,10 +142,15 @@ def main():
     scene = bpy.context.scene
     cam = setup(scene)
     for name in args.shots.split(","):
-        camo, eye, target, roll = SHOTS[name]
+        camo, eye, target, roll, rim_colour = SHOTS[name]
+        bpy.data.objects[scene["rim"]].data.color = rim_colour
         for set_name in SETS:
             paths = {m: os.path.join(args.textures, f"F16A_{camo}_{set_name}_{m}.png") for m in ("Color", "Roughness", "Metalness", "Normal")}
             paint.apply_preview_material(set_name, paths)
+            bsdf = bpy.data.materials[f"F16A_{set_name}"].node_tree.nodes.get("Principled BSDF")
+            if bsdf and "Coat Weight" in bsdf.inputs:
+                bsdf.inputs["Coat Weight"].default_value = 0.55
+                bsdf.inputs["Coat Roughness"].default_value = 0.06
         aim(cam, eye, target, roll)
         path = os.path.join(args.out, f"PassJet_{name}.png")
         scene.render.filepath = path
