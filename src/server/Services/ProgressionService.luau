@@ -107,7 +107,9 @@ local function announceMastery(player: Player, data: { [string]: any }, gains: {
 					then ""
 					else "s"}`,
 				credits = gain.Credits,
-				detail = gain.Title and `Title: {LevelRewards.titleName(gain.Title)}` or nil,
+				detail = if gain.Title
+					then `Title: {LevelRewards.titleName(gain.Title)}`
+					else Mastery.unlockText(gain.Stars),
 			})
 		end
 	end

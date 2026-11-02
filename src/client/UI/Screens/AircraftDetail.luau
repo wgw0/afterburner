@@ -203,7 +203,12 @@ local function SkinRow(props: any)
 			Color = if message then Theme.Warn elseif inUse then Theme.Good else Theme.Dim,
 		}),
 		Action = e(C.Button, {
-			Text = if inUse then "IN USE" elseif owned then "USE" elseif skin.Level then `LV {skin.Level}` else "BUY",
+			Text = if inUse
+				then "IN USE"
+				elseif owned then "USE"
+				elseif skin.Level then `LV {skin.Level}`
+				elseif skin.Mastery then `{skin.Mastery}★`
+				else "BUY",
 			Style = if owned then "Ghost" else "Primary",
 			Size = UDim2.fromOffset(88, 36),
 			Position = UDim2.new(1, -88, 0, 4),
@@ -425,11 +430,12 @@ local function AircraftDetail(props: any)
 			TextSize = 13,
 		}),
 		Rewards = e(C.Label, {
-			Text = `Credits at every star  ·  kill markers from {Mastery.MARKERS_FROM}★  ·  "{LevelRewards.titleName(
+			Text = `Credits every star  ·  kill markers {Mastery.MARKERS_FROM}★  ·  gold wings charm {Mastery.TRINKET_STARS}★  ·  Ace Mastery livery {Mastery.CAMO_STARS}★  ·  "{LevelRewards.titleName(
 				Mastery.titleId(id)
-			)}" title at {#Mastery.STARS}★`,
-			Size = UDim2.new(1, 0, 0, 16),
+			)}" title {#Mastery.STARS}★`,
+			Size = UDim2.new(1, 0, 0, 30),
 			Position = UDim2.fromOffset(0, 58),
+			Wrap = true,
 			TextSize = 12,
 			Color = Theme.Dim,
 		}),
@@ -477,7 +483,7 @@ local function AircraftDetail(props: any)
 		}, statChildren),
 		Mastery = if entry and entry.Owned
 			then e(C.Panel, {
-				Size = UDim2.new(0.36, 0, 0, 100),
+				Size = UDim2.new(0.36, 0, 0, 114),
 				Position = UDim2.new(0, 20, 0.4, 395),
 				Padding = 12,
 			}, masteryChildren)

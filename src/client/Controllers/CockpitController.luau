@@ -8,12 +8,15 @@
 --     folder says where each live instrument sits on the panel; the gauges are drawn there.
 --   * Any other jet gets the greybox kit: a panel on top of the forward fuselage, sills, a coaming and
 --     a gunsight glass, built from parts.
+-- At Mastery.TRINKET_STARS in that jet (the jet's "Mastery" attribute), a gold wings charm hangs on a chain
+-- from the canopy bow and swings with the jet's manoeuvres (PRG-07).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Mastery = require(Shared.Mastery)
 local Spring = require(Shared.Util.Spring)
 local Units = require(Shared.Units)
 
@@ -54,6 +57,11 @@ local CockpitController = {
 }
 
 local cockpit: Model?
+local charm: Model? -- the mastery charm: anchored, posed every frame
+local charmParts: { { part: BasePart, offset: CFrame } } = {}
+local swing = { x = 0, z = 0, vx = 0, vz = 0 } -- the charm's angles about the jet's X and Z axes, and their rates
+local lastVelocity: Vector3?
+local smoothedAccel = Vector3.zero
 local fromModel = false -- the cockpit is a copy of an installed cockpit model
 local gauges: { Gauge } = {}
 local sweeps: { Frame } = {} -- radar scope sweep lines
@@ -398,7 +406,123 @@ local function buildFromTemplate(template: Model, root: BasePart): Model
 	return model
 end
 
+-- The mastery charm ------------------------------------------------------------------------------------
+
+local GOLD = Color3.fromRGB(214, 162, 48)
+local CHAIN_COLOUR = Color3.fromRGB(196, 160, 72)
+local CHARM_HANG = CFrame.new(-0.16, -0.005, -0.46) -- the hook, from the pilot's eye: inside the windscreen frame, left of the HUD
+local CHAIN = 0.06 -- studs of chain
+local CHARM_SCALE = 0.75 -- the badge and wings, from their sizes below
+local SWING_RATE = 9 -- radians per second: slower than a real pendulum this short, so the swing reads
+local SWING_DAMPING = 2.2 -- per second
+local SWING_LIMIT = math.rad(80)
+
+-- The charm's parts, each with its pose under the hook (hanging straight down, facing the pilot)
+local function charmPieces(): { { name: string, size: Vector3, offset: CFrame, shape: Enum.PartType?, colour: Color3 } }
+	local pieces = {
+		{
+			name = "Chain",
+			size = Vector3.new(0.004, CHAIN, 0.004),
+			offset = CFrame.new(0, -CHAIN / 2, 0),
+			colour = CHAIN_COLOUR,
+		},
+		{
+			name = "Badge",
+			size = Vector3.new(0.008, 0.036, 0.036),
+			offset = CFrame.new(0, -CHAIN - 0.016, 0) * CFrame.Angles(0, math.rad(90), 0),
+			shape = Enum.PartType.Cylinder,
+			colour = GOLD,
+		},
+	}
+	-- Each wing: three swept feathers, longest at the top
+	for _, side in { 1, -1 } do
+		for i, length in { 0.07, 0.056, 0.04 } do
+			table.insert(pieces, {
+				name = `Feather{side}{i}`,
+				size = Vector3.new(length, 0.011, 0.005),
+				offset = CFrame.new(side * (0.014 + length / 2), -CHAIN - 0.008 - (i - 1) * 0.011, 0)
+					* CFrame.Angles(0, 0, side * math.rad(14 - (i - 1) * 7)),
+				colour = GOLD,
+			})
+		end
+	end
+	return pieces
+end
+
+local function destroyCharm()
+	if charm then
+		charm:Destroy()
+		charm = nil
+	end
+	table.clear(charmParts)
+end
+
+local function buildCharm(jet: Model)
+	destroyCharm()
+	local stars = jet:GetAttribute("Mastery")
+	if type(stars) ~= "number" or stars < Mastery.TRINKET_STARS then
+		return
+	end
+	local model = Instance.new("Model")
+	model.Name = "MasteryCharm"
+	for _, piece in charmPieces() do
+		local p = Instance.new("Part")
+		p.Name = piece.name
+		p.Shape = piece.shape or Enum.PartType.Block
+		p.Size = if piece.name == "Chain" then piece.size else piece.size * CHARM_SCALE
+		p.Color = piece.colour
+		p.Material = Enum.Material.Metal
+		p.Reflectance = 0.4
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanTouch = false
+		p.CanQuery = false
+		p.CastShadow = false
+		p.Parent = model
+		local offset = piece.offset
+		if piece.name ~= "Chain" then -- shrink towards the bottom of the chain
+			local below = CFrame.new(0, -CHAIN, 0)
+			local fromChain = below:Inverse() * offset
+			offset = below * (fromChain - fromChain.Position + fromChain.Position * CHARM_SCALE)
+		end
+		table.insert(charmParts, { part = p, offset = offset })
+	end
+	model.Parent = jet
+	charm = model
+	swing.x, swing.z, swing.vx, swing.vz = 0, 0, 0, 0
+	lastVelocity = nil
+	smoothedAccel = Vector3.zero
+end
+
+-- Swings the charm towards where the jet's felt gravity points (gravity less the jet's acceleration), then poses it.
+local function updateCharm(dt: number, root: BasePart, eye: Attachment, visible: boolean)
+	local velocity = root.AssemblyLinearVelocity
+	if lastVelocity and dt > 0 then
+		local accel = (velocity - lastVelocity) / dt
+		smoothedAccel = smoothedAccel:Lerp(accel, math.min(dt * 12, 1))
+	end
+	lastVelocity = velocity
+	local felt = root.CFrame:VectorToObjectSpace(Vector3.new(0, -workspace.Gravity, 0) - smoothedAccel)
+	if felt.Magnitude > 1e-3 then
+		felt = felt.Unit
+		-- Rest angles: rotating "straight down" about Z by z gives (sin z, -cos z, 0); about X by x, (0, -cos x, -sin x)
+		local restZ = math.clamp(math.atan2(felt.X, -felt.Y), -SWING_LIMIT, SWING_LIMIT)
+		local restX = math.clamp(math.atan2(-felt.Z, -felt.Y), -SWING_LIMIT, SWING_LIMIT)
+		local step = math.min(dt, 1 / 30)
+		swing.vx += (SWING_RATE ^ 2 * (restX - swing.x) - SWING_DAMPING * swing.vx) * step
+		swing.vz += (SWING_RATE ^ 2 * (restZ - swing.z) - SWING_DAMPING * swing.vz) * step
+		swing.x = math.clamp(swing.x + swing.vx * step, -SWING_LIMIT, SWING_LIMIT)
+		swing.z = math.clamp(swing.z + swing.vz * step, -SWING_LIMIT, SWING_LIMIT)
+	end
+	local hook = root.CFrame * eye.CFrame * CHARM_HANG * CFrame.Angles(swing.x, 0, swing.z)
+	for _, item in charmParts do
+		item.part.CFrame = hook * item.offset
+		item.part.LocalTransparencyModifier = if visible then 0 else 1
+	end
+end
+
 local function destroyCockpit()
+	destroyCharm()
 	if cockpit then
 		cockpit:Destroy()
 		cockpit = nil
@@ -423,6 +547,7 @@ local function buildCockpit(jet: Model)
 	local model = if template then buildFromTemplate(template, root) else buildGreybox(jet, root, eye)
 	model.Parent = jet
 	cockpit = model
+	buildCharm(jet)
 end
 
 local function setGauge(gauge: Gauge, value: number, dt: number, text: string)
@@ -450,6 +575,12 @@ local function update(dt: number)
 	local canopy = FlightController.jet and FlightController.jet:FindFirstChild("Canopy", true)
 	if canopy and canopy:IsA("BasePart") then
 		canopy.LocalTransparencyModifier = if visible then 1 else 0
+	end
+	local jet = FlightController.jet
+	local root = jet and jet.PrimaryPart
+	local eye = root and root:FindFirstChild("CockpitEye")
+	if charm and root and eye and eye:IsA("Attachment") then
+		updateCharm(dt, root, eye, visible)
 	end
 	if not visible then
 		return

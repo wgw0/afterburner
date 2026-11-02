@@ -185,7 +185,7 @@ function AircraftService:Spawn(pilot: Player?, airframeId: string, cframe: CFram
 	if not pilot then
 		local choices = {}
 		for _, choice in Skins.list(airframeId) do
-			if not choice.Level then -- level skins are earned: not for AI
+			if not (choice.Level or choice.Mastery) then -- level and mastery skins are earned: not for AI
 				table.insert(choices, choice)
 			end
 		end

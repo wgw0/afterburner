@@ -125,7 +125,7 @@ local function skinChoices(data: { [string]: any }): { { string } }
 		if entry.Owned then
 			for _, skin in Skins.list(airframeId) do
 				local owned = entry.Skins and entry.Skins[skin.Id]
-				if skin.Credits and not skin.Default and not skin.Level and not owned then
+				if skin.Credits and not skin.Default and not skin.Level and not skin.Mastery and not owned then
 					table.insert(choices, { airframeId, skin.Id })
 				end
 			end

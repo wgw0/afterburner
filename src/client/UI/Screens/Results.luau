@@ -206,7 +206,10 @@ local function Results(props: any)
 			rewardChildren[`M{i}`] = e(C.Label, {
 				Text = `{Mastery.starText(gain.Stars)}  {airframe and airframe.DisplayName or gain.Airframe} mastery  +{C.number(
 					gain.Credits
-				)} Cr{if gain.Title then `  ·  title "{LevelRewards.titleName(gain.Title)}"` else ""}`,
+				)} Cr{if gain.Title
+					then `  ·  title "{LevelRewards.titleName(gain.Title)}"`
+					elseif Mastery.unlockText(gain.Stars) then `  ·  {Mastery.unlockText(gain.Stars)}`
+					else ""}`,
 				TextSize = 13,
 				Bold = true,
 				Color = Theme.Rarity.Legendary,

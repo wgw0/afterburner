@@ -3,6 +3,8 @@ Afterburner: the level-reward liveries (Config/LevelRewards.SKINS), the game's o
   Squadron  Squadron Black (level 10): gloss near-black, dark-grey panel lines, orange cheat line and fin band
   AceGold   Ace Gold (level 25): gunmetal with gold leading edges, fin tips and a fuselage pinstripe
   Legend    Legend Chrome (level 50): polished chrome, black anti-glare panel and radome, orange fin tips
+  Mastery   Ace Mastery (4 mastery stars on that jet, PRG-07): matte black with three gold chevrons down each
+            side, the top of the tail in gold and gold wingtips
 No national markings. Each painter (jet_paint.py, f5e_paint.py, mig21_paint.py) paints the base from the
 scheme as usual, honouring three extra keys:
   rough        base roughness; metalness  base metalness; line_colour  panel lines lighten towards this
@@ -174,8 +176,25 @@ SCHEMES.update({
     },
 })
 
+# Ace Mastery (Will, November 2026): earned per jet at 4 mastery stars (Shared/Mastery)
+SCHEMES["Mastery"] = {
+    "base": srgb(16, 16, 18),
+    "upper": srgb(16, 16, 18),
+    "lower": srgb(20, 20, 22),
+    "underside": srgb(20, 20, 22),
+    "radome": srgb(12, 12, 13),
+    "antiglare": srgb(8, 8, 9),
+    "walkway": srgb(30, 30, 32),
+    "insignia": srgb(16, 16, 18),
+    "markings": "none",
+    "rough": 0.62,  # matte, so the gold stands out
+    "line_colour": srgb(44, 44, 48),
+    "livery": "Mastery",
+}
+
 # (colour, roughness, metalness) of each livery's stripes
 ACCENT = {
+    "Mastery": (GOLD, 0.2, 1.0),
     "Squadron": (ORANGE, 0.3, 0.0),
     "AceGold": (GOLD, 0.22, 1.0),
     "Legend": (ORANGE, 0.3, 0.0),
@@ -267,6 +286,8 @@ def trim(scheme, P, N, ao, line, colour, rough, metal, fus, wings, wing_le, tail
         elif kind == "AceGold":
             band = smooth(top - 0.12 * h - 0.01, top - 0.12 * h + 0.01, z)
             band = np.maximum(band, (_front(y, z, f) < 0.10).astype(np.float32))
+        elif kind == "Mastery":
+            band = smooth(top - 0.42 * h - 0.012, top - 0.42 * h + 0.012, z)  # the top 42% of the fin
         else:
             band = smooth(top - 0.09 * h - 0.01, top - 0.09 * h + 0.01, z)
         mask = np.maximum(mask, np.where(f, band, 0))
@@ -276,6 +297,22 @@ def trim(scheme, P, N, ao, line, colour, rough, metal, fus, wings, wing_le, tail
         mask = np.maximum(mask, np.where(wings & (wing_le < 0.10) & (wing_le > -0.5), 1.0, 0))
         for t in tails:
             mask = np.maximum(mask, (_front(y, np.abs(x), t) < 0.10).astype(np.float32))
+
+    if kind == "Mastery":
+        # Gold wingtips: the outer 14% of each wing's span
+        if wings.any():
+            span = np.abs(x)[wings].max()
+            mask = np.maximum(mask, np.where(wings & (np.abs(x) > span * 0.86), 1.0, 0))
+        # Three chevrons down each side, pointing forward, on a line half way up the fuselage
+        zl = _cheat_line(P, fus, y_front, y_back, 0.5)
+        if zl is not None:
+            length = max(y_front - y_back, 1.0)
+            width = 0.04 * length
+            for k in range(3):
+                tip = y_back + (0.6 - k * 0.12) * length  # the forward point of each chevron
+                arm = (tip - y) - 0.8 * np.abs(z - zl)  # zero along the two arms of the V
+                v = _band(arm, width / 2, 0.01)
+                mask = np.maximum(mask, np.where(fus, v, 0))  # over the whole fuselage, not just the sides
 
     if kind in ("Squadron", "AceGold"):
         zl = _cheat_line(P, fus, y_front, y_back, 0.6)

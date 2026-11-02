@@ -29,6 +29,7 @@ background. **Done** items were checked in November 2026; **Will** items need th
 | Maturity and compliance questionnaire answered honestly: stylised aircraft combat, no blood or gore, no real-world violence, cosmetic purchases, no paid random items | Done (Will, 1 November 2026) |
 | Genre and description say what the game is; no promises it doesn't keep | Done (1 November 2026): Shooter › Deathmatch Shooter (changeable every 3 months); description lists the modes, training, parties, squadrons, leaderboards and the season pass |
 | Private servers price set, if wanted (DESIGN §8.2) | **Will** (optional) |
+| Reach under-16s: the page shows Ages 16+ until the experience has **250 highly engaged players**. Only after that can Will pay the optional, refundable 1,000 R$ fee to speed up the review; the fee doesn't replace the 250 (Will, 2 November 2026) | **Will**, after launch |
 
 ## 4. Purchases (DESIGN §8, DEVELOPMENT.md §27)
 

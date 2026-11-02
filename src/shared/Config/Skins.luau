@@ -12,6 +12,7 @@ export type Skin = {
 	Wings: number?, -- price in Wings, if not Skins.WINGS_PRICE (skins with a Credits price can always be bought with Wings)
 	Default: boolean?,
 	Level: number?, -- a level skin (Config/LevelRewards): free at this pilot level, on every jet
+	Mastery: number?, -- the Ace Mastery livery (Shared/Mastery): free at this many mastery stars on that jet
 }
 
 local SKINS: { [string]: { Skin } } = {
