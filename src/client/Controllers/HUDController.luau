@@ -571,17 +571,24 @@ local MARKER_STYLES = {
 	Locked = { size = 38, circle = false, thickness = 3 },
 	Track = { size = 30, circle = false, thickness = 2 }, -- the TWS target: an active radar missile goes here (SNS-07)
 	Friendly = { size = 14, circle = true, thickness = 1.5 }, -- a teammate (team modes)
+	-- AI bombers (Strike Escort, PvE): a diamond, big and orange for the enemy's, small and blue for yours
+	Bomber = { size = 34, circle = false, thickness = 2.5, rotation = 45 },
+	FriendlyBomber = { size = 22, circle = false, thickness = 2, rotation = 45 },
 }
+local BOMBER = Color3.fromRGB(255, 140, 40)
+local BOMBER_RANGE = 3 -- times TARGET_RANGE: bombers are marked from further out, so the strike can be found
 
 local function styleMarker(m: Marker, state: string)
 	local style = MARKER_STYLES[state]
 	local colour = if state == "Locked"
 		then RED
 		elseif state == "Contact" then CONTACT
-		elseif state == "Friendly" then FRIENDLY
+		elseif state == "Friendly" or state == "FriendlyBomber" then FRIENDLY
+		elseif state == "Bomber" then BOMBER
 		else GREEN
 	m.box.Size = UDim2.fromOffset(style.size, style.size)
 	m.corner.CornerRadius = if style.circle then UDim.new(0.5, 0) else UDim.new(0, 0)
+	m.box.Rotation = style.rotation or 0
 	m.stroke.Color = colour
 	m.stroke.Thickness = style.thickness
 	m.label.TextColor3 = colour
@@ -981,8 +988,10 @@ local function update(dt: number)
 		local range = Units.toMetres((otherRoot.Position - myPosition).Magnitude)
 		local jetId = model:GetAttribute("JetId") :: number?
 		local linkedContact = jetId and SensorController.contacts[jetId]
-		-- Data-link contacts (SNS-08) get a marker at any range
-		if range > TARGET_RANGE and not (linkedContact and linkedContact.linked) then
+		-- Data-link contacts (SNS-08) get a marker at any range, bombers from further out
+		local bomber = model:GetAttribute("Bomber") == true
+		local reach = if bomber then TARGET_RANGE * BOMBER_RANGE else TARGET_RANGE
+		if range > reach and not (linkedContact and linkedContact.linked) then
 			continue
 		end
 		seen[model] = true
@@ -1007,11 +1016,25 @@ local function update(dt: number)
 				markerState = "Lockable"
 			end
 		end
+		if bomber then
+			-- By team, not radar: your own bombers are often beyond your radar
+			local mine = Players.LocalPlayer:GetAttribute("Team")
+			local ours = type(mine) == "string" and mine ~= "" and model:GetAttribute("Team") == mine
+			if ours then
+				markerState = "FriendlyBomber"
+			elseif markerState == "Contact" or markerState == "Lockable" or markerState == "Friendly" then
+				markerState = "Bomber"
+			end
+		end
 		styleMarker(m, markerState)
 		local pilot = Players:GetPlayerByUserId((model:GetAttribute("PilotUserId") :: number?) or 0)
 		m.label.Text = string.format(
 			"%s%s%s %.1fkm",
-			if markerState == "Track" then "TWS · " elseif contact and contact.linked then "DL · " else "",
+			if markerState == "Track"
+				then "TWS · "
+				elseif bomber then "BOMBER · "
+				elseif contact and contact.linked then "DL · "
+				else "",
 			if pilot and pilot:GetAttribute("Pass_VIP") == true then '<font color="#FFC93C"><b>VIP</b></font> ' else "", -- the VIP Pilot pass
 			(model:GetAttribute("PilotName") :: string?) or "?",
 			range / 1000
