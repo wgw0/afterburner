@@ -25,10 +25,22 @@ Queue.SPREAD_STAGES = table.freeze({ { 0, 1.0 }, { 60, 1.7 }, { 150, 3.0 } })
 Queue.SPREAD_MIN = Queue.SPREAD_STAGES[1][2]
 Queue.SPREAD_MAX = Queue.SPREAD_STAGES[#Queue.SPREAD_STAGES][2]
 Queue.ANY_MODE_AFTER = 120 -- seconds before a player who picked a mode will take any mode
-Queue.MODES = table.freeze({ "Duel", "DuelCasual", "Dogfight", "TeamDeathmatch", "AirSuperiority", "BVR", "GunsOnly" })
--- What "Any" can be: not duels, and not BVR (Tier IV+ only, MCH-10)
-Queue.ANY_MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
-Queue.PICK_ONLY = table.freeze({ Duel = true, DuelCasual = true, BVR = true }) -- only for those who pick them
+Queue.MODES = table.freeze({
+	"Duel",
+	"DuelCasual",
+	"Dogfight",
+	"TeamDeathmatch",
+	"AirSuperiority",
+	"StrikeEscort",
+	"BVR",
+	"GunsOnly",
+	"Waves",
+})
+-- What "Any" can be: not duels, BVR (Tier IV+ only, MCH-10) or PvE (MCH-08)
+Queue.ANY_MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "StrikeEscort", "GunsOnly" })
+-- Only for those who pick them
+Queue.PICK_ONLY = table.freeze({ Duel = true, DuelCasual = true, BVR = true, Waves = true })
+Queue.PVE_SIZE = 3 -- PvE waves: players together against the AI
 Queue.DUEL_MODES = table.freeze({ Duel = true, DuelCasual = true })
 
 export type Entry = {
@@ -60,7 +72,7 @@ export type Options = {
 
 -- Seats in a match of this mode.
 function Queue.sizeFor(mode: string): number
-	return if Queue.DUEL_MODES[mode] then 2 else Queue.MATCH_SIZE
+	return if Queue.DUEL_MODES[mode] then 2 elseif mode == "Waves" then Queue.PVE_SIZE else Queue.MATCH_SIZE
 end
 
 -- The BR spread allowed for a group whose anchor has waited `waited` seconds.

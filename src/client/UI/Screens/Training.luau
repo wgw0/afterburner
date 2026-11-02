@@ -23,8 +23,8 @@ local Theme = require(UI.Theme)
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 -- A duel across the top (one AI opponent), then two rows of two: four buttons in one row are too narrow
-local VS_DUEL = { { "DuelCasual", "1V1 DUEL" } }
-local VS_MODES = { { "Dogfight", "FREE-FOR-ALL" }, { "TeamDeathmatch", "TEAMS" } }
+local VS_DUEL = { { "DuelCasual", "1V1 DUEL" }, { "Waves", "PVE WAVES" } }
+local VS_MODES = { { "Dogfight", "FFA" }, { "TeamDeathmatch", "TEAMS" }, { "StrikeEscort", "STRIKE" } }
 local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS" }, { "BVR", "BVR" } }
 local DIFFICULTIES = { "Easy", "Normal", "Hard", "Ace" }
 local MAX_AI = 11
@@ -205,7 +205,7 @@ local function Training(props: any)
 	side.Mode = choices(VS_MODES, vsMode, 252, 20, setVsMode)
 	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 21, setVsMode)
 	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 22, setDifficulty)
-	local duel = vsMode == "DuelCasual"
+	local duel = vsMode == "DuelCasual" or vsMode == "Waves" -- one opponent, or the waves decide
 	side.Count = if duel
 		then nil
 		else e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 23 }, {

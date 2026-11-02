@@ -4,7 +4,10 @@
 -- notch), extend for energy, and avoid terrain and the map edge.
 --
 -- MatchService decides how many AI pilots there should be and when they may (re)spawn; this service owns
--- their identities, flies their jets and pulls their triggers.
+-- their identities, flies their jets and pulls their triggers. Mission pilots (a `role`: Strike Escort and
+-- PvE bombers, PvE wave fighters, AI-06) are outside the match's AI fill: MatchService launches them and they
+-- don't respawn. Bombers fly Strike.bomberDecision at their target and never fight; every AI pilot prefers
+-- an enemy bomber as its target.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -18,6 +21,7 @@ local FlightModel = require(Shared.FlightModel)
 local Guidance = require(Shared.Guidance)
 local Instructor = require(Shared.Instructor)
 local Scale = require(Shared.Config.Scale)
+local Strike = require(Shared.Strike)
 local Units = require(Shared.Units)
 local WeaponData = require(Shared.WeaponData)
 
@@ -45,6 +49,9 @@ export type Pilot = {
 	linear: LinearVelocity?,
 	angular: AngularVelocity?,
 	training: Player?, -- a training bout (lesson 6): fights only this player and isn't part of the match
+	role: string?, -- a mission pilot: "Bomber" or "Wave" (outside the match's AI fill)
+	strikeTarget: Vector3?, -- a bomber's target
+	launched: boolean?, -- a mission pilot has been put up (so losing its jet removes it)
 }
 
 local CALLSIGNS = {
@@ -94,16 +101,39 @@ function AIService:GetPilots(): { Pilot }
 	return pilots
 end
 
--- The match's AI pilots: everyone except training-bout opponents (MatchService fills, spawns and scores
--- only these).
+-- The match's AI pilots: everyone except training-bout opponents and mission pilots (MatchService fills,
+-- spawns and scores only these).
 function AIService:GetMatchPilots(): { Pilot }
 	local list = {}
 	for _, pilot in pilots do
-		if not pilot.training then
+		if not pilot.training and not pilot.role then
 			table.insert(list, pilot)
 		end
 	end
 	return list
+end
+
+-- Mission pilots (bombers and PvE wave fighters), optionally of one role.
+function AIService:GetMissionPilots(role: string?): { Pilot }
+	local list = {}
+	for _, pilot in pilots do
+		if pilot.role and (role == nil or pilot.role == role) then
+			table.insert(list, pilot)
+		end
+	end
+	return list
+end
+
+-- A mission pilot: a bomber flying at `target`, or a wave fighter. Not flying until SpawnPilot.
+function AIService:CreateMissionPilot(role: string, difficulty: string, airframeId: string, target: Vector3?): Pilot
+	local pilot = self:CreatePilot(difficulty, airframeId)
+	pilot.role = role
+	pilot.strikeTarget = target
+	if role == "Bomber" then
+		pilot.identity.Name = `Bomber {pilot.seed % 90 + 10} [AI]`
+		(pilot.identity :: any).IsBomber = true
+	end
+	return pilot
 end
 
 -- A training-bout opponent (TUT-03 lesson 6): an Easy pilot that fights only `trainee`.
@@ -175,6 +205,10 @@ function AIService:SpawnPilot(pilot: Pilot, cframe: CFrame)
 	pilot.linear = jet.root:FindFirstChild("FlightLinear") :: LinearVelocity
 	pilot.angular = jet.root:FindFirstChild("FlightAngular") :: AngularVelocity
 	pilot.triggerDown = false
+	pilot.launched = true
+	if pilot.role == "Bomber" then
+		jet.model:SetAttribute("Bomber", true) -- the HUD and scopes can mark it
+	end
 end
 
 local function chooseTarget(pilot: Pilot): Jet?
@@ -191,9 +225,11 @@ local function chooseTarget(pilot: Pilot): Jet?
 		then
 			local offset = other.root.Position - me.root.Position
 			local range = Units.toMetres(offset.Magnitude)
-			if range <= TARGET_RANGE then
+			local bomber = (other.identity :: any).IsBomber == true
+			if range <= (if bomber then TARGET_RANGE * 1.5 else TARGET_RANGE) then
 				local angle = math.acos(math.clamp(me.root.CFrame.LookVector:Dot(offset.Unit), -1, 1))
-				local cost = range * (1 + angle / math.pi * 1.5)
+				-- Enemy bombers come first: stopping the strike is the mission
+				local cost = range * (1 + angle / math.pi * 1.5) * (if bomber then 0.4 else 1)
 				if cost < bestCost then
 					best, bestCost = other, cost
 				end
@@ -283,13 +319,37 @@ local function stepPilot(pilot: Pilot, dt: number)
 			end
 		end
 	end
-	if timers.target <= 0 then
+	if pilot.role == "Bomber" then
+		-- Bombers fly at their target and never fight (Strike.bomberDecision)
+		pilot.targetId = nil
+		if timers.target <= 0 then
+			timers.target = TARGET_INTERVAL
+		end
+	elseif timers.target <= 0 then
 		timers.target = TARGET_INTERVAL
 		local target = chooseTarget(pilot)
 		pilot.targetId = target and target.id
 	end
 
-	if timers.decide <= 0 or not pilot.decision then
+	if pilot.role == "Bomber" and (timers.decide <= 0 or not pilot.decision) then
+		timers.decide = DECIDE_INTERVAL
+		local incoming = MissileService:IncomingFor(jet.id)
+		pilot.decision = Strike.bomberDecision(
+			pilot.memory :: any,
+			root.Position,
+			pilot.strikeTarget or Vector3.zero,
+			pilot.groundClearance,
+			incoming,
+			os.clock()
+		) :: any
+		local decision = pilot.decision :: AIBrain.Decision
+		if decision.flare then
+			MissileService:DeployCountermeasure(jet, "Flare")
+		end
+		if decision.chaff then
+			MissileService:DeployCountermeasure(jet, "Chaff")
+		end
+	elseif timers.decide <= 0 or not pilot.decision then
 		timers.decide = DECIDE_INTERVAL
 		local target = if pilot.targetId then AircraftService:GetJetById(pilot.targetId) else nil
 		local fractions = CombatService:GetFractions(jet.id)

@@ -224,6 +224,24 @@ local function render(s: any)
 		banner.Text = `{head}  ·  {table.concat(parts, " – ")} (FIRST TO {d.toWin}){if clock ~= ""
 			then "  ·  " .. clock
 			else ""}`
+	elseif s.state == "InProgress" and s.mission and s.mission.kind == "Strike" then
+		local m = s.mission
+		local mine = localPlayer:GetAttribute("Team")
+		local parts = {}
+		for _, team in s.teams or {} do
+			table.insert(parts, `{teamName(team)} {m.strikes[team] or 0}`)
+		end
+		local yours = if type(mine) == "string" and mine ~= "" then `  ·  YOU: {teamName(mine)}` else ""
+		banner.Text =
+			`STRIKE ESCORT  ·  {formatTime(s.timeLeft)}  ·  STRIKES {table.concat(parts, " – ")} (TO {m.limit})  ·  NEXT WAVE {formatTime(
+				m.nextWave
+			)}{yours}`
+	elseif s.state == "InProgress" and s.mission and s.mission.kind == "Waves" then
+		local m = s.mission
+		local status = if m.phase == "Break"
+			then `WAVE {m.wave + 1} IN {m.breakLeft}`
+			else `WAVE {m.wave}/{m.waves}  ·  ENEMIES {m.enemies}`
+		banner.Text = `PVE  ·  {status}  ·  BASE {m.baseHits}/{m.maxHits}`
 	elseif s.state == "InProgress" and s.teams and s.tickets and s.zones then
 		-- Air Superiority: tickets, then each zone's letter in its owner's colour
 		local parts = {}

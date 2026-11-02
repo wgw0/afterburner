@@ -53,11 +53,16 @@ local function Results(props: any)
 		elseif match.reason == "Rounds" then "duel won on rounds"
 		elseif match.reason == "Forfeit" then "the other pilot left"
 		elseif match.reason == "Draw" then "level on rounds"
+		elseif match.reason == "Strikes" then "strike limit reached"
+		elseif match.reason == "Waves" then (if match.winner == "Base held"
+			then "every wave beaten"
+			else "the base fell")
 		else "time's up"
 	local children: { [string]: any } = {
 		Title = e(C.Label, {
 			Text = if match.winner == "Draw"
 				then "DRAW"
+				elseif match.mission and match.mission.kind == "Waves" then string.upper(match.winner or "")
 				elseif match.teams then `{string.upper(match.winner or "Nobody")} TEAM WINS`
 				else `{match.winner or "Nobody"} WINS`,
 			Size = UDim2.new(1, 0, 0, 40),

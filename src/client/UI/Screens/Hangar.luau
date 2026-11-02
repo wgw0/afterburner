@@ -35,14 +35,16 @@ local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 -- The mode PLAY queues for: a duel first (Will: the main mode), then the team and free-for-all modes, then Any
 -- (the fastest of those). { id, label, width }
 local QUEUE_MODES = {
-	{ "Duel", "RANKED DUEL", 150 },
-	{ "DuelCasual", "CASUAL DUEL", 140 },
-	{ "Dogfight", "DOGFIGHT", 112 },
-	{ "TeamDeathmatch", "TEAMS", 92 },
-	{ "AirSuperiority", "ZONES", 92 },
-	{ "BVR", "BVR", 76 },
-	{ "GunsOnly", "GUNS ONLY", 112 },
-	{ "Any", "ANY", 70 },
+	{ "Duel", "RANKED DUEL", 140 },
+	{ "DuelCasual", "CASUAL DUEL", 130 },
+	{ "Dogfight", "DOGFIGHT", 104 },
+	{ "TeamDeathmatch", "TEAMS", 84 },
+	{ "AirSuperiority", "ZONES", 84 },
+	{ "StrikeEscort", "STRIKE", 88 },
+	{ "BVR", "BVR", 68 },
+	{ "GunsOnly", "GUNS ONLY", 104 },
+	{ "Waves", "PVE", 68 },
+	{ "Any", "ANY", 64 },
 }
 local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
 
@@ -62,7 +64,7 @@ local function modePicker(props: any)
 		})
 	end
 	return e("Frame", {
-		Size = UDim2.fromOffset(852, 50),
+		Size = UDim2.fromOffset(1010, 50),
 		Position = UDim2.new(0.5, 0, 1, -224),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,

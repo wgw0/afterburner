@@ -134,7 +134,13 @@ local function MatchmakingPanel(props: { AirframeId: string?, Mode: string?, Dat
 			TextSize = 13,
 		}),
 		How = e(C.Label, {
-			Text = if bvr
+			Text = if props.Mode == "StrikeEscort"
+				then "3v3 with AI bombers: every couple of minutes each team sends bombers at the other's airbase. Escort yours, shoot theirs down. First to six strikes wins."
+				elseif
+					props.Mode == "Waves"
+				then "Co-op: you and up to two friends hold your airbase against ten waves of AI fighters and bombers. Five bombers through and the base is lost."
+				elseif
+					bvr
 				then `3v3 at long range: radar missiles only (no heat-seekers), Tier IV and up, and the teams start about 20 km apart. {if bvrOk
 					then "Your jet can fly it."
 					else `{bvrWhy}: pick another jet.`}`
