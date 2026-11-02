@@ -1,8 +1,10 @@
 """
 Afterburner: the experience icon's picture (512 x 512 after compose). The F-22A from the game (its model and
-Air Dominance Grey textures) banked hard in a climbing turn, vapour streaming off the wingtips and the
-afterburners lit, over low-poly, flat-shaded hills, mountains and water with puffy clouds: realistic jet,
-Roblox-style world. tools/marketing/icon_compose.py adds the wordmark.
+Air Dominance Grey textures, with a glossy clear coat) banked hard in a climbing turn at sunset: the sun low
+behind it lighting a hot rim round the airframe, long layered afterburner flames with shock diamonds, vapour
+off the wingtips and a spray of flares with smoke trails, over low-poly, flat-shaded hills, mountains and water
+with puffy clouds: realistic jet, Roblox-style world, made to look cool (Will). tools/marketing/icon_compose.py
+adds the lens flare, glow and wordmark.
 
   blender -b tools/blender/out/F22A_base.blend --python tools/marketing/icon_render.py -- --out <png> [--size 1024]
       [--samples 96]
@@ -63,6 +65,9 @@ for set_name in ("Body", "Wings", "Details"):
     nmap = nodes.new("ShaderNodeNormalMap")
     links.new(texture(nodes, f"{base}_Normal.png", "Non-Color").outputs["Color"], nmap.inputs["Color"])
     links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    if "Coat Weight" in bsdf.inputs:  # a glossy coat that catches the sunset
+        bsdf.inputs["Coat Weight"].default_value = 0.6
+        bsdf.inputs["Coat Roughness"].default_value = 0.05
 
 glass = bpy.data.materials.get("F22A_Glass")
 if glass:
@@ -142,13 +147,13 @@ out = vn.new("ShaderNodeOutputMaterial")
 mix = vn.new("ShaderNodeMixShader")
 transparent = vn.new("ShaderNodeBsdfTransparent")
 glow = vn.new("ShaderNodeEmission")
-glow.inputs["Color"].default_value = (1, 1, 1, 1)
-glow.inputs["Strength"].default_value = 1.3
+glow.inputs["Color"].default_value = (1, 0.9, 0.8, 1)
+glow.inputs["Strength"].default_value = 2.2
 fade = vn.new("ShaderNodeAttribute")
 fade.attribute_name = "Fade"
 scale = vn.new("ShaderNodeMath")
 scale.operation = "MULTIPLY"
-scale.inputs[1].default_value = 0.7
+scale.inputs[1].default_value = 0.85
 vl.new(fade.outputs["Fac"], scale.inputs[0])
 vl.new(scale.outputs[0], mix.inputs["Fac"])
 vl.new(transparent.outputs[0], mix.inputs[1])
@@ -160,34 +165,65 @@ for x in (-6.72, 6.72):
     t.data.materials.append(vapour)
     t.visible_shadow = False
 
-# Afterburner flames: glowing cones from the nozzles
-flame = bpy.data.materials.new("Flame")
-flame.use_nodes = True
-fnodes = flame.node_tree.nodes
-fb = fnodes.get("Principled BSDF")
-fb.inputs["Base Color"].default_value = (1, 0.45, 0.1, 1)
-fb.inputs["Emission Color"].default_value = (1, 0.32, 0.04, 1)
-fb.inputs["Emission Strength"].default_value = 7
-fb.inputs["Alpha"].default_value = 0.85
+# Afterburner flames: an orange plume round a white-hot core, with shock diamonds down it
+def glow_material(name, colour, strength, alpha):
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    b = mat.node_tree.nodes.get("Principled BSDF")
+    b.inputs["Base Color"].default_value = colour
+    b.inputs["Emission Color"].default_value = colour
+    b.inputs["Emission Strength"].default_value = strength
+    b.inputs["Alpha"].default_value = alpha
+    return mat
+
+
+plume = glow_material("Plume", (1, 0.3, 0.04, 1), 4, 0.6)
+core = glow_material("Core", (1, 0.7, 0.3, 1), 10, 0.95)
+diamond = glow_material("Diamond", (1, 0.9, 0.65, 1), 22, 0.9)
+along = JET.to_3x3() @ Euler((math.radians(90), 0, 0)).to_matrix()
 for x in (-0.73, 0.73):
-    bpy.ops.mesh.primitive_cone_add(radius1=0.36, radius2=0.04, depth=3.2, vertices=24)
-    cone = bpy.context.active_object
-    cone.name = "Flame"
-    cone.location = world((x, -5.8 - 1.6, 0.0))
-    cone.rotation_euler = (JET.to_3x3() @ Euler((math.radians(90), 0, 0)).to_matrix()).to_euler()
-    cone.data.materials.append(flame)
-    cone.visible_shadow = False
+    for radius, depth, mat in ((0.48, 5.6, plume), (0.24, 3.8, core)):
+        bpy.ops.mesh.primitive_cone_add(radius1=radius, radius2=0.03, depth=depth, vertices=28)
+        cone = bpy.context.active_object
+        cone.name = "Flame"
+        cone.location = world((x, -5.8 - depth / 2, 0.0))
+        cone.rotation_euler = along.to_euler()
+        cone.data.materials.append(mat)
+        cone.visible_shadow = False
+    for k, d in enumerate((1.0, 2.0, 2.9)):
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.2 - k * 0.04, segments=16, ring_count=8)
+        dot = bpy.context.active_object
+        dot.location = world((x, -5.8 - d, 0.0))
+        dot.scale = (1, 1, 1.8)
+        dot.rotation_euler = along.to_euler()
+        dot.data.materials.append(diamond)
+        dot.visible_shadow = False
     p = bpy.data.lights.new("FlameLight", "POINT")
-    p.energy = 800
-    p.color = (1, 0.55, 0.2)
+    p.energy = 2500
+    p.color = (1, 0.5, 0.15)
     pl = bpy.data.objects.new("FlameLight", p)
-    pl.location = world((x, -6.6, 0))
+    pl.location = world((x, -7.0, 0))
     scene.collection.objects.link(pl)
+
+# Flares: bright balls dropping away behind and below the tail (their smoke is added in compose)
+flare_mat = glow_material("Flare", (1, 0.8, 0.45, 1), 120, 1.0)
+for x, y, z, r in ((-1.8, -10.5, -2.2, 0.42), (1.6, -12.5, -3.4, 0.38), (-3.4, -15.0, -5.2, 0.34),
+                   (3.0, -17.0, -6.6, 0.3), (0.2, -19.5, -8.4, 0.28)):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=16, ring_count=8, location=world((x, y, z)))
+    ball = bpy.context.active_object
+    ball.data.materials.append(flare_mat)
+    ball.visible_shadow = False
+    fl = bpy.data.lights.new("FlareLight", "POINT")
+    fl.energy = 1200
+    fl.color = (1, 0.7, 0.35)
+    flo = bpy.data.objects.new("FlareLight", fl)
+    flo.location = world((x, y, z))
+    scene.collection.objects.link(flo)
 
 # --- The world: low-poly, flat-shaded terrain like the game's ---------------------------------------------
 
 GROUND_Z = -260
-CAMERA = Vector((24.0, 21.0, 4.0))
+CAMERA = Vector((23.0, 20.0, 3.9))
 TARGET = Vector((0.0, 1.0, 0.4))
 VIEW = Vector((TARGET.x - CAMERA.x, TARGET.y - CAMERA.y, 0)).normalized()  # on the ground, away from the camera
 
@@ -282,13 +318,15 @@ coords = wn.new("ShaderNodeTexCoord")
 split = wn.new("ShaderNodeSeparateXYZ")
 ramp = wn.new("ShaderNodeValToRGB")
 ramp.color_ramp.elements[0].position = 0.0
-ramp.color_ramp.elements[0].color = hexcol("#bfe0f7")
-ramp.color_ramp.elements[1].position = 0.45
-ramp.color_ramp.elements[1].color = hexcol("#1f63c9")
-mid = ramp.color_ramp.elements.new(0.12)
-mid.color = hexcol("#7fbcef")
+ramp.color_ramp.elements[0].color = hexcol("#ffc27a")  # warm horizon
+ramp.color_ramp.elements[1].position = 0.5
+ramp.color_ramp.elements[1].color = hexcol("#1a2a6c")  # deep blue overhead
+mid = ramp.color_ramp.elements.new(0.1)
+mid.color = hexcol("#f07a5a")
+high = ramp.color_ramp.elements.new(0.24)
+high.color = hexcol("#7a5aa8")
 bg = wn.new("ShaderNodeBackground")
-bg.inputs["Strength"].default_value = 1.0
+bg.inputs["Strength"].default_value = 1.5
 wo = wn.new("ShaderNodeOutputWorld")
 wl.new(coords.outputs["Generated"], split.inputs[0])
 wl.new(split.outputs["Z"], ramp.inputs["Fac"])
@@ -296,15 +334,20 @@ wl.new(ramp.outputs["Color"], bg.inputs["Color"])
 wl.new(bg.outputs[0], wo.inputs["Surface"])
 
 sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", "SUN"))
-sun.data.energy = 3.6
-sun.data.angle = math.radians(2)
-sun.rotation_euler = Euler((math.radians(50), 0, math.radians(130)), "XYZ")
+sun.data.energy = 4.2
+sun.data.color = (1.0, 0.72, 0.42)
+sun.data.angle = math.radians(1.5)
+# Low, from behind the jet towards the camera: a hot rim of light round the airframe
+travel = Vector((CAMERA.x - TARGET.x, CAMERA.y - TARGET.y, -0.35)).normalized()
+travel = Matrix.Rotation(math.radians(-75), 3, "Z") @ travel  # from the side and behind
+sun.rotation_euler = travel.to_track_quat("-Z", "Y").to_euler()
 scene.collection.objects.link(sun)
 
 # A soft fill from the camera's side, so the jet's top isn't lost in shadow
 fill = bpy.data.objects.new("Fill", bpy.data.lights.new("Fill", "AREA"))
-fill.data.energy = 9000
+fill.data.energy = 7000
 fill.data.size = 30
+fill.data.color = (0.65, 0.75, 1.0)  # cool, against the warm sun
 fill.location = CAMERA + Vector((0, 0, 12))
 fill.rotation_euler = (TARGET - fill.location).to_track_quat("-Z", "Y").to_euler()
 scene.collection.objects.link(fill)
@@ -328,10 +371,10 @@ except Exception:
     pass
 scene.view_settings.view_transform = "AgX" if "AgX" in [v for v in ("AgX",)] else scene.view_settings.view_transform
 try:
-    scene.view_settings.look = "AgX - Punchy"
+    scene.view_settings.look = "AgX - High Contrast"
 except Exception:
     pass
-scene.view_settings.exposure = -0.15
+scene.view_settings.exposure = 0.0
 scene.render.resolution_x = scene.render.resolution_y = args.size
 scene.render.film_transparent = False
 scene.render.filepath = args.out
