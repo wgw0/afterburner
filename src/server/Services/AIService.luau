@@ -212,6 +212,12 @@ function AIService:SpawnPilot(pilot: Pilot, cframe: CFrame)
 	end
 end
 
+-- Whether a pilot identity is an AI bomber. Players' identities are Player instances, which error on an
+-- unknown property, so only AI records (tables) are asked.
+local function isBomber(identity: any): boolean
+	return type(identity) == "table" and identity.IsBomber == true
+end
+
 local function chooseTarget(pilot: Pilot): Jet?
 	local me = pilot.jet :: Jet
 	if pilot.training then
@@ -221,11 +227,7 @@ local function chooseTarget(pilot: Pilot): Jet?
 	if pilot.hunter then
 		local nearest, nearestRange = nil, math.huge
 		for id, other in AircraftService:GetJets() do
-			if
-				id ~= me.id
-				and (other.identity :: any).IsBomber == true
-				and not Teams.areFriends(pilot.identity, other.identity)
-			then
+			if id ~= me.id and isBomber(other.identity) and not Teams.areFriends(pilot.identity, other.identity) then
 				local range = (other.root.Position - me.root.Position).Magnitude
 				if range < nearestRange then
 					nearest, nearestRange = other, range
@@ -245,7 +247,7 @@ local function chooseTarget(pilot: Pilot): Jet?
 		then
 			local offset = other.root.Position - me.root.Position
 			local range = Units.toMetres(offset.Magnitude)
-			local bomber = (other.identity :: any).IsBomber == true
+			local bomber = isBomber(other.identity)
 			if range <= (if bomber then TARGET_RANGE * 1.5 else TARGET_RANGE) then
 				local angle = math.acos(math.clamp(me.root.CFrame.LookVector:Dot(offset.Unit), -1, 1))
 				-- Enemy bombers come first: stopping the strike is the mission
