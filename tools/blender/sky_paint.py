@@ -87,6 +87,7 @@ SKYLIGHT = np.array([150, 170, 205], float)  # blue light on shadowed tops
 BOUNCE = np.array([170, 158, 146], float)  # warm light from the land on the undersides
 
 W, H = 4096, 2048  # canvas: azimuth -pi..pi across, elevation +pi/2..-pi/2 down
+BASE_SOFTNESS = (0.002, 0.005)  # how a cloud's flat base fades in, below and above its base line (radians)
 
 
 def canvas_dirs():
@@ -173,7 +174,7 @@ def paint_clouds(A, E, d, sky, sun, clouds):
             inside = q < 1
             acc[inside] += np.exp(h[inside] / tau) - 1  # zero at the puff's edge, so no crease
             cover = np.maximum(cover, smoothstep(1.15, 0.55, q))
-        cut = smoothstep(e_base - 0.002, e_base + 0.005, e)  # the flat base
+        cut = smoothstep(e_base - BASE_SOFTNESS[0], e_base + BASE_SOFTNESS[1], e)  # the flat base
         alpha = smoothstep(0.05, 0.8, cover + 0.5 * fray) * cut
         if alpha.max() < 0.01:
             continue

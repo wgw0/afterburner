@@ -197,28 +197,50 @@ function DesertBuilder.spawns(): string
 	return "spawns done (12)"
 end
 
--- A hot, hazy afternoon: high sun, warm haze, thin clouds.
+-- The skybox, after Albert Bierstadt (Will): tools/blender/sky_paint_bierstadt.py, painted for this sun
+local SKY = {
+	Ft = "rbxassetid://110374860954881",
+	Bk = "rbxassetid://98673553887859",
+	Lf = "rbxassetid://90537453937445",
+	Rt = "rbxassetid://88457134357621",
+	Up = "rbxassetid://111734507831705",
+	Dn = "rbxassetid://128638330104396",
+}
+
+-- Late, golden light over the American West: a low sun (the skybox's glow is painted where it sits), warm
+-- haze and long shadows across the mesas. Returns the sun direction (repaint the sky if it changes).
 function DesertBuilder.lighting(): string
-	Lighting.ClockTime = 14.6
 	Lighting.GeographicLatitude = 30
-	Lighting.Brightness = 3
-	Lighting.ExposureCompensation = 0.1
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 128, 104)
+	Lighting.ClockTime = 16.9
+	Lighting.Brightness = 3.2
+	Lighting.ExposureCompensation = 0.15
+	Lighting.Ambient = Color3.fromRGB(120, 104, 96)
+	Lighting.OutdoorAmbient = Color3.fromRGB(160, 132, 112)
+	Lighting.ColorShift_Top = Color3.fromRGB(255, 214, 160) -- golden low sun
+	Lighting.ColorShift_Bottom = Color3.fromRGB(70, 56, 64)
+	local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky")
+	sky.Name = "Sky"
+	sky.SkyboxFt, sky.SkyboxBk, sky.SkyboxLf = SKY.Ft, SKY.Bk, SKY.Lf
+	sky.SkyboxRt, sky.SkyboxUp, sky.SkyboxDn = SKY.Rt, SKY.Up, SKY.Dn
+	sky.CelestialBodiesShown = false -- the sun is painted into the skybox
+	sky.Parent = Lighting
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmosphere.Density = 0.32
-	atmosphere.Offset = 0.15
-	atmosphere.Color = Color3.fromRGB(232, 206, 168)
-	atmosphere.Decay = Color3.fromRGB(196, 150, 104)
-	atmosphere.Glare = 0.4
-	atmosphere.Haze = 1.6
+	atmosphere.Density = 0.3
+	atmosphere.Offset = 0.12
+	atmosphere.Color = Color3.fromRGB(255, 214, 160)
+	atmosphere.Decay = Color3.fromRGB(196, 132, 96)
+	atmosphere.Glare = 0.6
+	atmosphere.Haze = 1.8
 	atmosphere.Parent = Lighting
 	local clouds = Terrain:FindFirstChildOfClass("Clouds")
 	if clouds then
-		clouds.Cover = 0.32
-		clouds.Density = 0.35
-		clouds.Color = Color3.fromRGB(255, 244, 228)
+		-- Only a few: the painted sky carries the clouds, and Roblox's own read too white against it
+		clouds.Cover = 0.12
+		clouds.Density = 0.3
+		clouds.Color = Color3.fromRGB(255, 214, 160)
 	end
-	return "lighting done"
+	local sun = Lighting:GetSunDirection()
+	return string.format("lighting done; sun %.4f %.4f %.4f", sun.X, sun.Y, sun.Z)
 end
 
 return DesertBuilder

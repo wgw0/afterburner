@@ -12,7 +12,7 @@ type Universe = { lobby: number, maps: { [string]: number } }
 local UNIVERSES: { [number]: Universe } = {
 	[10773135125] = { -- the test experience
 		lobby = 72582604278324,
-		maps = { Strait = 72582604278324 }, -- Desert = <its place id, once published>
+		maps = { Strait = 72582604278324, Desert = 105532168384050 },
 	},
 	[10773807904] = { -- the live experience
 		lobby = 95037764806358,
