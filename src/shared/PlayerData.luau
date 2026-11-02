@@ -12,6 +12,7 @@
 --   ProcessedReceipts is bounded (most recent RECEIPT_HISTORY ids), enough to stop double grants.
 
 local Challenges = require(script.Parent.Challenges)
+local Duel = require(script.Parent.Duel)
 local Leaderboards = require(script.Parent.Leaderboards)
 local Season = require(script.Parent.Season)
 local Spin = require(script.Parent.Spin)
@@ -52,6 +53,7 @@ PlayerData.REPLICATED = table.freeze({
 	"StarterBought",
 	"TestPilot",
 	"Squadron",
+	"Duel",
 })
 
 local function deepCopy<T>(value: T): T
@@ -119,6 +121,7 @@ function PlayerData.template(): { [string]: any }
 		StarterBought = false, -- the Starter Bundle (once per player, Shop)
 		Squadron = { Id = "", ClaimWeek = 0 }, -- your squadron's id ("" for none) and the week you last claimed its reward
 		TestPilot = TestPilot.newState(), -- the Test Pilot trials toward the Tempest (Shared/TestPilot)
+		Duel = Duel.newRecord(), -- duel rating and record (Shared/Duel, MCH-09)
 		Weekly = Leaderboards.newWeekly(), -- this week's kills and wins for the leaderboards (Shared/Leaderboards)
 		PendingStarter = false, -- the camo chosen before a Starter Bundle purchase (Shop), false for none
 		Flags = {},

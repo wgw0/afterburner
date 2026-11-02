@@ -40,8 +40,24 @@ LevelRewards.TITLES = table.freeze({
 	-- Not from levels: season passes (Config/Seasons), unlocked in data.Titles
 	FirstLight = "First Light",
 	Dawnbreaker = "Dawnbreaker",
+	-- Not from levels: duel ranks, the first time you reach each (Shared/Duel), unlocked in data.Titles
+	DuelistSilver = "Silver Duelist",
+	DuelistGold = "Gold Duelist",
+	DuelistPlatinum = "Platinum Duelist",
+	DuelistDiamond = "Diamond Duelist",
+	DuelistAce = "Ace Duelist",
 })
-LevelRewards.OTHER_TITLES = table.freeze({ "Regular", "Devoted", "FirstLight", "Dawnbreaker" })
+LevelRewards.OTHER_TITLES = table.freeze({
+	"Regular",
+	"Devoted",
+	"FirstLight",
+	"Dawnbreaker",
+	"DuelistSilver",
+	"DuelistGold",
+	"DuelistPlatinum",
+	"DuelistDiamond",
+	"DuelistAce",
+})
 
 LevelRewards.HUD_COLOURS = table.freeze({ Pink = 7, Blue = 18, Violet = 40 }) -- colour → level
 

@@ -158,7 +158,7 @@ local function play(airframeId: string?)
 	elseif queue.state == "Idle" then
 		queue.message = nil
 		-- the jet you click PLAY with sets your BR in the queue (Queue, MMK-03)
-		Net.Client.fire("QueueJoin", SettingsController:Get("QueueMode") or "Any", airframeId or state.selected)
+		Net.Client.fire("QueueJoin", SettingsController:Get("QueueMode") or "Duel", airframeId or state.selected)
 	end
 end
 
@@ -514,7 +514,7 @@ render = function()
 			elseif queue.state == "Found" then "JOINING…"
 			elseif state.party.leader and state.party.leader ~= Players.LocalPlayer.UserId then "LEADER STARTS"
 			else "PLAY",
-		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Any" else nil,
+		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Duel" else nil,
 		Party = if lobby then state.party else nil,
 		PartyCandidates = (function()
 			local list = {}

@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Duel = require(Shared.Duel)
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local TeamConfig = require(Shared.Config.Teams)
@@ -21,6 +22,8 @@ local NAVY = Color3.fromRGB(10, 18, 34)
 local ORANGE = Color3.fromRGB(255, 138, 61)
 local WHITE = Color3.new(1, 1, 1)
 local DIM = Color3.fromRGB(170, 180, 200)
+local GOOD = Color3.fromRGB(110, 255, 150) -- a duel round you won
+local LOSE = Color3.fromRGB(255, 110, 90) -- a duel round you lost
 local ME = Color3.fromRGB(255, 200, 120)
 
 local MatchController = {
@@ -31,6 +34,7 @@ local MatchController = {
 
 local gui: ScreenGui
 local banner: TextLabel
+local roundCall: TextLabel
 local board: Frame
 local boardRows: Frame
 local localPlayer = Players.LocalPlayer
@@ -207,6 +211,19 @@ local function render(s: any)
 		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS`
 	elseif s.state == "Countdown" then
 		banner.Text = `{string.upper(s.modeName)}  ·  STARTS IN {s.timeLeft}`
+	elseif s.state == "InProgress" and s.duel then
+		-- Duels: the round, both pilots' round wins, and the round's clock (or the last round's result)
+		local d = s.duel
+		local parts = {}
+		for _, seat in d.seats do
+			local name = if seat.userId == localPlayer.UserId then "YOU" else string.upper(seat.name)
+			table.insert(parts, `{name} {seat.wins}`)
+		end
+		local clock = if d.phase == "Fight" then formatTime(d.roundLeft) else ""
+		local head = `{string.upper(s.modeName)}  ·  ROUND {math.max(d.round, 1)}`
+		banner.Text = `{head}  ·  {table.concat(parts, " – ")} (FIRST TO {d.toWin}){if clock ~= ""
+			then "  ·  " .. clock
+			else ""}`
 	elseif s.state == "InProgress" and s.teams and s.tickets and s.zones then
 		-- Air Superiority: tickets, then each zone's letter in its owner's colour
 		local parts = {}
@@ -250,6 +267,28 @@ local function render(s: any)
 		banner.Text = `{string.upper(s.modeName)}  ·  MATCH OVER`
 	end
 
+	-- Duels: between rounds, who took the last one, big in the middle of the screen
+	local call = ""
+	local d = s.duel
+	if d and s.state == "InProgress" and (d.phase == "Intermission" or d.phase == "Over") and d.lastReason then
+		local mine = false
+		for _, seat in d.seats do
+			if seat.userId == localPlayer.UserId and seat.name == d.lastWinner then
+				mine = true
+			end
+		end
+		call = if d.lastWinner == nil
+			then "ROUND DRAWN"
+			elseif mine then "YOU WIN THE ROUND"
+			else `ROUND TO {string.upper(d.lastWinner)}`
+		roundCall.TextColor3 = if d.lastWinner == nil then WHITE elseif mine then GOOD else LOSE
+	elseif d and s.state == "InProgress" and d.phase == "Fight" and d.roundLeft > Duel.ROUND_TIME - 3 then
+		call = `ROUND {d.round}`
+		roundCall.TextColor3 = WHITE
+	end
+	roundCall.Text = call
+	roundCall.Visible = call ~= ""
+
 	if board.Visible then
 		local rows = if s.teams and s.teamScores then byTeam(s.ranking, s.teams, s.teamScores) else s.ranking
 		fillRows(boardRows, rows, 18)
@@ -263,6 +302,13 @@ function MatchController:Init()
 	gui.ResetOnSpawn = false
 	gui.DisplayOrder = 25
 
+	-- Duels: the round's call ("ROUND 2", "YOU WIN THE ROUND") in the middle of the screen
+	roundCall = label(gui, "", 42, WHITE)
+	roundCall.AnchorPoint = Vector2.new(0.5, 0.5)
+	roundCall.Position = UDim2.fromScale(0.5, 0.32)
+	roundCall.Size = UDim2.fromOffset(900, 56)
+	roundCall.Font = Enum.Font.GothamBlack
+	roundCall.Visible = false
 	banner = label(gui, "", 16, WHITE)
 	banner.AnchorPoint = Vector2.new(0.5, 0)
 	banner.Position = UDim2.new(0.5, 0, 0, 6)
@@ -345,6 +391,17 @@ function MatchController:SpawnStatus(): (boolean, string)
 	end
 	if s.mode == "FreeFlight" then
 		return true, ""
+	end
+	local d = s.duel
+	if d and s.state == "InProgress" and d.phase ~= "Fight" then
+		local wait = localPlayer:GetAttribute("RespawnIn") :: number?
+		return false,
+			if d.phase == "Over"
+				then "Duel over"
+				elseif wait and wait >= 0 then `Next round in {wait}s`
+				else "Next round soon"
+	elseif d and s.state == "InProgress" then
+		return false, "Out for this round: next round when it ends"
 	end
 	if s.state == "Waiting" and s.expected then
 		return false, `Waiting for pilots ({s.arrived}/{s.expected})`

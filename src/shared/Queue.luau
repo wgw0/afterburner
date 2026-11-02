@@ -9,7 +9,11 @@
 --   minutes (SPREAD_STAGES); after ANY_MODE_AFTER seconds a player who picked a mode takes any mode. A full
 --   group becomes a match at once; a smaller one once its anchor has waited FILL_AFTER seconds, and AI
 --   fills the empty seats on the battle server.
+-- Duels (MCH-09) are two seats, one pilot each (no parties). A ranked duel also needs the two ratings within
+-- Duel.ratingSpread of each other; after Duel.AI_AFTER seconds alone an AI pilot takes the other seat. "Any"
+-- never means a duel, and a duel never turns into another mode.
 
+local Duel = require(script.Parent.Duel)
 local Matchmaking = require(script.Parent.Matchmaking)
 
 local Queue = {}
@@ -21,7 +25,9 @@ Queue.SPREAD_STAGES = table.freeze({ { 0, 1.0 }, { 60, 1.7 }, { 150, 3.0 } })
 Queue.SPREAD_MIN = Queue.SPREAD_STAGES[1][2]
 Queue.SPREAD_MAX = Queue.SPREAD_STAGES[#Queue.SPREAD_STAGES][2]
 Queue.ANY_MODE_AFTER = 120 -- seconds before a player who picked a mode will take any mode
-Queue.MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
+Queue.MODES = table.freeze({ "Duel", "DuelCasual", "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
+Queue.ANY_MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" }) -- what "Any" can be
+Queue.DUEL_MODES = table.freeze({ Duel = true, DuelCasual = true })
 
 export type Entry = {
 	userId: number, -- the player, or the party's leader
@@ -30,6 +36,8 @@ export type Entry = {
 	mode: string, -- "Any" or one of Queue.MODES
 	joinedAt: number, -- seconds (any clock, the same for every entry)
 	jobId: string, -- the lobby server the player is on
+	rating: number?, -- duels: the player's duel rating
+	airframe: string?, -- the jet PLAY was clicked with (a duel launches in it)
 }
 
 export type Match = {
@@ -44,8 +52,14 @@ export type Match = {
 export type Options = {
 	now: number,
 	fillAfter: number?, -- defaults to FILL_AFTER (shorter in Studio)
+	duelFillAfter: number?, -- defaults to Duel.AI_AFTER (shorter in Studio)
 	pickMode: (() -> string)?, -- the mode for an all-"Any" group (defaults to the first)
 }
+
+-- Seats in a match of this mode.
+function Queue.sizeFor(mode: string): number
+	return if Queue.DUEL_MODES[mode] then 2 else Queue.MATCH_SIZE
+end
 
 -- The BR spread allowed for a group whose anchor has waited `waited` seconds.
 function Queue.spreadFor(waited: number): number
@@ -62,7 +76,7 @@ end
 
 -- The mode a player is matched as after waiting: their pick, or "Any" once they've waited ANY_MODE_AFTER.
 function Queue.modeAfter(mode: string, waited: number): string
-	return if waited >= Queue.ANY_MODE_AFTER then "Any" else mode
+	return if waited >= Queue.ANY_MODE_AFTER and not Queue.DUEL_MODES[mode] then "Any" else mode
 end
 
 function Queue.validMode(mode: string): boolean
@@ -80,6 +94,9 @@ function Queue.users(entry: Entry): { number }
 end
 
 local function fits(entry: Entry, mode: string): boolean
+	if Queue.DUEL_MODES[mode] then
+		return entry.mode == mode and entry.members == nil
+	end
 	return entry.mode == "Any" or entry.mode == mode
 end
 
@@ -92,7 +109,7 @@ local function chooseMode(anchor: Entry, candidates: { Entry }, pickMode: () -> 
 	local counts: { [string]: number } = {}
 	local best, bestCount = nil, 0
 	for _, entry in candidates do
-		if entry.mode ~= "Any" then
+		if entry.mode ~= "Any" and not Queue.DUEL_MODES[entry.mode] then
 			counts[entry.mode] = (counts[entry.mode] or 0) + 1
 			if counts[entry.mode] > bestCount then
 				best, bestCount = entry.mode, counts[entry.mode]
@@ -106,8 +123,9 @@ end
 function Queue.form(entries: { Entry }, options: Options): { Match }
 	local now = options.now
 	local fillAfter = options.fillAfter or Queue.FILL_AFTER
+	local duelFillAfter = options.duelFillAfter or Duel.AI_AFTER
 	local pickMode = options.pickMode or function()
-		return Queue.MODES[1]
+		return Queue.ANY_MODES[1]
 	end
 
 	-- Players who've waited long enough take any mode (the match keeps their original entry)
@@ -147,6 +165,11 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 			end
 		end
 		local mode = chooseMode(anchor, near, pickMode)
+		if Queue.DUEL_MODES[mode] and anchor.members then
+			continue -- duels are one on one (the lobby refuses a party anyway)
+		end
+		local size = Queue.sizeFor(mode)
+		local ratingSpread = if mode == "Duel" then Duel.ratingSpread(waited) else math.huge
 
 		-- Closest BR first, keeping the whole group within the spread
 		table.sort(near, function(a, b)
@@ -160,13 +183,15 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 		local count = Queue.seats(anchor)
 		local low, high = anchor.br, anchor.br
 		for _, entry in near do
-			if count >= Queue.MATCH_SIZE then
+			if count >= size then
 				break
 			end
 			if
 				fits(entry, mode)
-				and count + Queue.seats(entry) <= Queue.MATCH_SIZE
+				and count + Queue.seats(entry) <= size
 				and math.max(high, entry.br) - math.min(low, entry.br) <= spread + 1e-6
+				and math.abs((entry.rating or Duel.START_RATING) - (anchor.rating or Duel.START_RATING))
+					<= ratingSpread
 			then
 				table.insert(group, entry)
 				count += Queue.seats(entry)
@@ -174,7 +199,7 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 			end
 		end
 
-		if count >= Queue.MATCH_SIZE or waited >= fillAfter then
+		if count >= size or waited >= (if Queue.DUEL_MODES[mode] then duelFillAfter else fillAfter) then
 			local kept = {}
 			for _, entry in group do
 				taken[entry.userId] = true

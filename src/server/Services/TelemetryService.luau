@@ -264,12 +264,12 @@ function TelemetryService:Init()
 			end
 		end
 	end)
-	MatchService.MatchEnded:Connect(function(ranking, _reason, winnerTeam: string?)
+	MatchService.MatchEnded:Connect(function(ranking, reason, winnerTeam: string?)
 		if not counting() then
 			return
 		end
 		local mode = MatchService:GetMode().Id
-		local winner = ranking[1]
+		local winner = if reason == "Draw" then nil else ranking[1] -- a drawn duel has no winner
 		for _, player in Players:GetPlayers() do
 			if flew[player] and flying[player] then
 				local won = if winnerTeam

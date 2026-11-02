@@ -12,6 +12,10 @@
 --                bleeds the enemy's tickets, every jet lost costs its team tickets, a team on 0 loses
 --                (or the team ahead at the time limit wins). Pilots inside a zone as it flips score a
 --                capture. AI pilots head for the zones (AIService.objectiveFor).
+--   Duels (MCH-09): two pilots, best of five rounds (Shared/Duel). Each round the server puts both jets up
+--                head-on over the map centre; a jet lost is out until the next round. A ranked duel between
+--                two players moves both duel ratings at the end; with one player an AI pilot (as hard as
+--                their rating) takes the other seat and nothing is ranked. Leaving forfeits.
 -- Server roles (MatchmakingService, MMK-02/04): a lobby runs no match (Idle "Lobby"); a match server runs one
 -- match from the matchmaker's record (its mode and BR band; it waits for the players sent, or ARRIVAL_TIMEOUT,
 -- then AI fills the empty seats) and fires MatchOver after the results so everyone goes back to a lobby; a
@@ -31,6 +35,7 @@ local Flight = require(Shared.Config.Flight)
 local AdaptiveAI = require(Shared.AdaptiveAI)
 local AirSuperiority = require(Shared.AirSuperiority)
 local Callsign = require(Shared.Callsign)
+local Duel = require(Shared.Duel)
 local MatchRules = require(Shared.MatchRules)
 local MatchmakingStats = require(Shared.MatchmakingStats)
 local Matchmaking = require(Shared.Matchmaking)
@@ -72,8 +77,22 @@ local pilotStates: { [any]: MatchRules.PilotState } = {}
 local results: { winner: string?, winnerTeam: string?, reason: string?, ranking: { MatchRules.Score } }? = nil
 local broadcastTimer = 0
 local zoneState: AirSuperiority.State? = nil -- Air Superiority only
+local duel: Duel.State? = nil -- duels only
+-- Duels: each pilot's rating change and new rating at the end ({ [tostring(userId)] = { change, rating,
+-- ranked, promoted = names of ranks reached for the first time } }; string keys, as a remote sends them)
+type DuelRating = { change: number, rating: number, ranked: boolean, promoted: { string } }
+local duelRatings: { [string]: DuelRating }? = nil
+local DUEL_ALTITUDE = Flight.SPAWN_ALTITUDE_STUDS -- the usual spawn height (well clear of the strait below)
 -- Match servers only. teams: { [tostring(userId)] = team } from the matchmaker, so parties fly together (MMK-05)
-local record: { mode: string, players: { number }, band: Matchmaking.Band, teams: { [string]: string }? }? = nil
+-- jets: { [tostring(userId)] = the jet they clicked PLAY with }
+local record: {
+	mode: string,
+	players: { number },
+	band: Matchmaking.Band,
+	teams: { [string]: string }?,
+	jets: { [string]: string }?,
+}? =
+	nil
 
 local function humans(): { Player }
 	return Players:GetPlayers()
@@ -185,6 +204,16 @@ local function canSpawn(identity: any): (boolean, number, number?)
 	if state ~= "InProgress" then
 		return false, math.huge, nil
 	end
+	if duel then
+		-- The round start puts every jet up; a player whose auto-launch arrives in the round's first seconds
+		-- (before their jet was known) can still take off, once
+		local now = os.clock()
+		if duel.phase == "Fight" and duel.alive[identity] and now - duel.phaseSince < 10 then
+			return true, 0, nil
+		end
+		local wait = if duel.phase == "Intermission" then Duel.INTERMISSION - (now - duel.phaseSince) else math.huge
+		return false, math.max(wait, 0), nil
+	end
 	local pilot = pilotStates[identity] or { diedAt = nil, livesUsed = 0 }
 	return MatchRules.canSpawn(mode, pilot, os.clock())
 end
@@ -196,9 +225,19 @@ local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?,
 		return false, nil, "Press PLAY to find a match"
 	end
 	ensureScore(player, Callsign.nameOf(player), false, player.UserId)
+	if duel then
+		flying[player] = airframeId -- the jet they'll fly from the next round
+		if AircraftService:GetJet(player) then
+			return false, nil
+		end
+	end
 	local allowed = canSpawn(player)
 	if not allowed then
 		return false, nil
+	end
+	if duel then
+		local seat = Duel.seat(duel, player)
+		return true, if seat then Duel.spawnPair(Vector3.zero, DUEL_ALTITUDE)[seat] else MatchService:PickSpawn(player)
 	end
 	if ServerRole.isTraining() and flying[player] ~= airframeId then
 		flying[player] = airframeId
@@ -286,8 +325,15 @@ local function syncAIFill()
 	end
 	while #AIService:GetMatchPilots() < wanted do
 		local choices = aiChoices()
-		local pilot =
-			AIService:CreatePilot(mode.AIDifficulty or "Normal", choices[#AIService:GetMatchPilots() % #choices + 1])
+		local difficulty = mode.AIDifficulty or "Normal"
+		if mode.Duel and not mode.AIDifficulty then
+			-- An AI duelist as good as the player it stands in for an opponent for
+			local player = humans()[1]
+			local data = player and DataService:GetData(player)
+			local rating = if data then Duel.record(data).Rating else Duel.START_RATING
+			difficulty = if rating >= 1400 then "Ace" elseif rating >= 1100 then "Hard" else "Normal"
+		end
+		local pilot = AIService:CreatePilot(difficulty, choices[#AIService:GetMatchPilots() % #choices + 1])
 		if ServerRole.isTraining() then
 			pilot.profile = AdaptiveAI.profile(mode.AIDifficulty or "Normal", aiOffset)
 		end
@@ -325,6 +371,8 @@ local function startMatch()
 	results = nil
 	Teams.clear()
 	zoneState = if mode.Objective == "Zones" and mode.Teams then AirSuperiority.newState(mode.Teams) else nil
+	duel = if mode.Duel then Duel.newState(os.clock()) else nil
+	duelRatings = nil
 	clearJets()
 	refreshBand()
 	for _, player in humans() do
@@ -336,6 +384,47 @@ local function startMatch()
 	setState("InProgress")
 end
 
+-- A finished duel: both saves get the result, and a ranked duel between two players moves both ratings
+-- (from the ratings they had before it). Returns each player's change and new rating.
+local function settleDuel(state: Duel.State, result: any): { [string]: DuelRating }
+	local players: { Player } = {}
+	for _, identity in state.pilots do
+		if typeof(identity) == "Instance" and identity:IsA("Player") then
+			table.insert(players, identity)
+		end
+	end
+	local ranked = mode.Ranked == true and #players == 2
+	local before: { [Player]: number } = {}
+	for _, player in players do
+		local data = DataService:GetData(player)
+		before[player] = if data then Duel.record(data).Rating else Duel.START_RATING
+	end
+	local out = {}
+	for _, player in players do
+		local other = if players[1] == player then players[2] else players[1]
+		local score = if result == "Draw" then 0.5 elseif result == player then 1 else 0
+		local theirs = if other then before[other] else Duel.START_RATING
+		local promoted = {}
+		local ok, change = pcall(function()
+			return DataService:Update(player, function(data)
+				local delta, reached = Duel.apply(data, theirs, score, ranked)
+				for _, rank in reached do
+					table.insert(promoted, rank.name)
+				end
+				return delta
+			end)
+		end)
+		local data = DataService:GetData(player)
+		out[tostring(player.UserId)] = {
+			change = if ok and type(change) == "number" then change else 0,
+			rating = if data then Duel.record(data).Rating else before[player],
+			ranked = ranked,
+			promoted = promoted,
+		}
+	end
+	return out
+end
+
 local function endMatch(reason: string)
 	local ranking = MatchRules.ranking(scores)
 	local winnerTeam = if zoneState
@@ -343,6 +432,21 @@ local function endMatch(reason: string)
 		elseif mode.Teams then MatchRules.winningTeam(mode, scores)
 		else nil
 	local winner = if mode.Teams then winnerTeam or "Draw" else ranking[1] and ranking[1].name
+	if duel then
+		local result = Duel.matchResult(duel)
+		if result == "Draw" or result == nil then
+			winner, reason = "Draw", "Draw"
+		else
+			winner = scores[result] and scores[result].name or winner
+			-- The duel's winner tops the board even on a tie in points
+			table.sort(ranking, function(a, b)
+				return a == scores[result] and b ~= scores[result]
+			end)
+		end
+		if not ServerRole.isTraining() then -- a Vs AI duel is practice: nothing on the record
+			duelRatings = settleDuel(duel, result)
+		end
+	end
 	results = { winner = winner, winnerTeam = winnerTeam, reason = reason, ranking = ranking }
 	local duration = os.clock() - stateSince -- before the state (and its clock) moves on
 	setState("Results")
@@ -394,10 +498,20 @@ local function onKill(jet: Jet, credit: any, cause: string)
 	if pilot then
 		pilot.diedAt = os.clock()
 	end
+	if duel and cause == "Despawn" and credit.killer == nil and duel.phase ~= "Fight" then
+		return -- the round's reset, not a loss
+	end
+	if duel and QUIET_CAUSES[cause] and credit.killer == nil then
+		Duel.down(duel, victim, os.clock()) -- back to the hangar mid-round gives the round away
+		return
+	end
 	if QUIET_CAUSES[cause] and credit.killer == nil then
 		return -- leaving or respawning with nobody's damage on you isn't a death
 	end
 	MatchRules.recordKill(scores, victim, credit.killer, credit.assists, credit.forcedCrash)
+	if duel then
+		Duel.down(duel, victim, os.clock())
+	end
 	adaptAI()
 	if zoneState then
 		AirSuperiority.jetLost(zoneState, Teams.of(victim))
@@ -406,7 +520,7 @@ local function onKill(jet: Jet, credit: any, cause: string)
 end
 
 local function respawnAI()
-	if state ~= "InProgress" and mode.Id ~= "FreeFlight" then
+	if (state ~= "InProgress" and mode.Id ~= "FreeFlight") or duel then
 		return
 	end
 	for _, pilot in AIService:GetMatchPilots() do
@@ -453,6 +567,75 @@ local function stepZones(dt: number)
 		end
 		Telemetry.event("ZoneCaptured", 1, { zone = capture.zone, team = capture.team })
 	end
+end
+
+-- The jet a player flies in a duel: the one they last asked for, else the one they clicked PLAY with, else
+-- the one selected in the hangar, else the first in their lineup.
+local function duelAirframe(player: Player): string?
+	if flying[player] then
+		return flying[player]
+	end
+	local data = DataService:GetData(player)
+	local played = record and record.jets and record.jets[tostring(player.UserId)]
+	if type(played) == "string" and data and table.find(data.Lineup or {}, played) then
+		return played
+	end
+	local selected = data and data.Settings and data.Settings.SelectedJet
+	if type(selected) == "string" and table.find(data.Lineup or {}, selected) then
+		return selected
+	end
+	return data and data.Lineup and data.Lineup[1]
+end
+
+-- Puts both duellists up head-on for the next round.
+local function startDuelRound(state: Duel.State)
+	clearJets()
+	Duel.startRound(state, os.clock())
+	local pair = Duel.spawnPair(Vector3.zero, DUEL_ALTITUDE)
+	for seat, identity in state.pilots do
+		local at = pair[seat]
+		if typeof(identity) == "Instance" and identity:IsA("Player") then
+			local airframe = duelAirframe(identity)
+			if airframe then
+				AircraftService:Spawn(identity, airframe, at)
+			end
+		else
+			for _, pilot in AIService:GetMatchPilots() do
+				if pilot.identity == identity then
+					AIService:SpawnPilot(pilot, at)
+				end
+			end
+		end
+	end
+end
+
+local function stepDuel(): boolean
+	local state = duel
+	if not state then
+		return false
+	end
+	-- Seat whoever's here: players first, then the AI standing in
+	for _, player in humans() do
+		Duel.seat(state, player)
+	end
+	for _, pilot in AIService:GetMatchPilots() do
+		Duel.seat(state, pilot.identity)
+	end
+	local now = os.clock()
+	local phase = state.phase
+	if Duel.step(state, now) == "Start" then
+		startDuelRound(state)
+	end
+	if state.phase ~= phase and (state.phase == "Intermission" or state.phase == "Over") then
+		-- A round just ended: the board shows round wins first
+		for _, identity in state.pilots do
+			local score = scores[identity]
+			if score then
+				score.score = (state.wins[identity] or 0) * 1000 + score.kills * 100 + score.assists * 50
+			end
+		end
+	end
+	return state.phase == "Over" and now - state.phaseSince >= Duel.INTERMISSION
 end
 
 -- The zone an AI pilot should go for: the nearest one its team doesn't own, else one of its own (spread
@@ -530,8 +713,35 @@ local function broadcast()
 			})
 		end
 	end
+	local duelInfo = nil
+	if duel then
+		local seats = {}
+		for _, identity in duel.pilots do
+			local score = scores[identity]
+			table.insert(seats, {
+				name = if score then score.name else "?",
+				userId = if score then score.userId else 0,
+				wins = duel.wins[identity] or 0,
+				alive = duel.alive[identity] == true,
+			})
+		end
+		local last = duel.lastRound
+		local roundLeft = if duel.phase == "Fight" then Duel.ROUND_TIME - (os.clock() - duel.phaseSince) else 0
+		duelInfo = {
+			round = duel.round,
+			phase = duel.phase,
+			seats = seats,
+			toWin = Duel.ROUNDS_TO_WIN,
+			ranked = mode.Ranked == true,
+			roundLeft = math.max(math.ceil(roundLeft), 0),
+			lastWinner = if last and last.winner ~= nil and scores[last.winner] then scores[last.winner].name else nil,
+			lastReason = if last then last.reason else nil,
+			ratings = duelRatings,
+		}
+	end
 	local arrived, expected = arrivals()
 	Net.Server.fireAll("MatchState", {
+		duel = duelInfo,
 		arrived = if record then arrived else nil,
 		expected = if record then expected else nil,
 		mode = mode.Id,
@@ -605,6 +815,9 @@ local function tick(dt: number)
 		else
 			stepZones(dt)
 			local ended, reason = MatchRules.checkEnd(mode, scores, elapsed)
+			if stepDuel() then
+				ended, reason = true, "Rounds"
+			end
 			if zoneState and AirSuperiority.checkEnd(zoneState) then
 				ended, reason = true, "Tickets"
 			end
@@ -646,6 +859,8 @@ local function applyMode(config: MatchRules.ModeConfig)
 	results = nil
 	Teams.clear()
 	zoneState = nil
+	duel = nil
+	duelRatings = nil
 	AIService:RemoveAll()
 	setState(if modeId == "FreeFlight" then "InProgress" else "Waiting")
 end
@@ -677,6 +892,7 @@ function MatchService:StartFromRecord(matchRecord: any)
 		players = matchRecord.players or {},
 		band = Matchmaking.bandFor(matchRecord.band and matchRecord.band.br or Matchmaking.DEFAULT_BR),
 		teams = if type(matchRecord.teams) == "table" then matchRecord.teams else nil,
+		jets = if type(matchRecord.jets) == "table" then matchRecord.jets else nil,
 	}
 	band = record.band
 end
@@ -725,6 +941,13 @@ function MatchService:Init()
 		broadcastTimer = BROADCAST_INTERVAL
 	end)
 	Players.PlayerRemoving:Connect(function(player)
+		if duel and state == "InProgress" and table.find(duel.pilots, player) and #duel.pilots == 2 then
+			Duel.forfeit(duel, player, os.clock() - Duel.INTERMISSION)
+			endMatch("Forfeit")
+		end
+		if duel then
+			Duel.unseat(duel, player)
+		end
 		flying[player] = nil
 		scores[player] = nil
 		pilotStates[player] = nil

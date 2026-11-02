@@ -158,7 +158,7 @@ function Erasure.run(userId: number): { string }
 	end)
 
 	step(lines, "Leaderboards", function()
-		local names = { "LB_KillsAll" }
+		local names = { "LB_KillsAll", "LB_DuelRating" }
 		for _, season in Seasons.LIST do
 			table.insert(names, `LB_Season_{season.Id}`)
 		end

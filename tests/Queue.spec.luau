@@ -158,4 +158,55 @@ return function(ctx)
 			expect(Queue.validMode("Stress")).toBe(false)
 		end)
 	end)
+	describe("duels (MCH-09)", function()
+		local Duel = require(ctx.Shared.Duel)
+		local function duelist(userId: number, rating: number, mode: string?, joinedAt: number?): any
+			local e = entry(userId, 3, mode or "Duel", joinedAt)
+			e.rating = rating
+			return e
+		end
+
+		it("two duellists make a two-seat match at once", function()
+			local matches = Queue.form(
+				{ duelist(1, 1000), duelist(2, 1050), duelist(3, 1000, "Dogfight") },
+				{ now = 1 }
+			)
+			expect(#matches).toBe(1)
+			expect(matches[1].mode).toBe("Duel")
+			expect(matches[1].players).toBe(2)
+			expect(Queue.sizeFor("Duel")).toBe(2)
+		end)
+
+		it("ranked duels pair close ratings, loosening with the wait", function()
+			expect(#Queue.form({ duelist(1, 1000), duelist(2, 1500) }, { now = 1 })).toBe(0)
+			local matches = Queue.form({ duelist(1, 1000), duelist(2, 1500) }, { now = 44, duelFillAfter = 999 })
+			expect(#matches).toBe(1) -- the spread reached 500+ by then
+		end)
+
+		it("casual duels ignore ratings", function()
+			expect(#Queue.form({ duelist(1, 800, "DuelCasual"), duelist(2, 2000, "DuelCasual") }, { now = 1 })).toBe(1)
+		end)
+
+		it("a lone duellist gets an AI opponent after AI_AFTER seconds", function()
+			expect(#Queue.form({ duelist(1, 1000) }, { now = Duel.AI_AFTER - 1 })).toBe(0)
+			local matches = Queue.form({ duelist(1, 1000) }, { now = Duel.AI_AFTER })
+			expect(#matches).toBe(1)
+			expect(matches[1].players).toBe(1)
+		end)
+
+		it("Any never becomes a duel, and a duellist never takes another mode", function()
+			local matches = Queue.form({ duelist(1, 1000, "Duel", 0), entry(2, 3, "Any", 0) }, { now = 500 })
+			for _, match in matches do
+				for _, e in match.entries do
+					expect((e.userId == 1) == (match.mode == "Duel")).toBe(true)
+				end
+			end
+		end)
+
+		it("parties can't duel", function()
+			local party = duelist(1, 1000)
+			party.members = { 1, 4 }
+			expect(#Queue.form({ party, duelist(2, 1000) }, { now = 1 })).toBe(0)
+		end)
+	end)
 end
