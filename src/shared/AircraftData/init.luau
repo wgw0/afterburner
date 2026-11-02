@@ -72,6 +72,7 @@ local OPTIONAL: { [string]: Rule } = {
 	Countermeasures = TABLE, -- { Flares = n, Chaff = n }
 	VariableGeometry = TABLE, -- swing wings (FLT-08); checked in detail by validateSweep
 	StatsFrom = STRING, -- premium jets: the free jet whose stats it has (resolvePremium)
+	AIOnly = BOOLEAN, -- flown only by AI on missions (the B-1B bomber, AI-06): left out of getAll
 }
 
 -- The coefficients a swing wing may blend, with the range each must stay in.
@@ -273,14 +274,27 @@ function AircraftData.load(folder: Instance): { [string]: Airframe }
 	return loaded
 end
 
-local registry = AircraftData.load(script)
-
-function AircraftData.get(id: string): Airframe?
-	return registry[id]
+local everything = AircraftData.load(script)
+-- What players can own and fly (and AI fighters pick from): everything but the AI-only mission aircraft
+local registry = {}
+for id, airframe in everything do
+	if not (airframe :: any).AIOnly then
+		registry[id] = airframe
+	end
 end
 
+function AircraftData.get(id: string): Airframe?
+	return everything[id]
+end
+
+-- Every jet players can own and fly. The AI-only mission aircraft aren't in it (getEverything has them).
 function AircraftData.getAll(): { [string]: Airframe }
 	return registry
+end
+
+-- Every airframe, the AI-only mission aircraft too (models are checked for all of them at boot).
+function AircraftData.getEverything(): { [string]: Airframe }
+	return everything
 end
 
 function AircraftData.byTier(tier: number): { Airframe }

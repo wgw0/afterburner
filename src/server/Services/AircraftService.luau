@@ -374,7 +374,7 @@ function AircraftService:Init()
 
 	-- Every airframe needs a valid model and a known gun; fail loudly at boot, not when someone spawns.
 	local problems = {}
-	for id, airframe in AircraftData.getAll() do
+	for id, airframe in AircraftData.getEverything() do
 		local model = modelFor(id)
 		if not model then
 			table.insert(problems, `{id}: no model named {airframe.ModelName} in ReplicatedStorage.Assets.Aircraft`)

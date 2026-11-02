@@ -18,8 +18,16 @@ local MatchService = require(script.Parent.MatchService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 
 local MAX_AI = 11
-local VS_AI_MODES =
-	{ Dogfight = true, TeamDeathmatch = true, AirSuperiority = true, GunsOnly = true, DuelCasual = true, BVR = true }
+local VS_AI_MODES = {
+	Dogfight = true,
+	TeamDeathmatch = true,
+	AirSuperiority = true,
+	GunsOnly = true,
+	DuelCasual = true,
+	BVR = true,
+	StrikeEscort = true,
+	Waves = true,
+}
 
 local TrainingService = {
 	Priority = 52, -- after MatchmakingService

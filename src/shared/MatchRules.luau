@@ -22,7 +22,8 @@ export type ModeConfig = {
 	CountdownSeconds: number,
 	ResultsSeconds: number,
 	Teams: { string }?, -- team modes: the team ids (ScoreLimit is then team kills)
-	Objective: "Zones"?, -- Air Superiority: zones and tickets decide it (AirSuperiority.luau)
+	Objective: ("Zones" | "Strike" | "Waves")?, -- Zones: Air Superiority (AirSuperiority.luau); Strike: Strike
+	-- Escort; Waves: PvE (Shared/Strike)
 	AIDifficulty: string?, -- AI pilots' profile (AIBrain.PROFILES; default Normal). Set for Vs AI matches.
 	GunsOnly: boolean?, -- no missiles at all, and every gun carries GUNS_ONLY_AMMO times its rounds
 	Duel: boolean?, -- 1v1 in rounds (Shared/Duel): the server spawns both jets head-on each round
@@ -161,6 +162,36 @@ MatchRules.MODES = table.freeze({
 		MissileClasses = MatchRules.RADAR_CLASSES,
 		MinTier = 4,
 		Bvr = true,
+	} :: ModeConfig),
+	-- Strike Escort (MCH-07): both teams send AI bombers at the other's airbase every couple of minutes;
+	-- escort yours, shoot theirs down. A bomber that gets through scores a strike; first to six (Shared/Strike).
+	StrikeEscort = table.freeze({
+		Id = "StrikeEscort",
+		DisplayName = "Strike Escort",
+		ScoreLimit = 0,
+		TimeLimit = 720,
+		Respawn = { Type = "Timer", Delay = 6 },
+		AIFill = 6,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 12,
+		Teams = table.freeze({ "West", "East" }),
+		Objective = "Strike",
+	} :: ModeConfig),
+	-- PvE waves (MCH-08): up to three players defend their airbase against ten waves of AI fighters and
+	-- bombers, each bigger and sharper than the last. Five bombers through and the base is lost.
+	Waves = table.freeze({
+		Id = "Waves",
+		DisplayName = "PvE Waves",
+		ScoreLimit = 0,
+		TimeLimit = 0,
+		Respawn = { Type = "Timer", Delay = 6 },
+		AIFill = 0,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 15,
+		Teams = table.freeze({ "West" }), -- the players; the waves fly for East
+		Objective = "Waves",
 	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({

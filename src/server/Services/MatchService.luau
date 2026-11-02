@@ -12,6 +12,10 @@
 --                bleeds the enemy's tickets, every jet lost costs its team tickets, a team on 0 loses
 --                (or the team ahead at the time limit wins). Pilots inside a zone as it flips score a
 --                capture. AI pilots head for the zones (AIService.objectiveFor).
+--   Strike Escort (MCH-07): the team match with AI bombers. Every Strike.WAVE_INTERVAL both teams launch
+--                bombers at the other's airbase; one that gets there scores a strike. Most strikes wins.
+--   PvE waves (MCH-08): the players (West) hold their airbase against waves of AI fighters and bombers
+--                (East, Strike.waveSpec). The base takes Strike.BASE_HITS bombers; clear every wave to win.
 --   Duels (MCH-09): two pilots, best of five rounds (Shared/Duel). Each round the server puts both jets up
 --                head-on over the map centre; a jet lost is out until the next round. A ranked duel between
 --                two players moves both duel ratings at the end; with one player an AI pilot (as hard as
@@ -37,6 +41,7 @@ local AirSuperiority = require(Shared.AirSuperiority)
 local AircraftData = require(Shared.AircraftData)
 local Callsign = require(Shared.Callsign)
 local Duel = require(Shared.Duel)
+local Strike = require(Shared.Strike)
 local MatchRules = require(Shared.MatchRules)
 local MatchmakingStats = require(Shared.MatchmakingStats)
 local Matchmaking = require(Shared.Matchmaking)
@@ -44,6 +49,7 @@ local Net = require(Shared.Net)
 local Scale = require(Shared.Config.Scale)
 local ServerRole = require(Shared.ServerRole)
 local Signal = require(Shared.Util.Signal)
+local Units = require(Shared.Units)
 
 local Teams = require(ServerScriptService.Server.Lib.Teams)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
@@ -79,6 +85,10 @@ local results: { winner: string?, winnerTeam: string?, reason: string?, ranking:
 local broadcastTimer = 0
 local zoneState: AirSuperiority.State? = nil -- Air Superiority only
 local duel: Duel.State? = nil -- duels only
+local escort: Strike.EscortState? = nil -- Strike Escort only
+local pve: Strike.PveState? = nil -- PvE waves only
+local strikeTargets: { [string]: Vector3 } = {} -- each team's airbase (the other team's bombers' target)
+local findStrikeTargets: () -> { [string]: Vector3 } -- defined with the strike helpers below
 -- Duels: each pilot's rating change and new rating at the end ({ [tostring(userId)] = { change, rating,
 -- ranked, promoted = names of ranks reached for the first time } }; string keys, as a remote sends them)
 type DuelRating = { change: number, rating: number, ranked: boolean, promoted: { string } }
@@ -403,6 +413,12 @@ local function startMatch()
 	zoneState = if mode.Objective == "Zones" and mode.Teams then AirSuperiority.newState(mode.Teams) else nil
 	duel = if mode.Duel then Duel.newState(os.clock()) else nil
 	duelRatings = nil
+	for _, pilot in AIService:GetMissionPilots() do
+		AIService:RemovePilot(pilot)
+	end
+	strikeTargets = findStrikeTargets()
+	escort = if mode.Objective == "Strike" and mode.Teams then Strike.newEscort(mode.Teams, os.clock()) else nil
+	pve = if mode.Objective == "Waves" then Strike.newPve(os.clock()) else nil
 	clearJets()
 	refreshBand()
 	for _, player in humans() do
@@ -461,7 +477,15 @@ local function endMatch(reason: string)
 		then AirSuperiority.leader(zoneState)
 		elseif mode.Teams then MatchRules.winningTeam(mode, scores)
 		else nil
+	if escort then
+		winnerTeam = Strike.escortWinner(escort, MatchRules.teamScores(mode, scores))
+	elseif pve then
+		winnerTeam = if pve.phase == "Won" then "West" else "East" -- the players are West
+	end
 	local winner = if mode.Teams then winnerTeam or "Draw" else ranking[1] and ranking[1].name
+	if pve then
+		winner = if pve.phase == "Won" then "Base held" else "Base lost"
+	end
 	if duel then
 		local result = Duel.matchResult(duel)
 		if result == "Draw" or result == nil then
@@ -480,6 +504,10 @@ local function endMatch(reason: string)
 	results = { winner = winner, winnerTeam = winnerTeam, reason = reason, ranking = ranking }
 	local duration = os.clock() - stateSince -- before the state (and its clock) moves on
 	setState("Results")
+	for _, pilot in AIService:GetMissionPilots() do
+		Teams.set(pilot.identity, nil)
+		AIService:RemovePilot(pilot)
+	end
 	clearJets()
 	MatchService.MatchEnded:Fire(ranking, reason, winnerTeam)
 	-- Value: how long it lasted (s). Sent: the mode and the BR band's top (ANL-04).
@@ -668,9 +696,140 @@ local function stepDuel(): boolean
 	return state.phase == "Over" and now - state.phaseSince >= Duel.INTERMISSION
 end
 
+------------------------------------------------------------------------------------------------ strikes
+
+-- Each team's airbase: the centre of the map's AirbaseWest / AirbaseEast, else a point on its coast.
+findStrikeTargets = function(): { [string]: Vector3 }
+	local out = {}
+	for _, team in { "West", "East" } do
+		local base = workspace:FindFirstChild("Map") and (workspace :: any).Map:FindFirstChild(`Airbase{team}`)
+		if base and base:IsA("Model") then
+			local cf = base:GetBoundingBox()
+			out[team] = cf.Position
+		else
+			out[team] = Vector3.new(Scale.MAP_HALF_EXTENT * 0.55 * (if team == "West" then -1 else 1), 0, 0)
+		end
+	end
+	return out
+end
+
+local function otherTeam(team: string): string
+	return if team == "West" then "East" else "West"
+end
+
+-- The bomber the missions fly: the B-1B once its model is in, else a stand-in strike jet.
+local function bomberAirframe(): string
+	return if AircraftData.get(Strike.BOMBER_AIRFRAME) then Strike.BOMBER_AIRFRAME else Strike.FALLBACK_BOMBER
+end
+
+local function launchBomber(team: string, index: number)
+	local target = strikeTargets[otherTeam(team)]
+	local pilot = AIService:CreateMissionPilot("Bomber", "Normal", bomberAirframe(), target)
+	Teams.set(pilot.identity, team)
+	AIService:SpawnPilot(pilot, Strike.bomberStart(team, target, Scale.MAP_HALF_EXTENT, index))
+end
+
+-- PvE: a wave fighter, coming in from the east at the players' side.
+local function launchWaveFighter(difficulty: string, index: number)
+	local choices = aiChoices()
+	local pilot = AIService:CreateMissionPilot("Wave", difficulty, choices[(index - 1) % #choices + 1], nil)
+	Teams.set(pilot.identity, "East")
+	local position = Vector3.new(
+		Scale.MAP_HALF_EXTENT * 0.8,
+		Flight.SPAWN_ALTITUDE_STUDS + (index % 3) * 120,
+		(index - 1) * 400 - 1400
+	)
+	AIService:SpawnPilot(
+		pilot,
+		CFrame.lookAt(position, Vector3.new(strikeTargets.West.X, position.Y, strikeTargets.West.Z))
+	)
+end
+
+-- Strike Escort and PvE each tick: launch waves, score bombers that got through, clear out the shot down.
+-- Returns true when the mission has decided the match.
+local function stepMissions(): boolean
+	if not (escort or pve) then
+		return false
+	end
+	local now = os.clock()
+	for _, pilot in AIService:GetMissionPilots() do
+		local jet = pilot.jet
+		if pilot.launched and not jet then
+			Teams.set(pilot.identity, nil)
+			AIService:RemovePilot(pilot) -- shot down: mission pilots don't respawn
+		elseif
+			jet
+			and pilot.role == "Bomber"
+			and pilot.strikeTarget
+			and Strike.reached(jet.root.Position, pilot.strikeTarget)
+		then
+			local team = Teams.of(pilot.identity)
+			if escort and team then
+				Strike.strike(escort, team)
+			elseif pve then
+				Strike.baseHit(pve, now)
+			end
+			Telemetry.event("Strike", 1, { mode = mode.Id, team = team or "" })
+			Teams.set(pilot.identity, nil)
+			AIService:RemovePilot(pilot) -- bombs gone: it heads home (leaves the fight)
+		end
+	end
+	if escort then
+		if Strike.waveDue(escort, now) then
+			for _, team in mode.Teams or {} do
+				for i = 1, Strike.WAVE_BOMBERS do
+					launchBomber(team, i)
+				end
+			end
+		end
+		return Strike.escortEnded(escort)
+	end
+	local state = pve :: Strike.PveState
+	local alive = #AIService:GetMissionPilots()
+	if Strike.stepPve(state, alive, now) == "Launch" then
+		local spec = Strike.waveSpec(state.wave)
+		for i = 1, spec.bombers do
+			launchBomber("East", i)
+		end
+		for i = 1, spec.fighters do
+			launchWaveFighter(spec.difficulty, i)
+		end
+	end
+	return state.phase == "Won" or state.phase == "Lost"
+end
+
 -- The zone an AI pilot should go for: the nearest one its team doesn't own, else one of its own (spread
 -- by pilot, so they don't all stack on one).
 local function objectiveFor(pilot: any): { position: Vector3, radius: number }?
+	if state == "InProgress" and pilot.jet and (escort or pve) then
+		local team = Teams.of(pilot.identity)
+		if pve and team == "East" then
+			return { position = strikeTargets.West, radius = 1500 } -- the waves go for the players' base
+		end
+		-- Strike Escort: half the AI fighters hunt the nearest enemy bomber, half stay with their own (and fight
+		-- whoever comes for them); with no bomber of that kind up, the other kind
+		local index = table.find(AIService:GetMatchPilots(), pilot) or 1
+		local hunt = index % 2 == 1
+		local function nearest(enemy: boolean): Vector3?
+			local best, bestDistance = nil, math.huge
+			for _, bomber in AIService:GetMissionPilots("Bomber") do
+				if bomber.jet and (Teams.of(bomber.identity) ~= team) == enemy then
+					local root = bomber.jet.root
+					local distance = (root.Position - pilot.jet.root.Position).Magnitude
+					if distance < bestDistance then
+						-- Hunters cut the bomber off where it'll be, not where it is
+						local lead = if enemy
+							then root.AssemblyLinearVelocity * math.min(distance / 100, 15)
+							else Vector3.zero
+						best, bestDistance = root.Position + lead, distance
+					end
+				end
+			end
+			return best
+		end
+		local goal = nearest(hunt) or nearest(not hunt)
+		return if goal then { position = goal, radius = if hunt then 600 else 1500 } else nil
+	end
 	local zones = zoneState
 	local team = Teams.of(pilot.identity)
 	if not zones or state ~= "InProgress" or not team or not pilot.jet then
@@ -769,9 +928,49 @@ local function broadcast()
 			ratings = duelRatings,
 		}
 	end
+	local mission = nil
+	if escort then
+		mission = {
+			kind = "Strike",
+			strikes = escort.strikes,
+			limit = Strike.STRIKE_LIMIT,
+			nextWave = math.max(math.ceil(escort.nextWave - os.clock()), 0),
+			bombers = #AIService:GetMissionPilots("Bomber"),
+		}
+	elseif pve then
+		mission = {
+			kind = "Waves",
+			wave = pve.wave,
+			waves = Strike.WAVES,
+			baseHits = pve.baseHits,
+			maxHits = Strike.BASE_HITS,
+			phase = pve.phase,
+			enemies = #AIService:GetMissionPilots(),
+			breakLeft = if pve.phase == "Break"
+				then math.max(math.ceil(Strike.WAVE_BREAK - (os.clock() - pve.phaseSince)), 0)
+				else 0,
+		}
+	end
+	if (escort or pve) and state == "InProgress" then
+		-- The targets, drawn like zones: each airbase in its own team's colour
+		zones = {}
+		for team, position in strikeTargets do
+			if escort or team == "West" then
+				table.insert(zones, {
+					id = if team == "West" then "W" else "E",
+					position = position,
+					radius = Strike.TARGET_RADIUS,
+					top = Units.toStuds(Strike.CRUISE_ALTITUDE) + 400,
+					progress = 0,
+					owner = team,
+				})
+			end
+		end
+	end
 	local arrived, expected = arrivals()
 	Net.Server.fireAll("MatchState", {
 		duel = duelInfo,
+		mission = mission,
 		arrived = if record then arrived else nil,
 		expected = if record then expected else nil,
 		mode = mode.Id,
@@ -848,6 +1047,9 @@ local function tick(dt: number)
 			if stepDuel() then
 				ended, reason = true, "Rounds"
 			end
+			if stepMissions() then
+				ended, reason = true, if escort then "Strikes" else "Waves"
+			end
 			if zoneState and AirSuperiority.checkEnd(zoneState) then
 				ended, reason = true, "Tickets"
 			end
@@ -891,6 +1093,8 @@ local function applyMode(config: MatchRules.ModeConfig)
 	zoneState = nil
 	duel = nil
 	duelRatings = nil
+	escort = nil
+	pve = nil
 	AIService:RemoveAll()
 	setState(if modeId == "FreeFlight" then "InProgress" else "Waiting")
 end
