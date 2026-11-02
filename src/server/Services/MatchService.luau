@@ -63,7 +63,7 @@ type Jet = AircraftService.Jet
 local BROADCAST_INTERVAL = 0.5
 local ARRIVAL_TIMEOUT = 30 -- a match server waits this long for everyone the matchmaker sent
 local IDLE_STATES = { Lobby = true, Pending = true, Closing = true }
-local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
+local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true, Struck = true }
 
 local MatchService = {
 	Priority = 50,
@@ -770,8 +770,10 @@ local function stepMissions(): boolean
 				Strike.baseHit(pve, now)
 			end
 			Telemetry.event("Strike", 1, { mode = mode.Id, team = team or "" })
+			AircraftService:Despawn(jet, "Struck") -- bombs gone: it leaves the fight, nobody's kill
+			pilot.jet = nil
 			Teams.set(pilot.identity, nil)
-			AIService:RemovePilot(pilot) -- bombs gone: it heads home (leaves the fight)
+			AIService:RemovePilot(pilot)
 		end
 	end
 	if escort then
@@ -810,6 +812,15 @@ local function objectiveFor(pilot: any): { position: Vector3, radius: number }?
 		-- whoever comes for them); with no bomber of that kind up, the other kind
 		local index = table.find(AIService:GetMatchPilots(), pilot) or 1
 		local hunt = index % 2 == 1
+		pilot.hunter = hunt and escort ~= nil
+		if hunt then
+			-- A hunter chases its bomber itself (AIService: the nearest enemy bomber is its target): no zone
+			for _, bomber in AIService:GetMissionPilots("Bomber") do
+				if bomber.jet and Teams.of(bomber.identity) ~= team then
+					return nil
+				end
+			end
+		end
 		local function nearest(enemy: boolean): Vector3?
 			local best, bestDistance = nil, math.huge
 			for _, bomber in AIService:GetMissionPilots("Bomber") do

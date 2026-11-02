@@ -56,6 +56,11 @@ local SKINS: { [string]: { Skin } } = {
 		{ Id = "BlueGrey", DisplayName = "Blue-Grey", Credits = 5000 },
 		{ Id = "Desert", DisplayName = "Desert Camouflage", Credits = 5000 },
 	},
+	-- The AI bomber (AI-06): never owned, so never sold; AI bombers fly either
+	B1B = {
+		{ Id = "Strategic", DisplayName = "Strategic Grey", Default = true },
+		{ Id = "Ember", DisplayName = "Ember", Credits = 5000 },
+	},
 	F14A = {
 		{ Id = "Navy", DisplayName = "Navy Grey", Default = true },
 		{ Id = "Gull", DisplayName = "Gull Grey and White", Credits = 5000 },

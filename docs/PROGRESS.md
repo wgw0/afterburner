@@ -390,11 +390,16 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: in team modes, Tier V+ jets share what their radars see with data-link teammates, twice a second; the contacts show faint on the situation display and as "DL" markers on the HUD at any range, not lockable (DEVELOPMENT.md §14.4; `DataLink.spec`). *To see in a team match.*
 - [x] **SNS-09** Stealth RCS and weapon bay effect
   - Built: the airframe `Stealth` factor is the head-on radar cross-section; from the side a stealth jet is up to 8× bigger and from behind 4×; firing a missile opens its bays for 3 s, when radars see it from much further; server locks and the radar scope both use it (`Signature.rcs`, DEVELOPMENT.md §14; `Stealth.spec`).
-- [ ] **MCH-07** Strike Escort
-- [ ] **MCH-08** PvE wave missions
-- [ ] **MCH-09** Ranked Duels with Elo
-- [ ] **MCH-10** BVR Battles
-- [ ] **AI-06** AI bombers and escort formations (Strike Escort, PvE)
+- [x] **MCH-07** Strike Escort
+  - Built (`Shared/Strike`, MatchService): 3v3; every 150 s each team sends two AI bombers at the other's airbase (marked like zones). A bomber that reaches it scores a strike and leaves (nobody's kill); first to 6 strikes, else most strikes then team kills at 12 minutes. Half the AI fighters hunt the nearest enemy bomber at any range, half escort their own. In the mode picker (STRIKE) and Vs AI; also one of the modes "Any" can pick. Checked in Studio with AI: waves, strikes and a bomber shot down by an AI missile. *Balance (how many bombers get through) to see with players.*
+- [x] **MCH-08** PvE wave missions
+  - Built: co-op for up to 3 (parties welcome), ten waves (`Strike.waveSpec`: more fighters and bombers each wave, Hard from wave 4, Ace from 7) at the players' airbase, which takes 5 bomber strikes; clear every wave to win. PVE in the mode picker (only for those who pick it) and Vs AI. Checked in Studio: wave 1 launched, its bomber hit the base (5 → 4).
+- [x] **MCH-09** Ranked Duels with Elo
+  - Built (`Shared/Duel`, Will: the main mode): 1v1, best of five rounds, both jets head-on each round with one life; a 2 s grace makes trades a drawn round. Ranked (Elo, K 48 for the first 10 duels then 32; ranks Bronze to Ace, first time at each rank a title and Credits) and Casual. The queue pairs duellists by BR and rating (150 widening to 600 over 45 s), then an AI duelist as hard as your rating (unranked). Duels lead the mode picker and are the default; round banner and calls, rating change on the results, a Duel rating leaderboard, a Duelist achievement series, duels in Vs AI. `Duel.spec`, Queue tests. Checked in Studio against the AI duelist: three rounds, the result, unranked. *Ranked between two players to see in the live test.*
+- [x] **MCH-10** BVR Battles
+  - Built: 3v3, Tier IV+ jets with a radar missile only (queue and spawn refuse others, AI picks from them), radar missiles only on the rails, teams start ~20 km apart; first to 15 team kills or 12 minutes. Pick-only (never "Any"). Checked in Studio: only radar missiles loaded, long-range kills, the match ran to its limit.
+- [x] **AI-06** AI bombers and escort formations (Strike Escort, PvE)
+  - Built: the B-1B Lancer (`b1b_generate.py`, `b1b_paint.py`: 24 parts, 13,412 triangles, swing wings, Strategic and Ember skins), AI-only (`AIOnly`, out of the hangar, tree and AI fighter picks), slow and heavy so it can be caught. Bombers fly `Strike.bomberDecision`: straight at the target at 900 m, flares and chaff when a missile comes, no fighting. Escorts stay near their bombers (objective), hunters chase enemy ones. Checked in Studio.
 - [ ] **MAP-05** Additional maps (Desert Range, Arctic Fjord, Islands)
 - [x] **DAT-04** Leaderboard stores
   - Built: an `OrderedDataStore` per board (weekly stores per week, a season store per season, all-time), written after each scored match and on leaving, only when a score changed (`LeaderboardService`, DEVELOPMENT.md §26.8). Checked in Studio.
