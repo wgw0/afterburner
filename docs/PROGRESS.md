@@ -401,6 +401,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **AI-06** AI bombers and escort formations (Strike Escort, PvE)
   - Built: the B-1B Lancer (`b1b_generate.py`, `b1b_paint.py`: 24 parts, 13,412 triangles, swing wings, Strategic and Ember skins), AI-only (`AIOnly`, out of the hangar, tree and AI fighter picks), slow and heavy so it can be caught. Bombers fly `Strike.bomberDecision`: straight at the target at 900 m, flares and chaff when a missile comes, no fighting. Escorts stay near their bombers (objective), hunters chase enemy ones. Checked in Studio.
 - [ ] **MAP-05** Additional maps (Desert Range, Arctic Fjord, Islands)
+  - Desert Range built (Will, November 2026): its own place in the test experience (`Config/Places`, `Config/Maps`), picked at random for each match. `tools/DesertShape` (pure; `scripts/preview-map.luau` previews it), `DesertBuilder` on the shared `TerrainKit`, `DesertScenery`: dune sea, a tableland with a winding canyon, terraced mesas and hoodoos, a salt lake, mountain edges, the road and the town of Dry Wells, about 1,100 saguaros, scrub, boulders, telegraph poles and an oil field; a skybox after Albert Bierstadt (`sky_paint_bierstadt.py`) with golden late light. The world edge follows the map (endless desert, no sea). Checked in play in Studio: terrain, sky, the edge plain and the red border. *Still to do: the live experience's Desert place; Arctic Fjord and Islands.*
 - [x] **DAT-04** Leaderboard stores
   - Built: an `OrderedDataStore` per board (weekly stores per week, a season store per season, all-time), written after each scored match and on leaving, only when a score changed (`LeaderboardService`, DEVELOPMENT.md §26.8). Checked in Studio.
 - [ ] **MMK-05** Parties
@@ -420,3 +421,10 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
   - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). The content maturity questionnaire was completed by Will on 1 November 2026. The VIP Pilot description was fixed in both experiences on 1 November 2026. The erasure webhook, the asset rights check, the genre and description and taking the Tier II and III Unlocks off sale were done on 1 November 2026. *Left: nothing on this list; tick after the badges are all created (§7 of COMPLIANCE.md).*
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI
+
+## Requested, not started
+
+Ideas Will has asked for, to pick up when there's time.
+
+- **Chocolate Chip camo** (Will, 2 November 2026): the six-colour desert pattern. A tan base with large brown and pale pink-tan blobs, scattered with small black-and-white "pebble" spots (black crescents round white chips). For the Shop's camos, on every jet, like the others (`Config/Cosmetics`, painted by the camo painters in `tools/blender`). Bold rather than faded, as Will likes them.
+
