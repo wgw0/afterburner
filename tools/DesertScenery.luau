@@ -358,15 +358,35 @@ local function derrick(parent: Instance, x: number, z: number)
 	part(parent, Vector3.new(5, 2, 5), CFrame.new(x, y + height + 1, z), steel, Enum.Material.Metal)
 end
 
+-- The oil field goes on the first open, flat patch near the edge of the dunes: every derrick's spot clear
+local OIL_SPOTS = { { 0, 0 }, { 150, 110 }, { 320, -10 }, { 100, -150 }, { 400, 170 } }
 local function oilField(root: Instance)
 	local folder = Instance.new("Model")
 	folder.Name = "OilField"
 	folder.LevelOfDetail = Enum.ModelLevelOfDetail.StreamingMesh
-	for _, at in { { 900, 1450 }, { 1050, 1560 }, { 1220, 1440 }, { 1000, 1300 }, { 1300, 1620 } } do
-		derrick(folder, at[1], at[2])
+	local origin = nil
+	for _, centre in { { 700, 1250 }, { -300, 1900 }, { 2000, 600 }, { -3600, 400 }, { 600, 300 } } do
+		local ok = true
+		for _, spot in OIL_SPOTS do
+			local x, z = centre[1] + spot[1], centre[2] + spot[2]
+			if not openGround(x, z) or slopeAt(x, z) > 0.08 then
+				ok = false
+				break
+			end
+		end
+		if ok then
+			origin = centre
+			break
+		end
+	end
+	if not origin then
+		return -- nowhere flat enough: leave it out rather than put derricks on a slope
+	end
+	for _, spot in OIL_SPOTS do
+		derrick(folder, origin[1] + spot[1], origin[2] + spot[2])
 	end
 	for i = 0, 2 do -- storage tanks
-		local x, z = 1500 + i * 30, 1350
+		local x, z = origin[1] + 220 + i * 30, origin[2] + 250
 		post(folder, x, groundAt(x, z) - 1, z, 14, 22, Color3.fromRGB(214, 210, 200), Enum.Material.Metal)
 	end
 	folder.Parent = root
