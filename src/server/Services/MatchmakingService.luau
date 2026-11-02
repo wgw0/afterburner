@@ -563,8 +563,18 @@ local function makeMatch(match: Queue.Match)
 		end
 		pcall(store.queueRemove, keyOf(entry.userId))
 	end
-	local record =
-		{ role = "Match", mode = match.mode, players = users, band = match.band, formed = now(), parties = parties }
+	-- A map at random for every match (MAP-05, Will), from the ones this universe has a place for
+	local maps = Places.maps()
+	local map = maps[math.random(1, #maps)]
+	local record = {
+		role = "Match",
+		mode = match.mode,
+		map = map,
+		players = users,
+		band = match.band,
+		formed = now(),
+		parties = parties,
+	}
 	-- The jet each player clicked PLAY with (a duel puts them up in it; keys are strings: the record is JSON)
 	record.jets = {}
 	for _, entry in match.entries do
@@ -609,7 +619,7 @@ local function makeMatch(match: Queue.Match)
 	end
 
 	local ok, code, serverId = pcall(function()
-		return TeleportService:ReserveServer(Places.battle())
+		return TeleportService:ReserveServer(Places.battle(map))
 	end)
 	if not ok then
 		warn(`[Matchmaking] couldn't reserve a server: {code}`)
@@ -627,7 +637,7 @@ local function makeMatch(match: Queue.Match)
 	for jobId, entries in byJob do
 		pcall(store.update, `lobby:{jobId}`, function(old)
 			local list = old or {}
-			table.insert(list, { code = code, place = Places.battle(), mode = match.mode, entries = entries })
+			table.insert(list, { code = code, place = Places.battle(map), mode = match.mode, entries = entries })
 			return list
 		end, ASSIGN_TTL)
 	end

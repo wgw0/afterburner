@@ -210,7 +210,8 @@ local function render(s: any)
 	elseif s.state == "Waiting" then
 		banner.Text = `{string.upper(s.modeName)}  ·  WAITING FOR PILOTS`
 	elseif s.state == "Countdown" then
-		banner.Text = `{string.upper(s.modeName)}  ·  STARTS IN {s.timeLeft}`
+		local where = if s.map then `{string.upper(s.map)}  ·  ` else ""
+		banner.Text = `{where}{string.upper(s.modeName)}  ·  STARTS IN {s.timeLeft}`
 	elseif s.state == "InProgress" and s.duel then
 		-- Duels: the round, both pilots' round wins, and the round's clock (or the last round's result)
 		local d = s.duel
