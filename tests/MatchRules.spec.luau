@@ -260,4 +260,25 @@ return function(ctx)
 			expect(entered).toBe(1)
 		end)
 	end)
+	describe("BVR Battles (MCH-10)", function()
+		local bvr = MatchRules.MODES.BVR
+		it("only Tier IV+ jets with a radar missile may fly", function()
+			expect((MatchRules.jetAllowed(bvr, "F15C"))).toBe(true)
+			expect((MatchRules.jetAllowed(bvr, "F16A"))).toBe(false) -- Tier III
+			expect((MatchRules.jetAllowed(bvr, "F5E"))).toBe(false)
+			expect((MatchRules.jetAllowed(MatchRules.MODES.Dogfight, "F5E"))).toBe(true)
+		end)
+
+		it("radar missiles only; other modes carry everything and Guns Only nothing", function()
+			expect(MatchRules.missileAllowed(bvr, "ARH")).toBe(true)
+			expect(MatchRules.missileAllowed(bvr, "SARH")).toBe(true)
+			expect(MatchRules.missileAllowed(bvr, "IR_Adv")).toBe(false)
+			expect(MatchRules.missileAllowed(MatchRules.MODES.Dogfight, "IR_Rear")).toBe(true)
+			expect(MatchRules.missileAllowed(MatchRules.MODES.GunsOnly, "ARH")).toBe(false)
+		end)
+
+		it("is a team mode", function()
+			expect(bvr.Teams ~= nil and bvr.Bvr == true).toBe(true)
+		end)
+	end)
 end
