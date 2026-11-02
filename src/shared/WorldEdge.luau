@@ -2,7 +2,10 @@
 -- What lies beyond the Strait's terrain (MAP-03). The terrain stops at ±TERRAIN_HALF; past that the world
 -- carries on as a flat plain of cheap client-side tiles (WorldEdgeController): low grass where the two
 -- coasts run on, sea everywhere else. The last EDGE_FADE studs of terrain ease down to the same profile
--- (tools/StraitBuilder), so there's no seam. Shared so the terrain tool and the client agree.
+-- (tools/StraitBuilder), so there's no seam. Shared so the terrain tool and the client agree. Other maps
+-- (Config/Maps) say whether their outside has sea at all; the Desert's is endless flat desert.
+
+local Maps = require(script.Parent.Config.Maps)
 
 local WorldEdge = {}
 
@@ -25,9 +28,31 @@ function WorldEdge.coastX(z: number): (number, number)
 	return west, east
 end
 
--- The coasts outside the terrain run straight on from where they leave it.
+-- Whether this place's map has no sea round it (the Desert): then everything outside is land.
+function WorldEdge.landEverywhere(): boolean
+	return not Maps.current().edge.sea
+end
+
+-- The outside land's height on this place's map.
+function WorldEdge.plainHeight(): number
+	return Maps.current().edge.plainHeight
+end
+
+-- The coasts outside the terrain run straight on from where they leave it. With no sea, the "channel" is
+-- empty (west beyond east), so everything is land.
 function WorldEdge.outsideCoastX(z: number): (number, number)
+	if WorldEdge.landEverywhere() then
+		return math.huge, -math.huge
+	end
 	return WorldEdge.coastX(math.clamp(z, -WorldEdge.TERRAIN_HALF, WorldEdge.TERRAIN_HALF))
+end
+
+-- The coasts as the underlay under the terrain draws them (the Strait's coasts, or all land).
+function WorldEdge.underlayCoastX(z: number): (number, number)
+	if WorldEdge.landEverywhere() then
+		return math.huge, -math.huge
+	end
+	return WorldEdge.coastX(z)
 end
 
 -- Height of the outside world at (x, z): the plain on land, the sea floor offshore, a short beach between.

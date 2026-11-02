@@ -41,6 +41,7 @@ local AirSuperiority = require(Shared.AirSuperiority)
 local AircraftData = require(Shared.AircraftData)
 local Callsign = require(Shared.Callsign)
 local Duel = require(Shared.Duel)
+local Maps = require(Shared.Config.Maps)
 local Strike = require(Shared.Strike)
 local MatchRules = require(Shared.MatchRules)
 local MatchmakingStats = require(Shared.MatchmakingStats)
@@ -982,6 +983,7 @@ local function broadcast()
 	Net.Server.fireAll("MatchState", {
 		duel = duelInfo,
 		mission = mission,
+		map = Maps.current().DisplayName,
 		arrived = if record then arrived else nil,
 		expected = if record then expected else nil,
 		mode = mode.Id,

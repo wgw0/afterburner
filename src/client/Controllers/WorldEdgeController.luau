@@ -15,13 +15,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Maps = require(Shared.Config.Maps)
 local Scale = require(Shared.Config.Scale)
 local WorldEdge = require(Shared.WorldEdge)
 
 local TILE = 2048 -- the largest a part can be
 local FAR = 42000 -- how far the plain runs out (studs from the centre)
-local LAND = Color3.fromRGB(98, 122, 56)
-local SEA = Color3.fromRGB(34, 92, 104)
+local LAND = Maps.current().edge.land -- this place's map's colours (Config/Maps)
+local SEA = Maps.current().edge.seaColour
 local LAND_DEPTH = 11.2 -- land reaches below sea level, so a coast shows a bank, not a gap
 local UNDERLAY = -11.2 -- top of the underlay: below the sea floor and the terrain shell, so it never shows through
 local UNDERLAY_BAND = 288 -- z-depth of each underlay band (the coasts are straight within one)
@@ -66,7 +67,7 @@ local function slab(x0: number, x1: number, z0: number, z1: number, land: boolea
 	if x1 - x0 < 1 or z1 - z0 < 1 then
 		return
 	end
-	local top = if underlay then UNDERLAY elseif land then WorldEdge.PLAIN_HEIGHT else WorldEdge.WATER - 0.1
+	local top = if underlay then UNDERLAY elseif land then WorldEdge.plainHeight() else WorldEdge.WATER - 0.1
 	local depth = if land and not underlay then LAND_DEPTH else 2
 	local p = part("Plain")
 	p.Size = Vector3.new(TILE, depth, TILE)
@@ -92,7 +93,7 @@ local function buildUnderlay()
 	local half = WorldEdge.TERRAIN_HALF
 	for z0 = -half, half - 1, UNDERLAY_BAND do
 		local z1 = z0 + UNDERLAY_BAND
-		local west, east = WorldEdge.coastX((z0 + z1) / 2)
+		local west, east = WorldEdge.underlayCoastX((z0 + z1) / 2)
 		west, east = math.clamp(west, -half, half), math.clamp(east, -half, half)
 		slab(-half, west, z0, z1, true, true)
 		slab(west, east, z0, z1, false, true)
