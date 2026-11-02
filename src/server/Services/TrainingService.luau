@@ -18,7 +18,8 @@ local MatchService = require(script.Parent.MatchService)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 
 local MAX_AI = 11
-local VS_AI_MODES = { Dogfight = true, TeamDeathmatch = true, AirSuperiority = true, GunsOnly = true }
+local VS_AI_MODES =
+	{ Dogfight = true, TeamDeathmatch = true, AirSuperiority = true, GunsOnly = true, DuelCasual = true }
 
 local TrainingService = {
 	Priority = 52, -- after MatchmakingService
@@ -32,7 +33,11 @@ function TrainingService:Init()
 		if modeId == "FreeFlight" then
 			MatchService:SetMode("FreeFlight")
 		elseif VS_AI_MODES[modeId] and (AIBrain.PROFILES :: any)[difficulty] then
-			MatchService:StartVsAI(modeId, difficulty, math.clamp(count, 1, MAX_AI))
+			MatchService:StartVsAI(
+				modeId,
+				difficulty,
+				if modeId == "DuelCasual" then 1 else math.clamp(count, 1, MAX_AI)
+			)
 		end
 		-- Let them pick a new jet for it
 		for _, jet in AircraftService:GetJets() do

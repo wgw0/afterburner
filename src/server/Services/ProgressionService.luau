@@ -610,8 +610,8 @@ function ProgressionService:Start()
 			)
 		end
 	end)
-	MatchService.MatchEnded:Connect(function(ranking, _reason, winnerTeam: string?)
-		local winner = ranking[1]
+	MatchService.MatchEnded:Connect(function(ranking, reason, winnerTeam: string?)
+		local winner = if reason == "Draw" then nil else ranking[1] -- a drawn duel has no winner
 		for _, player in Players:GetPlayers() do
 			local data = DataService:GetData(player)
 			if data and ServerRole.isTraining() and MatchService:GetMode().AIDifficulty then

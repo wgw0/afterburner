@@ -113,6 +113,7 @@ Achievements.SERIES = table.freeze({
 		text = "Reach pilot level %s.",
 		levels = { 5, 10, 15, 40, 50, 75, 100 },
 	},
+	{ id = "Duelist", name = "Duelist", stat = "duelWins", text = "Win %s duels.", levels = { 1, 10, 50, 150, 500 } },
 	{
 		id = "Taskmaster",
 		name = "Taskmaster",
@@ -305,6 +306,7 @@ export type Event = {
 	challengesDone: number?, -- Career: daily and weekly challenges completed
 	modulesFitted: number?, -- Career: upgrades bought, on every jet
 	topTier: number?, -- Career: the highest tier owned
+	duelWins: number?, -- Career: duels won (MCH-09)
 	airframe: string?, -- Spawn
 }
 
@@ -467,6 +469,7 @@ function Achievements.career(data: { [string]: any }): Event
 		challengesDone = stats.Challenges or 0,
 		modulesFitted = fitted,
 		topTier = topTier,
+		duelWins = (type(data.Duel) == "table" and data.Duel.Won) or 0,
 		ownedJets = owned,
 		totalJets = totalJets,
 		fullyKitted = kitted,

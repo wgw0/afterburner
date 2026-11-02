@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Duel = require(Shared.Duel)
 local Economy = require(Shared.Config.Economy)
 local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
@@ -49,10 +50,13 @@ local function Results(props: any)
 	local reason = if match.reason == "ScoreLimit"
 		then "kill limit reached"
 		elseif match.reason == "Tickets" then "out of tickets"
+		elseif match.reason == "Rounds" then "duel won on rounds"
+		elseif match.reason == "Forfeit" then "the other pilot left"
+		elseif match.reason == "Draw" then "level on rounds"
 		else "time's up"
 	local children: { [string]: any } = {
 		Title = e(C.Label, {
-			Text = if match.teams and match.winner == "Draw"
+			Text = if match.winner == "Draw"
 				then "DRAW"
 				elseif match.teams then `{string.upper(match.winner or "Nobody")} TEAM WINS`
 				else `{match.winner or "Nobody"} WINS`,
@@ -72,6 +76,39 @@ local function Results(props: any)
 			TextSize = 14,
 		}),
 	}
+
+	-- Duels (MCH-09): the round score, and your rating change with your rank
+	local duel = match.duel
+	if duel then
+		local parts = {}
+		for _, seat in duel.seats do
+			table.insert(parts, `{seat.name} {seat.wins}`)
+		end
+		local mine = duel.ratings and duel.ratings[tostring(Players.LocalPlayer.UserId)]
+		local line = table.concat(parts, "  –  ")
+		local colour = Theme.Text
+		if mine and mine.ranked then
+			local rank = Duel.rankFor(mine.rating)
+			line ..= `  ·  {if mine.change >= 0 then "+" else ""}{mine.change} rating  ·  {rank.name} {mine.rating}`
+			local promoted = mine.promoted or {}
+			if #promoted > 0 then
+				line ..= `  ·  NEW RANK: {promoted[#promoted]}!`
+			end
+			colour = if mine.change > 0 then Theme.Good elseif mine.change < 0 then Theme.Warn else Theme.Text
+		elseif duel.ranked then
+			line ..= "  ·  unranked: an AI opponent"
+		end
+		-- In place of the reason line: the round score says how it was won
+		children.Sub = e(C.Label, {
+			Text = `{line}  ·  {if match.expected then "back to the lobby" else "next match"} in {match.timeLeft or 0}s`,
+			Size = UDim2.new(1, 0, 0, 18),
+			Position = UDim2.fromOffset(0, 58),
+			Align = "Center",
+			Bold = true,
+			Color = colour,
+			TextSize = 14,
+		})
+	end
 
 	-- Your rewards
 	local rewardChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }

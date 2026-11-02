@@ -22,6 +22,8 @@ export type ModeConfig = {
 	Objective: "Zones"?, -- Air Superiority: zones and tickets decide it (AirSuperiority.luau)
 	AIDifficulty: string?, -- AI pilots' profile (AIBrain.PROFILES; default Normal). Set for Vs AI matches.
 	GunsOnly: boolean?, -- no missiles at all, and every gun carries GUNS_ONLY_AMMO times its rounds
+	Duel: boolean?, -- 1v1 in rounds (Shared/Duel): the server spawns both jets head-on each round
+	Ranked: boolean?, -- a duel that moves the pilots' duel ratings
 }
 
 export type Score = {
@@ -105,6 +107,34 @@ MatchRules.MODES = table.freeze({
 		CountdownSeconds = 8,
 		ResultsSeconds = 12,
 		GunsOnly = true,
+	} :: ModeConfig),
+	-- Duels (MCH-09, Will: the main mode): 1v1, best of five rounds, one life a round (Shared/Duel runs the
+	-- rounds; MatchService spawns both jets head-on). Ranked moves the duel rating, Casual doesn't. With only one
+	-- player (nobody to duel in time) an AI pilot takes the other seat and nothing is ranked.
+	Duel = table.freeze({
+		Id = "Duel",
+		DisplayName = "Ranked Duel",
+		ScoreLimit = 0,
+		TimeLimit = 0,
+		Respawn = { Type = "Timer", Delay = math.huge }, -- only the round start puts a jet back up
+		AIFill = 2,
+		Scored = true,
+		CountdownSeconds = 6,
+		ResultsSeconds = 12,
+		Duel = true,
+		Ranked = true,
+	} :: ModeConfig),
+	DuelCasual = table.freeze({
+		Id = "DuelCasual",
+		DisplayName = "Casual Duel",
+		ScoreLimit = 0,
+		TimeLimit = 0,
+		Respawn = { Type = "Timer", Delay = math.huge },
+		AIFill = 2,
+		Scored = true,
+		CountdownSeconds = 6,
+		ResultsSeconds = 12,
+		Duel = true,
 	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({

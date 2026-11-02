@@ -32,26 +32,28 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
+-- The mode PLAY queues for: a duel first (Will: the main mode), then the team and free-for-all modes, then Any
+-- (the fastest of those). { id, label, width }
 local QUEUE_MODES = {
-	{ "Any", "ANY MODE" },
-	{ "Dogfight", "DOGFIGHT" },
-	{ "TeamDeathmatch", "TEAMS" },
-	{ "AirSuperiority", "ZONES" },
-	{ "GunsOnly", "GUNS ONLY" },
+	{ "Duel", "RANKED DUEL", 156 },
+	{ "DuelCasual", "CASUAL DUEL", 146 },
+	{ "Dogfight", "DOGFIGHT", 122 },
+	{ "TeamDeathmatch", "TEAMS", 104 },
+	{ "AirSuperiority", "ZONES", 104 },
+	{ "GunsOnly", "GUNS ONLY", 122 },
+	{ "Any", "ANY", 84 },
 }
-
--- The mode PLAY queues for: Any (the fastest match) or one mode.
 local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
 
 local function modePicker(props: any)
 	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, Align = "Center" }) }
 	for i, item in QUEUE_MODES do
-		local id, label = item[1], item[2]
+		local id, label, width = item[1], item[2], item[3]
 		buttons[id] = e(C.Button, {
 			Text = label,
 			Style = if props.Value == id then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(if id == "Any" then 180 else 160, 50),
-			TextSize = 17,
+			Size = UDim2.fromOffset(width, 50),
+			TextSize = 15,
 			LayoutOrder = i,
 			OnClick = function()
 				props.OnPick(id)
@@ -333,7 +335,9 @@ local function Hangar(props: any)
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet
-		Matchmaking = if props.QueueMode then e(MatchmakingPanel, { AirframeId = selected }) else nil,
+		Matchmaking = if props.QueueMode
+			then e(MatchmakingPanel, { AirframeId = selected, Mode = props.QueueMode, Data = data })
+			else nil,
 		-- In a lobby: your party (MMK-05)
 		Party = if props.QueueMode and props.Party
 			then e(PartyPanel, {

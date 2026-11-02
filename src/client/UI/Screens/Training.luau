@@ -22,7 +22,8 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
--- Two rows of two: four buttons in one row are too narrow for their names
+-- A duel across the top (one AI opponent), then two rows of two: four buttons in one row are too narrow
+local VS_DUEL = { { "DuelCasual", "1V1 DUEL" } }
 local VS_MODES = { { "Dogfight", "FREE-FOR-ALL" }, { "TeamDeathmatch", "TEAMS" } }
 local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS ONLY" } }
 local DIFFICULTIES = { "Easy", "Normal", "Hard", "Ace" }
@@ -199,39 +200,43 @@ local function Training(props: any)
 			end,
 		})
 	end
-	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 19 })
+	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 18 })
+	side.ModeDuel = choices(VS_DUEL, vsMode, 252, 19, setVsMode)
 	side.Mode = choices(VS_MODES, vsMode, 252, 20, setVsMode)
 	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 21, setVsMode)
 	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 22, setDifficulty)
-	side.Count = e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 23 }, {
-		Layout = C.List({ Horizontal = true, Gap = 8, AlignY = "Center" }),
-		Label = e(C.Label, {
-			Text = `{count} opponent{if count == 1 then "" else "s"}`,
-			Size = UDim2.fromOffset(140, 36),
-			TextSize = 14,
-			LayoutOrder = 1,
-		}),
-		Down = e(C.Button, {
-			Text = "−",
-			Size = UDim2.fromOffset(44, 36),
-			TextSize = 20,
-			Disabled = count <= 1,
-			LayoutOrder = 2,
-			OnClick = function()
-				setCount(math.max(count - 1, 1))
-			end,
-		}),
-		Up = e(C.Button, {
-			Text = "+",
-			Size = UDim2.fromOffset(44, 36),
-			TextSize = 20,
-			Disabled = count >= MAX_AI,
-			LayoutOrder = 3,
-			OnClick = function()
-				setCount(math.min(count + 1, MAX_AI))
-			end,
-		}),
-	})
+	local duel = vsMode == "DuelCasual"
+	side.Count = if duel
+		then nil
+		else e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 23 }, {
+			Layout = C.List({ Horizontal = true, Gap = 8, AlignY = "Center" }),
+			Label = e(C.Label, {
+				Text = `{count} opponent{if count == 1 then "" else "s"}`,
+				Size = UDim2.fromOffset(140, 36),
+				TextSize = 14,
+				LayoutOrder = 1,
+			}),
+			Down = e(C.Button, {
+				Text = "−",
+				Size = UDim2.fromOffset(44, 36),
+				TextSize = 20,
+				Disabled = count <= 1,
+				LayoutOrder = 2,
+				OnClick = function()
+					setCount(math.max(count - 1, 1))
+				end,
+			}),
+			Up = e(C.Button, {
+				Text = "+",
+				Size = UDim2.fromOffset(44, 36),
+				TextSize = 20,
+				Disabled = count >= MAX_AI,
+				LayoutOrder = 3,
+				OnClick = function()
+					setCount(math.min(count + 1, MAX_AI))
+				end,
+			}),
+		})
 	side.Start = e(C.Button, {
 		Text = if props.VsAIRunning then "RESTART VS AI" else "START VS AI",
 		Style = "Primary",
@@ -239,7 +244,7 @@ local function Training(props: any)
 		TextSize = 14,
 		LayoutOrder = 24,
 		OnClick = function()
-			props.OnVsAI(vsMode, difficulty, count)
+			props.OnVsAI(vsMode, difficulty, if duel then 1 else count)
 		end,
 	})
 	side.Free = if props.VsAIRunning

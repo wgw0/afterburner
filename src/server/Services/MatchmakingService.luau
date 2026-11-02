@@ -28,6 +28,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local TeleportService = game:GetService("TeleportService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Duel = require(Shared.Duel)
 local MatchRules = require(Shared.MatchRules)
 local Matchmaking = require(Shared.Matchmaking)
 local MatchmakingStats = require(Shared.MatchmakingStats)
@@ -210,6 +211,7 @@ local function entryFor(player: Player, q: Queued): Queue.Entry
 			end
 		end
 	end
+	local data = DataService:GetData(player)
 	return {
 		userId = player.UserId,
 		members = if #members > 1 then members else nil,
@@ -217,6 +219,8 @@ local function entryFor(player: Player, q: Queued): Queue.Entry
 		mode = q.mode,
 		joinedAt = q.joinedAt,
 		jobId = game.JobId,
+		rating = if data then Duel.record(data).Rating else Duel.START_RATING,
+		airframe = q.airframe,
 	}
 end
 
@@ -390,6 +394,10 @@ local function join(player: Player, mode: string, airframe: string?)
 		sendState(player, { state = "Idle", message = "Your party's leader starts the search." })
 		return
 	end
+	if Queue.DUEL_MODES[mode] and #PartyService:MembersOf(player) > 1 then
+		sendState(player, { state = "Idle", message = "Duels are one on one: leave your party to duel." })
+		return
+	end
 	local q = queued[player]
 	if q then
 		q.mode = mode
@@ -535,7 +543,7 @@ end
 
 local function pickMode(): string
 	modeTurn += 1
-	return Queue.MODES[(modeTurn - 1) % #Queue.MODES + 1]
+	return Queue.ANY_MODES[(modeTurn - 1) % #Queue.ANY_MODES + 1]
 end
 
 local function makeMatch(match: Queue.Match)
@@ -551,6 +559,13 @@ local function makeMatch(match: Queue.Match)
 	end
 	local record =
 		{ role = "Match", mode = match.mode, players = users, band = match.band, formed = now(), parties = parties }
+	-- The jet each player clicked PLAY with (a duel puts them up in it; keys are strings: the record is JSON)
+	record.jets = {}
+	for _, entry in match.entries do
+		if entry.airframe then
+			record.jets[tostring(entry.userId)] = entry.airframe
+		end
+	end
 	-- Team modes: parties kept together, teams as even as can be (keys are strings: the record is JSON)
 	local teams = (MatchRules.MODES :: any)[match.mode] and (MatchRules.MODES :: any)[match.mode].Teams
 	if teams then
@@ -564,7 +579,7 @@ local function makeMatch(match: Queue.Match)
 	Telemetry.event(
 		"MatchFormed",
 		match.longestWait,
-		{ mode = match.mode, players = #users, ai = Queue.MATCH_SIZE - #users, spread = spread },
+		{ mode = match.mode, players = #users, ai = Queue.sizeFor(match.mode) - #users, spread = spread },
 		nil,
 		{ "mode", "spread" }
 	)
@@ -624,6 +639,7 @@ local function runMatchmaker()
 	local matches = Queue.form(entries, {
 		now = now(),
 		fillAfter = if studio then STUDIO_FILL_AFTER else nil,
+		duelFillAfter = if studio then STUDIO_FILL_AFTER else nil,
 		pickMode = pickMode,
 	})
 	for _, match in matches do
@@ -644,7 +660,7 @@ function MatchmakingService:Stats(): any
 	local formed = { count = #stats.formed, players = 0, aiSeats = 0, spread = 0, byMode = {} }
 	for _, match in stats.formed do
 		formed.players += match.players
-		formed.aiSeats += Queue.MATCH_SIZE - match.players
+		formed.aiSeats += Queue.sizeFor(match.mode) - match.players
 		formed.spread += match.spread
 		formed.byMode[match.mode] = (formed.byMode[match.mode] or 0) + 1
 	end

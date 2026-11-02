@@ -1,7 +1,7 @@
 --!strict
 -- Leaderboards (LIV-05, DAT-04; DEVELOPMENT.md §26.8). Five boards, each an OrderedDataStore: kills and
 -- wins this week (a new store every Monday 00:00 UTC, the same week as the Shop's bundle), the season's XP
--- (a store per season), all-time kills and squadrons this week. Only scored matches count (not training or free flight), and
+-- (a store per season), all-time kills, squadrons this week and duel ratings (MCH-09). Only scored matches count (not training or free flight), and
 -- only other players shot down (Will: AI pilots filling empty seats don't count). Pure: LeaderboardService
 -- writes and reads the stores; data.Weekly holds this week's counts.
 
@@ -21,6 +21,7 @@ Leaderboards.BOARDS = table.freeze({
 	{ id = "Season", name = "Season XP", unit = "XP" },
 	{ id = "KillsAll", name = "All-time kills", unit = "kills" },
 	{ id = "SquadronWeek", name = "Squadrons this week", unit = "points", squadron = true },
+	{ id = "Duel", name = "Duel rating", unit = "rating" },
 }) :: { Board }
 
 function Leaderboards.get(id: string): Board?
@@ -46,6 +47,8 @@ function Leaderboards.storeName(id: string, now: number): string?
 		return if season then `LB_Season_{season.Id}` else nil
 	elseif id == "KillsAll" then
 		return "LB_KillsAll"
+	elseif id == "Duel" then
+		return "LB_DuelRating"
 	end
 	return nil
 end
@@ -86,6 +89,10 @@ function Leaderboards.score(data: { [string]: any }, id: string, now: number): n
 		return if season and type(saved) == "table" and saved.Id == season.Id then math.floor(saved.XP or 0) else 0
 	elseif id == "KillsAll" then
 		return (data.Stats and data.Stats.Kills) or 0 -- players only
+	elseif id == "Duel" then
+		-- Only pilots who've played a ranked-or-casual duel are on it
+		local duel = data.Duel
+		return if type(duel) == "table" and (duel.Played or 0) > 0 then math.floor(duel.Rating or 0) else 0
 	end
 	return 0
 end
