@@ -398,6 +398,12 @@ local function join(player: Player, mode: string, airframe: string?)
 		sendState(player, { state = "Idle", message = "Duels are one on one: leave your party to duel." })
 		return
 	end
+	-- BVR: the jet PLAY was clicked with must be able to fly it (Tier IV+, radar missiles)
+	local allowed, why = MatchRules.jetAllowed(MatchRules.get(mode), airframe or "")
+	if not allowed and MatchRules.get(mode) and (MatchRules.get(mode) :: any).MinTier then
+		sendState(player, { state = "Idle", message = `{why}. Pick one in your lineup.` })
+		return
+	end
 	local q = queued[player]
 	if q then
 		q.mode = mode

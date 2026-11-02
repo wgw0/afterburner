@@ -50,7 +50,7 @@ local SPECS: { [string]: Spec } = {
 	-- The mode PLAY queues for (MMK-03, UI-05)
 	QueueMode = {
 		kind = "enum",
-		values = { "Duel", "DuelCasual", "Any", "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" },
+		values = { "Duel", "DuelCasual", "Any", "Dogfight", "TeamDeathmatch", "AirSuperiority", "BVR", "GunsOnly" },
 		default = "Duel", -- Will: duels are the main mode
 	},
 }

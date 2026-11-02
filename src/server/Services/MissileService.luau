@@ -123,15 +123,22 @@ local function onJetSpawned(jet: Jet)
 	if not airframe then
 		return
 	end
-	local armed = MatchRules.missiles(MatchRules.get(ReplicatedStorage:GetAttribute("GameMode")))
+	local mode = MatchRules.get(ReplicatedStorage:GetAttribute("GameMode"))
+	local armed = MatchRules.missiles(mode)
 	local slots = {}
+	local first = 0
 	for _, entry in airframe.Missiles or {} do
 		local weapon = WeaponData.getMissile(entry.Weapon)
 		if weapon then
-			local count = if armed then entry.Count else 0
+			-- BVR: only radar missiles go on the rails (MatchRules.missileAllowed)
+			local count = if MatchRules.missileAllowed(mode, weapon.Class) then entry.Count else 0
 			table.insert(slots, { weapon = weapon, id = entry.Weapon, count = count, full = count })
+			if first == 0 and count > 0 then
+				first = #slots
+			end
 		end
 	end
+	armed = armed and first > 0
 	local hardpoints = {}
 	for i = 1, 12 do
 		local a = jet.root:FindFirstChild(`Hardpoint{i}`)
@@ -143,7 +150,7 @@ local function onJetSpawned(jet: Jet)
 	local loadout: Loadout = {
 		jet = jet,
 		slots = slots,
-		selected = if armed then 1 else 0,
+		selected = first,
 		armed = armed,
 		flares = cm.Flares,
 		chaff = cm.Chaff,
@@ -811,6 +818,14 @@ function MissileService:Init()
 		local jet = AircraftService:GetJet(player)
 		local loadout = jet and loadouts[jet.id]
 		if loadout and loadout.armed and loadout.slots[index] then
+			-- Skip racks this mode leaves empty (BVR's heat-seekers), on to the next one that's carried
+			for step = 0, #loadout.slots - 1 do
+				local candidate = (index - 1 + step) % #loadout.slots + 1
+				if loadout.slots[candidate].full > 0 then
+					index = candidate
+					break
+				end
+			end
 			loadout.selected = index
 			setAttributes(loadout)
 		end

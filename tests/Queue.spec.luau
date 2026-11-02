@@ -209,4 +209,15 @@ return function(ctx)
 			expect(#Queue.form({ party, duelist(2, 1000) }, { now = 1 })).toBe(0)
 		end)
 	end)
+	describe("BVR (MCH-10)", function()
+		it("only those who pick BVR play it, and Any never becomes BVR", function()
+			local matches = Queue.form({ entry(1, 7, "BVR"), entry(2, 7, "Any"), entry(3, 7, "BVR") }, { now = 40 })
+			for _, match in matches do
+				for _, e in match.entries do
+					expect((match.mode == "BVR") == (e.mode == "BVR")).toBe(true)
+				end
+			end
+			expect(Queue.modeAfter("BVR", 9999)).toBe("BVR")
+		end)
+	end)
 end

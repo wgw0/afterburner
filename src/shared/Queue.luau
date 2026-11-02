@@ -25,8 +25,10 @@ Queue.SPREAD_STAGES = table.freeze({ { 0, 1.0 }, { 60, 1.7 }, { 150, 3.0 } })
 Queue.SPREAD_MIN = Queue.SPREAD_STAGES[1][2]
 Queue.SPREAD_MAX = Queue.SPREAD_STAGES[#Queue.SPREAD_STAGES][2]
 Queue.ANY_MODE_AFTER = 120 -- seconds before a player who picked a mode will take any mode
-Queue.MODES = table.freeze({ "Duel", "DuelCasual", "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
-Queue.ANY_MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" }) -- what "Any" can be
+Queue.MODES = table.freeze({ "Duel", "DuelCasual", "Dogfight", "TeamDeathmatch", "AirSuperiority", "BVR", "GunsOnly" })
+-- What "Any" can be: not duels, and not BVR (Tier IV+ only, MCH-10)
+Queue.ANY_MODES = table.freeze({ "Dogfight", "TeamDeathmatch", "AirSuperiority", "GunsOnly" })
+Queue.PICK_ONLY = table.freeze({ Duel = true, DuelCasual = true, BVR = true }) -- only for those who pick them
 Queue.DUEL_MODES = table.freeze({ Duel = true, DuelCasual = true })
 
 export type Entry = {
@@ -76,7 +78,7 @@ end
 
 -- The mode a player is matched as after waiting: their pick, or "Any" once they've waited ANY_MODE_AFTER.
 function Queue.modeAfter(mode: string, waited: number): string
-	return if waited >= Queue.ANY_MODE_AFTER and not Queue.DUEL_MODES[mode] then "Any" else mode
+	return if waited >= Queue.ANY_MODE_AFTER and not Queue.PICK_ONLY[mode] then "Any" else mode
 end
 
 function Queue.validMode(mode: string): boolean
@@ -96,6 +98,8 @@ end
 local function fits(entry: Entry, mode: string): boolean
 	if Queue.DUEL_MODES[mode] then
 		return entry.mode == mode and entry.members == nil
+	elseif Queue.PICK_ONLY[mode] then
+		return entry.mode == mode
 	end
 	return entry.mode == "Any" or entry.mode == mode
 end
@@ -109,7 +113,7 @@ local function chooseMode(anchor: Entry, candidates: { Entry }, pickMode: () -> 
 	local counts: { [string]: number } = {}
 	local best, bestCount = nil, 0
 	for _, entry in candidates do
-		if entry.mode ~= "Any" and not Queue.DUEL_MODES[entry.mode] then
+		if entry.mode ~= "Any" and not Queue.PICK_ONLY[entry.mode] then
 			counts[entry.mode] = (counts[entry.mode] or 0) + 1
 			if counts[entry.mode] > bestCount then
 				best, bestCount = entry.mode, counts[entry.mode]

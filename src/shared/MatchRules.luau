@@ -4,6 +4,9 @@
 --
 -- Scores are keyed by "pilot identity": a Player, or an AI pilot record. Anything usable as a table key.
 
+local AircraftData = require(script.Parent.AircraftData)
+local WeaponData = require(script.Parent.WeaponData)
+
 local MatchRules = {}
 
 export type RespawnRule = { Type: "Timer", Delay: number } | { Type: "Lives", Lives: number, Delay: number }
@@ -24,6 +27,9 @@ export type ModeConfig = {
 	GunsOnly: boolean?, -- no missiles at all, and every gun carries GUNS_ONLY_AMMO times its rounds
 	Duel: boolean?, -- 1v1 in rounds (Shared/Duel): the server spawns both jets head-on each round
 	Ranked: boolean?, -- a duel that moves the pilots' duel ratings
+	MissileClasses: { [string]: boolean }?, -- only missiles of these classes are carried (BVR: radar ones)
+	MinTier: number?, -- only jets of this tier and up may fly (BVR: IV)
+	Bvr: boolean?, -- BVR Battles: the teams start far apart (MatchRules.BVR_SEPARATION), facing each other
 }
 
 export type Score = {
@@ -39,6 +45,8 @@ export type Score = {
 }
 
 MatchRules.GUNS_ONLY_AMMO = 4 -- Guns Only: times the gun's usual rounds (Will)
+MatchRules.BVR_SEPARATION = 7600 -- BVR Battles: studs between the two teams' start lines (~20 km real)
+MatchRules.RADAR_CLASSES = table.freeze({ SARH = true, ARH = true })
 
 MatchRules.POINTS = table.freeze({ Kill = 100, Assist = 50, ForcedCrashKill = 100, Capture = 150 })
 
@@ -136,6 +144,24 @@ MatchRules.MODES = table.freeze({
 		ResultsSeconds = 12,
 		Duel = true,
 	} :: ModeConfig),
+	-- BVR Battles (MCH-10): the team match fought at range. Tier IV and up only, radar missiles only (the gun
+	-- stays for a merge), and the teams start ~20 km apart facing each other, so radar, locks, notching and
+	-- the data link decide it. Team kills score.
+	BVR = table.freeze({
+		Id = "BVR",
+		DisplayName = "BVR Battle",
+		ScoreLimit = 15, -- long-range kills come fast: 10 ended a match with AI in about four minutes
+		TimeLimit = 720,
+		Respawn = { Type = "Timer", Delay = 8 },
+		AIFill = 6,
+		Scored = true,
+		CountdownSeconds = 8,
+		ResultsSeconds = 12,
+		Teams = table.freeze({ "West", "East" }),
+		MissileClasses = MatchRules.RADAR_CLASSES,
+		MinTier = 4,
+		Bvr = true,
+	} :: ModeConfig),
 	-- Test environment only (DebugSetMode): the PRF-02 stress test, bots fill the match to 24 jets.
 	Stress = table.freeze({
 		Id = "Stress",
@@ -174,6 +200,38 @@ end
 -- Whether jets carry missiles in this mode.
 function MatchRules.missiles(mode: ModeConfig?): boolean
 	return not (mode and mode.GunsOnly)
+end
+
+-- Whether a missile of this class is carried in this mode.
+function MatchRules.missileAllowed(mode: ModeConfig?, class: string): boolean
+	if not MatchRules.missiles(mode) then
+		return false
+	end
+	return not (mode and mode.MissileClasses) or (mode :: ModeConfig).MissileClasses[class] == true
+end
+
+-- Whether a jet may fly in this mode, or why not (BVR: Tier IV and up, with a radar missile).
+function MatchRules.jetAllowed(mode: ModeConfig?, airframeId: string): (boolean, string?)
+	if not mode then
+		return true, nil
+	end
+	local airframe = AircraftData.get(airframeId) :: any
+	if not airframe then
+		return false, "Unknown jet"
+	end
+	if mode.MinTier and (airframe.Tier or 1) < mode.MinTier then
+		return false, `{mode.DisplayName} needs a Tier IV or higher jet`
+	end
+	if mode.MissileClasses then
+		for _, entry in airframe.Missiles or {} do
+			local weapon = WeaponData.getMissile(entry.Weapon) :: any
+			if weapon and mode.MissileClasses[weapon.Class] then
+				return true, nil
+			end
+		end
+		return false, `{mode.DisplayName} needs a jet with radar missiles`
+	end
+	return true, nil
 end
 
 function MatchRules.newScore(name: string, isAI: boolean, userId: number): Score

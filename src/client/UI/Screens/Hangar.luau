@@ -35,13 +35,14 @@ local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 -- The mode PLAY queues for: a duel first (Will: the main mode), then the team and free-for-all modes, then Any
 -- (the fastest of those). { id, label, width }
 local QUEUE_MODES = {
-	{ "Duel", "RANKED DUEL", 156 },
-	{ "DuelCasual", "CASUAL DUEL", 146 },
-	{ "Dogfight", "DOGFIGHT", 122 },
-	{ "TeamDeathmatch", "TEAMS", 104 },
-	{ "AirSuperiority", "ZONES", 104 },
-	{ "GunsOnly", "GUNS ONLY", 122 },
-	{ "Any", "ANY", 84 },
+	{ "Duel", "RANKED DUEL", 150 },
+	{ "DuelCasual", "CASUAL DUEL", 140 },
+	{ "Dogfight", "DOGFIGHT", 112 },
+	{ "TeamDeathmatch", "TEAMS", 92 },
+	{ "AirSuperiority", "ZONES", 92 },
+	{ "BVR", "BVR", 76 },
+	{ "GunsOnly", "GUNS ONLY", 112 },
+	{ "Any", "ANY", 70 },
 }
 local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
 

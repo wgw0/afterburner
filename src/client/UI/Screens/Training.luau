@@ -25,7 +25,7 @@ local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 -- A duel across the top (one AI opponent), then two rows of two: four buttons in one row are too narrow
 local VS_DUEL = { { "DuelCasual", "1V1 DUEL" } }
 local VS_MODES = { { "Dogfight", "FREE-FOR-ALL" }, { "TeamDeathmatch", "TEAMS" } }
-local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS ONLY" } }
+local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS" }, { "BVR", "BVR" } }
 local DIFFICULTIES = { "Easy", "Normal", "Hard", "Ace" }
 local MAX_AI = 11
 

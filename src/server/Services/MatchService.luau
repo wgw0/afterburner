@@ -34,6 +34,7 @@ local Environment = require(Shared.Config.Environment)
 local Flight = require(Shared.Config.Flight)
 local AdaptiveAI = require(Shared.AdaptiveAI)
 local AirSuperiority = require(Shared.AirSuperiority)
+local AircraftData = require(Shared.AircraftData)
 local Callsign = require(Shared.Callsign)
 local Duel = require(Shared.Duel)
 local MatchRules = require(Shared.MatchRules)
@@ -134,9 +135,18 @@ local function ensureScore(identity: any, name: string, isAI: boolean, userId: n
 end
 
 -- Candidate airborne spawns: tagged SpawnPoint parts on the map, or a ring around the centre. With a team,
--- only that team's spawn points (each SpawnPoint has a Team attribute: West or East), if there are any.
+-- only that team's spawn points (each SpawnPoint has a Team attribute: West or East), if there are any. BVR
+-- Battles: each team's start line, BVR_SEPARATION apart across the map, facing the other.
 local function spawnCandidates(team: string?): { CFrame }
 	local list = {}
+	if mode.Bvr and team then
+		local x = MatchRules.BVR_SEPARATION / 2 * (if team == "West" then -1 else 1)
+		for _, z in { 0, -500, 500, -1000, 1000 } do
+			local position = Vector3.new(x, Flight.SPAWN_ALTITUDE_STUDS, z)
+			table.insert(list, CFrame.lookAt(position, Vector3.new(0, position.Y, z)))
+		end
+		return list
+	end
 	for _, part in CollectionService:GetTagged("SpawnPoint") do
 		if part:IsA("BasePart") and part:IsDescendantOf(workspace) and part:GetAttribute("Type") ~= "Runway" then
 			if team == nil or part:GetAttribute("Team") == team then
@@ -225,6 +235,10 @@ local function spawnGate(player: Player, airframeId: string): (boolean, CFrame?,
 		return false, nil, "Press PLAY to find a match"
 	end
 	ensureScore(player, Callsign.nameOf(player), false, player.UserId)
+	local jetOk, why = MatchRules.jetAllowed(mode, airframeId)
+	if not jetOk and mode.Scored then
+		return false, nil, why -- BVR: Tier IV+ jets with radar missiles
+	end
 	if duel then
 		flying[player] = airframeId -- the jet they'll fly from the next round
 		if AircraftService:GetJet(player) then
@@ -258,7 +272,23 @@ end
 -- The jets AI pilots fly: inside the match's band, or on a training server (Vs AI) the jets at the level
 -- of the one the player flies (Will).
 local function aiChoices(): { string }
-	return if ServerRole.isTraining() then Matchmaking.vsAIAirframes(band.br) else Matchmaking.aiAirframes(band)
+	local list = if ServerRole.isTraining() then Matchmaking.vsAIAirframes(band.br) else Matchmaking.aiAirframes(band)
+	-- Only jets this mode allows (BVR: Tier IV+ with radar missiles), if any of them are allowed
+	local allowed = {}
+	for _, id in list do
+		if MatchRules.jetAllowed(mode, id) then
+			table.insert(allowed, id)
+		end
+	end
+	if #allowed == 0 and mode.MinTier then
+		for id in AircraftData.getAll() do
+			if MatchRules.jetAllowed(mode, id) then
+				table.insert(allowed, id)
+			end
+		end
+		table.sort(allowed)
+	end
+	return if #allowed > 0 then allowed else list
 end
 
 -- The match's BR band (the matchmaker's, or from the lineups of the players here, MMK-01), and AI jets to

@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Duel = require(Shared.Duel)
 local LiveConfig = require(Shared.LiveConfig)
+local MatchRules = require(Shared.MatchRules)
 local Queue = require(Shared.Queue)
 
 local C = require(script.Parent.Components)
@@ -89,6 +90,12 @@ local function MatchmakingPanel(props: { AirframeId: string?, Mode: string?, Dat
 	end
 	local airframe = props.AirframeId and AircraftData.get(props.AirframeId) :: any
 	local br = airframe and LiveConfig.battleRating(props.AirframeId :: string)
+	-- BVR (MCH-10): only some jets can fly it; say so before PLAY refuses
+	local bvr = props.Mode == "BVR"
+	local bvrOk, bvrWhy = true, nil
+	if bvr then
+		bvrOk, bvrWhy = MatchRules.jetAllowed(MatchRules.MODES.BVR, props.AirframeId or "")
+	end
 	local you, range
 	if airframe and br then
 		you = `{airframe.DisplayName} · BR {rating(br)}`
@@ -127,9 +134,13 @@ local function MatchmakingPanel(props: { AirframeId: string?, Mode: string?, Dat
 			TextSize = 13,
 		}),
 		How = e(C.Label, {
-			Text = `You're matched by the jet you click PLAY with, against jets near its level. The longer you wait, the wider the search: up to {rating(
-				Queue.SPREAD_MAX
-			)} BR away, and any mode after {Queue.ANY_MODE_AFTER // 60} minutes. Empty seats get AI pilots.`,
+			Text = if bvr
+				then `3v3 at long range: radar missiles only (no heat-seekers), Tier IV and up, and the teams start about 20 km apart. {if bvrOk
+					then "Your jet can fly it."
+					else `{bvrWhy}: pick another jet.`}`
+				else `You're matched by the jet you click PLAY with, against jets near its level. The longer you wait, the wider the search: up to {rating(
+					Queue.SPREAD_MAX
+				)} BR away, and any mode after {Queue.ANY_MODE_AFTER // 60} minutes. Empty seats get AI pilots.`,
 			Size = UDim2.new(1, 0, 0, 86),
 			Position = UDim2.fromOffset(0, 64),
 			TextSize = 13,
