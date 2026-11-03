@@ -73,7 +73,7 @@ not the code. To change assets: make the change in the TEST place in Studio (eve
    funnel, `DataLoadFailed`), and the server logs if anything looks off. Decide within the hour whether to
    keep it or roll back.
 8. **First launch only:** the store thumbnail and the remaining badges (DEVELOPMENT.md §35.3 steps 5 and 6).
-   The icon is already set on the live experience, and 15 of the 32 one-off achievements have badges there
+   The icon is already set on the live experience, and 20 of the 32 one-off achievements have badges there
    (ids in `Config/Badges`).
 
 ## Rolling back
