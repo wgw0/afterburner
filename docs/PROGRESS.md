@@ -12,7 +12,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 5 Progression and saving | 23 / 23 | Signed off |
 | 6 Content and polish for a soft launch | 42 / 43 | Only LIV-02 left: its badges are being created (5 free a day). LIV-08 (free spin) was added and is done. |
 | 7 Monetisation | 11 / 11 | Built and checked in Studio |
-| 8 Launch and live ops | 11 / 20 | In progress: parties (MMK-05) wait for the live test; CMP-04 waits for the last badges; new modes, maps and Open Cloud publishing not started |
+| 8 Launch and live ops | 11 / 21 | In progress: parties (MMK-05) wait for the live test; CMP-04 waits for the last badges; new modes, maps and Open Cloud publishing not started |
 
 ---
 
@@ -409,6 +409,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: an `OrderedDataStore` per board (weekly stores per week, a season store per season, all-time), written after each scored match and on leaving, only when a score changed (`LeaderboardService`, DEVELOPMENT.md §26.8). Checked in Studio.
 - [ ] **MMK-05** Parties
   - Built: parties of up to 3 in a lobby (invite players here or friends through Roblox's invite window), queueing as one entry at the party's highest BR, the same team in team modes, home together and re-formed after the match (`Party.luau`, `PartyService`, `UI/PartyPanel`, DEVELOPMENT.md §25.3; 13 tests in `Party.spec`). Checked in Studio on one player. *To tick after the live test with two or more players.*
+- [x] **MMK-07** Group and friends bonuses
+  - Built: +10% Credits and XP for being in the Afterburner Roblox group, and another +10% when a Roblox friend or a party mate flies in the same match. Each is its own line on the results screen, with a dim hint when it wasn't earned, and the hangar has a chip that lights up for each bonus (`Shared/Social`, `Config/Social`, `SocialService`, `UI/SocialChip`, DEVELOPMENT.md §25.8; `Social.spec`). Nothing rewards likes or favourites ([COMPLIANCE.md](COMPLIANCE.md) §8). *The group bonus stays off until Will gives the group id (`Config/Social.GROUP_ID`). To see in the live test with two friends.*
 - [x] **LIV-05** Leaderboards
   - Built: Kills this week, Wins this week, Season XP and All-time kills, top 50 each with your own score, on the Career screen's LEADERBOARDS tab; admin `leaderboard.remove` for cheaters. Only player kills count, not bots (`Shared/Leaderboards`, `UI/LeaderboardPanel`, §26.8; `Leaderboards.spec`). Checked in Studio.
 - [x] **LIV-06** Squadrons

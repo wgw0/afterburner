@@ -12,6 +12,7 @@ local Leaderboards = require(script.Parent.Leaderboards)
 local Mastery = require(script.Parent.Mastery)
 local Perks = require(script.Parent.Perks)
 local Season = require(script.Parent.Season)
+local Social = require(script.Parent.Social)
 local PlayerData = require(script.Parent.PlayerData)
 local Skins = require(script.Parent.Skins)
 local TechTree = require(script.Parent.TechTree)
@@ -36,6 +37,7 @@ export type MatchSummary = {
 	-- Live config multipliers (OPS-01), e.g. a double XP weekend; Label names the line on the results screen
 	Boost: { XP: number, Credits: number, RP: number, Label: string }?,
 	Personal: { Credits: number, RP: number, Label: string }?, -- VIP and boosters (Shared/Perks)
+	Social: { Social.Bonus }?, -- the group and friends bonuses (Shared/Social), a line each
 }
 
 export type RewardLine = { Label: string, XP: number, RP: number, Credits: number }
@@ -154,6 +156,20 @@ function Progression.matchRewards(summary: MatchSummary, lastWinDay: number): Re
 		rewards.XP *= boost.XP
 		rewards.Credits *= boost.Credits
 		table.insert(rewards.Lines, boostLine)
+	end
+
+	-- The group and friends bonuses (Shared/Social): Credits and XP, a line each
+	for _, bonus in summary.Social or {} do
+		if bonus.XP ~= 1 or bonus.Credits ~= 1 then
+			table.insert(rewards.Lines, {
+				Label = bonus.Label,
+				XP = rewards.XP * (bonus.XP - 1),
+				RP = 0,
+				Credits = rewards.Credits * (bonus.Credits - 1),
+			})
+			rewards.XP *= bonus.XP
+			rewards.Credits *= bonus.Credits
+		end
 	end
 
 	-- The player's own perks (VIP, boosters): their own line

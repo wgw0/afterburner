@@ -32,6 +32,7 @@ local Perks = require(Shared.Perks)
 local Settings = require(Shared.Config.Settings)
 local Signal = require(Shared.Util.Signal)
 local Skins = require(Shared.Skins)
+local Social = require(Shared.Social)
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
 
 local AircraftService = require(script.Parent.AircraftService)
@@ -54,6 +55,7 @@ type Tally = {
 	alive: boolean,
 	lastActive: number,
 	lastSample: string,
+	withFriends: boolean?, -- a friend or party member was on this match server with them at some point
 }
 
 local tallies: { [Player]: Tally } = {}
@@ -135,6 +137,11 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 			Label = if LiveConfig.get("event") ~= "" then LiveConfig.get("event") else "Event bonus",
 		},
 		Personal = Perks.boost(data, os.time()), -- VIP and boosters (SHP-03)
+		-- Group and friends (SocialService sets the attributes; the server's own, so they can be trusted)
+		Social = Social.bonuses(
+			player:GetAttribute(Social.GROUP_ATTRIBUTE) == true,
+			tally.withFriends == true or player:GetAttribute(Social.FRIENDS_ATTRIBUTE) == true
+		),
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
@@ -680,6 +687,10 @@ function ProgressionService:Start()
 				if sample ~= tally.lastSample then
 					tally.lastSample = sample
 					tally.lastActive = os.clock()
+				end
+				-- Flying with friends counts if they were here at any point, not only at the end
+				if (jet.pilot :: Player):GetAttribute(Social.FRIENDS_ATTRIBUTE) == true then
+					tally.withFriends = true
 				end
 			end
 		end

@@ -27,6 +27,7 @@ local JetPreview = require(UI.JetPreview)
 local MatchmakingPanel = require(UI.MatchmakingPanel)
 local ModeSelect = require(UI.ModeSelect)
 local PartyPanel = require(UI.PartyPanel)
+local SocialChip = require(UI.SocialChip)
 local SpinButton = require(UI.SpinButton)
 local SpinDialog = require(UI.SpinDialog)
 local Theme = require(UI.Theme)
@@ -334,6 +335,8 @@ local function Hangar(props: any)
 			}),
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
+		-- The group and friends bonuses, under the news banner (Shared/Social)
+		Social = e(SocialChip, {}),
 		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet
 		Matchmaking = if props.QueueMode
 			then e(MatchmakingPanel, { AirframeId = selected, Mode = props.QueueMode, Data = data })

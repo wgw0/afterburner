@@ -694,6 +694,12 @@ function MatchmakingService:Stats(): any
 	}
 end
 
+-- On a match server: the parties the matchmaker put in this match ({ userId } each, leader first), for the
+-- friends bonus (SocialService). Empty anywhere else.
+function MatchmakingService:MatchParties(): { { number } }
+	return (matchRecord and matchRecord.parties) or {}
+end
+
 -- Testing (admin onboarding.restart): send a player into the first-session flow now.
 function MatchmakingService:StartFirstSession(player: Player)
 	leave(player, true)

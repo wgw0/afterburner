@@ -2,7 +2,8 @@
 -- Match results (UI-06): who won, your reward lines counting up, your pilot level bar filling, and the
 -- top of the scoreboard, with REPORT on other human pilots (CMP-03). Without VIP (and no Credits booster
 -- running, which VIP wouldn't add to), a line says what VIP would have added this match, with a way to the
--- Shop (DEVELOPMENT.md §27.9). props: Match (MatchState), Rewards (MatchRewards payload or nil), Data,
+-- Shop (DEVELOPMENT.md §27.9). The group and friends bonuses (Shared/Social) are reward lines when earned, and a
+-- small dim line each saying how to get them when not. props: Match (MatchState), Rewards (MatchRewards payload or nil), Data,
 -- OnReport(userId), OnShop().
 
 local Players = game:GetService("Players")
@@ -18,6 +19,8 @@ local LevelRewards = require(Shared.Config.LevelRewards)
 local Mastery = require(Shared.Mastery)
 local Passes = require(Shared.Config.Passes)
 local Perks = require(Shared.Perks)
+local Social = require(Shared.Social)
+local SocialConfig = require(Shared.Config.Social)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -153,7 +156,15 @@ local function Results(props: any)
 				"Frame",
 				{ Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, LayoutOrder = i },
 				{
-					Label = e(C.Label, { Text = line.Label, TextSize = 14, Size = UDim2.new(1, -3 * COL_W, 1, 0) }),
+					Label = e(C.Label, {
+						Text = line.Label,
+						TextSize = 14,
+						Size = UDim2.new(1, -3 * COL_W, 1, 0),
+						-- The group and friends bonuses in green
+						Color = if line.Label == Social.GROUP_LABEL or line.Label == Social.FRIENDS_LABEL
+							then Theme.Good
+							else nil,
+					}),
 					Values = e(
 						"Frame",
 						{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 },
@@ -224,6 +235,31 @@ local function Results(props: any)
 				Color = Theme.Rarity.Legendary,
 				LayoutOrder = 102 + i,
 			})
+		end
+		-- The group and friends bonuses not earned this match: how to get them (earned ones are lines above)
+		if not rewards.Training then
+			local earned = {}
+			for _, line in rewards.Lines do
+				earned[line.Label] = true
+			end
+			local hints = {}
+			if Social.groupOn() and not earned[Social.GROUP_LABEL] then
+				table.insert(hints, `Join the Afterburner group: {Social.percent(SocialConfig.GROUP)} Credits & XP`)
+			end
+			if not earned[Social.FRIENDS_LABEL] then
+				table.insert(
+					hints,
+					`Fly with a friend or your party: {Social.percent(SocialConfig.FRIENDS)} Credits & XP`
+				)
+			end
+			for i, hint in hints do
+				rewardChildren[`S{i}`] = e(C.Label, {
+					Text = hint,
+					TextSize = 12,
+					Color = Theme.Dim,
+					LayoutOrder = 105 + i,
+				})
+			end
 		end
 		-- What VIP would have added: its +25% on this match's Credits (a running Credits booster already
 		-- reaches the ×2 cap, so then it adds nothing and the line isn't shown)
