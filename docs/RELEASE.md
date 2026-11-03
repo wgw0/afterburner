@@ -18,7 +18,7 @@ published again, or a match on that map runs old code next to a lobby on the new
 | Experience | Places to publish |
 |---|---|
 | *Afterburner (TEST)* | Afterburner (TEST) (72582604278324), Desert Range (105532168384050) |
-| *Afterburner* (live) | Afterburner (95037764806358); Desert Range once it's added there |
+| *Afterburner* (live) | Afterburner (95037764806358), Desert Range (130074220241967) |
 
 For each place: open it in Studio, **Connect** Rojo (wait for it to sync), **File → Publish to Roblox**, then
 **File → Download a Copy** over its file in the repo (`Afterburner.rbxl`, `DesertRange.rbxl`) and commit it.

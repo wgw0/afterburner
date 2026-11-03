@@ -16,7 +16,7 @@ local UNIVERSES: { [number]: Universe } = {
 	},
 	[10773807904] = { -- the live experience
 		lobby = 95037764806358,
-		maps = { Strait = 95037764806358 },
+		maps = { Strait = 95037764806358, Desert = 130074220241967 },
 	},
 }
 
