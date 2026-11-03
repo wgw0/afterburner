@@ -1,5 +1,5 @@
 """
-Afterburner marketing: the world shared by the cover (cover_render.py) and the trailer (trailer_render.py), run
+Afterburner marketing: the trailer's world (trailer_render.py), run
 inside Blender. The game's own jets (their models and skins from tools/blender/out) flown along scripted paths
 over a low-poly, flat-shaded valley ringed by mountains, the icon's look: realistic jets, Roblox-style world.
 
