@@ -2,8 +2,8 @@
 -- Match results (UI-06): who won, your reward lines counting up, your pilot level bar filling, and the
 -- top of the scoreboard, with REPORT on other human pilots (CMP-03). Without VIP (and no Credits booster
 -- running, which VIP wouldn't add to), a line says what VIP would have added this match, with a way to the
--- Shop (DEVELOPMENT.md §27.9). The group and friends bonuses (Shared/Social) are reward lines when earned, and a
--- small dim line each saying how to get them when not. props: Match (MatchState), Rewards (MatchRewards payload or nil), Data,
+-- Shop (DEVELOPMENT.md §27.9). The friends bonus (Shared/Social) is a reward line when earned, and a small dim
+-- line saying how to get it when not. props: Match (MatchState), Rewards (MatchRewards payload or nil), Data,
 -- OnReport(userId), OnShop().
 
 local Players = game:GetService("Players")
@@ -160,10 +160,8 @@ local function Results(props: any)
 						Text = line.Label,
 						TextSize = 14,
 						Size = UDim2.new(1, -3 * COL_W, 1, 0),
-						-- The group and friends bonuses in green
-						Color = if line.Label == Social.GROUP_LABEL or line.Label == Social.FRIENDS_LABEL
-							then Theme.Good
-							else nil,
+						-- The friends bonus in green
+						Color = if line.Label == Social.FRIENDS_LABEL then Theme.Good else nil,
 					}),
 					Values = e(
 						"Frame",
@@ -236,28 +234,18 @@ local function Results(props: any)
 				LayoutOrder = 102 + i,
 			})
 		end
-		-- The group and friends bonuses not earned this match: how to get them (earned ones are lines above)
+		-- The friends bonus, if it wasn't earned this match: how to get it
 		if not rewards.Training then
-			local earned = {}
+			local earned = false
 			for _, line in rewards.Lines do
-				earned[line.Label] = true
+				earned = earned or line.Label == Social.FRIENDS_LABEL
 			end
-			local hints = {}
-			if Social.groupOn() and not earned[Social.GROUP_LABEL] then
-				table.insert(hints, `Join the Afterburner group: {Social.percent(SocialConfig.GROUP)} Credits & XP`)
-			end
-			if not earned[Social.FRIENDS_LABEL] then
-				table.insert(
-					hints,
-					`Fly with a friend or your party: {Social.percent(SocialConfig.FRIENDS)} Credits & XP`
-				)
-			end
-			for i, hint in hints do
-				rewardChildren[`S{i}`] = e(C.Label, {
-					Text = hint,
+			if not earned then
+				rewardChildren.Friends = e(C.Label, {
+					Text = `Fly with a friend or your party: {Social.percent(SocialConfig.FRIENDS)} Credits & XP`,
 					TextSize = 12,
 					Color = Theme.Dim,
-					LayoutOrder = 105 + i,
+					LayoutOrder = 106,
 				})
 			end
 		end
