@@ -8,6 +8,7 @@
 --   OnSpin() -> (prize?, err) (the free-spin button bottom right and its window).
 
 local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("React")) :: any
@@ -19,6 +20,9 @@ local Cosmetics = require(Shared.Cosmetics)
 local Progression = require(Shared.Progression)
 local Mastery = require(Shared.Mastery)
 local LiveConfig = require(Shared.LiveConfig)
+local MatchRules = require(Shared.MatchRules)
+local Duel = require(Shared.Duel)
+local Strike = require(Shared.Strike)
 
 local UI = script.Parent.Parent
 local ChallengesPanel = require(UI.ChallengesPanel)
@@ -47,28 +51,124 @@ local QUEUE_MODES = {
 	{ "Any", "ANY", 64 },
 }
 local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
+local PICKER_WIDTH = 1010 -- the mode buttons and the gaps between them
+local SIDE_PANELS = 2 * (20 + 300 + 16) -- the lineup on the left, challenges on the right, and a gap
+
+local function minutes(modeId: string): number
+	return math.floor((MatchRules.MODES :: any)[modeId].TimeLimit / 60)
+end
+
+-- What each mode is like, shown while the pointer is over its button
+local MODE_ABOUT = {
+	Duel = `1v1 against a pilot near your rating, best of five rounds with one life each. You start in opposite corners; first to {Duel.ROUNDS_TO_WIN} round wins. Wins and losses move your duel rating.`,
+	DuelCasual = "The same 1v1 rounds as Ranked, for practice: your rating doesn't move.",
+	Dogfight = `Free for all: every other jet is an enemy. First to {MatchRules.MODES.Dogfight.ScoreLimit} kills, or the most after {minutes(
+		"Dogfight"
+	)} minutes.`,
+	TeamDeathmatch = `Two teams of three. First team to {MatchRules.MODES.TeamDeathmatch.ScoreLimit} kills, or the most after {minutes(
+		"TeamDeathmatch"
+	)} minutes.`,
+	AirSuperiority = "Two teams fight for three zones. Hold more zones than the enemy and their tickets drain; every jet lost costs tickets too.",
+	StrikeEscort = `Two teams escort AI bombers to the enemy airbase and hunt theirs. First to {Strike.STRIKE_LIMIT} bomber strikes wins.`,
+	BVR = "Beyond visual range: two teams start about 20 km apart with radar missiles only. Needs a Tier IV+ jet with radar missiles.",
+	GunsOnly = `Free for all with no missiles: guns only, with {MatchRules.GUNS_ONLY_AMMO} times the ammo. Close-in turning fights.`,
+	Waves = `Co-op for up to three: defend your airbase from {Strike.WAVES} waves of AI fighters and bombers, each bigger than the last.`,
+	Any = "Whichever of the team and free-for-all modes finds you a match fastest.",
+}
 
 local function modePicker(props: any)
+	-- Shrinks to fit between the side panels on a narrow screen (or a large Menu scale) rather than run under
+	-- them. The frame's height is a fixed 50, so its width over its height gives the room in the menu's units.
+	local room, setRoom = React.useState(PICKER_WIDTH)
+	local hovered, setHovered = React.useState(nil :: string?)
+	local fit = math.clamp(room / PICKER_WIDTH, 0.4, 1)
 	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8, Align = "Center" }) }
 	for i, item in QUEUE_MODES do
 		local id, label, width = item[1], item[2], item[3]
-		buttons[id] = e(C.Button, {
-			Text = label,
-			Style = if props.Value == id then "Primary" else "Ghost",
+		buttons[id] = e("Frame", {
 			Size = UDim2.fromOffset(width, 50),
-			TextSize = 15,
+			BackgroundTransparency = 1,
 			LayoutOrder = i,
-			OnClick = function()
-				props.OnPick(id)
+			[React.Event.MouseEnter] = function()
+				setHovered(id)
 			end,
+			[React.Event.MouseLeave] = function()
+				setHovered(function(current)
+					return if current == id then nil else current
+				end)
+			end,
+		}, {
+			Button = e(C.Button, {
+				Text = label,
+				Style = if props.Value == id then "Primary" else "Ghost",
+				Size = UDim2.fromScale(1, 1),
+				TextSize = 15,
+				OnClick = function()
+					props.OnPick(id)
+				end,
+			}),
 		})
 	end
+	local about = hovered and MODE_ABOUT[hovered]
+	-- Measured, as wrapped text doesn't grow a box that sizes itself
+	local aboutHeight = if about
+		then TextService:GetTextSize(about, 15, Theme.FontBold, Vector2.new(436, 1000)).Y
+		else 0
 	return e("Frame", {
-		Size = UDim2.fromOffset(1010, 50),
+		Size = UDim2.new(1, -SIDE_PANELS, 0, 50),
 		Position = UDim2.new(0.5, 0, 1, -224),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-	}, buttons)
+		ZIndex = 3, -- the explanation sits over the jet's name
+		[React.Change.AbsoluteSize] = function(frame: Frame)
+			if frame.AbsoluteSize.Y > 0 then
+				setRoom(frame.AbsoluteSize.X / frame.AbsoluteSize.Y * 50)
+			end
+		end,
+	}, {
+		Row = e("Frame", {
+			Size = UDim2.fromOffset(PICKER_WIDTH, 50),
+			Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundTransparency = 1,
+		}, {
+			Scale = e("UIScale", { Scale = fit }),
+			Buttons = e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, buttons),
+		}),
+		-- The hovered mode, explained just above the row
+		About = if about
+			then e(C.Panel, {
+				Size = UDim2.fromOffset(460, 12 + 20 + 4 + aboutHeight + 12),
+				Position = UDim2.new(0.5, 0, 0, -10),
+				AnchorPoint = Vector2.new(0.5, 1),
+				Padding = 12,
+				StrokeColor = Theme.Accent,
+				ZIndex = 5,
+			}, {
+				Layout = C.List({ Gap = 4 }),
+				Name = e(C.Label, {
+					Text = string.upper(
+						if hovered == "Any" then "Any mode" else (MatchRules.MODES :: any)[hovered].DisplayName
+					),
+					Size = UDim2.new(1, 0, 0, 20),
+					TextSize = 16,
+					Heavy = true,
+					Color = Theme.Accent,
+					LayoutOrder = 1,
+					ZIndex = 5,
+				}),
+				Text = e(C.Label, {
+					Text = about,
+					Size = UDim2.new(1, 0, 0, aboutHeight),
+					TextSize = 15,
+					Bold = true,
+					Wrap = true,
+					LayoutOrder = 2,
+					ZIndex = 5,
+				}),
+			})
+			else nil,
+	})
 end
 
 local function slotCard(props: any)
@@ -246,9 +346,11 @@ local function Hangar(props: any)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 			})
 			else nil,
+		-- The jet's name and line sit just above the mode buttons (not a share of the height, which put them over
+		-- the buttons on a short screen)
 		JetName = e(C.Label, {
 			Text = if airframe then airframe.DisplayName else "",
-			Position = UDim2.fromScale(0.5, 0.68),
+			Position = UDim2.new(0.5, 0, 1, -300),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Size = UDim2.fromOffset(600, 40),
 			Align = "Center",
@@ -261,7 +363,7 @@ local function Hangar(props: any)
 					Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0)
 				)}`
 				else "",
-			Position = UDim2.new(0.5, 0, 0.68, 42),
+			Position = UDim2.new(0.5, 0, 1, -258),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Size = UDim2.fromOffset(600, 22),
 			Align = "Center",
