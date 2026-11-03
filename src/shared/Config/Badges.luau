@@ -25,6 +25,11 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		DoubleTrouble = 4123972696428656,
 		Flawless = 546288875820281,
 		TeamPlayer = 3287878670062475,
+		EscapeArtist = 3536095594709869,
+		TopOfTheTable = 3790279544220585,
+		Centurion = 1818406163054487,
+		Collector = 1450248394462966,
+		HighFlyer = 712948293144706,
 	},
 }
 
