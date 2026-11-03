@@ -12,7 +12,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 5 Progression and saving | 23 / 23 | Signed off |
 | 6 Content and polish for a soft launch | 42 / 43 | Only LIV-02 left: its badges are being created (5 free a day). LIV-08 (free spin) was added and is done. |
 | 7 Monetisation | 11 / 11 | Built and checked in Studio |
-| 8 Launch and live ops | 10 / 20 | In progress: parties (MMK-05) wait for the live test; CMP-04 and ANL-05 partly done; new modes, maps and Open Cloud publishing not started |
+| 8 Launch and live ops | 11 / 20 | In progress: parties (MMK-05) wait for the live test; CMP-04 waits for the last badges; new modes, maps and Open Cloud publishing not started |
 
 ---
 
@@ -414,8 +414,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: create (name and tag, filtered, 10,000 Credits), join by tag or invite, roles (owner, officers, members), up to 30 pilots, the tag before members' names, a weekly goal of 100 points (1 per player shot down, 3 per win) worth 5,000 Credits each, and a Squadrons this week leaderboard; on the Career screen's SQUADRON tab (`Shared/Squadron`, `SquadronService`, `UI/SquadronPanel`, DEVELOPMENT.md §26.4; `Squadron.spec`). Checked in Studio.
 - [x] **LIV-07** Test Pilot challenge chain and the Tempest unlock
   - Built: the Test Pilot trials open after two Tier VII jets are researched: five steps in Tier VII jets (5 matches, 10 kills, 5 missiles defeated, 3 wins, a match without being shot down), each paying Credits and XP, shown in the Hangar's challenges panel; the Tempest can only be researched once they're done (`Shared/TestPilot`, DEVELOPMENT.md §23.3; `TestPilot.spec`).
-- [ ] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
-  - Partly done: events checked against Roblox's limits, onboarding funnel reordered and a Training funnel added, every Credits/Wings source in the economy log (the Starter Bundle's Wings too, since 1 November 2026); only the live experience sends analytics (TEST and Studio keep events in `telemetry.recent`); how to read the dashboard in `docs/ANALYTICS.md`. Not yet seen arriving on the published game.
+- [x] **ANL-05** Dashboards in the Creator Dashboard (custom events) and the weekly balance report process
+  - Partly done: events checked against Roblox's limits, onboarding funnel reordered and a Training funnel added, every Credits/Wings source in the economy log (the Starter Bundle's Wings too, since 1 November 2026); only the live experience sends analytics (TEST and Studio keep events in `telemetry.recent`); how to read the dashboard in `docs/ANALYTICS.md`. Seen arriving on the live game on 3 November 2026: the Onboarding funnel (3 joined, 2 onboarded, 1 first match), Credits sources and sinks on the Economy page, and custom events such as `AchievementEarned` under Analytics → Explore.
 - [x] **OPS-03** Event flags (double XP etc.)
   - Built: events scheduled ahead (name, UTC start and end, XP / Credits / RP multipliers) that start and stop on their own, kept with the live config; admin `event.add` / `event.remove` / `event.list`; the hangar banner shows the event and when it ends (`Shared/Events`, DEVELOPMENT.md §31.4; `Events.spec`). Checked in Studio.
 - [x] **OPS-04** Message of the day and announcements

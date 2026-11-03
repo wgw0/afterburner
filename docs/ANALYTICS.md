@@ -58,7 +58,7 @@ A steep drop at one lesson means that lesson is too long, unclear or too hard. P
 
 ## Match quality: are matches fair and quick to find?
 
-All of these are in **Custom events**. Pick the event, choose the aggregation (Average, Sum, Count, and so on), then break it down by a custom field.
+All of these are in **Custom events**: in the Creator Dashboard that's **Analytics → Explore**, with Source set to *Custom events* (there's no separate Custom events page any more). Pick the event, choose the aggregation (Average, Sum, Count, and so on), then break it down by a custom field.
 
 | Event | Look at | What it tells you |
 |---|---|---|
