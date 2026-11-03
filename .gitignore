@@ -46,3 +46,6 @@ tools/blender/out/**
 
 # Python bytecode (tools/blender scripts import each other)
 __pycache__/
+
+# Open Cloud API key for scripts/publish.luau (never commit it)
+publish-key.txt
