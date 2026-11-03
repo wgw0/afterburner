@@ -1860,6 +1860,7 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 | MMK-04 | Reserved server teleport flow and return to lobby, with retries | 6 |
 | MMK-05 | Parties | 8 |
 | MMK-06 | Matchmaking telemetry: wait times, match quality (BR spread) | 6 |
+| MMK-07 | Group and friends bonuses on match rewards (§25.8) | 8 |
 
 **Acceptance:** in the test universe, 6 testers queueing for TDM end up in the same reserved server within 60 s, with AI filling the rest. Killing the matchmaker's server mid-queue causes another lobby to take over within 10 s.
 
@@ -1890,6 +1891,47 @@ During Phases 1–5, everything runs in a **single place** (Lobby UI plus a matc
 - **BVR**: `join` refuses a jet `MatchRules.jetAllowed` turns down ("BVR Battle needs a Tier IV or higher jet. Pick one in your lineup.").
 - **UI**: the Hangar's mode picker is RANKED DUEL, CASUAL DUEL, DOGFIGHT, TEAMS, ZONES, STRIKE, BVR, GUNS ONLY, PVE, ANY; the `QueueMode` setting defaults to `Duel` (Will). `UI/MatchmakingPanel` changes with the mode: the duel panel (§17.7), a line for Strike Escort and PvE, and for BVR whether your jet can fly it.
 - Tested in `Queue.spec` (two-seat duels, rating pairing and its loosening, casual duels ignoring rating, the AI duel after 45 s, parties refused, duels and BVR never reached from ANY).
+
+### 25.8 As built: group and friends bonuses (November 2026)
+
+Other jet games on Roblox advertise "join the group for +10%" and "play with friends for more" on their store
+pages. These two bonuses let Afterburner's description say the same, truthfully. Nothing rewards likes or
+favourites (see COMPLIANCE.md §8 for why).
+
+- **Numbers** (`Config/Social`): `GROUP` and `FRIENDS`, each +10% Credits and XP *(tune in playtests)*. RP isn't
+  touched. `GROUP_ID` is the Roblox group (community) id. It stays **nil until Will makes the group**, and while
+  it's nil there's no group bonus, no group chip and no hint.
+- **Rules** (`Shared/Social`, pure): `bonuses(inGroup, withFriends)` gives the bonus list for a match.
+  `withFriends(userId, present, friends, parties)` is true when another player on the server is a known friend or
+  is in the same match party.
+- **Paying** (`Progression.matchRewards`): `MatchSummary.Social` is that list. Each bonus is its own reward line
+  ("Group bonus", "Flying with friends"). They come after the win and event bonuses and before VIP and boosters,
+  and each multiplies the running Credits and XP. They're outside `Perks.CAP`. Vs AI and the rest of training pay
+  no bonuses.
+- **Checking** (`SocialService`, server only): two player attributes, set by the server, so ProgressionService can
+  trust them.
+  - `GroupBonus`: `Player:IsInGroupAsync(GROUP_ID)` once on joining. `IsInGroup` is deprecated. Every match is a
+    new server, so a player who joins the group in the lobby gets the bonus from their next match.
+  - `FriendsBonus`, every 5 s and whenever a party changes. On a match server it's true when a Roblox friend is
+    here (`IsFriendsWith`, each pair asked once and cached) or a party mate from the match record is
+    (`MatchmakingService:MatchParties()`). In a lobby it's true when you're in a party, because parties always
+    fly together. On training servers it's false.
+  - ProgressionService's 1 s activity loop marks the tally while `FriendsBonus` is on. A friend who leaves before
+    the end still counts.
+- **UI:**
+  - The hangar's `UI/SocialChip` sits under the news banner. Each bonus shows lit green with a tick when it's on.
+    When it's off, the chip shows it dim with how to get it ("FLY WITH FRIENDS: +10% CREDITS & XP"). The chip is
+    hidden on training servers.
+  - The results screen shows earned bonuses as green reward lines.
+  - When a bonus wasn't earned, the results screen adds a small dim line saying how to get it. These lines don't
+    show for training.
+- **Tested** in `Social.spec`:
+  - the group bonus is off while there's no id
+  - the friend and party rules
+  - each bonus gets its own line, +10% Credits and XP, with RP unchanged
+  - no setting rewards likes or favourites
+- **Not done:** there's no in-game "join group" button yet (`GroupService:PromptJoinAsync`, client side). It can
+  come with the group id.
 
 ---
 
@@ -2647,6 +2689,7 @@ Game passes and developer products are prompted on the client with `MarketplaceS
 | Player | `PolicyPaidRandom`, `PolicyLinks`, `PolicyPaidTrading`, `PolicyChecked` | boolean | Roblox policy answers (§32.5) |
 | Player | `MapReady` | boolean | Map warmed up; gates PLAY (§19.3) |
 | Player | `SpinsBanked`, `SpinNextAt` | number | Free spins (§26.6) |
+| Player | `GroupBonus`, `FriendsBonus` | boolean | Group and friends bonuses on match rewards (`SocialService`, §25.8) |
 | Player | `LivesLeft`, `RespawnIn` | number | Respawn state in a match (§17.4); in a duel `RespawnIn` is the seconds to the next round, −1 mid-round (§17.7) |
 | Ground Roamer model | `OwnerUserId` | number | The driver; their DriveController drives it |
 | Ground Roamer model | `Skin` | string | Its skin |

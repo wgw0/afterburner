@@ -67,6 +67,36 @@ background. **Done** items were checked in November 2026; **Will** items need th
 |---|---|
 | Every achievement has a badge on the live experience (`Config/Badges`) | In progress (5 free a day) |
 
+## 8. Rewards for joining the group, playing with friends, likes and favourites
+
+Checked 3 November 2026 against Roblox's own pages: the [Community Standards](https://about.roblox.com/community-standards),
+the Creator Hub docs ([Friend Invite Reward System](https://create.roblox.com/docs/production/promotion/referral-system),
+[Discovery](https://create.roblox.com/docs/discovery), [GroupService](https://create.roblox.com/docs/reference/engine/classes/GroupService))
+and DevForum posts. The Help Center (Terms of Use, Friend Rewards Program Terms) couldn't be fetched and needs
+reading by hand.
+
+- **Group join:** no official rule allows or forbids it by name. Roblox gives developers the tools for it
+  (`GroupService:PromptJoinAsync`, `Player:IsInGroupAsync`), it's widely done, and developers on the DevForum agree
+  it's fine. The general rules still apply. Nothing misleading "to drive discoverability, monetization, or
+  engagement" (Community Standards), the bonus must be paid as described, and joining must be optional.
+  Groups were renamed Communities in November 2024, but the API still says Group.
+- **Likes, upvotes, favourites:** the old Community Rules banned rewards "in exchange for a thumb up on your game".
+  Today's Community Standards don't name it, but rewarding ratings counts as rating manipulation, and an enforcement
+  category for "artificially inflating experience statistics" has been reported. **We don't reward likes or
+  favourites.** Asking players to like the game without a reward is fine.
+- **Friends:** Roblox officially supports rewarding friend invites (the Friend Invite Reward System,
+  `GetJoinData().ReferredByPlayerId`). No rule stops a bonus for playing with friends. Our friends bonus pays for
+  flying in the same match as a friend or party mate. It doesn't pay for sending invites.
+- **Prompts:** no spam and no false "free" claims. The hangar chip is passive, and no join prompt pops up by itself.
+
+| Check | Status |
+|---|---|
+| Group bonus (+10% Credits and XP) is optional, honest and paid as described (`Config/Social`, DEVELOPMENT.md §25.8) | Done; off until the group id is set |
+| No reward for likes, upvotes or favourites (`Social.spec` checks the config) | Done |
+| Friends bonus pays for flying together, not for sending invites | Done |
+| Store description: only claim the group bonus once `GROUP_ID` is set and published | **Will** |
+| Read the Help Center's Terms of Use and Friend Rewards Program Terms (couldn't be fetched) | **Will** |
+
 ## When a Right to Erasure request arrives
 
 Roblox posts it to the private #alerts Discord channel ("Roblox Webhooks"). A real one names the UserId(s) and the
