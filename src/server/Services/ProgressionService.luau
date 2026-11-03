@@ -551,8 +551,7 @@ function ProgressionService:Start()
 	end
 	AircraftService.masteryFor = function(player: Player, airframeId: string): number
 		local data = DataService:GetData(player)
-		local entry = data and data.Aircraft[airframeId]
-		return Mastery.stars(entry and entry.Mastery or 0)
+		return if data then Mastery.displayStars(data, airframeId) else 0
 	end
 
 	-- Match events

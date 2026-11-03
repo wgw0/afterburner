@@ -77,6 +77,15 @@ function Mastery.starsFor(data: { [string]: any }, airframeId: string): number
 	return Mastery.stars(entry and entry.Mastery or 0)
 end
 
+-- The stars a jet shows (charm, kill markers): full mastery with full access (Flags.AllUnlocked), else
+-- the stars earned. Kill counts, Credits and the mastery panel always use the real ones.
+function Mastery.displayStars(data: { [string]: any }, airframeId: string): number
+	if data.Flags and data.Flags.AllUnlocked == true then
+		return #Mastery.STARS
+	end
+	return Mastery.starsFor(data, airframeId)
+end
+
 -- What reaching a star unlocks besides Credits and the title ("Gold wings charm"), or nil
 function Mastery.unlockText(stars: number): string?
 	if stars == Mastery.TRINKET_STARS then

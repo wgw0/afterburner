@@ -240,7 +240,7 @@ local function Hangar(props: any)
 				Skin = Progression.skinFor(data, selected),
 				Marker = Cosmetics.equipped(data, "Marker"),
 				WingArt = Cosmetics.equipped(data, "WingArt"),
-				Mastery = Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0),
+				Mastery = Mastery.displayStars(data, selected),
 				Size = UDim2.fromScale(0.5, 0.62),
 				Position = UDim2.fromScale(0.5, 0.36),
 				AnchorPoint = Vector2.new(0.5, 0.5),
