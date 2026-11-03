@@ -72,8 +72,12 @@ background. **Done** items were checked in November 2026; **Will** items need th
 Checked 3 November 2026 against Roblox's own pages: the [Community Standards](https://about.roblox.com/community-standards),
 the Creator Hub docs ([Friend Invite Reward System](https://create.roblox.com/docs/production/promotion/referral-system),
 [Discovery](https://create.roblox.com/docs/discovery), [GroupService](https://create.roblox.com/docs/reference/engine/classes/GroupService))
-and DevForum posts. The Help Center (Terms of Use, Friend Rewards Program Terms) couldn't be fetched and needs
-reading by hand.
+and DevForum posts. The Help Center's [Terms of Use](https://en.help.roblox.com/hc/en-us/articles/115004647846)
+and [In-Experience Friend Rewards Program Terms](https://en.help.roblox.com/hc/en-us/articles/35146071523604) were
+read in Chrome on the same day. The Terms of Use say nothing about rewarding likes, favourites, ratings or group
+joins; §5.2.1 only describes what joining a Group/Community gives you. The Friend Rewards terms cover referral
+links: one active programme per experience, purchasable items can't be the reward, and self-referral and spam are
+abuse. Our friends bonus isn't a referral programme, so they don't apply to it.
 
 - **Group join:** no official rule allows or forbids it by name. Roblox gives developers the tools for it
   (`GroupService:PromptJoinAsync`, `Player:IsInGroupAsync`), it's widely done, and developers on the DevForum agree
@@ -94,8 +98,9 @@ reading by hand.
 | Group bonus (+10% Credits and XP) is optional, honest and paid as described (`Config/Social`, DEVELOPMENT.md §25.8) | Done; off until the group id is set |
 | No reward for likes, upvotes or favourites (`Social.spec` checks the config) | Done |
 | Friends bonus pays for flying together, not for sending invites | Done |
-| Store description: only claim the group bonus once `GROUP_ID` is set and published | **Will** |
-| Read the Help Center's Terms of Use and Friend Rewards Program Terms (couldn't be fetched) | **Will** |
+| Make the Afterburner community (100 Robux; none exists yet, checked 3 November 2026) and put its id in `Config/Social.GROUP_ID` | **Will** |
+| Store description: claim the friends bonus once this is live, and the group bonus only once `GROUP_ID` is set and published | **Will** |
+| Read the Help Center's Terms of Use and Friend Rewards Program Terms | Done (3 November 2026): nothing against either bonus |
 
 ## When a Right to Erasure request arrives
 
