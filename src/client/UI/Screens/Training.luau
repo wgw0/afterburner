@@ -14,6 +14,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Progression = require(Shared.Progression)
 local LiveConfig = require(Shared.LiveConfig)
+local MatchRules = require(Shared.MatchRules)
+local Strike = require(Shared.Strike)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
@@ -22,32 +24,111 @@ local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
--- A duel across the top (one AI opponent), then two rows of two: four buttons in one row are too narrow
-local VS_DUEL = { { "DuelCasual", "1V1 DUEL" }, { "Waves", "PVE WAVES" } }
-local VS_MODES = { { "Dogfight", "FFA" }, { "TeamDeathmatch", "TEAMS" }, { "StrikeEscort", "STRIKE" } }
-local VS_MODES_2 = { { "AirSuperiority", "ZONES" }, { "GunsOnly", "GUNS" }, { "BVR", "BVR" } }
-local DIFFICULTIES = { "Easy", "Normal", "Hard", "Ace" }
+-- Vs AI modes, colour-coded by kind (Will): one-on-one and co-op, kill modes, objective modes. A row of
+-- two across the top, then two rows of three.
+local KINDS = {
+	Solo = Theme.Rarity.Legendary, -- one opponent, or the waves
+	Kills = Theme.Rarity.Rare, -- shoot down the most
+	Objective = Theme.Rarity.Epic, -- zones and bombers
+}
+local VS_DUEL = { { "DuelCasual", "1V1 DUEL", "Solo" }, { "Waves", "PVE WAVES", "Solo" } }
+local VS_MODES =
+	{ { "Dogfight", "FFA", "Kills" }, { "TeamDeathmatch", "TEAMS", "Kills" }, { "GunsOnly", "GUNS", "Kills" } }
+local VS_MODES_2 =
+	{ { "BVR", "BVR", "Kills" }, { "AirSuperiority", "ZONES", "Objective" }, { "StrikeEscort", "STRIKE", "Objective" } }
+local DIFFICULTIES = {
+	{ "Easy", "EASY", Theme.Good },
+	{ "Normal", "NORMAL", Theme.Wings },
+	{ "Hard", "HARD", Theme.Warn },
+	{ "Ace", "ACE", Theme.Bad },
+}
 local MAX_AI = 11
+local DARK_TEXT = Color3.fromRGB(14, 16, 22)
 
--- A row of choice buttons sharing `width` pixels.
-local function choices(list: { any }, value: string, width: number, order: number, onPick: (string) -> ())
-	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 6 }) }
-	local each = math.floor((width - 6 * (#list - 1)) / #list)
+local function minutes(modeId: string): number
+	return math.floor((MatchRules.MODES :: any)[modeId].TimeLimit / 60)
+end
+
+-- What each Vs AI mode is, shown under START VS AI
+local ABOUT = {
+	DuelCasual = "One AI pilot, best of five rounds. You start in opposite corners with one life a round: last one flying takes it.",
+	Waves = `Defend your airbase from {Strike.WAVES} waves of AI fighters and bombers, each bigger than the last. It can take {Strike.BASE_HITS} bomber hits.`,
+	Dogfight = `Free for all: every jet is an enemy. First to {MatchRules.MODES.Dogfight.ScoreLimit} kills, or the most after {minutes(
+		"Dogfight"
+	)} minutes.`,
+	TeamDeathmatch = `Two teams with AI wingmen. First team to {MatchRules.MODES.TeamDeathmatch.ScoreLimit} kills, or the most after {minutes(
+		"TeamDeathmatch"
+	)} minutes.`,
+	GunsOnly = `Free for all with no missiles: guns only, with {MatchRules.GUNS_ONLY_AMMO} times the ammo. Get in close.`,
+	BVR = "Beyond visual range: two teams start far apart with radar missiles only. Needs a Tier IV+ jet with radar missiles.",
+	AirSuperiority = "Two teams fight for three zones. Hold more zones than the other side and their tickets drain; losing jets costs tickets too.",
+	StrikeEscort = `Escort your team's bombers to the enemy airbase and shoot down theirs. First to {Strike.STRIKE_LIMIT} strikes wins.`,
+}
+
+local function find(list: { any }, id: string): any
+	for _, item in list do
+		if item[1] == id then
+			return item
+		end
+	end
+	return nil
+end
+
+-- A row of choice buttons sharing `width` pixels, each tinted by `colourOf(item)`: outlined in its colour,
+-- filled when picked.
+local function choices(
+	list: { any },
+	value: string,
+	width: number,
+	order: number,
+	onPick: (string) -> (),
+	colourOf: (any) -> Color3
+)
+	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8 }) }
+	local each = math.floor((width - 8 * (#list - 1)) / #list)
 	for i, item in list do
-		local id = if type(item) == "table" then item[1] else item
-		local label = if type(item) == "table" then item[2] else string.upper(item)
+		local id, colour = item[1], colourOf(item)
+		local picked = value == id
 		buttons[id] = e(C.Button, {
-			Text = label,
-			Style = if value == id then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(each, 36),
-			TextSize = 11,
+			Text = item[2],
+			Style = if picked then "Secondary" else "Ghost",
+			Color = if picked then colour else nil,
+			TextColor = if picked then DARK_TEXT else colour,
+			StrokeColor = colour,
+			Size = UDim2.fromOffset(each, 38),
+			TextSize = 12,
 			LayoutOrder = i,
 			OnClick = function()
 				onPick(id)
 			end,
 		})
 	end
-	return e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = order }, buttons)
+	return e("Frame", { Size = UDim2.new(1, 0, 0, 38), BackgroundTransparency = 1, LayoutOrder = order }, buttons)
+end
+
+local function kindColour(item: any): Color3
+	return KINDS[item[3]]
+end
+
+local function difficultyColour(item: any): Color3
+	return item[3]
+end
+
+-- A small heading over a group of buttons
+local function heading(text: string, order: number)
+	return e(C.Label, {
+		Text = text,
+		Size = UDim2.new(1, 0, 0, 16),
+		TextSize = 11,
+		Bold = true,
+		Color = Theme.Dim,
+		LayoutOrder = order,
+	})
+end
+
+-- Space between groups
+local function gap(height: number, order: number)
+	return e("Frame", { Size = UDim2.new(1, 0, 0, height), BackgroundTransparency = 1, LayoutOrder = order })
 end
 
 -- The first three lessons, as the welcome card walks a new pilot through them
@@ -200,15 +281,19 @@ local function Training(props: any)
 			end,
 		})
 	end
+	side.VsGap = gap(6, 17)
 	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 18 })
-	side.ModeDuel = choices(VS_DUEL, vsMode, 252, 19, setVsMode)
-	side.Mode = choices(VS_MODES, vsMode, 252, 20, setVsMode)
-	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 21, setVsMode)
-	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 22, setDifficulty)
+	side.ModeHeading = heading("MODE", 19)
+	side.ModeDuel = choices(VS_DUEL, vsMode, 252, 20, setVsMode, kindColour)
+	side.Mode = choices(VS_MODES, vsMode, 252, 21, setVsMode, kindColour)
+	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 22, setVsMode, kindColour)
+	side.DifficultyGap = gap(4, 23)
+	side.DifficultyHeading = heading("DIFFICULTY", 24)
+	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 25, setDifficulty, difficultyColour)
 	local duel = vsMode == "DuelCasual" or vsMode == "Waves" -- one opponent, or the waves decide
 	side.Count = if duel
 		then nil
-		else e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 23 }, {
+		else e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 26 }, {
 			Layout = C.List({ Horizontal = true, Gap = 8, AlignY = "Center" }),
 			Label = e(C.Label, {
 				Text = `{count} opponent{if count == 1 then "" else "s"}`,
@@ -242,17 +327,44 @@ local function Training(props: any)
 		Style = "Primary",
 		Size = UDim2.new(1, 0, 0, 40),
 		TextSize = 14,
-		LayoutOrder = 24,
+		LayoutOrder = 27,
 		OnClick = function()
 			props.OnVsAI(vsMode, difficulty, if duel then 1 else count)
 		end,
+	})
+	-- What the picked mode is, in its kind's colour
+	local picked = find(VS_DUEL, vsMode) or find(VS_MODES, vsMode) or find(VS_MODES_2, vsMode)
+	side.About = e("Frame", {
+		Size = UDim2.fromScale(1, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = 28,
+	}, {
+		Layout = C.List({ Gap = 4 }),
+		Name = e(C.Label, {
+			Text = string.upper((MatchRules.MODES :: any)[vsMode].DisplayName),
+			Size = UDim2.new(1, 0, 0, 20),
+			TextSize = 16,
+			Heavy = true,
+			Color = if picked then kindColour(picked) else Theme.Accent,
+			LayoutOrder = 1,
+		}),
+		Text = e(C.Label, {
+			Text = ABOUT[vsMode] or "",
+			TextSize = 15,
+			Bold = true,
+			Wrap = true,
+			AutoHeight = true,
+			Color = Theme.Text,
+			LayoutOrder = 2,
+		}),
 	})
 	side.Free = if props.VsAIRunning
 		then e(C.Button, {
 			Text = "BACK TO FREE FLIGHT",
 			Size = UDim2.new(1, 0, 0, 40),
 			TextSize = 13,
-			LayoutOrder = 25,
+			LayoutOrder = 29,
 			OnClick = props.OnFreeFlight,
 		})
 		else nil
