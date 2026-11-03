@@ -65,7 +65,8 @@ for _, model in scenery:GetChildren() do
 			-- rounding put it in a neighbouring cell
 			for dx = -1, 1 do
 				for dz = -1, 1 do
-					foliage = foliage or foliageAt[key(trunk.CFrame.Position.X + dx * 0.5, trunk.CFrame.Position.Z + dz * 0.5)]
+					foliage = foliage
+						or foliageAt[key(trunk.CFrame.Position.X + dx * 0.5, trunk.CFrame.Position.Z + dz * 0.5)]
 				end
 			end
 		end
@@ -99,4 +100,6 @@ for _, model in scenery:GetChildren() do
 end
 
 fs.writeFile(outPath, table.concat(lines, "\n") .. "\n")
-print(`{#lines} trees, {missed} trunks without foliage ({counts.C} conifer, {counts.B} broadleaf, {counts.P} poplar) -> {outPath}`)
+print(
+	`{#lines} trees, {missed} trunks without foliage ({counts.C} conifer, {counts.B} broadleaf, {counts.P} poplar) -> {outPath}`
+)
