@@ -200,10 +200,27 @@ local function CurrencyChip(props: {
 	})
 end
 
+-- Top bar widths (studs of UI): the logo's text, the six tabs, the wallet's contents, and the gaps between
+local LOGO_WIDTH = 220
+local TABS_WIDTH = 6 * 108 + 5 * 10
+local WALLET_WIDTH = 180 + 150 + 160 + 160 + 3 * 12
+local BAR_GAP = 16
+
 local function TopBar(props: any)
 	local data = props.Data
 	local need = Economy.xpToNext(data.PilotLevel)
 	local logoLeft = useTopbarLeft() + 12
+	-- Logo left, wallet right, the tabs between: centred on the screen if they fit there, else centred in the
+	-- gap. A window too narrow for all three shrinks the whole bar to fit rather than overlap.
+	local barWidth, setBarWidth = React.useState(0)
+	local logoX = math.max(logoLeft, 20)
+	local needed = logoX + LOGO_WIDTH + BAR_GAP + TABS_WIDTH + BAR_GAP + WALLET_WIDTH + 20
+	local fit = if barWidth > 0 then math.min(1, barWidth / needed) else 1
+	local width = if barWidth > 0 then barWidth / fit else needed
+	local gapLeft, gapRight = logoX + LOGO_WIDTH + BAR_GAP, width - 20 - WALLET_WIDTH - BAR_GAP
+	local tabsCentre = if width / 2 - TABS_WIDTH / 2 >= gapLeft and width / 2 + TABS_WIDTH / 2 <= gapRight
+		then width / 2
+		else (gapLeft + gapRight) / 2
 	local function tab(name: string, label: string, order: number)
 		return e(C.Button, {
 			Text = label,
@@ -221,77 +238,90 @@ local function TopBar(props: any)
 		BackgroundColor3 = Theme.Background,
 		BackgroundTransparency = 0.1,
 		BorderSizePixel = 0,
+		[React.Change.AbsoluteSize] = function(frame: Frame)
+			-- In the menu's own units (the Menu scale setting's UIScale sits above)
+			local scale = props.MenuScale or 1
+			setBarWidth(frame.AbsoluteSize.X / scale)
+		end,
 	}, {
-		Logo = e(C.Label, {
-			Text = "AFTERBURNER",
-			Size = UDim2.fromOffset(260, Theme.TopBar),
-			Position = UDim2.fromOffset(math.max(logoLeft, 20), 0),
-			Heavy = true,
-			TextSize = 26,
-			Color = Theme.Accent,
-		}),
-		Tabs = e("Frame", {
-			Size = UDim2.fromOffset(6 * 108 + 5 * 10, 40),
-			Position = UDim2.fromScale(0.5, 0.5),
-			AnchorPoint = Vector2.new(0.5, 0.5),
+		Inner = e("Frame", {
+			Size = UDim2.new(1 / fit, 0, 0, Theme.TopBar),
+			Position = UDim2.fromScale(0, 0.5),
+			AnchorPoint = Vector2.new(0, 0.5),
 			BackgroundTransparency = 1,
 		}, {
-			Layout = C.List({ Horizontal = true, Gap = 10, Align = "Center" }),
-			Hangar = tab("Hangar", "HANGAR", 1),
-			Tree = tab("TechTree", "TECH TREE", 2),
-			Career = tab("Career", "CAREER", 3),
-			-- A dot while season rewards are waiting to be claimed
-			Season = tab("Season", if Season.claimable(data) > 0 then "SEASON  ●" else "SEASON", 4),
-			Shop = tab("Shop", "SHOP", 5),
-			Settings = tab("Settings", "SETTINGS", 6),
-		}),
-		Boosters = e(BoosterChip, { Data = data }),
-		Wallet = e("Frame", {
-			Size = UDim2.fromOffset(720, Theme.TopBar),
-			Position = UDim2.new(1, -20, 0, 0),
-			AnchorPoint = Vector2.new(1, 0),
-			BackgroundTransparency = 1,
-		}, {
-			Layout = C.List({ Horizontal = true, Gap = 12, Align = "Right", AlignY = "Center" }),
-			Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
-				Label = e(C.Label, {
-					Text = `PILOT LEVEL {data.PilotLevel}`,
-					Bold = true,
-					TextSize = 13,
-					Size = UDim2.new(1, 0, 0, 16),
+			Scale = e("UIScale", { Scale = fit }),
+			Logo = e(C.Label, {
+				Text = "AFTERBURNER",
+				Size = UDim2.fromOffset(LOGO_WIDTH, Theme.TopBar),
+				Position = UDim2.fromOffset(logoX, 0),
+				Heavy = true,
+				TextSize = 26,
+				Color = Theme.Accent,
+			}),
+			Tabs = e("Frame", {
+				Size = UDim2.fromOffset(TABS_WIDTH, 40),
+				Position = UDim2.new(0, tabsCentre, 0.5, 0),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+			}, {
+				Layout = C.List({ Horizontal = true, Gap = 10, Align = "Center" }),
+				Hangar = tab("Hangar", "HANGAR", 1),
+				Tree = tab("TechTree", "TECH TREE", 2),
+				Career = tab("Career", "CAREER", 3),
+				-- A dot while season rewards are waiting to be claimed
+				Season = tab("Season", if Season.claimable(data) > 0 then "SEASON  ●" else "SEASON", 4),
+				Shop = tab("Shop", "SHOP", 5),
+				Settings = tab("Settings", "SETTINGS", 6),
+			}),
+			Boosters = e(BoosterChip, { Data = data }),
+			Wallet = e("Frame", {
+				Size = UDim2.fromOffset(720, Theme.TopBar),
+				Position = UDim2.new(1, -20, 0, 0),
+				AnchorPoint = Vector2.new(1, 0),
+				BackgroundTransparency = 1,
+			}, {
+				Layout = C.List({ Horizontal = true, Gap = 12, Align = "Right", AlignY = "Center" }),
+				Level = e("Frame", { Size = UDim2.fromOffset(180, 40), BackgroundTransparency = 1, LayoutOrder = 1 }, {
+					Label = e(C.Label, {
+						Text = `PILOT LEVEL {data.PilotLevel}`,
+						Bold = true,
+						TextSize = 13,
+						Size = UDim2.new(1, 0, 0, 16),
+					}),
+					Bar = e(C.Bar, {
+						Value = data.PilotXP / need,
+						Size = UDim2.new(1, 0, 0, 12),
+						Position = UDim2.fromOffset(0, 22),
+						Color = Theme.Accent,
+						Text = `{data.PilotXP} / {need}`,
+					}),
 				}),
-				Bar = e(C.Bar, {
-					Value = data.PilotXP / need,
-					Size = UDim2.new(1, 0, 0, 12),
-					Position = UDim2.fromOffset(0, 22),
-					Color = Theme.Accent,
-					Text = `{data.PilotXP} / {need}`,
+				Credits = e(CurrencyChip, {
+					Text = `{C.number(data.Credits)} Cr`,
+					Colour = Theme.Text,
+					Info = "Credits",
+					Width = 150,
+					Order = 2,
 				}),
-			}),
-			Credits = e(CurrencyChip, {
-				Text = `{C.number(data.Credits)} Cr`,
-				Colour = Theme.Text,
-				Info = "Credits",
-				Width = 150,
-				Order = 2,
-			}),
-			FreeRP = e(CurrencyChip, {
-				Text = `{C.number(data.FreeRP)} free RP`,
-				Colour = Theme.Good,
-				Info = "FreeRP",
-				Width = 160,
-				Order = 3,
-			}),
-			-- Wings (the premium currency): the + opens the Shop at the Wings packs
-			Wings = e(CurrencyChip, {
-				Text = `{C.number(data.Wings or 0)} Wings`,
-				Colour = Theme.Wings,
-				Info = "Wings",
-				Width = 160,
-				Order = 4,
-				OnPlus = function()
-					props.Navigate("Shop", "Wings")
-				end,
+				FreeRP = e(CurrencyChip, {
+					Text = `{C.number(data.FreeRP)} free RP`,
+					Colour = Theme.Good,
+					Info = "FreeRP",
+					Width = 160,
+					Order = 3,
+				}),
+				-- Wings (the premium currency): the + opens the Shop at the Wings packs
+				Wings = e(CurrencyChip, {
+					Text = `{C.number(data.Wings or 0)} Wings`,
+					Colour = Theme.Wings,
+					Info = "Wings",
+					Width = 160,
+					Order = 4,
+					OnPlus = function()
+						props.Navigate("Shop", "Wings")
+					end,
+				}),
 			}),
 		}),
 	})
@@ -496,6 +526,7 @@ local function App(props: any)
 				Data = data,
 				Screen = screen,
 				Navigate = props.Navigate,
+				MenuScale = scale,
 			})
 			else nil,
 		Body = e("Frame", {

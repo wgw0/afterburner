@@ -14,6 +14,7 @@ local fs = require("@lune/fs")
 local net = require("@lune/net")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
+local serde = require("@lune/serde")
 local stdio = require("@lune/stdio")
 
 -- The places of each experience and the repo file each is published from (ids as in Config/Places)
@@ -152,7 +153,7 @@ for _, place in experience.places do
 	if not response.ok then
 		fail(`{place.name} wasn't published (HTTP {response.statusCode}): {response.body}`)
 	end
-	local ok, decoded = pcall(net.jsonDecode, response.body)
+	local ok, decoded = pcall(serde.decode, "json" :: "json", response.body)
 	local version = if ok and type(decoded) == "table" then decoded.versionNumber else "?"
 	print(`  ✓ {place.name}: published, version {version}`)
 end
