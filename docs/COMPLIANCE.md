@@ -95,11 +95,10 @@ abuse. Our friends bonus isn't a referral programme, so they don't apply to it.
 
 | Check | Status |
 |---|---|
-| Group bonus (+10% Credits and XP) is optional, honest and paid as described (`Config/Social`, DEVELOPMENT.md §25.8) | Done; off until the group id is set |
-| No reward for likes, upvotes or favourites (`Social.spec` checks the config) | Done |
+| Group bonus | Not built. A Roblox community costs 100 Robux, so Will dropped it (3 November 2026) |
+| No reward for likes, upvotes, favourites or group joins (`Social.spec` checks the config) | Done |
 | Friends bonus pays for flying together, not for sending invites | Done |
-| Make the Afterburner community (100 Robux; none exists yet, checked 3 November 2026) and put its id in `Config/Social.GROUP_ID` | **Will** |
-| Store description: claim the friends bonus once this is live, and the group bonus only once `GROUP_ID` is set and published | **Will** |
+| Store description: claim the friends bonus only once it's live; never claim a group bonus | **Will** |
 | Read the Help Center's Terms of Use and Friend Rewards Program Terms | Done (3 November 2026): nothing against either bonus |
 
 ## When a Right to Erasure request arrives

@@ -335,7 +335,7 @@ local function Hangar(props: any)
 			}),
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
-		-- The group and friends bonuses, under the news banner (Shared/Social)
+		-- The friends bonus, under the news banner (Shared/Social)
 		Social = e(SocialChip, {}),
 		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet
 		Matchmaking = if props.QueueMode

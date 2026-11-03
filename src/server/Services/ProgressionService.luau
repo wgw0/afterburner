@@ -137,11 +137,8 @@ local function award(player: Player, data: { [string]: any }, won: boolean, push
 			Label = if LiveConfig.get("event") ~= "" then LiveConfig.get("event") else "Event bonus",
 		},
 		Personal = Perks.boost(data, os.time()), -- VIP and boosters (SHP-03)
-		-- Group and friends (SocialService sets the attributes; the server's own, so they can be trusted)
-		Social = Social.bonuses(
-			player:GetAttribute(Social.GROUP_ATTRIBUTE) == true,
-			tally.withFriends == true or player:GetAttribute(Social.FRIENDS_ATTRIBUTE) == true
-		),
+		-- Flying with friends (SocialService sets the attribute; the server's own, so it can be trusted)
+		Social = Social.bonuses(tally.withFriends == true or player:GetAttribute(Social.FRIENDS_ATTRIBUTE) == true),
 	}
 	local rewards = Progression.matchRewards(summary, data.LastWinDay)
 	local levels = 0
