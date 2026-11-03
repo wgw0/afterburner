@@ -714,8 +714,8 @@ function Progression.setSkin(data: { [string]: any }, airframeId: string, skinId
 end
 
 -- Full access --------------------------------------------------------------------------------------
--- The game's owner (and admins) get every jet, module, skin and lineup slot, in test and live, without
--- touching currency. Applied on every join, so new content shows up for them straight away.
+-- The game's owner (and admins) get every jet, module, skin, lineup slot and title (and full mastery's
+-- looks, Mastery.displayStars), in test and live, without touching currency. Applied on every join, so new content shows up for them straight away.
 
 function Progression.unlockEverything(data: { [string]: any })
 	local ids = {}
@@ -741,6 +741,14 @@ function Progression.unlockEverything(data: { [string]: any })
 				entry.Skins[skin.Id] = true
 			end
 		end
+	end
+	-- Titles earned outside the level track: the streak and duel ranks, and every jet's mastery title
+	data.Titles = data.Titles or {}
+	for _, id in LevelRewards.OTHER_TITLES do
+		data.Titles[id] = true
+	end
+	for id in ids do
+		data.Titles[Mastery.titleId(id)] = true
 	end
 	data.Flags.AllUnlocked = true
 end

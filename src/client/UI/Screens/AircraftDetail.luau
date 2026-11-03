@@ -472,7 +472,7 @@ local function AircraftDetail(props: any)
 			Skin = Progression.skinFor(data, id),
 			Marker = Cosmetics.equipped(data, "Marker"),
 			WingArt = Cosmetics.equipped(data, "WingArt"),
-			Mastery = stars,
+			Mastery = Mastery.displayStars(data, id),
 			Size = UDim2.fromScale(0.36, 0.4),
 			Position = UDim2.fromOffset(20, 90),
 		}),
