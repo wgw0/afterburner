@@ -8,8 +8,8 @@
 --     folder says where each live instrument sits on the panel; the gauges are drawn there.
 --   * Any other jet gets the greybox kit: a panel on top of the forward fuselage, sills, a coaming and
 --     a gunsight glass, built from parts.
--- At Mastery.TRINKET_STARS in that jet (the jet's "Mastery" attribute), a gold wings charm hangs on a chain
--- from the canopy bow and swings with the jet's manoeuvres (PRG-07).
+-- At Mastery.TRINKET_STARS in that jet (the jet's "Mastery" attribute), a gold wings charm stands on a spring
+-- on the glareshield and wobbles with the jet's manoeuvres (PRG-07).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -407,29 +407,49 @@ local function buildFromTemplate(template: Model, root: BasePart): Model
 end
 
 -- The mastery charm ------------------------------------------------------------------------------------
+-- Gold wings on a short spring, standing on the glareshield's left corner, clear of the HUD and below the eye
+-- line. Every cockpit has a glareshield, so the charm finds its own spot: a ray down onto it at each candidate,
+-- taking the first where the charm's top stays at least CHARM_BELOW_SIGHT under the pilot's eye line, else the
+-- lowest. Checked against every cockpit model (November 2026): 17-23 degrees left, 6.5-14 degrees down.
 
 local GOLD = Color3.fromRGB(214, 162, 48)
-local CHAIN_COLOUR = Color3.fromRGB(196, 160, 72)
-local CHARM_HANG = CFrame.new(-0.16, -0.005, -0.46) -- the hook, from the pilot's eye: inside the windscreen frame, left of the HUD
-local CHAIN = 0.06 -- studs of chain
-local CHARM_SCALE = 0.75 -- the badge and wings, from their sizes below
-local SWING_RATE = 9 -- radians per second: slower than a real pendulum this short, so the swing reads
-local SWING_DAMPING = 2.2 -- per second
-local SWING_LIMIT = math.rad(80)
+local SPRING_COLOUR = Color3.fromRGB(70, 72, 76)
+local SPRING = 0.03 -- studs of spring between the base and the badge
+local CHARM_SCALE = 0.6 -- the badge and wings, from their sizes below
+local CHARM_TOP = SPRING + 0.032 -- studs from the base to the top of the wings (after scaling)
+local CHARM_BELOW_SIGHT = math.rad(6) -- the top of the charm stays this far under the eye line (the HUD's foot)
+-- Where to look for the glareshield, from the pilot's eye: its left corner, about 20 degrees left of the HUD
+local CHARM_SPOTS = { Vector2.new(-0.27, -0.72), Vector2.new(-0.24, -0.80), Vector2.new(-0.29, -0.68) }
+local CHARM_SURFACES = { Coaming = true, Panel = true } -- what it may stand on, in a cockpit model or the greybox kit
+local WOBBLE_RATE = 11 -- radians per second
+local WOBBLE_DAMPING = 2.5 -- per second
+local WOBBLE_LEAN = 0.6 -- how far it leans, as a share of the felt gravity's angle
+local WOBBLE_LIMIT = math.rad(40)
 
--- The charm's parts, each with its pose under the hook (hanging straight down, facing the pilot)
+local charmBase: CFrame? -- the spring's foot, in the jet's Root space
+
+-- The charm's parts, each with its pose above the base (standing upright, the wings facing the pilot)
 local function charmPieces(): { { name: string, size: Vector3, offset: CFrame, shape: Enum.PartType?, colour: Color3 } }
+	local top = SPRING + 0.016 / CHARM_SCALE -- the badge's centre, before scaling the badge and wings
 	local pieces = {
 		{
-			name = "Chain",
-			size = Vector3.new(0.004, CHAIN, 0.004),
-			offset = CFrame.new(0, -CHAIN / 2, 0),
-			colour = CHAIN_COLOUR,
+			name = "Foot",
+			size = Vector3.new(0.004, 0.018, 0.018),
+			offset = CFrame.new(0, 0.002, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			shape = Enum.PartType.Cylinder,
+			colour = SPRING_COLOUR,
+		},
+		{
+			name = "Spring",
+			size = Vector3.new(SPRING, 0.005, 0.005),
+			offset = CFrame.new(0, SPRING / 2, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			shape = Enum.PartType.Cylinder,
+			colour = SPRING_COLOUR,
 		},
 		{
 			name = "Badge",
 			size = Vector3.new(0.008, 0.036, 0.036),
-			offset = CFrame.new(0, -CHAIN - 0.016, 0) * CFrame.Angles(0, math.rad(90), 0),
+			offset = CFrame.new(0, top, 0) * CFrame.Angles(0, math.rad(90), 0),
 			shape = Enum.PartType.Cylinder,
 			colour = GOLD,
 		},
@@ -440,7 +460,7 @@ local function charmPieces(): { { name: string, size: Vector3, offset: CFrame, s
 			table.insert(pieces, {
 				name = `Feather{side}{i}`,
 				size = Vector3.new(length, 0.011, 0.005),
-				offset = CFrame.new(side * (0.014 + length / 2), -CHAIN - 0.008 - (i - 1) * 0.011, 0)
+				offset = CFrame.new(side * (0.014 + length / 2), top + 0.008 - (i - 1) * 0.011, 0)
 					* CFrame.Angles(0, 0, side * math.rad(14 - (i - 1) * 7)),
 				colour = GOLD,
 			})
@@ -454,25 +474,74 @@ local function destroyCharm()
 		charm:Destroy()
 		charm = nil
 	end
+	charmBase = nil
 	table.clear(charmParts)
 end
 
-local function buildCharm(jet: Model)
+-- The spring's foot on this cockpit's glareshield, in eye space, or nil if no candidate lands on the cockpit
+local function findCharmSpot(model: Model, eyeWorld: CFrame): CFrame?
+	-- Cockpit parts don't take queries; let the rays see them for a moment
+	local opened: { BasePart } = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and not d.CanQuery then
+			d.CanQuery = true
+			table.insert(opened, d)
+		end
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	local surfaces = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and CHARM_SURFACES[d.Name] then
+			table.insert(surfaces, d)
+		end
+	end
+	params.FilterDescendantsInstances = surfaces -- not the canopy frame overhead
+	local best: CFrame?
+	local bestDip = -math.huge
+	for _, spot in CHARM_SPOTS do
+		local from = eyeWorld * Vector3.new(spot.X, 0.05, spot.Y)
+		local hit = workspace:Raycast(from, eyeWorld.UpVector * -0.8, params)
+		if hit then
+			local foot = eyeWorld:PointToObjectSpace(hit.Position)
+			-- How far under the eye line the charm's top is, as an angle
+			local dip = math.atan2(-(foot.Y + CHARM_TOP), -foot.Z)
+			if dip >= CHARM_BELOW_SIGHT then
+				best = CFrame.new(foot)
+				break
+			elseif dip > bestDip then
+				best, bestDip = CFrame.new(foot), dip
+			end
+		end
+	end
+	for _, part in opened do
+		part.CanQuery = false
+	end
+	return best
+end
+
+local function buildCharm(jet: Model, root: BasePart, eye: Attachment)
 	destroyCharm()
 	local stars = jet:GetAttribute("Mastery")
-	if type(stars) ~= "number" or stars < Mastery.TRINKET_STARS then
+	if type(stars) ~= "number" or stars < Mastery.TRINKET_STARS or not cockpit then
 		return
 	end
+	local spot = findCharmSpot(cockpit, root.CFrame * eye.CFrame)
+	if not spot then
+		return -- nowhere to stand it: better no charm than one floating in the view
+	end
+	charmBase = eye.CFrame * spot
 	local model = Instance.new("Model")
 	model.Name = "MasteryCharm"
 	for _, piece in charmPieces() do
 		local p = Instance.new("Part")
 		p.Name = piece.name
 		p.Shape = piece.shape or Enum.PartType.Block
-		p.Size = if piece.name == "Chain" then piece.size else piece.size * CHARM_SCALE
+		local gold = piece.colour == GOLD
+		p.Size = if gold then piece.size * CHARM_SCALE else piece.size
 		p.Color = piece.colour
 		p.Material = Enum.Material.Metal
-		p.Reflectance = 0.4
+		p.Reflectance = if gold then 0.4 else 0.1
 		p.Anchored = true
 		p.CanCollide = false
 		p.CanTouch = false
@@ -480,10 +549,10 @@ local function buildCharm(jet: Model)
 		p.CastShadow = false
 		p.Parent = model
 		local offset = piece.offset
-		if piece.name ~= "Chain" then -- shrink towards the bottom of the chain
-			local below = CFrame.new(0, -CHAIN, 0)
-			local fromChain = below:Inverse() * offset
-			offset = below * (fromChain - fromChain.Position + fromChain.Position * CHARM_SCALE)
+		if gold then -- the badge and wings shrink towards the top of the spring
+			local top = CFrame.new(0, SPRING, 0)
+			local fromTop = top:Inverse() * offset
+			offset = top * (fromTop - fromTop.Position + fromTop.Position * CHARM_SCALE)
 		end
 		table.insert(charmParts, { part = p, offset = offset })
 	end
@@ -494,8 +563,9 @@ local function buildCharm(jet: Model)
 	smoothedAccel = Vector3.zero
 end
 
--- Swings the charm towards where the jet's felt gravity points (gravity less the jet's acceleration), then poses it.
-local function updateCharm(dt: number, root: BasePart, eye: Attachment, visible: boolean)
+-- Leans the charm the way the jet's felt gravity (gravity less the jet's acceleration) pulls it, on a springy
+-- wobble, then poses it.
+local function updateCharm(dt: number, root: BasePart, visible: boolean)
 	local velocity = root.AssemblyLinearVelocity
 	if lastVelocity and dt > 0 then
 		local accel = (velocity - lastVelocity) / dt
@@ -505,18 +575,20 @@ local function updateCharm(dt: number, root: BasePart, eye: Attachment, visible:
 	local felt = root.CFrame:VectorToObjectSpace(Vector3.new(0, -workspace.Gravity, 0) - smoothedAccel)
 	if felt.Magnitude > 1e-3 then
 		felt = felt.Unit
-		-- Rest angles: rotating "straight down" about Z by z gives (sin z, -cos z, 0); about X by x, (0, -cos x, -sin x)
-		local restZ = math.clamp(math.atan2(felt.X, -felt.Y), -SWING_LIMIT, SWING_LIMIT)
-		local restX = math.clamp(math.atan2(-felt.Z, -felt.Y), -SWING_LIMIT, SWING_LIMIT)
+		-- The top falls the way felt gravity pulls: rotating "up" about Z by z gives (-sin z, cos z, 0), about X
+		-- by x gives (0, cos x, sin x)
+		local restZ = math.clamp(-math.atan2(felt.X, -felt.Y) * WOBBLE_LEAN, -WOBBLE_LIMIT, WOBBLE_LIMIT)
+		local restX = math.clamp(math.atan2(felt.Z, -felt.Y) * WOBBLE_LEAN, -WOBBLE_LIMIT, WOBBLE_LIMIT)
 		local step = math.min(dt, 1 / 30)
-		swing.vx += (SWING_RATE ^ 2 * (restX - swing.x) - SWING_DAMPING * swing.vx) * step
-		swing.vz += (SWING_RATE ^ 2 * (restZ - swing.z) - SWING_DAMPING * swing.vz) * step
-		swing.x = math.clamp(swing.x + swing.vx * step, -SWING_LIMIT, SWING_LIMIT)
-		swing.z = math.clamp(swing.z + swing.vz * step, -SWING_LIMIT, SWING_LIMIT)
+		swing.vx += (WOBBLE_RATE ^ 2 * (restX - swing.x) - WOBBLE_DAMPING * swing.vx) * step
+		swing.vz += (WOBBLE_RATE ^ 2 * (restZ - swing.z) - WOBBLE_DAMPING * swing.vz) * step
+		swing.x = math.clamp(swing.x + swing.vx * step, -WOBBLE_LIMIT, WOBBLE_LIMIT)
+		swing.z = math.clamp(swing.z + swing.vz * step, -WOBBLE_LIMIT, WOBBLE_LIMIT)
 	end
-	local hook = root.CFrame * eye.CFrame * CHARM_HANG * CFrame.Angles(swing.x, 0, swing.z)
+	local base = root.CFrame * (charmBase :: CFrame)
+	local leaning = base * CFrame.Angles(swing.x, 0, swing.z) -- it bends at the foot
 	for _, item in charmParts do
-		item.part.CFrame = hook * item.offset
+		item.part.CFrame = (if item.part.Name == "Foot" then base else leaning) * item.offset
 		item.part.LocalTransparencyModifier = if visible then 0 else 1
 	end
 end
@@ -547,7 +619,7 @@ local function buildCockpit(jet: Model)
 	local model = if template then buildFromTemplate(template, root) else buildGreybox(jet, root, eye)
 	model.Parent = jet
 	cockpit = model
-	buildCharm(jet)
+	buildCharm(jet, root, eye)
 end
 
 local function setGauge(gauge: Gauge, value: number, dt: number, text: string)
@@ -578,9 +650,8 @@ local function update(dt: number)
 	end
 	local jet = FlightController.jet
 	local root = jet and jet.PrimaryPart
-	local eye = root and root:FindFirstChild("CockpitEye")
-	if charm and root and eye and eye:IsA("Attachment") then
-		updateCharm(dt, root, eye, visible)
+	if charm and root and charmBase then
+		updateCharm(dt, root, visible)
 	end
 	if not visible then
 		return
