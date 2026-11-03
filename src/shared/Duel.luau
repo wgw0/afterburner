@@ -2,7 +2,8 @@
 -- Duels (MCH-09, Will: the main mode): 1v1 in rounds. Pure: MatchService runs the rounds, the matchmaker and
 -- ProgressionService use the ratings.
 --
--- Rounds: each pilot has one life a round. Both jets start head-on at the same height and speed (spawnPair);
+-- Rounds: each pilot has one life a round. Both jets start in opposite corners at the same height and speed,
+-- flying past each other on parallel tracks (spawnPair);
 -- the last one flying wins the round. Both down within GRACE of each other (a missile already on its way
 -- when its shooter died counts), or the round's time running out, is a drawn round. First to ROUNDS_TO_WIN round wins takes the duel; after MAX_ROUNDS the one ahead wins, else
 -- it's a draw.
@@ -19,7 +20,8 @@ Duel.MAX_ROUNDS = 7 -- drawn rounds don't count towards a win, so stop somewhere
 Duel.ROUND_TIME = 150 -- seconds before a round is drawn
 Duel.INTERMISSION = 4 -- seconds between rounds (the result shown, then both jets reset)
 Duel.GRACE = 2 -- seconds after the first jet goes down before the round is decided
-Duel.SEPARATION = 2400 -- studs between the two jets at the start of a round (~6.3 km real, ~14 s to merge)
+Duel.SEPARATION = 2400 -- studs east to west between the two jets at the start of a round (~14 s to pass)
+Duel.OFFSET = 1200 -- studs north to south between their tracks (Will: not pointed straight at each other)
 
 Duel.START_RATING = 1000
 Duel.K = 32
@@ -277,13 +279,15 @@ function Duel.forfeit(state: State, identity: any, now: number): any?
 	return other
 end
 
--- The two start positions for a round: head-on over the map centre, SEPARATION apart, both level at
--- `altitude` facing each other. Seat 1 starts in the west.
+-- The two start positions for a round: opposite corners of a box over the map centre (SEPARATION east to
+-- west, OFFSET north to south), both level at `altitude` and heading away from their own side, so the jets
+-- pass each other OFFSET apart instead of nose to nose. Seat 1 starts in the south-west heading due east,
+-- seat 2 in the north-east heading due west (north is -Z).
 function Duel.spawnPair(centre: Vector3, altitude: number): { CFrame }
-	local half = Duel.SEPARATION / 2
-	local a = Vector3.new(centre.X - half, altitude, centre.Z)
-	local b = Vector3.new(centre.X + half, altitude, centre.Z)
-	return { CFrame.lookAt(a, b), CFrame.lookAt(b, a) }
+	local half, side = Duel.SEPARATION / 2, Duel.OFFSET / 2
+	local a = Vector3.new(centre.X - half, altitude, centre.Z + side)
+	local b = Vector3.new(centre.X + half, altitude, centre.Z - side)
+	return { CFrame.lookAt(a, a + Vector3.xAxis), CFrame.lookAt(b, b - Vector3.xAxis) }
 end
 
 return Duel
