@@ -427,4 +427,6 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 Ideas Will has asked for, to pick up when there's time.
 
 - **Chocolate Chip camo** (Will, 2 November 2026): the six-colour desert pattern. A tan base with large brown and pale pink-tan blobs, scattered with small black-and-white "pebble" spots (black crescents round white chips). For the Shop's camos, on every jet, like the others (`Config/Cosmetics`, painted by the camo painters in `tools/blender`). Bold rather than faded, as Will likes them.
+- **Duel spawns in opposite corners** (Will, 3 November 2026): 1v1 duels (ranked, casual and Vs AI) shouldn't start with the two jets pointed straight at each other. Each pilot spawns in an opposite corner of the arena, heading due west or due east, away from the side they spawned on. Applies to every round's start (`Shared/Duel`, `MatchService` duel rounds).
+- **Vs AI panel: clearer mode buttons** (Will, 3 November 2026): in Training's VS AI panel, more space between the button rows, with the buttons colour-coded by kind (modes, difficulty, and perhaps duel / team / mission modes in their own colours). Under START VS AI, a short description of the selected mode in bold, larger text: what it is and what you do in it.
 
