@@ -72,7 +72,7 @@ local function DuelPanel(props: { Mode: string, Data: any })
 			Color = Theme.Dim,
 		}),
 		How = e(C.Label, {
-			Text = `1v1, best of five rounds. Each round you both start head-on with one life; first to {Duel.ROUNDS_TO_WIN} round wins. {if ranked
+			Text = `1v1, best of five rounds. Each round you both start in opposite corners with one life; first to {Duel.ROUNDS_TO_WIN} round wins. {if ranked
 				then "Wins and losses move your rating, against pilots rated near you."
 				else "Practice: your rating doesn't move."} Nobody about after {Duel.AI_AFTER} s? An AI pilot takes them on (unranked).`,
 			Size = UDim2.new(1, 0, 0, 90),

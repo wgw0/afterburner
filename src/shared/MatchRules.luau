@@ -26,7 +26,7 @@ export type ModeConfig = {
 	-- Escort; Waves: PvE (Shared/Strike)
 	AIDifficulty: string?, -- AI pilots' profile (AIBrain.PROFILES; default Normal). Set for Vs AI matches.
 	GunsOnly: boolean?, -- no missiles at all, and every gun carries GUNS_ONLY_AMMO times its rounds
-	Duel: boolean?, -- 1v1 in rounds (Shared/Duel): the server spawns both jets head-on each round
+	Duel: boolean?, -- 1v1 in rounds (Shared/Duel): the server spawns both jets in opposite corners each round
 	Ranked: boolean?, -- a duel that moves the pilots' duel ratings
 	MissileClasses: { [string]: boolean }?, -- only missiles of these classes are carried (BVR: radar ones)
 	MinTier: number?, -- only jets of this tier and up may fly (BVR: IV)
@@ -118,7 +118,7 @@ MatchRules.MODES = table.freeze({
 		GunsOnly = true,
 	} :: ModeConfig),
 	-- Duels (MCH-09, Will: the main mode): 1v1, best of five rounds, one life a round (Shared/Duel runs the
-	-- rounds; MatchService spawns both jets head-on). Ranked moves the duel rating, Casual doesn't. With only one
+	-- rounds; MatchService spawns both jets in opposite corners). Ranked moves the duel rating, Casual doesn't. With only one
 	-- player (nobody to duel in time) an AI pilot takes the other seat and nothing is ranked.
 	Duel = table.freeze({
 		Id = "Duel",

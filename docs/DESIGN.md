@@ -677,7 +677,7 @@ Timeline note: the weeks assume one dedicated developer with AI assistance. Phas
 | 8 | Tier Unlocks | Decided. **Tiers IV and V only** (Will, November 2026). Tiers II and III come in under two hours of play. See §8.2. |
 | 9 | Reloading | Decided. **Stores refill on a timer** when they run dry (Will, October 2026). Not realistic, on purpose. See §4.1. |
 | 10 | Main mode | Decided. **Duels are the main mode** (Will, November 2026): first in the mode picker and the default for PLAY. See §5.1. |
-| 11 | Duel format | Decided. **Rounds**: best of five, head-on starts, one life a round, with a 2 s grace so trades are drawn rounds (Will, November 2026). See §5.1. |
+| 11 | Duel format | Decided. **Rounds**: best of five, starts in opposite corners heading past each other (Will, 3 November 2026; head-on before), one life a round, with a 2 s grace so trades are drawn rounds (Will, November 2026). See §5.1. |
 | 12 | Duel ladder | Decided. **Ranked and Casual**: Ranked moves an Elo rating with six ranks; Casual moves nothing (Will, November 2026). See §5.1. |
 | 13 | Nobody to duel | Decided. **An AI duelist after 45 s**, sized to the player's rating and unranked (Will, November 2026). See §5.2. |
 | 14 | Strike bomber | Decided. **A real bomber model**, the B-1B Lancer, flown only by AI, rather than a fighter standing in (Will, November 2026). See §5.1. |

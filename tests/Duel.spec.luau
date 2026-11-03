@@ -81,11 +81,17 @@ return function(ctx)
 			expect(Duel.matchResult(state)).toBe("B")
 		end)
 
-		it("start positions face each other, level, SEPARATION apart", function()
+		it("start positions are opposite corners, level, heading due east and west away from their side", function()
 			local pair = Duel.spawnPair(Vector3.zero, 300)
-			expect(math.abs((pair[1].Position - pair[2].Position).Magnitude - Duel.SEPARATION) < 1e-3).toBe(true)
-			expect(pair[1].LookVector:Dot((pair[2].Position - pair[1].Position).Unit) > 0.999).toBe(true)
-			expect(pair[1].Position.Y).toBe(300)
+			local a, b = pair[1].Position, pair[2].Position
+			expect(math.abs((b.X - a.X) - Duel.SEPARATION) < 1e-3).toBe(true)
+			expect(math.abs((a.Z - b.Z) - Duel.OFFSET) < 1e-3).toBe(true) -- seat 1 south (+Z), seat 2 north
+			expect(pair[1].LookVector:Dot(Vector3.xAxis) > 0.999).toBe(true) -- west side heads east
+			expect(pair[2].LookVector:Dot(-Vector3.xAxis) > 0.999).toBe(true) -- east side heads west
+			-- Not pointed at each other
+			expect(pair[1].LookVector:Dot((b - a).Unit) < 0.95).toBe(true)
+			expect(a.Y).toBe(300)
+			expect(b.Y).toBe(300)
 		end)
 	end)
 

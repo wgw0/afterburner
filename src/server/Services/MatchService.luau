@@ -17,7 +17,8 @@
 --   PvE waves (MCH-08): the players (West) hold their airbase against waves of AI fighters and bombers
 --                (East, Strike.waveSpec). The base takes Strike.BASE_HITS bombers; clear every wave to win.
 --   Duels (MCH-09): two pilots, best of five rounds (Shared/Duel). Each round the server puts both jets up
---                head-on over the map centre; a jet lost is out until the next round. A ranked duel between
+--                in opposite corners over the map centre, heading east and west past each other; a jet lost
+--                is out until the next round. A ranked duel between
 --                two players moves both duel ratings at the end; with one player an AI pilot (as hard as
 --                their rating) takes the other seat and nothing is ranked. Leaving forfeits.
 -- Server roles (MatchmakingService, MMK-02/04): a lobby runs no match (Idle "Lobby"); a match server runs one
@@ -646,7 +647,7 @@ local function duelAirframe(player: Player): string?
 	return data and data.Lineup and data.Lineup[1]
 end
 
--- Puts both duellists up head-on for the next round.
+-- Puts both duellists up in their corners for the next round.
 local function startDuelRound(state: Duel.State)
 	clearJets()
 	Duel.startRound(state, os.clock())
