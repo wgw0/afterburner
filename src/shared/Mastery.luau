@@ -1,7 +1,7 @@
 --!strict
 -- Aircraft mastery (DESIGN §7.5, DEVELOPMENT.md §23.8, PRG-07). Each jet earns up to 5 stars from kills made
 -- in it during scored matches (data.Aircraft[id].Mastery holds the count). Each star pays Credits; from 2 stars
--- the jet carries kill markers under the canopy (KillMarkers), 3 stars hangs a gold wings charm in the cockpit
+-- the jet carries kill markers under the canopy (KillMarkers), 3 stars stands a gold wings charm on the glareshield
 -- (CockpitController), 4 stars unlocks that jet's Ace Mastery livery (Skins.list) and 5 stars gives the
 -- "<jet> Ace" title (Will, November 2026). Pure.
 
