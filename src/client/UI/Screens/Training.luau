@@ -74,18 +74,12 @@ local function find(list: { any }, id: string): any
 	return nil
 end
 
--- A row of choice buttons sharing `width` pixels, each tinted by `colourOf(item)`: outlined in its colour,
+-- A row of choice buttons sharing the panel's width, each tinted by `colourOf(item)`: outlined in its colour,
 -- filled when picked.
-local function choices(
-	list: { any },
-	value: string,
-	width: number,
-	order: number,
-	onPick: (string) -> (),
-	colourOf: (any) -> Color3
-)
+local function choices(list: { any }, value: string, order: number, onPick: (string) -> (), colourOf: (any) -> Color3)
 	local buttons: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8 }) }
-	local each = math.floor((width - 8 * (#list - 1)) / #list)
+	local share = 1 / #list
+	local trim = math.ceil(8 * (#list - 1) / #list)
 	for i, item in list do
 		local id, colour = item[1], colourOf(item)
 		local picked = value == id
@@ -95,7 +89,7 @@ local function choices(
 			Color = if picked then colour else nil,
 			TextColor = if picked then DARK_TEXT else colour,
 			StrokeColor = colour,
-			Size = UDim2.fromOffset(each, 38),
+			Size = UDim2.new(share, -trim, 0, 38),
 			TextSize = 12,
 			LayoutOrder = i,
 			OnClick = function()
@@ -103,7 +97,9 @@ local function choices(
 			end,
 		})
 	end
-	return e("Frame", { Size = UDim2.new(1, 0, 0, 38), BackgroundTransparency = 1, LayoutOrder = order }, buttons)
+	-- Clear of the scroll bar, with room for the outlines (drawn outside each button) on both sides
+	buttons.Padding = e("UIPadding", { PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 8) })
+	return e("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, LayoutOrder = order }, buttons)
 end
 
 local function kindColour(item: any): Color3
@@ -284,12 +280,12 @@ local function Training(props: any)
 	side.VsGap = gap(6, 17)
 	side.VsTitle = e(C.Label, { Text = "VS AI", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 18 })
 	side.ModeHeading = heading("MODE", 19)
-	side.ModeDuel = choices(VS_DUEL, vsMode, 252, 20, setVsMode, kindColour)
-	side.Mode = choices(VS_MODES, vsMode, 252, 21, setVsMode, kindColour)
-	side.Mode2 = choices(VS_MODES_2, vsMode, 252, 22, setVsMode, kindColour)
+	side.ModeDuel = choices(VS_DUEL, vsMode, 20, setVsMode, kindColour)
+	side.Mode = choices(VS_MODES, vsMode, 21, setVsMode, kindColour)
+	side.Mode2 = choices(VS_MODES_2, vsMode, 22, setVsMode, kindColour)
 	side.DifficultyGap = gap(4, 23)
 	side.DifficultyHeading = heading("DIFFICULTY", 24)
-	side.Difficulty = choices(DIFFICULTIES, difficulty, 252, 25, setDifficulty, difficultyColour)
+	side.Difficulty = choices(DIFFICULTIES, difficulty, 25, setDifficulty, difficultyColour)
 	local duel = vsMode == "DuelCasual" or vsMode == "Waves" -- one opponent, or the waves decide
 	side.Count = if duel
 		then nil
