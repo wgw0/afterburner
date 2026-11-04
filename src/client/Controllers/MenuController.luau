@@ -1020,6 +1020,9 @@ local function setVisible(visible: boolean)
 		modalGui.Enabled = false
 		report = nil
 		feedback = nil
+		-- A question asked from the menu (LEAVE MATCH as the match launches you) can't be answered once you're
+		-- flying with the mouse locked, so it answers no
+		Confirm.cancel()
 	end
 	if visible then
 		if state.screen == "Results" then

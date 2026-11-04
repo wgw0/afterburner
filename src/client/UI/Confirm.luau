@@ -4,7 +4,7 @@
 --   if not Confirm.yes({ Title = "BUY F-4E PHANTOM II?", Body = "...", Action = "BUY · 12,000 Cr" }) then return end
 -- props: Title, Body, Action (the confirm button's text), Danger (a red confirm button for losing something).
 -- In its own ScreenGui above the menu and its other windows; one at a time (a second ask while one is open
--- answers no).
+-- answers no). Confirm.cancel() answers an open one no (the menu closing under it).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,6 +23,7 @@ export type Options = { Title: string, Body: string?, Action: string?, Danger: b
 local Confirm = {}
 
 local open = false
+local cancelOpen: (() -> ())? = nil
 
 local WIDTH, PAD = 480, 22
 
@@ -119,12 +120,16 @@ function Confirm.yes(options: Options): boolean
 			return
 		end
 		answer = yes
+		cancelOpen = nil
 		task.defer(function()
 			root:unmount()
 			folder:Destroy()
 			open = false
 			task.spawn(waiting, yes)
 		end)
+	end
+	cancelOpen = function()
+		onAnswer(false)
 	end
 	root:render(ReactRoblox.createPortal({
 		AfterburnerConfirm = e("ScreenGui", {
@@ -137,6 +142,13 @@ function Confirm.yes(options: Options): boolean
 		}),
 	}, Players.LocalPlayer:WaitForChild("PlayerGui")))
 	return coroutine.yield()
+end
+
+-- Closes the open window, if any, as if CANCEL was pressed.
+function Confirm.cancel()
+	if cancelOpen then
+		cancelOpen()
+	end
 end
 
 return Confirm
