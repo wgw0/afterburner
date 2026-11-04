@@ -35,17 +35,18 @@ local function WelcomeDialog(props: { OnTraining: () -> (), OnClose: () -> () })
 		}, {
 			Title = e(C.Label, {
 				Text = "ATTENTION, CADET!",
-				Size = UDim2.new(1, -50, 0, 34),
+				Size = UDim2.new(1, -100, 0, 34),
 				Heavy = true,
 				TextSize = 30,
 				Color = Theme.Accent,
 			}),
+			-- Skipping is for good (MatchmakingService marks you onboarded), so it says so rather than a bare X
 			Close = e(C.Button, {
-				Text = "X",
+				Text = "SKIP",
 				Style = "Ghost",
-				Size = UDim2.fromOffset(34, 34),
-				Position = UDim2.new(1, -34, 0, 0),
-				TextSize = 16,
+				Size = UDim2.fromOffset(90, 38),
+				Position = UDim2.new(1, -90, 0, -2),
+				TextSize = 15,
 				OnClick = props.OnClose,
 			}),
 			Body = e(C.Label, {

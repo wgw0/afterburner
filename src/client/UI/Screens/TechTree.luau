@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local TechTree = require(Shared.TechTree)
 local LiveConfig = require(Shared.LiveConfig)
+local Progression = require(Shared.Progression)
 local Products = require(Shared.Config.Products)
 local Shop = require(Shared.Shop)
 
@@ -24,6 +25,7 @@ local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local BRANCH_NAMES = { NATO = "NATO / US", East = "SOVIET / RUSSIA", Europe = "EUROPE" }
 local CARD_H = 150
+local DETAILS_W = 88 -- the DETAILS button beside RESEARCH / BUY
 local UNLOCK_H = 76 -- the Tier Unlock banner, closed
 local TIERS_W, COLUMN_W, GAP_X = 90, 290, 18 -- the tier labels, each region's column, the gap between them
 local UNLOCK_OPEN_H = 160
@@ -123,14 +125,17 @@ local function NodeCard(props: any)
 			Color = Theme.Dim,
 			TextSize = 12,
 		})
+		-- Disabled, it says why (a full bar of free RP alone doesn't make a locked jet researchable)
+		local _, why = Progression.researchPlan(data, node.Id)
+		local blocked = state == "Locked" or have < node.RP
 		children.Action = e(C.Button, {
-			Text = "RESEARCH",
+			Text = if blocked and why then string.upper(why) else "RESEARCH",
 			Style = "Primary",
-			Size = UDim2.new(1, -24, 0, 40),
+			Size = UDim2.new(1, -24 - DETAILS_W - 8, 0, 40),
 			Position = UDim2.fromOffset(12, 100),
-			TextSize = 14,
+			TextSize = if blocked then 11 else 14,
 			Pending = pending,
-			Disabled = state == "Locked" or have < node.RP,
+			Disabled = blocked,
 			OnClick = function()
 				run(props.OnResearch)
 			end,
@@ -146,7 +151,7 @@ local function NodeCard(props: any)
 		children.Action = e(C.Button, {
 			Text = `BUY  ·  {C.number(node.Credits)} Cr`,
 			Style = "Primary",
-			Size = UDim2.new(1, -24, 0, 40),
+			Size = UDim2.new(1, -24 - DETAILS_W - 8, 0, 40),
 			Position = UDim2.fromOffset(12, 100),
 			TextSize = 14,
 			Pending = pending,
@@ -165,7 +170,7 @@ local function NodeCard(props: any)
 			TextSize = 13,
 		})
 		children.Action = e(C.Button, {
-			Text = "DETAILS & MODULES",
+			Text = "DETAILS",
 			Style = "Ghost",
 			Size = UDim2.new(1, -24, 0, 40),
 			Position = UDim2.fromOffset(12, 100),
@@ -175,11 +180,26 @@ local function NodeCard(props: any)
 			end,
 		})
 	end
+	-- Every jet can be looked at before it's researched or bought: stats, loadout, skins
+	if state ~= "Owned" then
+		children.Details = e(C.Button, {
+			Text = "DETAILS",
+			Style = "Ghost",
+			Size = UDim2.fromOffset(DETAILS_W, 40),
+			Position = UDim2.new(1, -12 - DETAILS_W, 0, 100),
+			TextSize = 13,
+			OnClick = function()
+				props.OnDetails(node.Id)
+			end,
+		})
+	end
 	if message then
+		-- In place of the cost line, not over it
+		children.Cost = nil
 		children.Message = e(C.Label, {
 			Text = message,
 			Size = UDim2.new(1, -24, 0, 16),
-			Position = UDim2.fromOffset(12, 82),
+			Position = UDim2.fromOffset(12, 80),
 			Color = Theme.Bad,
 			TextSize = 12,
 		})

@@ -368,19 +368,20 @@ local function SpinDialog(props: { OnSpin: () -> (Spin.Prize?, string?), OnClose
 				Align = "Center",
 				Color = if message then Theme.Warn else Theme.Text,
 			}),
-			-- After a win: NICE! closes the window (open it again from the hangar to use another spin)
+			-- After a win: SPIN AGAIN while spins are banked, else NICE! closes the window
 			Spin = e(C.Button, {
-				Text = if phase == "result"
-					then "NICE!"
+				Text = if phase == "result" and banked >= 1
+					then `SPIN AGAIN · {banked} LEFT`
+					elseif phase == "result" then "NICE!"
 					elseif phase == "spinning" or phase == "asking" then "SPINNING…"
 					else "SPIN",
 				Style = "Primary",
-				Size = UDim2.fromOffset(260, 56),
+				Size = UDim2.fromOffset(320, 56),
 				Position = UDim2.new(0.5, 0, 1, -56),
 				AnchorPoint = Vector2.new(0.5, 0),
 				TextSize = 24,
 				Disabled = phase == "spinning" or phase == "asking" or (phase ~= "result" and banked < 1),
-				OnClick = if phase == "result" then props.OnClose else spin,
+				OnClick = if phase == "result" and banked < 1 then props.OnClose else spin,
 			}),
 		}),
 	})

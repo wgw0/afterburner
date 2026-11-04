@@ -32,8 +32,11 @@ local KINDS = {
 	Objective = Theme.Rarity.Epic, -- zones and bombers
 }
 local VS_DUEL = { { "DuelCasual", "1V1 DUEL", "Solo" }, { "Waves", "PVE WAVES", "Solo" } }
-local VS_MODES =
-	{ { "Dogfight", "FFA", "Kills" }, { "TeamDeathmatch", "TEAMS", "Kills" }, { "GunsOnly", "GUNS", "Kills" } }
+local VS_MODES = {
+	{ "Dogfight", "DOGFIGHT", "Kills" },
+	{ "TeamDeathmatch", "TEAMS", "Kills" },
+	{ "GunsOnly", "GUNS ONLY", "Kills" },
+}
 local VS_MODES_2 =
 	{ { "BVR", "BVR", "Kills" }, { "AirSuperiority", "ZONES", "Objective" }, { "StrikeEscort", "STRIKE", "Objective" } }
 local DIFFICULTIES = {
@@ -43,6 +46,8 @@ local DIFFICULTIES = {
 	{ "Ace", "ACE", Theme.Bad },
 }
 local MAX_AI = 11
+local CLUSTER_W, CLUSTER_H = 880, 250 -- the bottom cluster's design size (MULTIPLAYER ... DETAILS)
+local SIDE_PANELS = 2 * (20 + 300 + 16) -- the jets list on the left, the lessons and Vs AI on the right
 local DARK_TEXT = Color3.fromRGB(14, 16, 22)
 
 local function minutes(modeId: string): number
@@ -402,69 +407,81 @@ local function Training(props: any)
 			Color = Theme.Accent,
 			TextSize = 18,
 		}),
-		JetName = e(C.Label, {
-			Text = if airframe then airframe.DisplayName else "",
-			Position = UDim2.fromScale(0.5, 0.68),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(600, 40),
-			Align = "Center",
-			Heavy = true,
-			TextSize = 34,
-		}),
-		JetInfo = e(C.Label, {
-			Text = if airframe
-				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}{if data.Aircraft[selected]
-						and data.Aircraft[selected].Owned
-					then ""
-					else "  ·  not owned yet"}`
-				else "",
-			Position = UDim2.new(0.5, 0, 0.68, 42),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(600, 22),
-			Align = "Center",
-			Color = Theme.Dim,
-			TextSize = 16,
-		}),
-		Multiplayer = e(C.Button, {
-			Text = "MULTIPLAYER",
-			Style = "Ghost",
-			TextSize = 20,
-			Size = UDim2.fromOffset(210, 70),
-			Position = UDim2.new(0.5, -440, 1, -137),
-			OnClick = props.OnMultiplayer,
-		}),
-		Details = e(C.Button, {
-			Text = "DETAILS",
-			Style = "Ghost",
-			TextSize = 20,
-			Size = UDim2.fromOffset(180, 70),
-			Position = UDim2.new(0.5, 230, 1, -137),
-			Disabled = selected == nil,
-			OnClick = function()
-				props.OnDetails(selected)
-			end,
-		}),
-		Fly = e(C.Button, {
-			Text = "FLY",
-			Style = "Primary",
-			TextSize = 40,
-			Size = UDim2.fromOffset(420, 96),
-			Position = UDim2.new(0.5, 0, 1, -150),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Disabled = not (props.CanPlay and selected),
-			OnClick = function()
-				props.OnPlay(selected)
-			end,
-		}),
-		Status = e(C.Label, {
-			Text = props.Status or "",
-			Position = UDim2.new(0.5, 0, 1, -44),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(420, 22),
-			Align = "Center",
-			Color = Theme.Warn,
-			Bold = true,
-			TextSize = 18,
+		-- Name, FLY and the buttons round it: a CLUSTER_W design that shrinks to fit between the side panels
+		Cluster = e(C.Fit, {
+			Width = CLUSTER_W,
+			Height = CLUSTER_H,
+			Sides = SIDE_PANELS,
+			Position = UDim2.fromScale(0.5, 1),
+			AnchorPoint = Vector2.new(0.5, 1),
+			ZIndex = 2,
+		}, {
+			JetName = e(C.Label, {
+				Text = if airframe then airframe.DisplayName else "",
+				Position = UDim2.new(0.5, 0, 1, -236),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(600, 40),
+				Align = "Center",
+				Heavy = true,
+				TextSize = 34,
+			}),
+			JetInfo = e(C.Label, {
+				Text = if airframe
+					then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}{if data.Aircraft[selected]
+							and data.Aircraft[selected].Owned
+						then ""
+						else "  ·  not owned yet"}`
+					else "",
+				Position = UDim2.new(0.5, 0, 1, -194),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(600, 22),
+				Align = "Center",
+				Color = Theme.Dim,
+				TextSize = 16,
+			}),
+			Multiplayer = e(C.Button, {
+				Text = "MULTIPLAYER",
+				Style = "Ghost",
+				TextSize = 20,
+				Size = UDim2.fromOffset(210, 70),
+				Position = UDim2.new(0.5, -440, 1, -137),
+				OnClick = props.OnMultiplayer,
+			}),
+			Details = e(C.Button, {
+				Text = "DETAILS",
+				Style = "Ghost",
+				TextSize = 20,
+				Size = UDim2.fromOffset(180, 70),
+				Position = UDim2.new(0.5, 230, 1, -137),
+				Disabled = selected == nil,
+				OnClick = function()
+					props.OnDetails(selected)
+				end,
+			}),
+			Fly = e(C.Button, {
+				Text = "FLY",
+				Style = "Primary",
+				TextSize = 40,
+				Size = UDim2.fromOffset(420, 96),
+				Position = UDim2.new(0.5, 0, 1, -150),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Disabled = not (props.CanPlay and selected),
+				OnClick = function()
+					props.OnPlay(selected)
+				end,
+			}),
+			Status = e(C.Label, {
+				Text = props.Status or "",
+				Position = UDim2.new(0.5, 0, 1, -50),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(440, 46),
+				Align = "Center",
+				AlignY = "Top",
+				Wrap = true,
+				Color = Theme.Warn,
+				Bold = true,
+				TextSize = 16,
+			}),
 		}),
 		Jets = e(C.Panel, {
 			Size = UDim2.new(0, 300, 1, -40),

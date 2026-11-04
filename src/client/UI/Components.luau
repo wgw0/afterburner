@@ -1,6 +1,8 @@
 --!strict
 -- Base React components shared by every menu screen (UI-01): Panel, Label, Button, Bar, Pill.
--- Buttons show a pending state while the server answers and stay at least 44 px tall (touch).
+-- Buttons show a pending state while the server answers and stay at least 44 px tall (touch). A click whose
+-- handler waits (a server request) shows "…" and blocks more clicks until it returns; any click is ignored for
+-- CLICK_GAP after the last, so a double-click never sends two requests (or joins and then cancels).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,6 +11,7 @@ local Sounds = require(script.Parent.Sounds)
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
+local CLICK_GAP = 0.35 -- seconds
 
 local Components = {}
 
@@ -88,8 +91,18 @@ end
 -- "Ghost" | "Danger"), Disabled, Pending, TextSize, LayoutOrder, Selected, Color and TextColor (instead of
 -- the style's), StrokeColor (a coloured border, e.g. what kind of action it is).
 function Components.Button(props: any)
+	local busy, setBusy = React.useState(false)
+	local lastClick = React.useRef(0)
+	local mounted = React.useRef(true)
+	React.useEffect(function()
+		mounted.current = true
+		return function()
+			mounted.current = false
+		end
+	end, {})
 	local style = props.Style or "Secondary"
-	local disabled = props.Disabled or props.Pending
+	local pending = props.Pending or busy
+	local disabled = props.Disabled or pending
 	local background = if style == "Primary"
 		then Theme.Accent
 		elseif style == "Danger" then Theme.Bad
@@ -101,7 +114,7 @@ function Components.Button(props: any)
 	if props.Selected then
 		background = Theme.AccentDark
 	end
-	local text = if props.Pending then "…" else props.Text
+	local text = if pending then "…" else props.Text
 	return e("TextButton", {
 		Text = text,
 		Size = props.Size or UDim2.new(1, 0, 0, 44),
@@ -122,9 +135,26 @@ function Components.Button(props: any)
 		Selectable = not disabled,
 		ZIndex = props.ZIndex,
 		[React.Event.Activated] = function()
-			if not disabled and props.OnClick then
-				Sounds.play("UIClick")
-				props.OnClick()
+			local now = os.clock()
+			if disabled or not props.OnClick or now - lastClick.current < CLICK_GAP then
+				return
+			end
+			lastClick.current = now
+			Sounds.play("UIClick")
+			-- Run the handler in its own thread: if it waits on the server, the button shows "…" until it's done
+			local finished = false
+			task.spawn(function()
+				local ok, err = pcall(props.OnClick)
+				finished = true
+				if mounted.current then
+					setBusy(false)
+				end
+				if not ok then
+					warn(err)
+				end
+			end)
+			if not finished then
+				setBusy(true)
 			end
 		end,
 	}, {
@@ -133,6 +163,37 @@ function Components.Button(props: any)
 			then stroke(props.StrokeColor, 2)
 			elseif style == "Ghost" or props.Selected then stroke(Theme.Accent, 1.5)
 			else nil,
+	})
+end
+
+-- A fixed-size design that shrinks to fit the room it's given, never overlapping what's either side of it
+-- (the side panels, on a narrow screen or a large Menu scale). props: Width, Height (the design, in menu
+-- units), Sides (what to keep clear across the screen's width, e.g. both side panels), Position,
+-- AnchorPoint, children (laid out in Width x Height as usual, anchored to its bottom centre). The frame's
+-- height is a fixed Height, so its width over its height gives the room in the menu's own units.
+function Components.Fit(props: any)
+	local room, setRoom = React.useState(props.Width)
+	local fit = math.clamp(room / props.Width, 0.4, 1)
+	local children = table.clone(props.children or {})
+	children.Scale = e("UIScale", { Scale = fit })
+	return e("Frame", {
+		Size = UDim2.new(1, -(props.Sides or 0), 0, props.Height),
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+		BackgroundTransparency = 1,
+		ZIndex = props.ZIndex,
+		[React.Change.AbsoluteSize] = function(frame: Frame)
+			if frame.AbsoluteSize.Y > 0 then
+				setRoom(frame.AbsoluteSize.X / frame.AbsoluteSize.Y * props.Height)
+			end
+		end,
+	}, {
+		Inner = e("Frame", {
+			Size = UDim2.fromOffset(props.Width, props.Height),
+			Position = UDim2.fromScale(0.5, 1),
+			AnchorPoint = Vector2.new(0.5, 1),
+			BackgroundTransparency = 1,
+		}, children),
 	})
 end
 

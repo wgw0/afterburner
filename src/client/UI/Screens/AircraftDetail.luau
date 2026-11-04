@@ -26,6 +26,7 @@ local JetPreview = require(UI.JetPreview)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
+local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local G = 9.81
 local SHOP_ROW_H = 50 -- the "Shop camos" row under the skins
 
@@ -442,6 +443,8 @@ local function AircraftDetail(props: any)
 	}
 
 	local inLineup = table.find(data.Lineup, id)
+	local lastJet = AircraftData.get(data.Lineup[#data.Lineup] or "") :: any
+	local swapName = if lastJet then lastJet.DisplayName else "last jet"
 	local slots = Progression.slotsFor(data)
 
 	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
@@ -461,7 +464,7 @@ local function AircraftDetail(props: any)
 			TextSize = 30,
 		}),
 		Info = e(C.Label, {
-			Text = `Tier {airframe.Tier}  ·  BR {LiveConfig.battleRating(id)}  ·  {airframe.Branch}`,
+			Text = `Tier {TIER_NAMES[airframe.Tier] or airframe.Tier}  ·  BR {LiveConfig.battleRating(id)}  ·  {airframe.Branch}`,
 			Size = UDim2.fromOffset(600, 20),
 			Position = UDim2.fromOffset(152, 58),
 			Color = Theme.Dim,
@@ -507,7 +510,7 @@ local function AircraftDetail(props: any)
 				Text = e(C.Label, {
 					Text = lineupMessage or (if inLineup
 						then `In your lineup (slot {inLineup})`
-						elseif #data.Lineup >= slots then "Lineup full: remove a jet in the hangar first"
+						elseif #data.Lineup >= slots then `Lineup full: SWAP replaces your {swapName}`
 						else "Not in your lineup"),
 					TextSize = 13,
 					Color = if lineupMessage then Theme.Bad else Theme.Dim,
@@ -515,15 +518,20 @@ local function AircraftDetail(props: any)
 					LayoutOrder = 0,
 				}),
 				Button = e(C.Button, {
-					Text = if inLineup then "REMOVE FROM LINEUP" else "ADD TO LINEUP",
+					Text = if inLineup
+						then "REMOVE FROM LINEUP"
+						elseif #data.Lineup >= slots then "SWAP INTO LINEUP"
+						else "ADD TO LINEUP",
 					TextSize = 13,
 					LayoutOrder = 1,
 					Pending = lineupPending,
-					Disabled = (inLineup ~= nil and #data.Lineup <= 1) or (inLineup == nil and #data.Lineup >= slots),
+					Disabled = inLineup ~= nil and #data.Lineup <= 1, -- always keep one jet
 					OnClick = function()
 						local ids = table.clone(data.Lineup)
 						if inLineup then
 							table.remove(ids, inLineup)
+						elseif #ids >= slots then
+							ids[#ids] = id -- as the Hangar's SWAP does with nothing selected: the last slot
 						else
 							table.insert(ids, id)
 						end
