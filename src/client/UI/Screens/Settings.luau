@@ -17,6 +17,7 @@ local Settings = require(Shared.Config.Settings)
 local Version = require(Shared.Version)
 
 local C = require(script.Parent.Parent.Components)
+local Confirm = require(script.Parent.Parent.Confirm)
 local Theme = require(script.Parent.Parent.Theme)
 
 local e = React.createElement
@@ -397,6 +398,16 @@ local function KeyBindings(props: any)
 			TextSize = 12,
 			Disabled = next(overrides) == nil,
 			OnClick = function()
+				if
+					not Confirm.yes({
+						Title = "RESET ALL CONTROLS?",
+						Body = "Every key and button you've changed goes back to its default.",
+						Action = "RESET CONTROLS",
+						Danger = true,
+					})
+				then
+					return
+				end
 				setNote(nil)
 				props.OnSet("Bindings", {})
 			end,

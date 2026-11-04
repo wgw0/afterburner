@@ -23,6 +23,14 @@ local React = require(Packages:WaitForChild("React")) :: any
 local ReactRoblox = require(Packages:WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
+local Bundles = require(Shared.Config.Bundles)
+local CosmeticsConfig = require(Shared.Config.Cosmetics)
+local Progression = require(Shared.Progression)
+local Seasons = require(Shared.Config.Seasons)
+local Shop = require(Shared.Shop)
+local Skins = require(Shared.Skins)
+local Squadron = require(Shared.Squadron)
+local TechTree = require(Shared.TechTree)
 local Environment = require(Shared.Config.Environment)
 local LiveConfig = require(Shared.LiveConfig)
 local Passes = require(Shared.Config.Passes)
@@ -45,6 +53,8 @@ local TutorialController = require(script.Parent.TutorialController)
 
 local UI = script.Parent.Parent:WaitForChild("UI")
 local App = require(UI:WaitForChild("App"))
+local C = require(UI:WaitForChild("Components"))
+local Confirm = require(UI:WaitForChild("Confirm"))
 local DailyReward = require(UI:WaitForChild("DailyReward"))
 local FeedbackDialog = require(UI:WaitForChild("FeedbackDialog"))
 local ReportDialog = require(UI:WaitForChild("ReportDialog"))
@@ -53,12 +63,18 @@ local LoadingScreen = require(UI:WaitForChild("LoadingScreen"))
 local MenuBackdrop = require(UI:WaitForChild("MenuBackdrop"))
 local Sounds = require(UI:WaitForChild("Sounds"))
 
+-- "Finding a<name> match…": the names on the mode picker's cards (UI/ModeSelect)
 local MODE_NAMES = {
 	Any = "",
+	Duel = " Ranked Duel",
+	DuelCasual = " Casual Duel",
 	Dogfight = " Dogfight",
-	TeamDeathmatch = " Team Deathmatch",
-	AirSuperiority = " Air Superiority",
+	TeamDeathmatch = " Teams",
+	AirSuperiority = " Zones",
+	StrikeEscort = " Strike Escort",
+	BVR = " BVR Battle",
 	GunsOnly = " Guns Only",
+	Waves = " PvE Waves",
 }
 
 local LESSON_NAMES = {
@@ -185,6 +201,16 @@ local function queueStatus(): string?
 		return "Match found! Joining…"
 	end
 	return queue.message
+end
+
+-- Names and costs for the confirm window (UI/Confirm): asked before anything that spends or removes.
+local function jetName(id: string): string
+	local airframe = AircraftData.get(id) :: any
+	return if airframe then airframe.DisplayName else id
+end
+
+local function credits(n: number): string
+	return `{C.number(n)} Credits`
 end
 
 -- A spend that went through gets the confirm chime (AUD-05).
@@ -544,6 +570,17 @@ render = function()
 			return result == true, message
 		end,
 		OnPartyKick = function(userId: number): (boolean, string?)
+			local who = Players:GetPlayerByUserId(userId)
+			if
+				not Confirm.yes({
+					Title = `REMOVE {string.upper(who and who.DisplayName or "this pilot")} FROM YOUR PARTY?`,
+					Body = "They stay in the lobby and can be invited again.",
+					Action = "REMOVE",
+					Danger = true,
+				})
+			then
+				return false, nil
+			end
 			local ok, result, message = pcall(Net.Client.invoke, "PartyKick", userId)
 			if not ok then
 				return false, "Try again in a moment."
@@ -551,6 +588,16 @@ render = function()
 			return result == true, message
 		end,
 		OnPartyLeave = function()
+			if
+				not Confirm.yes({
+					Title = "LEAVE YOUR PARTY?",
+					Body = "You'll queue on your own. A friend can invite you back.",
+					Action = "LEAVE PARTY",
+					Danger = true,
+				})
+			then
+				return
+			end
 			Net.Client.fire("PartyLeave")
 		end,
 		-- Roblox's invite window; a friend who joins with it lands in your party (PartyService)
@@ -572,12 +619,59 @@ render = function()
 			end
 		end,
 		OnResearch = function(id)
+			local data = PlayerDataController.data
+			local plan = data and Progression.researchPlan(data, id)
+			if plan then
+				local spent = {}
+				if plan.FromJet > 0 and plan.From then
+					table.insert(spent, `{C.number(plan.FromJet)} RP from your {jetName(plan.From)}`)
+				end
+				if plan.FromFree > 0 then
+					table.insert(spent, `{C.number(plan.FromFree)} free RP`)
+				end
+				local node = TechTree.get(id) :: any
+				if
+					not Confirm.yes({
+						Title = `RESEARCH THE {string.upper(jetName(id))}?`,
+						Body = `Uses {table.concat(spent, " and ")}. Then it's yours to buy for {credits(node.Credits)}.`,
+						Action = "RESEARCH",
+					})
+				then
+					return false, nil
+				end
+			end
 			return confirmed(PlayerDataController:Research(id))
 		end,
 		OnBuy = function(id)
+			local node = TechTree.get(id) :: any
+			if
+				node
+				and not Confirm.yes({
+					Title = `BUY THE {string.upper(jetName(id))}?`,
+					Body = `{credits(node.Credits)}. It goes into a free lineup slot if you have one.`,
+					Action = `BUY · {C.number(node.Credits)} Cr`,
+				})
+			then
+				return false, nil
+			end
 			return confirmed(PlayerDataController:Buy(id))
 		end,
 		OnBuySkin = function(id, skinId, currency)
+			local skin = Skins.get(id, skinId) :: any
+			if skin then
+				local wings = currency == "Wings"
+				local price = if wings then Skins.wingsPrice(skin) or 0 else skin.Credits or 0
+				local cost = if wings then `{C.number(price)} Wings` else credits(price)
+				if
+					not Confirm.yes({
+						Title = `BUY {string.upper(skin.DisplayName)} FOR THE {string.upper(jetName(id))}?`,
+						Body = `{cost}. It goes on straight away.`,
+						Action = `BUY · {cost}`,
+					})
+				then
+					return false, nil
+				end
+			end
 			return confirmed(PlayerDataController:BuySkin(id, skinId, currency))
 		end,
 		OnSetSkin = function(id, skinId)
@@ -587,6 +681,19 @@ render = function()
 			return PlayerDataController:SetModuleFitted(id, moduleId, fitted)
 		end,
 		OnBuyModule = function(id, moduleId)
+			local def = Progression.moduleDef(moduleId) :: any
+			if def then
+				local rp, cr = Progression.moduleCost(id, def)
+				if
+					not Confirm.yes({
+						Title = `BUY {string.upper(def.DisplayName or moduleId)}?`,
+						Body = `{C.number(rp)} RP from your {jetName(id)} and {credits(cr)}. You can unfit and refit it for free.`,
+						Action = "BUY MODULE",
+					})
+				then
+					return false, nil
+				end
+			end
 			return confirmed(PlayerDataController:BuyModule(id, moduleId))
 		end,
 		OnLineup = function(ids)
@@ -602,6 +709,22 @@ render = function()
 			render()
 		end,
 		OnTravel = function(target: string)
+			if target == "Lobby" and ServerRole.isMatch() then
+				local mode = ReplicatedStorage:GetAttribute("GameMode")
+				local duel = mode == "Duel" or mode == "DuelCasual"
+				if
+					not Confirm.yes({
+						Title = "LEAVE THIS MATCH?",
+						Body = if duel
+							then "Leaving a duel forfeits it: your opponent wins."
+							else "You'll go back to the lobby and miss this match's rewards.",
+						Action = "LEAVE MATCH",
+						Danger = true,
+					})
+				then
+					return
+				end
+			end
 			local text = if target == "Training"
 				then "Heading to a training server…"
 				else "Heading back to the lobby…"
@@ -612,10 +735,31 @@ render = function()
 		VsAIRunning = ServerRole.isTraining() and ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight",
 		ModeName = match and match.modeName,
 		OnVsAI = function(modeId: string, difficulty: string, count: number)
+			local running = ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight"
+			if
+				running
+				and not Confirm.yes({
+					Title = "RESTART VS AI?",
+					Body = "The match you're in ends and a new one starts with these settings.",
+					Action = "RESTART",
+				})
+			then
+				return
+			end
 			setStatus("Starting Vs AI…")
 			Net.Client.fire("TrainingSetup", modeId, difficulty, count)
 		end,
 		OnFreeFlight = function()
+			if
+				not Confirm.yes({
+					Title = "BACK TO FREE FLIGHT?",
+					Body = "The Vs AI match you're in ends.",
+					Action = "END MATCH",
+					Danger = true,
+				})
+			then
+				return
+			end
 			setStatus("")
 			Net.Client.fire("TrainingSetup", "FreeFlight", "Normal", 0)
 		end,
@@ -659,7 +803,18 @@ render = function()
 			return true, nil
 		end,
 		OnBuyCosmetic = function(id: string): (boolean, string?)
-			return PlayerDataController:BuyCosmetic(id)
+			local item = CosmeticsConfig.get(id) :: any
+			if
+				item
+				and not Confirm.yes({
+					Title = `BUY {string.upper(item.DisplayName)}?`,
+					Body = `{C.number(item.Wings or 0)} Wings. It goes on straight away.`,
+					Action = `BUY · {C.number(item.Wings or 0)} Wings`,
+				})
+			then
+				return false, nil
+			end
+			return confirmed(PlayerDataController:BuyCosmetic(id))
 		end,
 		OnEquipCosmetic = function(kind: string, id: string): (boolean, string?)
 			return PlayerDataController:EquipCosmetic(kind, id)
@@ -681,17 +836,43 @@ render = function()
 			return result == true, message
 		end,
 		OnBuyBundle = function(bundleId: string): (boolean, string?)
+			local bundle, data = Bundles.get(bundleId), PlayerDataController.data
+			if bundle and data then
+				local price = Shop.bundlePrice(data, bundle)
+				if
+					not Confirm.yes({
+						Title = `BUY THE {string.upper(bundle.DisplayName)} BUNDLE?`,
+						Body = `{C.number(price)} Wings for the items you don't own yet.`,
+						Action = `BUY · {C.number(price)} Wings`,
+					})
+				then
+					return false, nil
+				end
+			end
 			local ok, result, message = pcall(Net.Client.invoke, "BuyBundle", bundleId)
 			if not ok then
 				return false, "Try again in a moment."
 			end
-			return result == true, message
+			return confirmed(result == true, message)
 		end,
 		-- The season pass (LIV-04): buy the premium track with "Wings" or "Robux"; claim what's reached
 		OnBuySeasonPass = function(how: string): (boolean, string?)
+			if
+				how == "Wings"
+				and not Confirm.yes({
+					Title = "BUY THE PREMIUM SEASON PASS?",
+					Body = `{C.number(Seasons.PASS_WINGS)} Wings. Every premium reward you've already reached is yours to claim.`,
+					Action = `BUY · {C.number(Seasons.PASS_WINGS)} Wings`,
+				})
+			then
+				return false, nil
+			end
 			local ok, result, message = pcall(Net.Client.invoke, "BuySeasonPass", how)
 			if not ok then
 				return false, "Try again in a moment."
+			end
+			if how == "Wings" then
+				return confirmed(result == true, message)
 			end
 			return result == true, message
 		end,
@@ -715,6 +896,28 @@ render = function()
 			return if ok then view else nil
 		end,
 		OnSquadronAction = function(action: string, a: any, b: any): (boolean, string?)
+			local ask: Confirm.Options? = if action == "Create" or action == "CreateClosed"
+				then {
+					Title = `CREATE THE SQUADRON?`,
+					Body = `{credits(Squadron.COST)}. You'll be its owner.`,
+					Action = `CREATE · {C.number(Squadron.COST)} Cr`,
+				}
+				elseif action == "Leave" then {
+					Title = "LEAVE YOUR SQUADRON?",
+					Body = "Your points this week stay with the squadron. You can join again if it's open or you're invited.",
+					Action = "LEAVE SQUADRON",
+					Danger = true,
+				}
+				elseif action == "Kick" then {
+					Title = "REMOVE THIS PILOT FROM THE SQUADRON?",
+					Body = "They can only come back if they're invited or the squadron is open.",
+					Action = "REMOVE",
+					Danger = true,
+				}
+				else nil
+			if ask and not Confirm.yes(ask) then
+				return false, nil
+			end
 			local ok, result, message = pcall(Net.Client.invoke, "SquadronAction", action, a, b)
 			if not ok then
 				return false, "Try again in a moment."
@@ -738,6 +941,15 @@ render = function()
 			return result == true, message
 		end,
 		OnReroll = function(index: number): (boolean, string?)
+			if
+				not Confirm.yes({
+					Title = "REROLL THIS CHALLENGE?",
+					Body = "You get a new one in its place. Rerolls are limited: one a day (two with VIP).",
+					Action = "REROLL",
+				})
+			then
+				return false, nil
+			end
 			local ok, result, message = pcall(Net.Client.invoke, "RerollChallenge", index)
 			if not ok then
 				return false, "Couldn't reroll just now. Try again in a moment."

@@ -34,6 +34,8 @@ local Theme = require(UI.Theme)
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 local SWAP_BLUE = Color3.fromRGB(110, 170, 255) -- the Swap button's border in the jets list
+local CLUSTER_W, CLUSTER_H = 880, 310 -- the bottom cluster's design size (TRAINING ... DETAILS, name to status)
+local SIDE_PANELS = 2 * (20 + 300 + 16) -- the lineup on the left, the 300-wide column on the right, gaps
 local function slotCard(props: any)
 	local airframe = props.Id and AircraftData.get(props.Id) :: any
 	local selected = props.Id ~= nil and props.Id == props.Selected
@@ -152,6 +154,20 @@ local function Hangar(props: any)
 	local ownedChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
 	ownedChildren.Title =
 		e(C.Label, { Text = "YOUR JETS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
+	-- With the lineup full, say which jet SWAP takes out (the selected lineup jet, else the last slot)
+	local swapOut = full and data.Lineup[swapIndex]
+	local swapInfo = swapOut and AircraftData.get(swapOut) :: any
+	ownedChildren.SwapNote = if swapInfo
+		then e(C.Label, {
+			Text = `Lineup full: SWAP replaces your {swapInfo.DisplayName}. Pick a lineup jet above to swap that one.`,
+			Size = UDim2.new(1, -6, 0, 0),
+			AutoHeight = true,
+			Wrap = true,
+			TextSize = 12,
+			Color = SWAP_BLUE,
+			LayoutOrder = 0,
+		})
+		else nil
 	for i, id in owned do
 		local info = AircraftData.get(id) :: any
 		local index = table.find(data.Lineup, id)
@@ -167,7 +183,7 @@ local function Hangar(props: any)
 				Color = if index then Theme.Text else Theme.Dim,
 			}),
 			Toggle = e(C.Button, {
-				Text = if index then "Remove" elseif full then "Swap" else "Add",
+				Text = if index then "REMOVE" elseif full then "SWAP" else "ADD",
 				-- What it does at a glance: red takes a jet out, blue swaps it in, green adds it
 				StrokeColor = if index then Theme.Bad elseif full then SWAP_BLUE else Theme.Good,
 				Size = UDim2.fromOffset(88, 36),
@@ -209,99 +225,113 @@ local function Hangar(props: any)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 			})
 			else nil,
-		-- The jet's name and line sit just above the mode card (not a share of the height, which put them over it
-		-- on a short screen)
-		JetName = e(C.Label, {
-			Text = if airframe then airframe.DisplayName else "",
-			Position = UDim2.new(0.5, 0, 1, -300),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(600, 40),
-			Align = "Center",
-			Heavy = true,
-			TextSize = 34,
-		}),
-		JetInfo = e(C.Label, {
-			Text = if airframe
-				then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}  ·  {Mastery.starText(
-					Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0)
-				)}`
-				else "",
-			Position = UDim2.new(0.5, 0, 1, -258),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(600, 22),
-			Align = "Center",
-			Color = Theme.Dim,
-			TextSize = 16,
-		}),
-		Modes = if props.QueueMode
-			then e(ModeSelect, { Value = props.QueueMode, OnPick = props.OnQueueMode, Data = data })
-			else nil,
-		Play = e(C.Button, {
-			Text = props.PlayText or "PLAY",
-			Style = "Primary",
-			TextSize = 40,
-			Size = UDim2.fromOffset(420, 96),
-			Position = UDim2.new(0.5, 0, 1, -150),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Disabled = not (props.CanPlay and selected),
-			OnClick = function()
-				props.OnPlay(selected)
-			end,
-		}),
-		Side = if props.SideText
-			then e(C.Button, {
-				Text = props.SideText,
+		-- Name, mode, PLAY and the buttons round it: a CLUSTER_W design that shrinks to fit between the side
+		-- panels (it ran under them on laptop screens)
+		Cluster = e(C.Fit, {
+			Width = CLUSTER_W,
+			Height = CLUSTER_H,
+			Sides = SIDE_PANELS,
+			Position = UDim2.fromScale(0.5, 1),
+			AnchorPoint = Vector2.new(0.5, 1),
+			ZIndex = 2,
+		}, {
+			-- The jet's name and line sit just above the mode card (not a share of the height, which put them over it
+			-- on a short screen)
+			JetName = e(C.Label, {
+				Text = if airframe then airframe.DisplayName else "",
+				Position = UDim2.new(0.5, 0, 1, -300),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(600, 40),
+				Align = "Center",
+				Heavy = true,
+				TextSize = 34,
+			}),
+			JetInfo = e(C.Label, {
+				Text = if airframe
+					then `Tier {TIER_NAMES[airframe.Tier]}  ·  BR {LiveConfig.battleRating(selected)}  ·  {airframe.Branch}  ·  {Mastery.starText(
+						Mastery.stars(data.Aircraft[selected] and data.Aircraft[selected].Mastery or 0)
+					)}`
+					else "",
+				Position = UDim2.new(0.5, 0, 1, -258),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(600, 22),
+				Align = "Center",
+				Color = Theme.Dim,
+				TextSize = 16,
+			}),
+			Modes = if props.QueueMode
+				then e(ModeSelect, { Value = props.QueueMode, OnPick = props.OnQueueMode, Data = data })
+				else nil,
+			Play = e(C.Button, {
+				Text = props.PlayText or "PLAY",
+				Style = "Primary",
+				TextSize = 40,
+				Size = UDim2.fromOffset(420, 96),
+				Position = UDim2.new(0.5, 0, 1, -150),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Disabled = not (props.CanPlay and selected),
+				OnClick = function()
+					props.OnPlay(selected)
+				end,
+			}),
+			Side = if props.SideText
+				then e(C.Button, {
+					Text = props.SideText,
+					Style = "Ghost",
+					TextSize = 20,
+					Size = UDim2.fromOffset(210, 70),
+					Position = UDim2.new(0.5, -440, 1, -137),
+					OnClick = props.OnSide,
+				})
+				else nil,
+			Report = if props.OnReport
+				then e(C.Button, {
+					Text = "REPORT PLAYER",
+					Style = "Ghost",
+					TextSize = 15,
+					Size = UDim2.fromOffset(210, 40),
+					Position = UDim2.new(0.5, -440, 1, -58),
+					OnClick = function()
+						props.OnReport(nil)
+					end,
+				})
+				else nil,
+			-- Report a bug (Shared/Feedback), under DETAILS
+			Feedback = if props.OnFeedback
+				then e(C.Button, {
+					Text = "REPORT A BUG",
+					Style = "Ghost",
+					TextSize = 15,
+					Size = UDim2.fromOffset(180, 40),
+					Position = UDim2.new(0.5, 230, 1, -58),
+					StrokeColor = Theme.Warn,
+					OnClick = props.OnFeedback,
+				})
+				else nil,
+			Details = e(C.Button, {
+				Text = "DETAILS",
 				Style = "Ghost",
 				TextSize = 20,
-				Size = UDim2.fromOffset(210, 70),
-				Position = UDim2.new(0.5, -440, 1, -137),
-				OnClick = props.OnSide,
-			})
-			else nil,
-		Report = if props.OnReport
-			then e(C.Button, {
-				Text = "REPORT",
-				Style = "Ghost",
-				TextSize = 15,
-				Size = UDim2.fromOffset(210, 40),
-				Position = UDim2.new(0.5, -440, 1, -58),
+				Size = UDim2.fromOffset(180, 70),
+				Position = UDim2.new(0.5, 230, 1, -137),
+				Disabled = selected == nil,
 				OnClick = function()
-					props.OnReport(nil)
+					props.OnDetails(selected)
 				end,
-			})
-			else nil,
-		-- Report a bug (Shared/Feedback), under DETAILS
-		Feedback = if props.OnFeedback
-			then e(C.Button, {
-				Text = "REPORT BUG",
-				Style = "Ghost",
-				TextSize = 15,
-				Size = UDim2.fromOffset(180, 40),
-				Position = UDim2.new(0.5, 230, 1, -58),
-				StrokeColor = Theme.Warn,
-				OnClick = props.OnFeedback,
-			})
-			else nil,
-		Details = e(C.Button, {
-			Text = "DETAILS",
-			Style = "Ghost",
-			TextSize = 20,
-			Size = UDim2.fromOffset(180, 70),
-			Position = UDim2.new(0.5, 230, 1, -137),
-			Disabled = selected == nil,
-			OnClick = function()
-				props.OnDetails(selected)
-			end,
-		}),
-		Status = e(C.Label, {
-			Text = props.Status or "",
-			Position = UDim2.new(0.5, 0, 1, -44),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Size = UDim2.fromOffset(420, 22),
-			Align = "Center",
-			Color = Theme.Warn,
-			Bold = true,
-			TextSize = 18,
+			}),
+			-- Between the two lower buttons, two lines if it needs them
+			Status = e(C.Label, {
+				Text = props.Status or "",
+				Position = UDim2.new(0.5, 0, 1, -50),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.fromOffset(440, 46),
+				Align = "Center",
+				AlignY = "Top",
+				Wrap = true,
+				Color = Theme.Warn,
+				Bold = true,
+				TextSize = 16,
+			}),
 		}),
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 		-- In a lobby (where PLAY queues): how the jet you pick decides who you meet

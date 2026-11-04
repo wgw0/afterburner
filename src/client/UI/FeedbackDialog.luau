@@ -130,6 +130,7 @@ local function FeedbackDialog(props: any)
 				AnchorPoint = Vector2.new(0.5, 0),
 				TextSize = 20,
 				Pending = props.Pending,
+				Disabled = not props.Sent and string.match(text, "%S") == nil, -- nothing written yet
 				OnClick = if props.Sent then props.OnClose else props.OnSend,
 			}),
 		}),

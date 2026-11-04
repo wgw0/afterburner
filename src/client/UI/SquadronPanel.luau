@@ -130,7 +130,7 @@ local function SquadronPanel(props: any)
 					end,
 				}),
 				No = e(C.Button, {
-					Text = "NO THANKS",
+					Text = "DECLINE",
 					Size = UDim2.fromOffset(110, 32),
 					TextSize = 13,
 					LayoutOrder = 3,
