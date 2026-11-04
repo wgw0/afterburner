@@ -50,7 +50,9 @@ local function FeedbackDialog(props: any)
 			StrokeThickness = 2,
 		}, {
 			Title = e(C.Label, {
-				Text = "REPORT A BUG",
+				-- Follows the tab: it isn't always a bug
+				Text = ({ Bug = "REPORT A BUG", Lag = "REPORT LAG", Idea = "SHARE AN IDEA", Other = "SEND FEEDBACK" })[props.Kind]
+					or "SEND FEEDBACK",
 				Size = UDim2.new(1, -50, 0, 36),
 				Heavy = true,
 				TextSize = 32,

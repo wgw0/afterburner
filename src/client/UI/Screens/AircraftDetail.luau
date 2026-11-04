@@ -35,9 +35,14 @@ local function stats(a: any): { { string } | any }
 	return {
 		{ "Top speed", a.MaxMach, 2.5, string.format("Mach %.2f", a.MaxMach) },
 		{ "Max G", a.MaxG, 10, string.format("%.1f G", a.MaxG) },
-		{ "Thrust / weight", a.MaxThrust * a.AfterburnerMult / ((a.Mass + a.Fuel) * G), 1.4, nil },
-		{ "Roll rate", a.MaxRollRate, 120, nil },
-		{ "Radar range", a.Radar and a.Radar.Range or 0, 50000, nil },
+		{
+			"Thrust / weight",
+			a.MaxThrust * a.AfterburnerMult / ((a.Mass + a.Fuel) * G),
+			1.4,
+			string.format("%.2f", a.MaxThrust * a.AfterburnerMult / ((a.Mass + a.Fuel) * G)),
+		},
+		{ "Roll rate", a.MaxRollRate, 120, string.format("%d°/s", math.floor(a.MaxRollRate + 0.5)) },
+		{ "Radar range", a.Radar and a.Radar.Range or 0, 50000, if a.Radar then nil else "No radar" },
 	}
 end
 
@@ -319,6 +324,10 @@ local function AircraftDetail(props: any)
 	local gun = WeaponData.get(airframe.Gun)
 	local cm = upgraded.Countermeasures or {}
 	local loadoutText = table.concat(loadout, "\n")
+	-- The middle column stacks: loadout (as tall as its lines), lineup (owned jets), skins
+	local loadoutH = 14 + 18 + 8 + math.max(#loadout, 1) * 18 + 14
+	local lineupY = 90 + loadoutH + 16
+	local skinsY = lineupY + (if entry and entry.Owned then 120 + 16 else 0)
 		.. `\n{gun and gun.DisplayName or airframe.Gun}`
 		.. `\n{cm.Flares or 0} flares, {cm.Chaff or 0} chaff`
 
@@ -492,7 +501,7 @@ local function AircraftDetail(props: any)
 			}, masteryChildren)
 			else nil,
 		Loadout = e(C.Panel, {
-			Size = UDim2.new(0.24, 0, 0, 230),
+			Size = UDim2.new(0.24, 0, 0, loadoutH),
 			Position = UDim2.new(0.38, 20, 0, 90),
 			Padding = 14,
 		}, {
@@ -503,7 +512,7 @@ local function AircraftDetail(props: any)
 		Lineup = if entry and entry.Owned
 			then e(C.Panel, {
 				Size = UDim2.new(0.24, 0, 0, 120),
-				Position = UDim2.new(0.38, 20, 0, 336),
+				Position = UDim2.new(0.38, 20, 0, lineupY),
 				Padding = 14,
 			}, {
 				Layout = C.List({ Gap = 8 }),
@@ -556,7 +565,7 @@ local function AircraftDetail(props: any)
 						+ (if skinChildren.Camo then 36 else 0)
 						+ (if props.OnShop then SHOP_ROW_H + 6 else 0)
 				),
-				Position = UDim2.new(0.38, 20, 0, 472),
+				Position = UDim2.new(0.38, 20, 0, skinsY),
 				Padding = 14,
 			}, skinChildren)
 			else nil,

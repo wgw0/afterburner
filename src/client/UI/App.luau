@@ -266,7 +266,8 @@ local function TopBar(props: any)
 				BackgroundTransparency = 1,
 			}, {
 				Layout = C.List({ Horizontal = true, Gap = 10, Align = "Center" }),
-				Hangar = tab("Hangar", "HANGAR", 1),
+				-- A training server shows its own home screen there (Training), so the tab says so
+				Hangar = tab("Hangar", if props.Role == "Training" then "TRAINING" else "HANGAR", 1),
 				Tree = tab("TechTree", "TECH TREE", 2),
 				Career = tab("Career", "CAREER", 3),
 				-- A dot while season rewards are waiting to be claimed
@@ -527,6 +528,7 @@ local function App(props: any)
 				Screen = screen,
 				Navigate = props.Navigate,
 				MenuScale = scale,
+				Role = props.Role,
 			})
 			else nil,
 		Body = e("Frame", {

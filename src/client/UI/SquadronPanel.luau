@@ -200,10 +200,11 @@ local function SquadronPanel(props: any)
 				OnText = setTag,
 				Order = 2,
 			}),
+			-- A setting, not an action: it says who can join (click to switch)
 			Open = e(C.Button, {
-				Text = if open then "OPEN" else "INVITE-ONLY",
+				Text = if open then "ANYONE CAN JOIN ⇄" else "INVITE ONLY ⇄",
 				Style = "Ghost",
-				Size = UDim2.fromOffset(120, 32),
+				Size = UDim2.fromOffset(160, 32),
 				TextSize = 12,
 				LayoutOrder = 3,
 				OnClick = function()

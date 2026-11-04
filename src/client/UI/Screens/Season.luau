@@ -342,22 +342,23 @@ local function SeasonScreen(props: any)
 						BackgroundTransparency = 1,
 					}, { Inner = buy })
 					else nil,
-				Claim = e(C.Button, {
-					Text = if claimable > 0
-						then `CLAIM {claimable} REWARD{if claimable == 1 then "" else "S"}`
-						else "NOTHING TO CLAIM",
-					Style = "Primary",
-					Color = Theme.Good,
-					Size = UDim2.fromOffset(220, 40),
-					Position = UDim2.new(1, 0, 0, 54),
-					AnchorPoint = Vector2.new(1, 0),
-					TextSize = 15,
-					Pending = pending,
-					Disabled = claimable == 0,
-					OnClick = function()
-						act(props.OnClaimSeason)
-					end,
-				}),
+				-- Only there when something waits (a greyed-out button was noise)
+				Claim = if claimable > 0 or pending
+					then e(C.Button, {
+						Text = `CLAIM {claimable} REWARD{if claimable == 1 then "" else "S"}`,
+						Style = "Primary",
+						Color = Theme.Good,
+						Size = UDim2.fromOffset(220, 40),
+						Position = UDim2.new(1, 0, 0, 54),
+						AnchorPoint = Vector2.new(1, 0),
+						TextSize = 15,
+						Pending = pending,
+						Disabled = claimable == 0,
+						OnClick = function()
+							act(props.OnClaimSeason)
+						end,
+					})
+					else nil,
 				Message = if message
 					then e(C.Label, {
 						Text = message,
