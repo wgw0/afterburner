@@ -392,7 +392,7 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 	if not Cosmetics.ready(id) then
 		status = "Coming soon"
 	elseif equipped then
-		action = "EQUIPPED (TAKE OFF)"
+		action = "TAKE OFF"
 		onClick = function()
 			return props.OnEquipCosmetic(item.Kind, "")
 		end
@@ -402,7 +402,7 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 			return props.OnEquipCosmetic(item.Kind, id)
 		end
 	elseif item.Wings then
-		action = `{C.number(item.Wings)} WINGS`
+		action = `BUY · {C.number(item.Wings)} WINGS`
 		onClick = function()
 			return props.OnBuyCosmetic(id)
 		end
@@ -412,7 +412,7 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 	local colour = if item.Colours then item.Colours[1] else item.Colour
 	return e(Card, {
 		Title = if item.Glyph then `{item.DisplayName}  {string.rep(item.Glyph, 3)}` else item.DisplayName,
-		Detail = KIND_DETAIL[item.Kind],
+		Detail = if equipped then "✓ Equipped" else KIND_DETAIL[item.Kind],
 		Action = action,
 		Status = status,
 		Highlight = if equipped then Theme.Good else colour,
@@ -735,12 +735,14 @@ local function ShopScreen(props: any)
 			Size = UDim2.new(1, 0, 0, 18),
 			TextSize = 14,
 			Color = Theme.Dim,
-			LayoutOrder = 12,
+			LayoutOrder = 1,
 		}),
 	}
+	-- The order (Will: usability and engagement): the headline offers, then what Wings buy (the cosmetics),
+	-- then the season, Wings packs, passes, boosters and the skip-ahead
 
 	-- Wings packs, smallest first
-	children.WingsTitle = section("WINGS", 10)
+	children.WingsTitle = section("WINGS", 31)
 	local packs = {}
 	for key, product in Products.LIST do
 		if product.Kind == "Wings" then
@@ -783,24 +785,24 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Packs = grid(11, packCards)
+	children.Packs = grid(32, packCards)
 
 	-- Cosmetics (SHP-07), a section per kind
 	for k, kind in Catalogue.KINDS do
-		children[kind .. "Title"] = section(string.upper(Catalogue.KIND_NAMES[kind]), 12 + k * 2)
+		children[kind .. "Title"] = section(string.upper(Catalogue.KIND_NAMES[kind]), 10 + k * 2)
 		local cards = {}
 		for i, id in Catalogue.ofKind(kind) do
 			cards[id] = cosmeticCard(props, data, id, i)
 		end
-		children[kind] = grid(13 + k * 2, cards, if kind == "Camo" then CARD_H + BANNER_H + 8 else nil)
+		children[kind] = grid(11 + k * 2, cards, if kind == "Camo" then CARD_H + BANNER_H + 8 else nil)
 	end
 
 	-- Tier Unlock: the next one, if there is one
 	local offer = Shop.tierUnlockOffer(data)
 	if offer then
-		children.UnlockTitle = section("SKIP AHEAD", 7)
+		children.UnlockTitle = section("SKIP AHEAD", 37)
 		local key = Products.tierUnlockKey(offer.tier) :: string
-		children.Unlock = grid(8, {
+		children.Unlock = grid(38, {
 			Next = e(Card, {
 				Title = `Unlock Tier {TIER_NAMES[offer.tier]}`,
 				Detail = `Pick {Products.UNLOCK_JETS} Tier {TIER_NAMES[offer.tier]} jets to own straight away. R$ {Products.LIST[key].Price}.`,
@@ -815,7 +817,7 @@ local function ShopScreen(props: any)
 	end
 
 	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
-	children.BoosterTitle = section("BOOSTERS", 5)
+	children.BoosterTitle = section("BOOSTERS", 35)
 	local boosterCards = {}
 	for i, key in { "CreditsBooster", "RPBooster" } do
 		local product = Products.LIST[key]
@@ -833,7 +835,7 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Boosters = grid(6, boosterCards)
+	children.Boosters = grid(36, boosterCards)
 
 	-- VIP Pilot up top, then every pass as a big card (owned ones last)
 	local function owns(key: string): boolean
@@ -842,7 +844,7 @@ local function ShopScreen(props: any)
 	children.Vip = e(VipBanner, {
 		Owned = owns("VIP"),
 		Buyable = Passes.idFor("VIP") ~= nil,
-		Order = 1,
+		Order = 2,
 		OnBuy = function()
 			return props.OnBuyPass("VIP")
 		end,
@@ -869,8 +871,8 @@ local function ShopScreen(props: any)
 		})
 	end
 	if next(passCards) then
-		children.PassTitle = section("GAME PASSES  ·  BUY ONCE, KEEP FOREVER", 3)
-		children.Passes = grid(4, passCards, PASS_H, PASS_W)
+		children.PassTitle = section("GAME PASSES  ·  BUY ONCE, KEEP FOREVER", 33)
+		children.Passes = grid(34, passCards, PASS_H, PASS_W)
 	end
 	if #ownedNames > 0 then
 		children.Owned = e(C.Label, {
@@ -887,10 +889,10 @@ local function ShopScreen(props: any)
 	-- The Starter Bundle, once per player, under VIP
 	local starter = Shop.starterOffer(data)
 	if starter then
-		children.Starter = e(StarterBanner, { Camos = starter, Order = 2, OnChoose = props.OnChooseStarter })
+		children.Starter = e(StarterBanner, { Camos = starter, Order = 3, OnChoose = props.OnChooseStarter })
 	end
-	children.Season = e(SeasonPanel, { Data = data, Order = 9, OnSeason = props.OnSeason })
-	children.Bundle = e(BundlePanel, { Data = data, Order = 13, OnBuy = props.OnBuyBundle })
+	children.Season = e(SeasonPanel, { Data = data, Order = 30, OnSeason = props.OnSeason })
+	children.Bundle = e(BundlePanel, { Data = data, Order = 4, OnBuy = props.OnBuyBundle })
 
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)

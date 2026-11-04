@@ -41,12 +41,18 @@ local function LeaderboardPanel(props: any)
 	local board = Leaderboards.get(boardId) :: Leaderboards.Board
 	local me = Players.LocalPlayer.UserId
 
-	local picker: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 8 }) }
+	-- Three to a row, sharing the width (six fixed buttons in one row ran off narrower screens)
+	local picker: { [string]: any } = {
+		Grid = e("UIGridLayout", {
+			CellSize = UDim2.new(1 / 3, -6, 0, 36),
+			CellPadding = UDim2.fromOffset(8, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}
 	for i, b in Leaderboards.BOARDS do
 		picker[b.id] = e(C.Button, {
 			Text = string.upper(b.name),
 			Style = if b.id == boardId then "Primary" else "Ghost",
-			Size = UDim2.fromOffset(176, 32),
 			TextSize = 13,
 			LayoutOrder = i,
 			OnClick = function()
@@ -125,7 +131,11 @@ local function LeaderboardPanel(props: any)
 		LayoutOrder = props.Order,
 	}, {
 		Layout = C.List({ Gap = 10 }),
-		Picker = e("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, LayoutOrder = 1 }, picker),
+		Picker = e("Frame", {
+			Size = UDim2.new(1, 0, 0, math.ceil(#Leaderboards.BOARDS / 3) * 44 - 8),
+			BackgroundTransparency = 1,
+			LayoutOrder = 1,
+		}, picker),
 		Status = e(C.Label, {
 			Text = status,
 			Size = UDim2.new(1, 0, 0, 18),
