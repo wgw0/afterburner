@@ -108,24 +108,24 @@ local function ModuleRow(props: any)
 		end)
 	end
 	return e(C.Panel, {
-		Size = UDim2.new(1, 0, 0, 64),
+		Size = UDim2.new(1, 0, 0, 74),
 		LayoutOrder = props.Order,
 		Color = if fitted then Theme.PanelLight else Theme.Panel,
 		StrokeColor = if fitted then Theme.Good else Theme.Stroke,
 	}, {
 		Name = e(C.Label, {
 			Text = def.DisplayName,
-			Size = UDim2.new(1, -150, 0, 20),
+			Size = UDim2.new(1, -150, 0, 22),
 			Position = UDim2.fromOffset(12, 8),
 			Bold = true,
-			TextSize = 15,
+			TextSize = 17,
 		}),
 		Effect = e(C.Label, {
 			Text = effectText(def),
-			Size = UDim2.new(1, -150, 0, 16),
-			Position = UDim2.fromOffset(12, 28),
+			Size = UDim2.new(1, -150, 0, 18),
+			Position = UDim2.fromOffset(12, 31),
 			Color = Theme.Dim,
-			TextSize = 12,
+			TextSize = 14,
 		}),
 		Cost = e(C.Label, {
 			Text = message or (if fitted
@@ -133,14 +133,14 @@ local function ModuleRow(props: any)
 				elseif owned then (if ok then "Owned · not fitted" else `Owned · {reason}`)
 				elseif ok then `{rp} RP · {C.number(credits)} Cr`
 				else reason),
-			Size = UDim2.new(1, -150, 0, 16),
-			Position = UDim2.fromOffset(12, 44),
+			Size = UDim2.new(1, -150, 0, 18),
+			Position = UDim2.fromOffset(12, 50),
 			Color = if message
 				then Theme.Warn
 				elseif fitted then Theme.Good
 				elseif not ok then Theme.Warn
 				else Theme.Text,
-			TextSize = 12,
+			TextSize = 14,
 		}),
 		Action = e(C.Button, {
 			Text = if fitted then "UNFIT" elseif owned then "FIT" else "BUY",
@@ -194,18 +194,18 @@ local function SkinRow(props: any)
 		elseif canBuy then `{C.number(skin.Credits or 0)} Cr`
 		elseif showWings and canBuyWings then `{C.number(wingsPrice :: number)} Wings`
 		else reason
-	return e("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1, LayoutOrder = props.Order }, {
+	return e("Frame", { Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, LayoutOrder = props.Order }, {
 		Name = e(C.Label, {
 			Text = skin.DisplayName,
-			Size = UDim2.new(1, if showWings then -196 else -100, 0, 20),
+			Size = UDim2.new(1, if showWings then -196 else -100, 0, 22),
 			Bold = inUse,
-			TextSize = 14,
+			TextSize = 16,
 		}),
 		Status = e(C.Label, {
 			Text = status,
-			Size = UDim2.new(1, if showWings then -196 else -100, 0, 16),
-			Position = UDim2.fromOffset(0, 22),
-			TextSize = 12,
+			Size = UDim2.new(1, if showWings then -196 else -100, 0, 18),
+			Position = UDim2.fromOffset(0, 24),
+			TextSize = 14,
 			Color = if message then Theme.Warn elseif inUse then Theme.Good else Theme.Dim,
 		}),
 		Action = e(C.Button, {
@@ -282,25 +282,25 @@ local function AircraftDetail(props: any)
 		local now = mine[i]
 		statChildren[`S{i}`] = e(
 			"Frame",
-			{ Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, LayoutOrder = i },
+			{ Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, LayoutOrder = i },
 			{
 				Label = e(C.Label, {
 					Text = `{s[1]}   {now[4] or ""}`,
-					Size = UDim2.new(1, 0, 0, 16),
-					TextSize = 13,
+					Size = UDim2.new(1, 0, 0, 20),
+					TextSize = 16,
 					Color = Theme.Dim,
 				}),
 				Upgraded = e(C.Bar, {
 					Value = now[2] / s[3],
 					Size = UDim2.new(1, 0, 0, 10),
-					Position = UDim2.fromOffset(0, 20),
+					Position = UDim2.fromOffset(0, 25),
 					Color = Theme.Good,
 					ZIndex = 1,
 				}),
 				Stock = e(C.Bar, {
 					Value = s[2] / s[3],
 					Size = UDim2.new(1, 0, 0, 10),
-					Position = UDim2.fromOffset(0, 20),
+					Position = UDim2.fromOffset(0, 25),
 					Color = Theme.Accent,
 					ZIndex = 2,
 					Transparent = true,
@@ -324,12 +324,13 @@ local function AircraftDetail(props: any)
 	local gun = WeaponData.get(airframe.Gun)
 	local cm = upgraded.Countermeasures or {}
 	local loadoutText = table.concat(loadout, "\n")
-	-- The middle column stacks: loadout (as tall as its lines), lineup (owned jets), skins
-	local loadoutH = 14 + 18 + 8 + math.max(#loadout, 1) * 18 + 14
-	local lineupY = 90 + loadoutH + 16
-	local skinsY = lineupY + (if entry and entry.Owned then 120 + 16 else 0)
 		.. `\n{gun and gun.DisplayName or airframe.Gun}`
 		.. `\n{cm.Flares or 0} flares, {cm.Chaff or 0} chaff`
+	-- The middle column stacks: loadout (as tall as its lines: missiles, gun, countermeasures), lineup (owned
+	-- jets), skins
+	local loadoutH = 14 + 18 + 8 + (#loadout + 2) * 18 + 14
+	local lineupY = 90 + loadoutH + 16
+	local skinsY = lineupY + (if entry and entry.Owned then 120 + 16 else 0)
 
 	local moduleChildren: { [string]: any } = { Layout = C.List({ Gap = 8 }) }
 	moduleChildren.Title =
@@ -485,18 +486,18 @@ local function AircraftDetail(props: any)
 			Marker = Cosmetics.equipped(data, "Marker"),
 			WingArt = Cosmetics.equipped(data, "WingArt"),
 			Mastery = Mastery.displayStars(data, id),
-			Size = UDim2.fromScale(0.36, 0.4),
+			Size = UDim2.fromScale(0.36, 0.34),
 			Position = UDim2.fromOffset(20, 90),
 		}),
 		Stats = e(C.Panel, {
-			Size = UDim2.new(0.36, 0, 0, 290),
-			Position = UDim2.new(0, 20, 0.4, 95),
+			Size = UDim2.new(0.36, 0, 0, 340), -- bigger text in its rows
+			Position = UDim2.new(0, 20, 0.34, 100),
 			Padding = 14,
 		}, statChildren),
 		Mastery = if entry and entry.Owned
 			then e(C.Panel, {
 				Size = UDim2.new(0.36, 0, 0, 114),
-				Position = UDim2.new(0, 20, 0.4, 395),
+				Position = UDim2.new(0, 20, 0.34, 450),
 				Padding = 12,
 			}, masteryChildren)
 			else nil,
@@ -561,7 +562,7 @@ local function AircraftDetail(props: any)
 					0,
 					0,
 					52
-						+ 50 * #Skins.list(id)
+						+ 52 * #Skins.list(id)
 						+ (if skinChildren.Camo then 36 else 0)
 						+ (if props.OnShop then SHOP_ROW_H + 6 else 0)
 				),

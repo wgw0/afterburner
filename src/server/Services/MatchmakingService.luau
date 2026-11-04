@@ -404,6 +404,17 @@ local function join(player: Player, mode: string, airframe: string?)
 		sendState(player, { state = "Idle", message = `{why}. Pick one in your lineup.` })
 		return
 	end
+	-- The jet PLAY was clicked with is the one they launch in on the match server: saved as their selected jet
+	-- here, since the client's own save of it can still be on its way when the teleport starts (Will: they
+	-- queued in slot 3 and launched in slot 1)
+	if type(airframe) == "string" then
+		DataService:Update(player, function(data)
+			if table.find(data.Lineup or {}, airframe) then
+				data.Settings = data.Settings or {}
+				data.Settings.SelectedJet = airframe
+			end
+		end)
+	end
 	local q = queued[player]
 	if q then
 		q.mode = mode

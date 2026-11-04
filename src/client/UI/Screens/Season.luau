@@ -2,9 +2,9 @@
 -- The SEASON tab (UI-08; the pass is Shared/Season, the seasons Config/Seasons): the season's name and time
 -- left, your tier and XP into the next, the premium track's price (Wings or Robux) or PREMIUM ✓, a CLAIM
 -- button for every reward reached, and the track: a column per tier with its free reward over its premium
--- one, scrolled to where you are. Today's and this week's challenges are on the right (they earn season XP).
--- props: Data, OnClaimSeason() -> (ok, msg), OnBuySeasonPass(how: "Wings" | "Robux") -> (ok, msg),
---   OnReroll(index) -> (ok, err)
+-- one, scrolled to where you are. Under it, without the pass, the PREMIUM PASS panel: what it adds and its two
+-- buy buttons, bought right here (Will: fewer steps to buy). The challenges stay in the Hangar.
+-- props: Data, OnClaimSeason() -> (ok, msg), OnBuySeasonPass(how: "Wings" | "Robux") -> (ok, msg)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -18,12 +18,14 @@ local Seasons = require(Shared.Config.Seasons)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
-local ChallengesPanel = require(UI.ChallengesPanel)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
-local COLUMN_W, CARD_H = 132, 116
+local COLUMN_W, CARD_H = 168, 146 -- bigger cards, bigger text (Will: it was small)
 local GOLD = Color3.fromRGB(255, 201, 60) -- the premium track
+local TRACK_Y = 192
+local TRACK_H = 22 + 8 + CARD_H * 2 + 8 + 18
+local BUY_H = 150 -- the PREMIUM PASS panel under the track
 
 local function duration(seconds: number): string
 	local hours = math.max(0, seconds) // 3600
@@ -103,14 +105,14 @@ local function RewardCard(props: {
 		StrokeTransparency = if dim then 0.6 else 0,
 	}, {
 		Picture = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 48),
+			Size = UDim2.new(1, 0, 0, 56),
 			BackgroundTransparency = 1,
 		}, { Inner = picture }),
 		Name = e(C.Label, {
 			Text = text,
-			Size = UDim2.new(1, 0, 0, 34),
-			Position = UDim2.fromOffset(0, 50),
-			TextSize = 12,
+			Size = UDim2.new(1, 0, 0, 42),
+			Position = UDim2.fromOffset(0, 60),
+			TextSize = 15,
 			Wrap = true,
 			Align = "Center",
 			Bold = true,
@@ -122,9 +124,9 @@ local function RewardCard(props: {
 				elseif ready then "READY"
 				elseif props.State == "Premium" then "🔒 PREMIUM"
 				else "",
-			Size = UDim2.new(1, 0, 0, 14),
-			Position = UDim2.new(0, 0, 1, -14),
-			TextSize = 11,
+			Size = UDim2.new(1, 0, 0, 16),
+			Position = UDim2.new(0, 0, 1, -16),
+			TextSize = 13,
 			Bold = true,
 			Align = "Center",
 			Color = if props.State == "Claimed" then Theme.Good elseif ready then Theme.Good else Theme.Dim,
@@ -224,7 +226,7 @@ local function SeasonScreen(props: any)
 				Text = `TIER {t}`,
 				Size = UDim2.new(1, 0, 0, 22),
 				Heavy = true,
-				TextSize = 16,
+				TextSize = 18,
 				Align = "Center",
 				Color = if reached then Theme.Accent else Theme.Dim,
 				LayoutOrder = 1,
@@ -234,55 +236,104 @@ local function SeasonScreen(props: any)
 		})
 	end
 
-	local buy = nil
-	if premium then
-		buy = e(C.Label, {
-			Text = "★  PREMIUM PASS  ✓",
-			Size = UDim2.fromOffset(260, 44),
-			Heavy = true,
-			TextSize = 18,
-			Color = GOLD,
-			Align = "Right",
-		})
-	elseif live then
-		buy = e("Frame", { Size = UDim2.fromOffset(380, 44), BackgroundTransparency = 1 }, {
-			Layout = C.List({ Horizontal = true, Gap = 10, Align = "Right" }),
-			Wings = e(C.Button, {
-				Text = `PREMIUM  ·  {C.number(Seasons.PASS_WINGS)} WINGS`,
-				Style = "Primary",
-				Color = Theme.Wings,
-				Size = UDim2.fromOffset(220, 44),
-				TextSize = 14,
-				Pending = pending,
-				Disabled = (data.Wings or 0) < Seasons.PASS_WINGS,
-				LayoutOrder = 1,
-				OnClick = function()
-					act(function()
-						return props.OnBuySeasonPass("Wings")
-					end)
-				end,
-			}),
-			Robux = e(C.Button, {
-				Text = `R$ {Products.LIST.SeasonPass.Price}`,
-				Style = "Primary",
-				Color = GOLD,
-				Size = UDim2.fromOffset(140, 44),
-				TextSize = 16,
-				Pending = pending,
-				Disabled = Products.idFor("SeasonPass") == nil,
-				LayoutOrder = 2,
-				OnClick = function()
-					act(function()
-						return props.OnBuySeasonPass("Robux")
-					end)
-				end,
-			}),
-		})
+	-- What the premium track adds, for the panel's pitch
+	local wingsBack, items, titles = 0, 0, 0
+	for _, reward in season.Premium do
+		if reward.Kind == "Wings" then
+			wingsBack += reward.Amount or 0
+		elseif reward.Kind == "Title" then
+			titles += 1
+		elseif reward.Kind ~= "Credits" and reward.Kind ~= "FreeRP" then
+			items += 1
+		end
 	end
+	local wings = data.Wings or 0
+	local robuxReady = Products.idFor("SeasonPass") ~= nil
+	local buyPanel = if premium
+		then nil
+		else e(C.Panel, {
+			Size = UDim2.new(1, 0, 0, BUY_H),
+			Position = UDim2.fromOffset(0, TRACK_Y + TRACK_H + 16),
+			Padding = 20,
+			Color = Theme.Panel:Lerp(GOLD, 0.14),
+			StrokeColor = GOLD,
+			StrokeThickness = 2,
+		}, {
+			Title = e(C.Label, {
+				Text = "★  PREMIUM PASS",
+				Size = UDim2.new(1, -560, 0, 36),
+				Heavy = true,
+				TextSize = 32,
+				Color = GOLD,
+			}),
+			Pitch = e(C.Label, {
+				Text = `Unlock all {Seasons.TIERS} premium rewards: {C.number(wingsBack)} Wings back, {items} cosmetics{if titles
+						> 0
+					then ` and {if titles == 1 then "a title" else `{titles} titles`}`
+					else ""}. Every premium reward you've already reached is yours straight away.`,
+				Size = UDim2.new(1, -560, 0, 60),
+				Position = UDim2.fromOffset(0, 44),
+				TextSize = 17,
+				Bold = true,
+				Wrap = true,
+				AlignY = "Top",
+			}),
+			-- Bought right here: Robux opens Roblox's purchase window, Wings asks first (UI/Confirm)
+			Buttons = e("Frame", {
+				Size = UDim2.fromOffset(540, BUY_H - 40),
+				Position = UDim2.fromScale(1, 0),
+				AnchorPoint = Vector2.new(1, 0),
+				BackgroundTransparency = 1,
+			}, {
+				Robux = e(C.Button, {
+					Text = if live
+						then `GET PREMIUM  ·  R$ {Products.LIST.SeasonPass.Price}`
+						else "ON SALE WHEN IT STARTS",
+					Style = "Primary",
+					Color = GOLD,
+					Size = UDim2.new(0.56, -6, 1, -28),
+					TextSize = 20,
+					Pending = pending,
+					Disabled = not live or not robuxReady,
+					OnClick = function()
+						act(function()
+							return props.OnBuySeasonPass("Robux")
+						end)
+					end,
+				}),
+				Wings = e(C.Button, {
+					Text = `{C.number(Seasons.PASS_WINGS)} WINGS`,
+					Style = "Primary",
+					Color = Theme.Wings,
+					Size = UDim2.new(0.44, -6, 1, -28),
+					Position = UDim2.fromScale(1, 0),
+					AnchorPoint = Vector2.new(1, 0),
+					TextSize = 20,
+					Pending = pending,
+					Disabled = not live or wings < Seasons.PASS_WINGS,
+					OnClick = function()
+						act(function()
+							return props.OnBuySeasonPass("Wings")
+						end)
+					end,
+				}),
+				Note = e(C.Label, {
+					Text = if not live
+						then `The season starts in {duration(season.Start - now)}`
+						elseif wings < Seasons.PASS_WINGS then `You have {C.number(wings)} Wings`
+						else "Pay with Robux or Wings",
+					Size = UDim2.new(1, 0, 0, 20),
+					Position = UDim2.new(0, 0, 1, -20),
+					Align = "Right",
+					TextSize = 14,
+					Color = Theme.Dim,
+				}),
+			}),
+		})
 
 	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
 		Main = e("Frame", {
-			Size = UDim2.new(1, -360, 1, -40),
+			Size = UDim2.new(1, -80, 1, -40),
 			Position = UDim2.fromOffset(40, 20),
 			BackgroundTransparency = 1,
 		}, {
@@ -334,13 +385,17 @@ local function SeasonScreen(props: any)
 					Wrap = true,
 					Color = Theme.Dim,
 				}),
-				Buy = if buy
-					then e("Frame", {
-						Size = UDim2.fromOffset(380, 44),
+				Owned = if premium
+					then e(C.Label, {
+						Text = "★  PREMIUM PASS  ✓",
+						Size = UDim2.fromOffset(300, 44),
 						Position = UDim2.fromScale(1, 0),
 						AnchorPoint = Vector2.new(1, 0),
-						BackgroundTransparency = 1,
-					}, { Inner = buy })
+						Heavy = true,
+						TextSize = 20,
+						Color = GOLD,
+						Align = "Right",
+					})
 					else nil,
 				-- Only there when something waits (a greyed-out button was noise)
 				Claim = if claimable > 0 or pending
@@ -377,12 +432,12 @@ local function SeasonScreen(props: any)
 				Size = UDim2.new(1, 0, 0, 20),
 				Position = UDim2.fromOffset(0, 162),
 				Bold = true,
-				TextSize = 13,
+				TextSize = 15,
 				Color = Theme.Dim,
 			}),
 			Track = e("ScrollingFrame", {
-				Size = UDim2.new(1, 0, 0, 22 + 8 + CARD_H * 2 + 8 + 18),
-				Position = UDim2.fromOffset(0, 190),
+				Size = UDim2.new(1, 0, 0, TRACK_H),
+				Position = UDim2.fromOffset(0, TRACK_Y),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ScrollBarThickness = 6,
@@ -390,8 +445,8 @@ local function SeasonScreen(props: any)
 				CanvasSize = UDim2.fromOffset(Seasons.TIERS * (COLUMN_W + 10), 0),
 				ref = track,
 			}, columns),
+			Buy = buyPanel,
 		}),
-		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 	})
 end
 
