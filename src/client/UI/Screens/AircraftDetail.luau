@@ -328,7 +328,7 @@ local function AircraftDetail(props: any)
 		.. `\n{cm.Flares or 0} flares, {cm.Chaff or 0} chaff`
 	-- The middle column stacks: loadout (as tall as its lines: missiles, gun, countermeasures), lineup (owned
 	-- jets), skins
-	local loadoutH = 14 + 18 + 8 + (#loadout + 2) * 18 + 14
+	local loadoutH = 14 + 18 + 8 + (#loadout + 2) * 20 + 14
 	local lineupY = 90 + loadoutH + 16
 	local skinsY = lineupY + (if entry and entry.Owned then 120 + 16 else 0)
 
@@ -436,18 +436,18 @@ local function AircraftDetail(props: any)
 		}),
 		Next = e(C.Label, {
 			Text = nextText,
-			Size = UDim2.new(1, 0, 0, 16),
+			Size = UDim2.new(1, 0, 0, 20),
 			Position = UDim2.fromOffset(0, 38),
-			TextSize = 13,
+			TextSize = 16,
 		}),
 		Rewards = e(C.Label, {
 			Text = `Credits every star  ·  kill markers {Mastery.MARKERS_FROM}★  ·  gold wings charm {Mastery.TRINKET_STARS}★  ·  Ace Mastery livery {Mastery.CAMO_STARS}★  ·  "{LevelRewards.titleName(
 				Mastery.titleId(id)
 			)}" title {#Mastery.STARS}★`,
-			Size = UDim2.new(1, 0, 0, 30),
-			Position = UDim2.fromOffset(0, 58),
+			Size = UDim2.new(1, 0, 0, 36),
+			Position = UDim2.fromOffset(0, 62),
 			Wrap = true,
-			TextSize = 12,
+			TextSize = 14,
 			Color = Theme.Dim,
 		}),
 	}
@@ -496,7 +496,7 @@ local function AircraftDetail(props: any)
 		}, statChildren),
 		Mastery = if entry and entry.Owned
 			then e(C.Panel, {
-				Size = UDim2.new(0.36, 0, 0, 114),
+				Size = UDim2.new(0.36, 0, 0, 124),
 				Position = UDim2.new(0, 20, 0.34, 450),
 				Padding = 12,
 			}, masteryChildren)
@@ -508,7 +508,7 @@ local function AircraftDetail(props: any)
 		}, {
 			Layout = C.List({ Gap = 8 }),
 			Title = e(C.Label, { Text = "LOADOUT", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 }),
-			Items = e(C.Label, { Text = loadoutText, TextSize = 14, Wrap = true, AutoHeight = true, LayoutOrder = 1 }),
+			Items = e(C.Label, { Text = loadoutText, TextSize = 16, Wrap = true, AutoHeight = true, LayoutOrder = 1 }),
 		}),
 		Lineup = if entry and entry.Owned
 			then e(C.Panel, {
@@ -522,7 +522,7 @@ local function AircraftDetail(props: any)
 						then `In your lineup (slot {inLineup})`
 						elseif #data.Lineup >= slots then `Lineup full: SWAP replaces your {swapName}`
 						else "Not in your lineup"),
-					TextSize = 13,
+					TextSize = 15,
 					Color = if lineupMessage then Theme.Bad else Theme.Dim,
 					Wrap = true,
 					LayoutOrder = 0,
@@ -532,7 +532,7 @@ local function AircraftDetail(props: any)
 						then "REMOVE FROM LINEUP"
 						elseif #data.Lineup >= slots then "SWAP INTO LINEUP"
 						else "ADD TO LINEUP",
-					TextSize = 13,
+					TextSize = 15,
 					LayoutOrder = 1,
 					Pending = lineupPending,
 					Disabled = inLineup ~= nil and #data.Lineup <= 1, -- always keep one jet
