@@ -3,7 +3,7 @@
 -- lit, the rest to come, day 7 the big one), CLAIM, then what you got. Shown over the menu once a day, in
 -- its own ScreenGui above the menu's (MenuController).
 -- props: Streak (data.Streak), Today (UTC day), Result (after claiming: { count, credits, freeRP, title? }),
---   Pending, OnClaim(), OnClose().
+--   Pending, Error (a claim that didn't go through, shown in place of the note), OnClaim(), OnClose().
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -133,16 +133,17 @@ local function DailyReward(props: any)
 			}, tiles),
 			Note = e(C.Label, {
 				Text = got
+					or props.Error
 					or "Come back each day. Miss a day and your streak waits; miss more and you go back to the start of the week.",
 				Size = UDim2.new(1, -200, 0, 36),
 				Position = UDim2.new(0, 0, 1, -40),
-				TextSize = if got then 14 else 12,
-				Bold = got ~= nil,
+				TextSize = if got or props.Error then 14 else 12,
+				Bold = got ~= nil or props.Error ~= nil,
 				Wrap = true,
-				Color = if got then Theme.Good else Theme.Dim,
+				Color = if got then Theme.Good elseif props.Error then Theme.Warn else Theme.Dim,
 			}),
 			Action = e(C.Button, {
-				Text = if result then "NICE" else "CLAIM",
+				Text = if result then "NICE" elseif props.Error then "TRY AGAIN" else "CLAIM",
 				Style = "Primary",
 				Size = UDim2.fromOffset(180, 44),
 				Position = UDim2.new(1, 0, 1, -44),

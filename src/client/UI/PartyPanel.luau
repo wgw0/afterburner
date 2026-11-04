@@ -15,7 +15,7 @@ local C = require(script.Parent.Components)
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
-local WIDTH, ROW_H = 300, 30
+local WIDTH, ROW_H = 300, 34
 local GOLD = Color3.fromRGB(255, 201, 60)
 
 -- An invite for you, at the top of the screen.
@@ -54,7 +54,8 @@ local function InviteToast(props: { Invite: { userId: number, name: string }, On
 			AnchorPoint = Vector2.new(0, 0.5),
 			TextSize = 13,
 			OnClick = function()
-				props.OnRespond(props.Invite.userId, false)
+				local ok, why = props.OnRespond(props.Invite.userId, false)
+				setMessage(if ok then nil else why)
 			end,
 		}),
 	})
@@ -102,8 +103,8 @@ local function PartyPanel(props: any)
 					then e(C.Button, {
 						Text = "REMOVE",
 						Style = "Ghost",
-						Size = UDim2.fromOffset(80, 24),
-						Position = UDim2.new(1, -80, 0.5, 0),
+						Size = UDim2.fromOffset(88, 32),
+						Position = UDim2.new(1, -88, 0.5, 0),
 						AnchorPoint = Vector2.new(0, 0.5),
 						TextSize = 11,
 						OnClick = function()
@@ -131,7 +132,7 @@ local function PartyPanel(props: any)
 		for i, candidate in props.Candidates or {} do
 			list[`C{i}`] = e(C.Button, {
 				Text = candidate.name,
-				Size = UDim2.new(1, 0, 0, 26),
+				Size = UDim2.new(1, 0, 0, 32),
 				TextSize = 13,
 				LayoutOrder = i,
 				OnClick = function()
@@ -144,7 +145,7 @@ local function PartyPanel(props: any)
 		local count = #(props.Candidates or {})
 		children.Pick = if count > 0
 			then e("ScrollingFrame", {
-				Size = UDim2.new(1, 0, 0, math.min(count, 4) * 30),
+				Size = UDim2.new(1, 0, 0, math.min(count, 4) * 36),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ScrollBarThickness = 4,
@@ -175,7 +176,7 @@ local function PartyPanel(props: any)
 	if isLeader and not full then
 		buttons.Invite = e(C.Button, {
 			Text = if picking then "CLOSE" else "INVITE",
-			Size = UDim2.fromOffset(80, 30),
+			Size = UDim2.fromOffset(80, 36),
 			TextSize = 12,
 			LayoutOrder = 1,
 			OnClick = function()
@@ -186,7 +187,7 @@ local function PartyPanel(props: any)
 		buttons.Friends = e(C.Button, {
 			Text = "INVITE FRIENDS",
 			Style = "Primary",
-			Size = UDim2.fromOffset(if inParty then 112 else 186, 30),
+			Size = UDim2.fromOffset(if inParty then 112 else 186, 36),
 			TextSize = 12,
 			LayoutOrder = 2,
 			OnClick = props.OnInviteFriends,
@@ -196,7 +197,7 @@ local function PartyPanel(props: any)
 		buttons.Leave = e(C.Button, {
 			Text = "LEAVE",
 			Style = "Danger",
-			Size = UDim2.fromOffset(if isLeader and not full then 68 else 272, 30),
+			Size = UDim2.fromOffset(if isLeader and not full then 68 else 272, 36),
 			TextSize = 12,
 			LayoutOrder = 3,
 			OnClick = function()
@@ -206,7 +207,7 @@ local function PartyPanel(props: any)
 		})
 	end
 	children.Buttons =
-		e("Frame", { Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, LayoutOrder = 20 }, buttons)
+		e("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundTransparency = 1, LayoutOrder = 20 }, buttons)
 
 	local toasts: { [string]: any } = { Layout = C.List({ Gap = 8, Align = "Center" }) }
 	for i, invite in party.invites or {} do
@@ -224,7 +225,7 @@ local function PartyPanel(props: any)
 		Invites = if #(party.invites or {}) > 0
 			then e("Frame", {
 				Size = UDim2.fromOffset(420, 300),
-				Position = UDim2.new(0.5, 0, 0, 20),
+				Position = UDim2.new(0.5, 0, 0, 60), -- under the news banner (14 to 48), not over it
 				AnchorPoint = Vector2.new(0.5, 0),
 				BackgroundTransparency = 1,
 			}, toasts)

@@ -40,7 +40,7 @@ local function row(props: any)
 	}, {
 		Text = e(C.Label, {
 			Text = def.text,
-			Size = UDim2.new(1, if props.CanReroll then -72 else 0, 0, 34),
+			Size = UDim2.new(1, if props.CanReroll then -82 else 0, 0, 34),
 			TextSize = 13,
 			Bold = true,
 			Wrap = true,
@@ -50,9 +50,9 @@ local function row(props: any)
 			then e(C.Button, {
 				Text = "REROLL",
 				Style = "Ghost",
-				Size = UDim2.fromOffset(66, 24),
-				Position = UDim2.new(1, -66, 0, 2),
-				TextSize = 10,
+				Size = UDim2.fromOffset(76, 30), -- an easier target than the old 66 x 24
+				Position = UDim2.new(1, -76, 0, 0),
+				TextSize = 11,
 				Pending = props.Pending,
 				OnClick = props.OnReroll,
 			})
