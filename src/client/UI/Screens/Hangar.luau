@@ -153,7 +153,7 @@ local function Hangar(props: any)
 	local swapIndex = (selected and table.find(data.Lineup, selected)) or math.min(slots, #data.Lineup)
 	local ownedChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
 	ownedChildren.Title =
-		e(C.Label, { Text = "YOUR JETS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = 0 })
+		e(C.Label, { Text = "YOUR JETS", Bold = true, Color = Theme.Accent, TextSize = 14, LayoutOrder = -1 })
 	-- With the lineup full, say which jet SWAP takes out (the selected lineup jet, else the last slot)
 	local swapOut = full and data.Lineup[swapIndex]
 	local swapInfo = swapOut and AircraftData.get(swapOut) :: any
@@ -165,7 +165,7 @@ local function Hangar(props: any)
 			Wrap = true,
 			TextSize = 12,
 			Color = SWAP_BLUE,
-			LayoutOrder = 0,
+			LayoutOrder = 0, -- under the YOUR JETS heading
 		})
 		else nil
 	for i, id in owned do

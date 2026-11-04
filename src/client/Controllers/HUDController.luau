@@ -374,7 +374,7 @@ local function build(): ScreenGui
 	helpLabel = text(gui, 13, Enum.TextXAlignment.Right)
 	helpLabel.AnchorPoint = Vector2.new(1, 1)
 	helpLabel.Position = UDim2.new(1, -20, 1, -20)
-	helpLabel.Size = UDim2.fromOffset(560, 32) -- two lines: flying and camera, then weapons
+	helpLabel.Size = UDim2.fromOffset(780, 32) -- two lines: flying and camera, then weapons (560 cut the end off)
 	helpLabel.TextYAlignment = Enum.TextYAlignment.Bottom
 	helpLabel.TextTransparency = 0.35
 

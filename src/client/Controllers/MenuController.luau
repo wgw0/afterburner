@@ -1233,7 +1233,13 @@ function MenuController:Start()
 		state.teleportScreen = false
 		render()
 	end)
-	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(render)
+	ReplicatedStorage:GetAttributeChangedSignal("GameMode"):Connect(function()
+		-- The Vs AI match it was waiting for has started (or ended): the line has said its piece
+		if state.status == "Starting Vs AI…" then
+			state.status = ""
+		end
+		render()
+	end)
 	-- Live config changes (an event, the message of the day, a jet's BR) show at once
 	ReplicatedStorage.AttributeChanged:Connect(function(name)
 		if name:sub(1, 3) == "LC_" then
