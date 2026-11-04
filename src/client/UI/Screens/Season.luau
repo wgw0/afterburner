@@ -21,7 +21,7 @@ local C = require(UI.Components)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
-local COLUMN_W, CARD_H = 168, 146 -- bigger cards, bigger text (Will: it was small)
+local COLUMN_W, CARD_H = 176, 184 -- bigger cards, bigger text (Will: it was small)
 local GOLD = Color3.fromRGB(255, 201, 60) -- the premium track
 local TRACK_Y = 192
 local TRACK_H = 22 + 8 + CARD_H * 2 + 8 + 18
@@ -39,16 +39,16 @@ end
 local function describe(reward: Seasons.Reward): (string, any)
 	local amount = C.number(reward.Amount or 0)
 	if reward.Kind == "Credits" then
-		return `{amount} Cr`, e(C.Label, { Text = "Cr", Heavy = true, TextSize = 26, Align = "Center" })
+		return `{amount} Cr`, e(C.Label, { Text = "Cr", Heavy = true, TextSize = 36, Align = "Center" })
 	elseif reward.Kind == "FreeRP" then
 		return `{amount} free RP`,
-			e(C.Label, { Text = "RP", Heavy = true, TextSize = 26, Align = "Center", Color = Theme.Good })
+			e(C.Label, { Text = "RP", Heavy = true, TextSize = 36, Align = "Center", Color = Theme.Good })
 	elseif reward.Kind == "Wings" then
 		return `{amount} Wings`,
-			e(C.Label, { Text = "WINGS", Heavy = true, TextSize = 20, Align = "Center", Color = Theme.Wings })
+			e(C.Label, { Text = "WINGS", Heavy = true, TextSize = 28, Align = "Center", Color = Theme.Wings })
 	elseif reward.Kind == "Title" then
 		return `"{LevelRewards.titleName(reward.Id :: string) or reward.Id}" title`,
-			e(C.Label, { Text = "TITLE", Heavy = true, TextSize = 20, Align = "Center", Color = GOLD })
+			e(C.Label, { Text = "TITLE", Heavy = true, TextSize = 28, Align = "Center", Color = GOLD })
 	end
 	local item = Catalogue.get(reward.Id :: string)
 	if not item then
@@ -68,7 +68,7 @@ local function describe(reward: Seasons.Reward): (string, any)
 		return name,
 			e(C.Label, {
 				Text = string.rep(item.Glyph or "", 3),
-				TextSize = 24,
+				TextSize = 32,
 				Align = "Center",
 				Color = item.Colour,
 			})
@@ -77,11 +77,11 @@ local function describe(reward: Seasons.Reward): (string, any)
 	local swatches: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 4, Align = "Center" }) }
 	for i, colour in item.Colours or {} do
 		swatches[`S{i}`] = e("Frame", {
-			Size = UDim2.fromOffset(22, 22),
+			Size = UDim2.fromOffset(30, 30),
 			BackgroundColor3 = colour,
 			BorderSizePixel = 0,
 			LayoutOrder = i,
-		}, { Corner = C.corner(11) })
+		}, { Corner = C.corner(15) })
 	end
 	return name, e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, swatches)
 end
@@ -105,14 +105,14 @@ local function RewardCard(props: {
 		StrokeTransparency = if dim then 0.6 else 0,
 	}, {
 		Picture = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 56),
+			Size = UDim2.new(1, 0, 0, 76),
 			BackgroundTransparency = 1,
 		}, { Inner = picture }),
 		Name = e(C.Label, {
 			Text = text,
-			Size = UDim2.new(1, 0, 0, 42),
-			Position = UDim2.fromOffset(0, 60),
-			TextSize = 15,
+			Size = UDim2.new(1, 0, 0, 46),
+			Position = UDim2.fromOffset(0, 82),
+			TextSize = 17,
 			Wrap = true,
 			Align = "Center",
 			Bold = true,
@@ -124,9 +124,9 @@ local function RewardCard(props: {
 				elseif ready then "READY"
 				elseif props.State == "Premium" then "🔒 PREMIUM"
 				else "",
-			Size = UDim2.new(1, 0, 0, 16),
-			Position = UDim2.new(0, 0, 1, -16),
-			TextSize = 13,
+			Size = UDim2.new(1, 0, 0, 18),
+			Position = UDim2.new(0, 0, 1, -18),
+			TextSize = 15,
 			Bold = true,
 			Align = "Center",
 			Color = if props.State == "Claimed" then Theme.Good elseif ready then Theme.Good else Theme.Dim,
