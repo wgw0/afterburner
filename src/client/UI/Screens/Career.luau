@@ -235,6 +235,7 @@ local function LevelTrack(props: any)
 	local allUnlocked = data.Flags and data.Flags.AllUnlocked == true
 	local scroller = React.useRef(nil)
 	local pending, setPending = React.useState(false)
+	local titleError, setTitleError = React.useState(nil :: string?)
 	local groups = LevelRewards.byLevel()
 	local nextIndex = #groups + 1
 	for i, group in groups do
@@ -311,8 +312,9 @@ local function LevelTrack(props: any)
 				OnClick = function()
 					setPending(true)
 					task.spawn(function()
-						props.OnSetTitle(id)
+						local ok, err = props.OnSetTitle(id)
 						setPending(false)
+						setTitleError(if ok then nil else err or "Couldn't change your title. Try again.")
 					end)
 				end,
 			})
@@ -320,6 +322,15 @@ local function LevelTrack(props: any)
 			locked += 1
 		end
 	end
+	titles.Error = if titleError
+		then e(C.Label, {
+			Text = titleError,
+			Size = UDim2.fromOffset(320, 30),
+			TextSize = 12,
+			Color = Theme.Bad,
+			LayoutOrder = 100,
+		})
+		else nil
 	titles.More = if locked > 0
 		then e(C.Label, {
 			Text = `{locked} more with level`,
@@ -372,10 +383,16 @@ local function LevelTrack(props: any)
 			ref = scroller,
 		}, steps),
 		Callsign = e(CallsignBox, { Data = data, OnSetCallsign = props.OnSetCallsign }),
-		Titles = e("Frame", {
-			Size = UDim2.new(1, 0, 0, 30),
-			Position = UDim2.new(0, 0, 1, -32),
+		-- Scrolls sideways as titles pile up (it ran off the panel)
+		Titles = e("ScrollingFrame", {
+			Size = UDim2.new(1, 0, 0, 38),
+			Position = UDim2.new(0, 0, 1, -38),
 			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 4,
+			ScrollingDirection = Enum.ScrollingDirection.X,
+			CanvasSize = UDim2.new(),
+			AutomaticCanvasSize = Enum.AutomaticSize.X,
 		}, titles),
 	})
 end

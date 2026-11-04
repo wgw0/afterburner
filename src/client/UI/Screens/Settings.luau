@@ -22,7 +22,7 @@ local Theme = require(script.Parent.Parent.Theme)
 
 local e = React.createElement
 
-local ROW_H = 52
+local ROW_H = 62 -- room for a two-line hint
 
 -- What each row shows. Choices map a setting's values to labels; numbers have a step and a format.
 local SECTIONS = {
@@ -243,17 +243,19 @@ local function Row(props: any)
 		Label = e(C.Label, {
 			Text = row.label,
 			Size = UDim2.new(1, -340, 0, 22),
-			Position = UDim2.fromOffset(0, if row.hint then 4 else 15),
+			Position = UDim2.fromOffset(0, if row.hint then 4 else 20),
 			Bold = true,
 			TextSize = 16,
 		}),
 		Hint = if row.hint
 			then e(C.Label, {
 				Text = row.hint,
-				Size = UDim2.new(1, -340, 0, 18),
+				Size = UDim2.new(1, -340, 0, 30),
 				Position = UDim2.fromOffset(0, 28),
 				TextSize = 12,
 				Color = Theme.Dim,
+				Wrap = true, -- long hints ran under the controls
+				AlignY = "Top",
 			})
 			else nil,
 		Control = e("Frame", {
