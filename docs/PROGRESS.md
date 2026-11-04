@@ -431,5 +431,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 
 Ideas Will has asked for, to pick up when there's time.
 
+- **A render on every Shop card** (Will, 4 November 2026): every item in the Shop gets a picture like the camo cards (a jet wearing it), so players can see what they're buying: contrails, kill markers, wing art and HUD themes too.
+
 - **Chocolate Chip camo** (Will, 2 November 2026): the six-colour desert pattern. A tan base with large brown and pale pink-tan blobs, scattered with small black-and-white "pebble" spots (black crescents round white chips). For the Shop's camos, on every jet, like the others (`Config/Cosmetics`, painted by the camo painters in `tools/blender`). Bold rather than faded, as Will likes them.
 
