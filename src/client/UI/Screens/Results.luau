@@ -24,6 +24,8 @@ local C = require(UI.Components)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
+local COL_W = 64 -- a number column (rewards and scoreboard)
+local REPORT_W = 76 -- room for a scoreboard row's REPORT button
 local COUNT_SECONDS = 1.8
 
 local function Results(props: any)
@@ -115,21 +117,33 @@ local function Results(props: any)
 		})
 	end
 
-	-- Your rewards
+	-- Your rewards: XP, RP and Credits in three right-aligned columns under their headings
+	local function columns(values: { string }, props: { [string]: any }): { [string]: any }
+		local cells: { [string]: any } = {}
+		for c, text in values do
+			cells[`C{c}`] = e(C.Label, {
+				Text = text,
+				Size = UDim2.fromOffset(COL_W, props.Height or 20),
+				Position = UDim2.new(1, -COL_W * (#values - c + 1), 0, 0),
+				Align = "Right",
+				TextSize = props.TextSize or 14,
+				Bold = props.Bold,
+				Color = props.Color,
+			})
+		end
+		return cells
+	end
 	local rewardChildren: { [string]: any } = { Layout = C.List({ Gap = 6 }) }
 	rewardChildren.Head = e("Frame", { Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, LayoutOrder = 0 }, {
 		A = e(
 			C.Label,
 			{ Text = "YOUR REWARDS", Bold = true, Color = Theme.Accent, TextSize = 13, Size = UDim2.fromScale(0.5, 1) }
 		),
-		B = e(C.Label, {
-			Text = "XP      RP      CREDITS",
-			Color = Theme.Dim,
-			TextSize = 12,
-			Size = UDim2.fromScale(0.5, 1),
-			Position = UDim2.fromScale(0.5, 0),
-			Align = "Right",
-		}),
+		Columns = e(
+			"Frame",
+			{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 },
+			columns({ "XP", "RP", "CREDITS" }, { TextSize = 12, Color = Theme.Dim, Height = 18 })
+		),
 	})
 	if rewards then
 		for i, line in rewards.Lines do
@@ -139,21 +153,16 @@ local function Results(props: any)
 				"Frame",
 				{ Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, LayoutOrder = i },
 				{
-					Label = e(C.Label, { Text = line.Label, TextSize = 14, Size = UDim2.fromScale(0.5, 1) }),
-					Values = e(C.Label, {
-						Text = string.format(
-							"%d    %d    %d",
-							line.XP * local_t,
-							line.RP * local_t,
-							line.Credits * local_t
-						),
-						Mono = true,
-						TextSize = 14,
-						Size = UDim2.fromScale(0.5, 1),
-						Position = UDim2.fromScale(0.5, 0),
-						Align = "Right",
-						Color = Theme.Good,
-					}),
+					Label = e(C.Label, { Text = line.Label, TextSize = 14, Size = UDim2.new(1, -3 * COL_W, 1, 0) }),
+					Values = e(
+						"Frame",
+						{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 },
+						columns({
+							C.number(line.XP * local_t),
+							C.number(line.RP * local_t),
+							C.number(line.Credits * local_t),
+						}, { Color = Theme.Good })
+					),
 				}
 			)
 		end
@@ -166,15 +175,15 @@ local function Results(props: any)
 			{ Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1, LayoutOrder = 100 },
 			{
 				Label = e(C.Label, { Text = "TOTAL", Bold = true, TextSize = 16, Size = UDim2.fromScale(0.5, 1) }),
-				Values = e(C.Label, {
-					Text = string.format("+%d XP   +%d RP   +%d Cr", rewards.XP * t, totalRP * t, rewards.Credits * t),
-					Bold = true,
-					TextSize = 16,
-					Size = UDim2.fromScale(0.5, 1),
-					Position = UDim2.fromScale(0.5, 0),
-					Align = "Right",
-					Color = Theme.Good,
-				}),
+				Values = e(
+					"Frame",
+					{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 },
+					columns({
+						`+{C.number(rewards.XP * t)}`,
+						`+{C.number(totalRP * t)}`,
+						`+{C.number(rewards.Credits * t)}`,
+					}, { TextSize = 16, Bold = true, Color = Theme.Good, Height = 26 })
+				),
 			}
 		)
 		local need = Economy.xpToNext(data.PilotLevel)
@@ -277,29 +286,67 @@ local function Results(props: any)
 
 	-- Top of the scoreboard
 	local board: { [string]: any } = { Layout = C.List({ Gap = 4 }) }
-	board.Head = e(C.Label, { Text = "SCOREBOARD", Bold = true, Color = Theme.Accent, TextSize = 13, LayoutOrder = 0 })
-	for i, score in match.ranking or {} do
-		if i > 8 then
-			break
+	board.Head = e("Frame", { Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1, LayoutOrder = 0 }, {
+		Title = e(C.Label, { Text = "SCOREBOARD", Bold = true, Color = Theme.Accent, TextSize = 13 }),
+		Columns = e("Frame", {
+			Size = UDim2.new(1, -REPORT_W, 1, 0),
+			BackgroundTransparency = 1,
+		}, columns({ "K", "D", "SCORE" }, { TextSize = 12, Color = Theme.Dim, Height = 18 })),
+	})
+	local me = Players.LocalPlayer.UserId
+	local ranking = match.ranking or {}
+	local myPlace = nil
+	for i, score in ranking do
+		if not score.isAI and score.userId == me then
+			myPlace = i
+		end
+	end
+	for i, score in ranking do
+		-- The top 8, and you wherever you finished (in the 8th row's place if you're further down)
+		local mine = i == myPlace
+		if i > 8 and not mine then
+			continue
+		elseif i == 8 and myPlace and myPlace > 8 then
+			continue
 		end
 		local reportable = props.OnReport
 			and not score.isAI
 			and (score.userId or 0) > 0
 			and score.userId ~= Players.LocalPlayer.UserId
-		board[`R{i}`] = e("Frame", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, LayoutOrder = i }, {
-			Line = e(C.Label, {
-				Text = string.format("%d. %s   %d K  %d D  %d", i, score.name, score.kills, score.deaths, score.score),
-				Size = UDim2.new(1, if reportable then -76 else 0, 1, 0),
+		board[`R{i}`] = e("Frame", {
+			Size = UDim2.new(1, 0, 0, 24),
+			BackgroundColor3 = Theme.AccentDark,
+			BackgroundTransparency = if mine then 0.3 else 1,
+			BorderSizePixel = 0,
+			LayoutOrder = i,
+		}, {
+			Corner = C.corner(4),
+			Name = e(C.Label, {
+				Text = `{i}. {score.name}{if mine then "  (you)" else ""}`,
+				Size = UDim2.new(1, -REPORT_W - 3 * COL_W, 1, 0),
+				Position = UDim2.fromOffset(4, 0),
 				TextSize = 14,
+				Bold = mine,
 				Color = if score.isAI then Theme.Dim else Theme.Text,
 			}),
+			Numbers = e(
+				"Frame",
+				{
+					Size = UDim2.new(1, -REPORT_W, 1, 0),
+					BackgroundTransparency = 1,
+				},
+				columns(
+					{ tostring(score.kills), tostring(score.deaths), C.number(score.score) },
+					{ Height = 24, Bold = mine }
+				)
+			),
 			Report = if reportable
 				then e(C.Button, {
 					Text = "REPORT",
 					Style = "Ghost",
 					TextSize = 11,
-					Size = UDim2.fromOffset(70, 22),
-					Position = UDim2.new(1, -70, 0, 1),
+					Size = UDim2.fromOffset(REPORT_W - 6, 22),
+					Position = UDim2.new(1, -(REPORT_W - 6), 0, 1),
 					OnClick = function()
 						props.OnReport(score.userId)
 					end,

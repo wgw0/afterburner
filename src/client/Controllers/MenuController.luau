@@ -96,7 +96,7 @@ local root: any
 local backdrop: ScreenGui -- the prerendered Strait behind the menus (not over the results: the match is there)
 local modalGui: ScreenGui -- the welcome, daily reward and report windows, above the menu (TUT-04, LIV-03, CMP-03)
 local modalRoot: any
-local daily = { dismissed = false, pending = false, result = nil :: any }
+local daily = { dismissed = false, pending = false, result = nil :: any, error = nil :: string? }
 local welcomeDone = false -- the welcome window was answered this visit
 -- The report window while it's open: { target, reason, pending, message, sent }
 local report: any = nil
@@ -458,8 +458,10 @@ local function renderDaily(resultsUp: boolean)
 		Today = today,
 		Result = daily.result,
 		Pending = daily.pending,
+		Error = daily.error,
 		OnClaim = function()
 			daily.pending = true
+			daily.error = nil
 			render()
 			task.spawn(function()
 				local ok, result = pcall(Net.Client.invoke, "ClaimDailyReward")
@@ -467,8 +469,12 @@ local function renderDaily(resultsUp: boolean)
 				if ok and result then
 					daily.result = result
 					Sounds.play("UIConfirm")
+				elseif ok then
+					daily.dismissed = true -- already claimed today (on another server)
+					setStatus("Today's reward is already claimed. See you tomorrow!")
 				else
-					daily.dismissed = true -- already claimed (another server), or try again next time
+					-- No answer: say so and let them try again, rather than the window just vanishing
+					daily.error = "Couldn't reach the server. Try again in a moment."
 				end
 				render()
 			end)
