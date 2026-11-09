@@ -30,6 +30,11 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		Centurion = 1818406163054487,
 		Collector = 1450248394462966,
 		HighFlyer = 712948293144706,
+		FullHangar = 2320410186906146,
+		FullyKitted = 1275962833263025,
+		MasterMechanic = 4151205890835648,
+		Savings = 348095093041880,
+		HighRoller = 3267498443526002,
 	},
 }
 
