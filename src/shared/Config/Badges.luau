@@ -35,6 +35,11 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		MasterMechanic = 4151205890835648,
 		Savings = 348095093041880,
 		HighRoller = 3267498443526002,
+		Tycoon = 3604383040364869,
+		Researcher = 4441548715674336,
+		Boffin = 3817988340426979,
+		SharpDresser = 4378878278078332,
+		FashionIcon = 4436226163746060,
 	},
 }
 
