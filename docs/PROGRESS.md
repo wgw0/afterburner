@@ -12,7 +12,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 5 Progression and saving | 23 / 23 | Signed off |
 | 6 Content and polish for a soft launch | 42 / 43 | Only LIV-02 left: its badges are being created (5 free a day). LIV-08 (free spin) was added and is done. |
 | 7 Monetisation | 11 / 11 | Built and checked in Studio |
-| 8 Launch and live ops | 11 / 21 | In progress: parties (MMK-05) wait for the live test; CMP-04 waits for the last badges; new modes, maps and Open Cloud publishing not started |
+| 8 Launch and live ops | 12 / 21 | In progress: parties (MMK-05) wait for the live test; v1.0.0 tagged 15 November 2026; new modes, maps and Open Cloud publishing not started |
 
 ---
 
@@ -423,8 +423,8 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: events scheduled ahead (name, UTC start and end, XP / Credits / RP multipliers) that start and stop on their own, kept with the live config; admin `event.add` / `event.remove` / `event.list`; the hangar banner shows the event and when it ends (`Shared/Events`, DEVELOPMENT.md §31.4; `Events.spec`). Checked in Studio.
 - [x] **OPS-04** Message of the day and announcements
   - Built: the message of the day is the `motd` live override (OPS-01); admin `announce { text, seconds? }` reaches every player on every server at once as a toast (§31.4). Checked in Studio.
-- [ ] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
-  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). The content maturity questionnaire was completed by Will on 1 November 2026. The VIP Pilot description was fixed in both experiences on 1 November 2026. The erasure webhook, the asset rights check, the genre and description and taking the Tier II and III Unlocks off sale were done on 1 November 2026. *Left: nothing on this list; tick after the badges are all created (§7 of COMPLIANCE.md).*
+- [x] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
+  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). The content maturity questionnaire was completed by Will on 1 November 2026. The VIP Pilot description was fixed in both experiences on 1 November 2026. The erasure webhook, the asset rights check, the genre and description and taking the Tier II and III Unlocks off sale were done on 1 November 2026. Ticked by Will on 15 November 2026 for the 1.0.0 release, with 30 of 32 badges created; the last 2 follow (5 free a day). Live settings read back the same day: access, permissions, chat, content rating (Minimal), places, passes and products all as COMPLIANCE.md and the Config files say.
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI
 
 ## Requested, not started
