@@ -8,7 +8,7 @@ What changed in each release of Afterburner. The newest release is at the top. V
 A section headed `Unreleased` is a release still being built. `scripts/release.sh` replaces that word with
 the release date when the release is tagged.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-11-15
 
 The launch build (it was to have been 0.6.0, the soft launch, and grew into the launch).
 
