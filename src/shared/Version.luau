@@ -5,9 +5,9 @@
 
 local Version = {}
 
-Version.NUMBER = "0.6.0"
+Version.NUMBER = "1.0.0"
 
--- "v0.6.0", plus the environment off production ("v0.6.0 · Test").
+-- "v1.0.0", plus the environment off production ("v1.0.0 · Test").
 function Version.label(environment: string?): string
 	if environment and environment ~= "Prod" then
 		return `v{Version.NUMBER} · {environment}`

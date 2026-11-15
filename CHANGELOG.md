@@ -1,19 +1,28 @@
 # Changelog
 
 What changed in each release of Afterburner. The newest release is at the top. Versions follow
-[semantic versioning](https://semver.org): `0.x` until launch, then `1.0.0`. The number in
+[semantic versioning](https://semver.org): `1.0.0` is the launch. The number in
 `src/shared/Version.luau` must have a section here (CI checks this). How to cut a release is in
 [docs/RELEASE.md](docs/RELEASE.md).
 
 A section headed `Unreleased` is a release still being built. `scripts/release.sh` replaces that word with
 the release date when the release is tagged.
 
-## [0.6.0] - Unreleased
+## [1.0.0] - Unreleased
 
-The soft-launch build: the first version published to the live experience.
+The launch build (it was to have been 0.6.0, the soft launch, and grew into the launch).
 
 ### Added
-- Duels, the main mode: 1v1, best of five rounds, head-on starts. Ranked duels with a rating and six ranks
+- Desert Range, a second map: dune sea, canyon, mesas, a salt lake and the town of Dry Wells, picked at random
+  for each match alongside the Strait.
+- Jet mastery: up to five stars per jet from kills in it, with Credits at each star, kill markers, a gold wings
+  charm on the glareshield, the Ace Mastery livery and a "<jet> Ace" title.
+- A friends bonus: +10% Credits and XP when a Roblox friend or a party member is in your match.
+- A mode picker: the chosen mode as a card above PLAY, and every mode as a big card (what it is, team size,
+  length) to choose from, with Ranked Duel featured.
+- Confirm windows before anything that spends Credits, RP or Wings, or removes, leaves or resets something.
+- The season pass can be bought right on the Season page, with Robux or Wings.
+- Duels, the main mode: 1v1, best of five rounds, starting in opposite corners. Ranked duels with a rating and six ranks
   (Bronze to Ace, each with a title the first time), or Casual duels for practice; an AI opponent if nobody's
   about. A duel rating leaderboard and a Duelist achievement series.
 - BVR Battles: 3v3 at long range in Tier IV+ jets, radar missiles only.

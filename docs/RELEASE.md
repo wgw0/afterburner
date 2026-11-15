@@ -2,9 +2,9 @@
 
 How to put a new version of Afterburner live, and how to take it back if it goes wrong
 (DEVELOPMENT.md §35, REL-03 and REL-04). The version number lives in `src/shared/Version.luau`, what
-changed lives in [CHANGELOG.md](../CHANGELOG.md), and every release gets a Git tag (`v0.6.0`).
+changed lives in [CHANGELOG.md](../CHANGELOG.md), and every release gets a Git tag (`v1.0.0`).
 
-Players can see the version and build at the bottom of **Settings** ("Afterburner v0.6.0 · build 214").
+Players can see the version and build at the bottom of **Settings** ("Afterburner v1.0.0 · build 214").
 "build" is Roblox's place version for the server they're on. The admin command `server.info` gives the
 same for a server, with its save version, role and uptime.
 
@@ -41,9 +41,8 @@ not the code. To change assets: make the change in the TEST place in Studio (eve
 
 1. **Everything for the release is merged and ticked** in [PROGRESS.md](PROGRESS.md), each tested.
 2. **Pick the version.** Bump `Version.NUMBER` in `src/shared/Version.luau`: the middle number for a
-   normal release (0.6.0 → 0.7.0), the last number for a fix (0.6.0 → 0.6.1). Until launch the first
-   number stays 0.
-3. **Write the changelog section:** `## [0.7.0] - Unreleased` at the top of CHANGELOG.md, with what changed
+   normal release (1.0.0 → 1.1.0), the last number for a fix (1.0.0 → 1.0.1).
+3. **Write the changelog section:** `## [1.1.0] - Unreleased` at the top of CHANGELOG.md, with what changed
    in plain words, grouped under Added / Changed / Fixed. CI fails if the version has no section.
 4. **Check save changes.** If `PlayerData.VERSION` went up, the release has a migration. It must be safe to
    roll back from (see [Saves](#saves-and-rollbacks)): the previous release must still be able to play on a
@@ -118,14 +117,14 @@ matchmaking queue and match records (MemoryStore), live config, and reports. Onl
 Practise once on the **test experience** so the steps are familiar before launch. About 15 minutes.
 
 1. Publish the current master to *Afterburner (TEST)*. Join it from the app; in Settings note the version
-   and build (say v0.6.0 · Test · build *N*).
+   and build (say v1.0.0 · Test · build *N*).
 2. In Studio, change `Version.NUMBER` to `"0.6.99"` (don't commit it) and publish again: build *N+1*.
 3. Join again (a new server): Settings shows v0.6.99, build *N+1*. Leave this server running in one client.
 4. Roll back: Creator Dashboard → *Afterburner (TEST)* → the place → Version History → Restore build *N*.
    Note the time.
 5. Restart the servers. The client from step 3 should be moved to a new server.
-6. Join: Settings shows v0.6.0, build *N+2* (the restore). Play briefly; your save loads with everything
+6. Join: Settings shows v1.0.0, build *N+2* (the restore). Play briefly; your save loads with everything
    from step 3. Note how long steps 4–6 took.
-7. In Studio, set `Version.NUMBER` back to `"0.6.0"`.
+7. In Studio, set `Version.NUMBER` back to `"1.0.0"`.
 8. Record the result in [PROGRESS.md](PROGRESS.md) under REL-04: the date, the builds, and how long the
    rollback took.
