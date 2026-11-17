@@ -7,8 +7,9 @@ so it sits on the card's own colour, cropped and fitted to 1024 x 512.
   WingArt: the jet from above, the decal on top of each wing, mid-span, pointing outboard (as Shared/WingArt).
   Marker: a close-up of the cockpit's side with a row of that kill marker under the canopy (as
     Shared/KillMarkers), five of them.
-  HUDTarget: the jet from behind and below, for the HUD cards' target box (tools/cosmetics/hud_cards.py).
-HUD themes are drawn in 2D by tools/cosmetics/hud_cards.py.
+The game itself draws these cards live (src/client/UI/ShopPreview.luau: trails and wing art in a ViewportFrame,
+markers in 2D), so nothing needs uploading; this is the offline, higher-quality option if Will wants baked
+pictures instead (upload them and point the cards at them, as the camos' Images do).
 
   blender -b tools/blender/out/F16A_base.blend --python tools/blender/cosmetic_cards.py -- \
       --textures tools/blender/out/textures --decals tools/cosmetics/out --out <dir> [--only TrailRed,WingAce]
@@ -54,6 +55,7 @@ MARKERS = {
     "MarkerJets": ("✈", rgb(235, 235, 225)),
     "MarkerGold": ("★", GOLD),
     "MarkerDiamonds": ("◆", rgb(90, 220, 255)),
+    "MarkerSun": ("☀", rgb(255, 170, 50)),
 }
 WING_ART = ("WingShark", "WingAce", "WingBolt", "WingEight", "WingComet", "WingSunburst")
 MARKS = 5  # kill markers in a row: a five-star mastery
@@ -310,12 +312,6 @@ def marker_cards(ids, out):
         bpy.data.objects.remove(strip)
 
 
-def hud_target(out):
-    """The jet from behind and a little below, small and dark against the sky, for the HUD cards."""
-    camera((3.0, -26.0, -4.0), (0.0, 0.0, 0.0), lens=50)
-    render(out, "HUDTarget")
-
-
 # --- Render ------------------------------------------------------------------------------------------------------
 
 def gpu(scene):
@@ -355,7 +351,7 @@ def main():
     parser.add_argument("--textures", required=True)
     parser.add_argument("--decals", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--only", default="", help="comma list of cosmetic ids (and HUDTarget); default: all")
+    parser.add_argument("--only", default="", help="comma list of cosmetic ids; default: all")
     args = parser.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     only = set(filter(None, args.only.split(",")))
@@ -377,8 +373,6 @@ def main():
     trail_cards(wanted(TRAILS), args.out)
     wing_cards(wanted(WING_ART), args.decals, args.out)
     marker_cards(wanted(MARKERS), args.out)
-    if not only or "HUDTarget" in only:
-        hud_target(args.out)
 
 
 main()

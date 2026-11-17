@@ -12,9 +12,9 @@ Bundles.DISCOUNT = 0.25 -- off the items' own prices
 
 Bundles.LIST = table.freeze({
 	{ Id = "DisplayTeam", DisplayName = "Display Team", Items = { "TrailTricolour", "MarkerRoundels", "WingBolt" } },
-	{ Id = "Arctic", DisplayName = "Arctic Patrol", Items = { "CamoArctic", "TrailBlue", "HUDIce" } },
+	{ Id = "Arctic", DisplayName = "Arctic Patrol", Items = { "CamoArctic", "TrailBlue", "MarkerJets" } },
 	{ Id = "Tiger", DisplayName = "Tiger Meet", Items = { "CamoTiger", "TrailOrange", "WingShark" } },
-	{ Id = "Night", DisplayName = "Night Raider", Items = { "CamoMidnight", "MarkerBars", "HUDMint" } },
+	{ Id = "Night", DisplayName = "Night Raider", Items = { "CamoMidnight", "MarkerBars", "TrailGreen" } },
 	{ Id = "Spider", DisplayName = "Black Widow", Items = { "CamoArachnida", "TrailRed", "WingAce" } },
 	{ Id = "Cosmic", DisplayName = "Deep Space", Items = { "CamoGalaxy", "MarkerGold", "WingEight" } },
 }) :: { Bundle }

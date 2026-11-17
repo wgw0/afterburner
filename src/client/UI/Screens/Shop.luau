@@ -29,12 +29,14 @@ local Skins = require(Shared.Skins)
 
 local UI = script.Parent.Parent
 local C = require(UI.Components)
+local ShopPreview = require(UI.ShopPreview)
 local Theme = require(UI.Theme)
 
 local e = React.createElement
 local TIER_NAMES = { "I", "II", "III", "IV", "V" }
 local CARD_W, CARD_H = 230, 150
-local BANNER_H = 112 -- a camo card's picture, across the top
+local BANNER_H = 112 -- a card's picture, across the top (every card has one: Will, so you see what you buy)
+local PICTURE_H = CARD_H + BANNER_H + 8 -- a card with its picture
 
 local function section(title: string, order: number)
 	return e(C.Label, {
@@ -55,15 +57,16 @@ local function Card(
 		Action: string?,
 		Status: string?,
 		Highlight: Color3?,
-		Image: string?, -- a picture in the top right (wing art)
 		Banner: string?, -- a big picture across the top (camos: the jet in it, on a transparent background)
+		Art: any?, -- or a drawing there instead (ShopPreview, or an emblem for things with no look)
 		Ribbon: string?, -- a tag in the top right ("BEST VALUE")
 		Order: number,
 		OnClick: (() -> (boolean, string?))?,
 	}
 )
 	local message, setMessage = React.useState(nil :: string?)
-	local top = if props.Banner then BANNER_H + 8 else 0 -- everything else moves down under the banner
+	local banner = props.Banner ~= nil or props.Art ~= nil
+	local top = if banner then BANNER_H + 8 else 0 -- everything else moves down under the banner
 	return e(C.Panel, {
 		Size = UDim2.fromOffset(CARD_W, CARD_H + top),
 		Padding = 14,
@@ -80,16 +83,7 @@ local function Card(
 				TextColor = Theme.Background,
 			})
 			else nil,
-		Picture = if props.Image
-			then e("ImageLabel", {
-				Image = props.Image,
-				Size = UDim2.fromOffset(64, 32),
-				Position = UDim2.fromScale(1, 0),
-				AnchorPoint = Vector2.new(1, 0),
-				BackgroundTransparency = 1,
-			})
-			else nil,
-		Banner = if props.Banner
+		Banner = if banner
 			then e("Frame", {
 				Size = UDim2.new(1, 0, 0, BANNER_H),
 				BackgroundColor3 = Theme.Background,
@@ -110,18 +104,20 @@ local function Card(
 						Rotation = 90,
 					}),
 				}),
-				Jet = e("ImageLabel", {
-					Image = props.Banner,
-					Size = UDim2.fromScale(1, 1),
-					BackgroundTransparency = 1,
-					ScaleType = Enum.ScaleType.Fit,
-				}),
+				Jet = if props.Banner
+					then e("ImageLabel", {
+						Image = props.Banner,
+						Size = UDim2.fromScale(1, 1),
+						BackgroundTransparency = 1,
+						ScaleType = Enum.ScaleType.Fit,
+					})
+					else props.Art,
 			})
 			else nil,
 		Title = e(C.Label, {
 			Text = props.Title,
 			Position = UDim2.fromOffset(0, top),
-			Size = UDim2.new(1, if props.Image then -68 else 0, 0, 24),
+			Size = UDim2.new(1, 0, 0, 24),
 			Heavy = true,
 			TextSize = 20,
 			Color = props.Highlight or Theme.Text,
@@ -156,6 +152,34 @@ local function Card(
 				Align = "Center",
 				Color = Theme.Dim,
 			}),
+	})
+end
+
+-- The picture for something with no look of its own (Wings packs, boosters, a tier unlock): a big bold mark
+-- and a line under it, on the card's glow.
+local function emblem(mark: string, caption: string, colour: Color3)
+	return e("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, {
+		Mark = e(C.Label, {
+			Text = mark,
+			Size = UDim2.new(1, 0, 0, 62),
+			Position = UDim2.fromScale(0.5, 0.42),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Heavy = true,
+			TextSize = 54,
+			Align = "Center",
+			Color = colour,
+		}),
+		Caption = e(C.Label, {
+			Text = caption,
+			Size = UDim2.new(1, -16, 0, 16),
+			Position = UDim2.new(0.5, 0, 1, -12),
+			AnchorPoint = Vector2.new(0.5, 1),
+			Bold = true,
+			TextSize = 12,
+			Align = "Center",
+			Color = colour,
+			Transparency = 0.15,
+		}),
 	})
 end
 
@@ -359,8 +383,7 @@ local function PassCard(props: {
 	})
 end
 
--- Cards that wrap onto as many lines as they need (taller ones for camos, which carry a banner; wider ones
--- for the passes), so a narrow screen stacks them instead of cutting them off
+-- Cards that wrap onto as many lines as they need (taller ones with a picture; wider ones for the passes), so a narrow screen stacks them instead of cutting them off
 local function grid(order: number, cards: { [string]: any }, height: number?, width: number?)
 	cards.Layout = e("UIGridLayout", {
 		CellSize = UDim2.fromOffset(width or CARD_W, height or CARD_H),
@@ -379,7 +402,6 @@ local KIND_DETAIL = {
 	Camo = "Paints every jet you fly. Take it off to go back to each jet's own skin.",
 	Trail = "Your contrails in this colour, and display smoke from the wingtips on afterburner.",
 	Marker = "Your kill markers painted like this.",
-	HUD = "Your HUD in this colour.",
 	WingArt = "Painted on top of both wings.",
 }
 
@@ -416,8 +438,7 @@ local function cosmeticCard(props: any, data: any, id: string, order: number)
 		Action = action,
 		Status = status,
 		Highlight = if equipped then Theme.Good else colour,
-		Image = if item.Images and item.Kind ~= "Camo" then item.Images[1] else nil,
-		Banner = if item.Images and item.Kind == "Camo" then item.Images[1] else nil,
+		Art = e(ShopPreview, { Id = id, Size = UDim2.fromScale(1, 1) }),
 		Order = order,
 		OnClick = onClick,
 	})
@@ -588,22 +609,30 @@ local function SeasonPanel(props: { Data: any, Order: number, OnSeason: () -> ()
 	})
 end
 
--- This week's featured bundle: its items, what it would cost you (owned items aren't charged) and the day it
+local THUMB_W = 104 -- each bundle item's picture
+
+-- This week's featured bundle: its items' pictures and names, what it would cost you (owned items aren't charged) and the day it
 -- changes (a real date, not a countdown to pressure anyone).
 local function BundlePanel(props: { Data: any, Order: number, OnBuy: (string) -> (boolean, string?) })
 	local message, setMessage = React.useState(nil :: string?)
 	local now = workspace:GetServerTimeNow()
 	local bundle = Shop.bundleFor(now)
 	local price, items, full = Shop.bundlePrice(props.Data, bundle)
-	local names, camo = {}, nil
-	for _, id in bundle.Items do
+	-- Each item's picture, side by side (ShopPreview), with the text after them
+	local names, pictures = {}, { Layout = C.List({ Horizontal = true, Gap = 6 }) } :: { [string]: any }
+	for i, id in bundle.Items do
 		local item = Catalogue.LIST[id]
 		table.insert(names, if Cosmetics.owns(props.Data, id) then `<s>{item.DisplayName}</s>` else item.DisplayName)
-		if item.Kind == "Camo" and item.Images then
-			camo = item.Images[1]
-		end
+		pictures[id] = e("Frame", {
+			Size = UDim2.fromOffset(THUMB_W, 82),
+			BackgroundColor3 = Theme.Background,
+			LayoutOrder = i,
+		}, {
+			Corner = C.corner(8),
+			Picture = e(ShopPreview, { Id = id, Size = UDim2.fromScale(1, 1) }),
+		})
 	end
-	local left = if camo then 166 else 0 -- the text starts after the camo's picture
+	local left = #bundle.Items * (THUMB_W + 6) + 10 -- the text starts after the pictures
 	local _, nextAt = Shop.week(now)
 	local nextDay = os.date("!%A %d %B", nextAt)
 	local action
@@ -641,14 +670,10 @@ local function BundlePanel(props: { Data: any, Order: number, OnBuy: (string) ->
 		LayoutOrder = props.Order,
 		StrokeColor = Theme.Wings,
 	}, {
-		Picture = if camo
-			then e("ImageLabel", {
-				Image = camo,
-				Size = UDim2.fromOffset(150, 82),
-				BackgroundColor3 = Theme.Background,
-				ScaleType = Enum.ScaleType.Fit,
-			}, { Corner = C.corner(8) })
-			else nil,
+		Pictures = e("Frame", {
+			Size = UDim2.fromOffset(left - 10, 82),
+			BackgroundTransparency = 1,
+		}, pictures),
 		Title = e(C.Label, {
 			Text = `THIS WEEK  ·  {string.upper(bundle.DisplayName)} BUNDLE`,
 			Size = UDim2.new(1, -(left + 250), 0, 24),
@@ -777,6 +802,7 @@ local function ShopScreen(props: any)
 			Detail = (if bonus > 0 then `{bonus}% more Wings per Robux` else "Enough for one jet's skin")
 				.. (if key == camoPack then "\nEnough for a camo on every jet" else ""),
 			Ribbon = if i == #packs then "BEST VALUE" else nil, -- the most Wings per Robux
+			Art = emblem(`+{C.number(product.Amount :: number)}`, `{string.rep("◆", i)}  WINGS`, Theme.Wings),
 			Action = if Products.idFor(key) then `R$ {product.Price}` else nil,
 			Highlight = Theme.Wings,
 			Order = i,
@@ -785,7 +811,7 @@ local function ShopScreen(props: any)
 			end,
 		})
 	end
-	children.Packs = grid(32, packCards)
+	children.Packs = grid(32, packCards, PICTURE_H)
 
 	-- Cosmetics (SHP-07), a section per kind
 	for k, kind in Catalogue.KINDS do
@@ -794,7 +820,7 @@ local function ShopScreen(props: any)
 		for i, id in Catalogue.ofKind(kind) do
 			cards[id] = cosmeticCard(props, data, id, i)
 		end
-		children[kind] = grid(11 + k * 2, cards, if kind == "Camo" then CARD_H + BANNER_H + 8 else nil)
+		children[kind] = grid(11 + k * 2, cards, PICTURE_H)
 	end
 
 	-- Tier Unlock: the next one, if there is one
@@ -807,13 +833,15 @@ local function ShopScreen(props: any)
 				Title = `Unlock Tier {TIER_NAMES[offer.tier]}`,
 				Detail = `Pick {Products.UNLOCK_JETS} Tier {TIER_NAMES[offer.tier]} jets to own straight away. R$ {Products.LIST[key].Price}.`,
 				Action = "PICK JETS",
+				Art = emblem(TIER_NAMES[offer.tier], "TIER UNLOCK", Theme.Accent),
+				Highlight = Theme.Accent,
 				Order = 1,
 				OnClick = function()
 					props.OnTechTree()
 					return true, nil
 				end,
 			}),
-		})
+		}, PICTURE_H)
 	end
 
 	-- Boosters (SHP-03): an hour of double Credits or RP; buying another adds an hour
@@ -829,13 +857,18 @@ local function ShopScreen(props: any)
 				else `Double the {if product.Booster == "Credits" then "Credits" else "research points"} from every match for an hour.`,
 			Action = if Products.idFor(key) then `R$ {product.Price}` else nil,
 			Highlight = if left > 0 then Theme.Good else nil,
+			Art = emblem(
+				"2×",
+				if product.Booster == "Credits" then "CREDITS  ·  1 HOUR" else "RESEARCH POINTS  ·  1 HOUR",
+				if product.Booster == "Credits" then Theme.Warn else Theme.Good
+			),
 			Order = i,
 			OnClick = function()
 				return props.OnBuyProduct(key)
 			end,
 		})
 	end
-	children.Boosters = grid(36, boosterCards)
+	children.Boosters = grid(36, boosterCards, PICTURE_H)
 
 	-- VIP Pilot up top, then every pass as a big card (owned ones last)
 	local function owns(key: string): boolean
@@ -897,8 +930,13 @@ local function ShopScreen(props: any)
 	-- Still to come (DESIGN §8.2)
 	children.SoonTitle = section("COMING LATER", 40)
 	children.Soon = grid(41, {
-		Premium = e(Card, { Title = "Premium Jets", Detail = "Named variants with a unique camo.", Order = 5 }),
-	})
+		Premium = e(Card, {
+			Title = "Premium Jets",
+			Detail = "Named variants with a unique camo.",
+			Art = emblem("✈", "COMING LATER", Theme.Dim),
+			Order = 5,
+		}),
+	}, PICTURE_H)
 
 	return e("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),

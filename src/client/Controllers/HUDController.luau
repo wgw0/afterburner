@@ -20,8 +20,6 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared.Config.Bindings)
-local Cosmetics = require(Shared.Cosmetics)
-local CosmeticsCatalogue = require(Shared.Config.Cosmetics)
 local Ballistics = require(Shared.Ballistics)
 local HUDStyles = require(Shared.Config.HUDStyles)
 local Net = require(Shared.Net)
@@ -33,7 +31,6 @@ local WeaponData = require(Shared.WeaponData)
 local BindingsController = require(script.Parent.BindingsController)
 local FlightController = require(script.Parent.FlightController)
 local InputController = require(script.Parent.InputController)
-local PlayerDataController = require(script.Parent.PlayerDataController)
 local SensorController = require(script.Parent.SensorController)
 local SettingsController = require(script.Parent.SettingsController)
 
@@ -1328,25 +1325,13 @@ function HUDController:Start()
 	terrainParams.FilterType = Enum.RaycastFilterType.Exclude
 	terrainParams.FilterDescendantsInstances = { workspace:WaitForChild("Jets") }
 	self.gui = build()
-	-- The HUD colour: an equipped HUD theme (SHP-07), else the HUDColour setting
+	-- The HUD colour: the HUDColour setting
 	local function refreshColour()
-		local data = PlayerDataController.data
-		local theme = data and Cosmetics.equipped(data, "HUD")
-		local item = theme and CosmeticsCatalogue.get(theme)
-		if item and item.Colours then
-			setHudColour(item.Colours[1])
-		else
-			setHudColour(HUD_COLOURS[SettingsController:Get("HUDColour")] or HUD_COLOURS.Green)
-		end
+		setHudColour(HUD_COLOURS[SettingsController:Get("HUDColour")] or HUD_COLOURS.Green)
 	end
 	refreshColour()
 	SettingsController.Changed:Connect(function(key: string)
 		if key == "HUDColour" then
-			refreshColour()
-		end
-	end)
-	PlayerDataController.Changed:Connect(function(keys: { [string]: true })
-		if keys.Cosmetics or keys.Passes then
 			refreshColour()
 		end
 	end)

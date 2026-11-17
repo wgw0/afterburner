@@ -114,7 +114,7 @@ return function(ctx)
 			expect(data.Wings).toBe(0)
 			expect(Season.claimable(data)).toBe(5)
 			Season.claim(data, DURING)
-			expect(data.Cosmetics.Owned.HUDLime).toBe(true) -- tier 1
+			expect(data.Cosmetics.Owned.MarkerSun).toBe(true) -- tier 1
 			expect(data.Cosmetics.Owned.MarkerDiamonds).toBe(true) -- tier 5
 		end)
 

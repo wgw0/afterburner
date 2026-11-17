@@ -3,11 +3,11 @@
 -- equipped at a time, across every jet; nothing equipped means the plain look (white contrails, stencilled
 -- stars, the HUD colour from Settings, no wing art). Prices follow DESIGN §8.2's Robux guide at about one
 -- Wing per Robux. Shared/Cosmetics has the rules; the server applies them to spawned jets, so everyone sees
--- contrails, kill markers and wing art (HUD themes are only for you).
+-- contrails, kill markers and wing art. (HUD themes were dropped in November 2026: the HUD colour is free in
+-- Settings. Saves that still name one just ignore it.)
 --   Trail: colours your contrails, and lets coloured display smoke stream from the wingtips while the
 --     afterburner's lit (Colours: one colour, or several along the trail).
 --   Marker: how your kill markers are painted (Glyph, repeated once per mastery star, and Colour).
---   HUD: your HUD's colour (over the HUDColour setting while equipped).
 --   WingArt: a decal on top of each wing, mid-span (Images: the right and left wing, mirrored so both point
 --     outboard).
 --   Camo: paints every jet you fly in it, over each jet's own skin (Skin: the skin folder in
@@ -16,7 +16,7 @@
 -- Pass: free with that game pass, and can't be bought (VIP Gold).
 -- Season: won on that season's pass (Config/Seasons) and kept for good; never sold.
 
-export type Kind = "Trail" | "Marker" | "HUD" | "WingArt" | "Camo"
+export type Kind = "Trail" | "Marker" | "WingArt" | "Camo"
 
 export type Cosmetic = {
 	Kind: Kind,
@@ -24,7 +24,7 @@ export type Cosmetic = {
 	Wings: number?, -- price; nil = not for sale (a pass item)
 	Pass: string?, -- free with this pass (Config/Passes)
 	Season: number?, -- a reward on this season's pass (Config/Seasons)
-	Colours: { Color3 }?, -- Trail (along the trail), HUD (the first)
+	Colours: { Color3 }?, -- Trail (along the trail); Camo (the card's colour)
 	Glyph: string?, -- Marker
 	Colour: Color3?, -- Marker
 	Images: { string }?, -- WingArt: { right wing, left wing } asset ids ("" until uploaded); Camo: { shop picture }
@@ -34,12 +34,11 @@ export type Cosmetic = {
 
 local Cosmetics = {}
 
-Cosmetics.KINDS = table.freeze({ "Camo", "Trail", "Marker", "HUD", "WingArt" }) :: { Kind }
+Cosmetics.KINDS = table.freeze({ "Camo", "Trail", "Marker", "WingArt" }) :: { Kind }
 Cosmetics.KIND_NAMES = table.freeze({
 	Camo = "Camos",
 	Trail = "Contrails",
 	Marker = "Kill markers",
-	HUD = "HUD themes",
 	WingArt = "Wing art",
 })
 
@@ -111,13 +110,14 @@ Cosmetics.LIST = table.freeze({
 		Colour = rgb(90, 220, 255),
 		Order = 5,
 	},
-
-	-- HUD themes (DESIGN: 150 R$). Colours the free HUDColour presets don't have.
-	HUDAmber = { Kind = "HUD", DisplayName = "Amber", Wings = 150, Colours = { rgb(255, 176, 60) }, Order = 1 },
-	HUDGold = { Kind = "HUD", DisplayName = "Gold", Wings = 150, Colours = { GOLD }, Order = 2 },
-	HUDIce = { Kind = "HUD", DisplayName = "Ice", Wings = 150, Colours = { rgb(190, 235, 255) }, Order = 3 },
-	HUDMint = { Kind = "HUD", DisplayName = "Mint", Wings = 150, Colours = { rgb(150, 255, 210) }, Order = 4 },
-	HUDLime = { Kind = "HUD", DisplayName = "Lime", Season = 1, Colours = { rgb(190, 255, 90) }, Order = 5 }, -- Season 1
+	MarkerSun = { -- Season 1 (premium tier 1)
+		Kind = "Marker",
+		DisplayName = "Rising Suns",
+		Season = 1,
+		Glyph = "☀",
+		Colour = rgb(255, 170, 50),
+		Order = 6,
+	},
 
 	-- Camos (DESIGN: 150-600 R$): bought once, on every jet (Will). VIP Gold comes with the VIP Pilot pass.
 	CamoVIP = {

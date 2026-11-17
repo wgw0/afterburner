@@ -97,8 +97,8 @@ local CURRENCY_INFO = {
 	},
 	Wings = {
 		Title = "WINGS",
-		Body = "The premium currency, for looks only: camos, skins, contrails, kill markers, HUD themes and wing "
-			.. "art. Never power.\n\nGet them from Wings packs in the Shop (press +), and now and then from the "
+		Body = "The premium currency, for looks only: camos, skins, contrails, kill markers and wing art. "
+			.. "Never power.\n\nGet them from Wings packs in the Shop (press +), and now and then from the "
 			.. "free spin.",
 	},
 }

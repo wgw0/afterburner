@@ -73,7 +73,7 @@ local function describe(reward: Seasons.Reward): (string, any)
 				Color = item.Colour,
 			})
 	end
-	-- Contrails and HUD themes: their colours side by side
+	-- Contrails: their colours side by side
 	local swatches: { [string]: any } = { Layout = C.List({ Horizontal = true, Gap = 4, Align = "Center" }) }
 	for i, colour in item.Colours or {} do
 		swatches[`S{i}`] = e("Frame", {

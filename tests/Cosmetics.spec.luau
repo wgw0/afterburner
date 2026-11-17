@@ -24,8 +24,8 @@ return function(ctx)
 
 		it("won't buy twice, without the Wings, or something unknown", function()
 			local data = fresh()
-			Cosmetics.buy(data, "HUDGold")
-			local ok, err = Cosmetics.buy(data, "HUDGold")
+			Cosmetics.buy(data, "MarkerJets")
+			local ok, err = Cosmetics.buy(data, "MarkerJets")
 			expect(ok).toBe(false)
 			expect(err).toBe("You already own that")
 			data.Wings = 10
@@ -53,7 +53,7 @@ return function(ctx)
 			local data = fresh()
 			expect((Cosmetics.equip(data, "Marker", "MarkerGold"))).toBe(false)
 			Cosmetics.buy(data, "MarkerGold")
-			expect((Cosmetics.equip(data, "HUD", "MarkerGold"))).toBe(false)
+			expect((Cosmetics.equip(data, "Trail", "MarkerGold"))).toBe(false)
 			expect((Cosmetics.equip(data, "Wheels", ""))).toBe(false)
 			expect(Cosmetics.equip(data, "Marker", "")).toBe(true)
 			expect(Cosmetics.equipped(data, "Marker")).toBe(nil)
@@ -77,6 +77,24 @@ return function(ctx)
 			expect(type(data.Cosmetics.Equipped)).toBe("table")
 			expect(Cosmetics.buy(data, "TrailBlue")).toBe(true)
 		end)
+
+		it("a save from when HUD themes were sold still loads, and the old theme does nothing", function()
+			local data = fresh()
+			data.Cosmetics = { Owned = { HUDGold = true, TrailRed = true }, Equipped = { HUD = "HUDGold" } }
+			PlayerData.reconcile(data)
+			expect(Cosmetics.owns(data, "HUDGold")).toBe(false)
+			expect(Cosmetics.owns(data, "TrailRed")).toBe(true)
+			expect(Cosmetics.equipped(data, "HUD")).toBe(nil)
+			expect((Cosmetics.equip(data, "HUD", "HUDGold"))).toBe(false)
+			expect((Cosmetics.buy(data, "HUDGold"))).toBe(false)
+		end)
+
+		it("no HUD themes are sold: the HUD colour is free in Settings", function()
+			expect(table.find(Catalogue.KINDS, "HUD" :: any)).toBe(nil)
+			for _, item in Catalogue.LIST do
+				expect(item.Kind ~= "HUD").toBe(true)
+			end
+		end)
 	end)
 
 	describe("catalogue", function()
@@ -87,7 +105,7 @@ return function(ctx)
 				if item.Wings then
 					expect(item.Wings >= 100 and item.Wings <= 600).toBe(true)
 				end
-				if item.Kind == "Trail" or item.Kind == "HUD" then
+				if item.Kind == "Trail" then
 					expect(item.Colours ~= nil and #item.Colours >= 1).toBe(true)
 				elseif item.Kind == "Marker" then
 					expect(item.Glyph ~= nil and item.Colour ~= nil).toBe(true)

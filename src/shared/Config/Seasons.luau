@@ -58,7 +58,7 @@ local function season1(): ({ Reward }, { Reward })
 	for _, tier in { 3, 6, 9, 12, 18, 21, 24, 27 } do
 		premium[tier] = wings(75)
 	end
-	premium[1] = cosmetic("HUDLime")
+	premium[1] = cosmetic("MarkerSun")
 	premium[5] = cosmetic("MarkerDiamonds")
 	premium[10] = cosmetic("WingComet")
 	premium[15] = wings(100)
