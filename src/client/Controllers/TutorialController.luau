@@ -8,9 +8,11 @@
 --   4 Missiles: select a heat-seeker, get the lock tone on a drone, hit 2 drones with heat-seekers.
 --   5 Defend: drop a flare, then beat 3 heat-seekers fired at you from behind (DebugLaunchAtMe).
 --   6 First fight: a head-on merge with an Easy AI pilot that fights only you (TrainingBout); win it.
--- First session (TUT-04): a new pilot arrives on a training server and lesson 1 starts by itself; after
--- each of lessons 1–3 they're taken back to the menu, where the welcome card offers the next lesson or
--- multiplayer. Any lesson can be quit by holding the hangar key (shown on the panel).
+-- First session (TUT-04): a new pilot arrives on a training server and their first sortie starts by itself:
+-- two Easy enemy jets, one after the other, with the controls on the panel (Will: 94% of new players left
+-- during lesson 1's rings, before any fighting). Shot down, they're put back in the air to try again; after it
+-- they're taken back to the menu, where the welcome card offers multiplayer or the lessons. Any lesson can be
+-- quit by holding the hangar key (shown on the panel).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -70,6 +72,8 @@ local stepLabel: TextLabel
 local hintLabel: TextLabel
 local quitLabel: TextLabel
 local firstStarted = false -- the first-session lesson has been started (once per visit)
+local sortieRetryAt: number? = nil -- shot down in the first sortie: back in the air at this time
+local sortieJetId: number? = nil -- the jet flying the first sortie (its JetDestroyed can come after JetChanged)
 local runner: LessonRunner.Runner? = nil
 local pendingLesson: string? = nil
 local props: Folder? = nil
@@ -395,6 +399,36 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 
 TutorialController.ORDER = { "Flight", "Energy", "Guns", "Missiles", "Defend", "Fight" }
 
+-- A new pilot's first sortie (not in the lessons list): two Easy opponents, one after the other
+LESSONS.Sortie = {
+	id = "Sortie",
+	title = "YOUR FIRST DOGFIGHT",
+	steps = {
+		{
+			text = "An enemy jet is coming at you. Shoot it down!",
+			hint = "Steer with the mouse: the jet flies where you point · hold {FireGun} to fire guns · {FireMissile} fires a missile when the tone is steady",
+			enter = function(_ctx: Context, memory)
+				memory.startKills = kills
+				Net.Client.fire("TrainingBout", true)
+			end,
+			check = function(_ctx: Context, memory)
+				return kills > memory.startKills
+			end,
+		},
+		{
+			text = "Splash one! Here comes another. Get on its tail.",
+			hint = "Turn hard to stay behind it · guns up close · {FireMissile} from behind is hard to dodge",
+			enter = function(_ctx: Context, memory)
+				memory.startKills = kills
+				Net.Client.fire("TrainingBout", true)
+			end,
+			check = function(_ctx: Context, memory)
+				return kills > memory.startKills
+			end,
+		},
+	},
+}
+
 local function label(parent: Instance, size: number, colour: Color3, font: Enum.Font): TextLabel
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
@@ -447,7 +481,7 @@ local function build()
 end
 
 local function stop()
-	if TutorialController.active == "Fight" then
+	if TutorialController.active == "Fight" or TutorialController.active == "Sortie" then
 		Net.Client.fire("TrainingBout", false) -- send the opponent home
 	end
 	runner = nil
@@ -502,6 +536,7 @@ function TutorialController:_start()
 	end
 	runner = LessonRunner.new(LESSONS[lessonId])
 	self.active = lessonId
+	sortieJetId = if lessonId == "Sortie" then myJetId else nil
 	gui.Enabled = true
 	render()
 end
@@ -512,17 +547,22 @@ function TutorialController:FirstSession(): boolean
 	return ServerRole.isTraining() and data ~= nil and not (data.Flags and data.Flags.Onboarded)
 end
 
--- First session: start lesson 1 by itself once the map is ready (lesson 1 not done yet).
+-- First session: start the first sortie by itself once the map is ready (not won yet), and again a few
+-- seconds after being shot down in it.
 local function startFirstLesson()
 	local data = PlayerDataController.data
+	if sortieRetryAt and os.clock() >= sortieRetryAt and not runner and not FlightController.jet then
+		sortieRetryAt = nil
+		firstStarted = false
+	end
 	if firstStarted or runner or not TutorialController:FirstSession() then
 		return
 	end
-	if (data.Lessons and data.Lessons.Flight) or not Players.LocalPlayer:GetAttribute("MapReady") then
+	if (data.Lessons and data.Lessons.Sortie) or not Players.LocalPlayer:GetAttribute("MapReady") then
 		return
 	end
 	firstStarted = true
-	local ok = TutorialController:Begin("Flight", data.Lineup[1] or "F5E")
+	local ok = TutorialController:Begin("Sortie", data.Lineup[1] or "F5E")
 	if not ok then
 		firstStarted = false
 	end
@@ -562,6 +602,10 @@ local function update(dt: number)
 		end)
 		TutorialController.Finished:Fire(id)
 		Net.Client.fire("LessonCompleted", id) -- the onboarding funnel (ANL-02)
+		if id == "Sortie" then
+			sortieJetId = nil
+			stepLabel.Text = "You won your first dogfight!"
+		end
 		if TutorialController:FirstSession() then
 			-- Back to the menu, where the welcome card has what's next
 			hintLabel.Text = "Nice flying! Back to the menu for what's next…"
@@ -590,6 +634,11 @@ function TutorialController:Start()
 	Net.Client.on("JetDestroyed", function(jetId: number, killerUserId: number)
 		if killerUserId == Players.LocalPlayer.UserId and jetId ~= myJetId then
 			kills += 1
+		end
+		-- Shot down in the first sortie: back in the air to try again
+		if sortieJetId and jetId == sortieJetId then
+			sortieJetId = nil
+			sortieRetryAt = os.clock() + 4
 		end
 	end)
 	Net.Client.on(

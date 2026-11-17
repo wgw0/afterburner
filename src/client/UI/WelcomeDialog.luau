@@ -1,7 +1,8 @@
 --!strict
 -- The first-visit welcome (TUT-04): a brand-new pilot in the lobby gets this over the menu, built like the
--- free-spin window, recommending training. GO TO TRAINING heads to a training server (lesson 1 starts by
--- itself); X stays in the lobby and the pilot counts as onboarded, so it doesn't come back (MenuController).
+-- free-spin window. START YOUR FIRST DOGFIGHT heads to a training server, where their first sortie (two Easy
+-- enemy jets) starts by itself; SKIP stays in the lobby and the pilot counts as onboarded, so it doesn't come
+-- back (MenuController).
 -- props: OnTraining(), OnClose()
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,9 +14,9 @@ local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
 
-local BODY = "Welcome to Afterburner. Before your first dogfight we recommend Training: short lessons on flying, "
-	.. "the gun, missiles and beating a missile fired at you, then a first fight against an AI pilot. You can "
-	.. "come back to it any time from the hangar."
+local BODY = "Welcome to Afterburner! Jump straight into your first dogfight: two easy enemy jets, with the "
+	.. "controls on screen. Then take on real pilots, or learn more in the training lessons any time from the "
+	.. "hangar."
 
 local function WelcomeDialog(props: { OnTraining: () -> (), OnClose: () -> () })
 	return e("TextButton", { -- dims the menu behind and swallows clicks
@@ -57,9 +58,9 @@ local function WelcomeDialog(props: { OnTraining: () -> (), OnClose: () -> () })
 				Wrap = true,
 			}),
 			Training = e(C.Button, {
-				Text = "GO TO TRAINING",
+				Text = "START YOUR FIRST DOGFIGHT",
 				Style = "Primary",
-				Size = UDim2.fromOffset(260, 50),
+				Size = UDim2.fromOffset(340, 54),
 				Position = UDim2.new(0.5, 0, 1, -50),
 				AnchorPoint = Vector2.new(0.5, 0),
 				TextSize = 18,

@@ -8,9 +8,10 @@ local Funnels = {}
 -- optional (a new pilot can skip it), so its lessons have a funnel of their own.
 Funnels.ONBOARDING = table.freeze({ "Joined", "Onboarded", "FirstMatch", "FirstKill", "FirstResearch" })
 
--- The training funnel (LogFunnelStepEvent "Training"): arriving on a training server, then lessons 1–6.
+-- The training funnel (LogFunnelStepEvent "Training"): arriving on a training server, the first sortie (a new
+-- pilot's two-jet fight, from November 2026), then lessons 1–6.
 Funnels.TRAINING_NAME = "Training"
-Funnels.TRAINING = table.freeze({ "Arrived", "Flight", "Energy", "Guns", "Missiles", "Defend", "Fight" })
+Funnels.TRAINING = table.freeze({ "Arrived", "Sortie", "Flight", "Energy", "Guns", "Missiles", "Defend", "Fight" })
 
 local function reachedPrefix(steps: { string }, reached: { [string]: any }): number
 	local n = 0

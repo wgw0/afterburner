@@ -31,9 +31,10 @@ return function(ctx)
 	end)
 
 	describe("training", function()
-		it("starts with arriving, then the six lessons", function()
+		it("starts with arriving, then the first sortie, then the six lessons", function()
 			expect(Funnels.TRAINING[1]).toBe("Arrived")
-			expect(#Funnels.TRAINING).toBe(7)
+			expect(Funnels.TRAINING[2]).toBe("Sortie")
+			expect(#Funnels.TRAINING).toBe(8)
 		end)
 	end)
 end

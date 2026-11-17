@@ -135,22 +135,19 @@ end
 -- The first three lessons, as the welcome card walks a new pilot through them
 local BASICS = { { "Flight", "Basic flight" }, { "Energy", "Energy" }, { "Guns", "Guns" } }
 
--- A new pilot's welcome (TUT-04): lessons 1–3 ticked off as they go, the next one, or skip to multiplayer.
+-- A new pilot's welcome (TUT-04): after the first sortie (TutorialController), multiplayer first and lessons
+-- 1–3 as extras, ticked off as they go; before it (quit early), the sortie again or skip to multiplayer.
 local function Welcome(props: any)
 	local done = props.Data.Lessons or {}
-	local nextLesson = nil
+	local nextLesson = if done.Sortie then nil else { "Sortie", "First dogfight" }
 	local rows: { [string]: any } = { Layout = C.List({ Gap = 4 }) }
 	for i, lesson in BASICS do
 		local finished = done[lesson[1]] == true
-		if not finished and not nextLesson then
-			nextLesson = lesson
-		end
 		rows[lesson[1]] = e(C.Label, {
 			Text = `{if finished then "✓" else tostring(i) .. "."}  {lesson[2]}`,
 			Size = UDim2.new(1, 0, 0, 22),
 			TextSize = 15,
-			Bold = nextLesson == lesson,
-			Color = if finished then Theme.Good elseif nextLesson == lesson then Theme.Text else Theme.Dim,
+			Color = if finished then Theme.Good else Theme.Dim,
 			LayoutOrder = i,
 		})
 	end
@@ -164,7 +161,7 @@ local function Welcome(props: any)
 		StrokeThickness = 2,
 	}, {
 		Title = e(C.Label, {
-			Text = if complete then "TRAINING COMPLETE" else "WELCOME, PILOT",
+			Text = if complete then "NICE FLYING, PILOT!" else "WELCOME, PILOT",
 			Size = UDim2.new(1, 0, 0, 28),
 			Heavy = true,
 			TextSize = 24,
@@ -172,8 +169,8 @@ local function Welcome(props: any)
 		}),
 		Text = e(C.Label, {
 			Text = if complete
-				then "You've got the basics. Time for a real fight, or keep practising here."
-				else "Three short lessons get you flying and fighting. You can skip them any time.",
+				then "You won your first dogfight. Take on real pilots now, or sharpen up with the lessons (optional)."
+				else "Your first dogfight: two easy enemy jets. Or jump straight into multiplayer.",
 			Size = UDim2.new(1, 0, 0, 36),
 			Position = UDim2.fromOffset(0, 34),
 			TextSize = 13,

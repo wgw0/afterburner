@@ -9,6 +9,8 @@
 --   minutes (SPREAD_STAGES); after ANY_MODE_AFTER seconds a player who picked a mode takes any mode. A full
 --   group becomes a match at once; a smaller one once its anchor has waited FILL_AFTER seconds, and AI
 --   fills the empty seats on the battle server.
+-- Nobody else queuing for anything the anchor could play with (on any server): their AI match starts after
+-- LONE_FILL_AFTER seconds instead, as waiting longer can't find anyone (Will: new players left while waiting).
 -- Duels (MCH-09) are two seats, one pilot each (no parties). A ranked duel also needs the two ratings within
 -- Duel.ratingSpread of each other; after Duel.AI_AFTER seconds alone an AI pilot takes the other seat. "Any"
 -- never means a duel, and a duel never turns into another mode.
@@ -20,6 +22,7 @@ local Queue = {}
 
 Queue.MATCH_SIZE = 6 -- pilots in a match (Will: 6), so at most this many players
 Queue.FILL_AFTER = 30 -- seconds before a match starts short-handed, with AI in the empty seats
+Queue.LONE_FILL_AFTER = 10 -- the same (and for duels) when nobody else in the queue could join the match
 -- { seconds waited, BR spread }: the spread grows linearly between these and stops at the last
 Queue.SPREAD_STAGES = table.freeze({ { 0, 1.0 }, { 60, 1.7 }, { 150, 3.0 } })
 Queue.SPREAD_MIN = Queue.SPREAD_STAGES[1][2]
@@ -140,6 +143,7 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 	local now = options.now
 	local fillAfter = options.fillAfter or Queue.FILL_AFTER
 	local duelFillAfter = options.duelFillAfter or Duel.AI_AFTER
+	local loneFillAfter = math.min(Queue.LONE_FILL_AFTER, fillAfter, duelFillAfter)
 	local pickMode = options.pickMode or function()
 		return Queue.ANY_MODES[1]
 	end
@@ -215,7 +219,16 @@ function Queue.form(entries: { Entry }, options: Options): { Match }
 			end
 		end
 
-		if count >= size or waited >= (if Queue.DUEL_MODES[mode] then duelFillAfter else fillAfter) then
+		-- Alone: nobody else still queuing (whatever their BR, which widens with the wait) fits this mode
+		local alone = true
+		for _, entry in waiting do
+			if entry ~= anchor and not taken[entry.userId] and fits(entry, mode) then
+				alone = false
+				break
+			end
+		end
+		local fillWait = if alone then loneFillAfter elseif Queue.DUEL_MODES[mode] then duelFillAfter else fillAfter
+		if count >= size or waited >= fillWait then
 			local kept = {}
 			for _, entry in group do
 				taken[entry.userId] = true

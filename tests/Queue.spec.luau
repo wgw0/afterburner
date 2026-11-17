@@ -37,6 +37,15 @@ return function(ctx)
 			expect(#matches[1].entries).toBe(2)
 		end)
 
+		it("a player alone in the queue gets an AI match after LONE_FILL_AFTER, not the full fill time", function()
+			expect(#Queue.form({ entry(1, 2.0) }, { now = Queue.LONE_FILL_AFTER - 1 })).toBe(0)
+			local matches = Queue.form({ entry(1, 2.0) }, { now = Queue.LONE_FILL_AFTER })
+			expect(#matches).toBe(1)
+			-- Someone else queuing for a mode they could share (any BR): the usual wait, to group up
+			local two = { entry(1, 2.0, "Any", 0), entry(2, 8.0, "Dogfight", 0) }
+			expect(#Queue.form(two, { now = Queue.LONE_FILL_AFTER })).toBe(0)
+		end)
+
 		it("a lone player gets a match (with AI) after the fill time", function()
 			local matches = Queue.form({ entry(1, 2.0) }, { now = Queue.FILL_AFTER, fillAfter = Queue.FILL_AFTER })
 			expect(#matches).toBe(1)
@@ -187,11 +196,17 @@ return function(ctx)
 			expect(#Queue.form({ duelist(1, 800, "DuelCasual"), duelist(2, 2000, "DuelCasual") }, { now = 1 })).toBe(1)
 		end)
 
-		it("a lone duellist gets an AI opponent after AI_AFTER seconds", function()
-			expect(#Queue.form({ duelist(1, 1000) }, { now = Duel.AI_AFTER - 1 })).toBe(0)
-			local matches = Queue.form({ duelist(1, 1000) }, { now = Duel.AI_AFTER })
+		it("a lone duellist gets an AI opponent after LONE_FILL_AFTER seconds", function()
+			expect(#Queue.form({ duelist(1, 1000) }, { now = Queue.LONE_FILL_AFTER - 1 })).toBe(0)
+			local matches = Queue.form({ duelist(1, 1000) }, { now = Queue.LONE_FILL_AFTER })
 			expect(#matches).toBe(1)
 			expect(matches[1].players).toBe(1)
+		end)
+
+		it("a duellist with another (too far in rating for now) waits AI_AFTER for a real opponent", function()
+			local entries = { duelist(1, 1000, "Duel", 0), duelist(2, 1800, "Duel", 0) }
+			expect(#Queue.form(entries, { now = Queue.LONE_FILL_AFTER })).toBe(0)
+			expect(#Queue.form(entries, { now = Duel.AI_AFTER }) > 0).toBe(true)
 		end)
 
 		it("Any never becomes a duel, and a duellist never takes another mode", function()

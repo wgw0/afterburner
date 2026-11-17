@@ -36,7 +36,8 @@ local MatchService = require(script.Parent.MatchService)
 local MissileService = require(script.Parent.MissileService)
 local ProgressionService = require(script.Parent.ProgressionService)
 
-local LESSONS = { Flight = true, Energy = true, Guns = true, Missiles = true, Defend = true, Fight = true }
+local LESSONS =
+	{ Sortie = true, Flight = true, Energy = true, Guns = true, Missiles = true, Defend = true, Fight = true }
 local QUIET_CAUSES = { Respawn = true, PilotLeft = true, Despawn = true }
 local TUTORIAL_CREDITS = 2000 -- for finishing lessons 1–3 (once)
 

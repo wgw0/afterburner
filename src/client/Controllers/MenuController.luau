@@ -410,7 +410,7 @@ local function renderWelcome()
 		OnTraining = function()
 			welcomeDone = true
 			render()
-			local text = "Heading to a training server…"
+			local text = "Taking you to your first dogfight…"
 			setStatus(text)
 			showTeleportScreen(text)
 			Net.Client.fire("Travel", "Training")
