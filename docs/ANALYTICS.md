@@ -47,14 +47,48 @@ Go to **Funnels**, then the **Training** tab. Each player counts once.
 | Step | Name |
 |---|---|
 | 1 | Arrived (first time on a training server) |
-| 2 | Flight (lesson 1) |
-| 3 | Energy (lesson 2) |
-| 4 | Guns (lesson 3: lessons 1–3 pay the 2,000 Credits) |
-| 5 | Missiles (lesson 4) |
-| 6 | Defend (lesson 5) |
-| 7 | Fight (lesson 6) |
+| 2 | Sortie (the first sortie: a new pilot's fight against two Easy jets, which starts by itself on arrival) |
+| 3 | Flight (lesson 1) |
+| 4 | Energy (lesson 2) |
+| 5 | Guns (lesson 3: lessons 1–3 pay the 2,000 Credits) |
+| 6 | Missiles (lesson 4) |
+| 7 | Defend (lesson 5) |
+| 8 | Fight (lesson 6) |
 
 A steep drop at one lesson means that lesson is too long, unclear or too hard. Players can pick lessons out of order, and a later lesson counts the earlier ones as done, so treat this funnel as "got at least this far". `LessonCompleted` in Custom events (broken down by `lesson`) gives the true count for each lesson.
+
+*The Sortie step was added in November 2026 (after 1.0.0). Before then step 2 was lesson 1.*
+
+## New pilots: where do they leave, and how long do they wait?
+
+A pilot counts as new until they have finished 3 matches (`Journey.NEWCOMER_MATCHES`). For them, each server
+tracks how far they got, in order:
+
+| Server | Stages |
+|---|---|
+| Lobby | Arrived, Queued (pressed PLAY), Leaving (a teleport to a match or training started) |
+| Training | Arrived, MapReady (the map streamed in), InJet, HitEnemy, FirstKill, Won (the first sortie) |
+| Match | Arrived, MapReady, InJet, HitEnemy, FirstKill, MatchOver |
+
+- **FirstSortie funnel** (Funnels → **FirstSortie** tab): the training stages above, logged only on a new
+  pilot's first visit to training. A big drop at Arrived → MapReady means the map is too slow to load. A drop
+  at InJet → HitEnemy means the fight is too hard to find or to aim at.
+- **`LeftServer`** (Custom events): logged when a new pilot leaves a server. Value: seconds they were there.
+  Field 1 `stage` is the furthest stage they reached and Field 2 `role` is the server (Lobby, Training,
+  Match). Count by `stage` for one `role` to see where they quit.
+- **`Travel`**: seconds a teleport took, by `role` (the server arrived at).
+- **`MapReadyTime`**: seconds from arriving until the map was in, by `role`.
+
+## Check-ins: how do new pilots feel about it?
+
+After a new pilot's first sortie, and after their 1st and 3rd matches, the Hangar asks "How's Afterburner so
+far?" with 👍 / 👎 and an optional line (`Shared/Pulse`). Each moment is asked once, answered or dismissed.
+
+- **`Pulse`** (Custom events): Field 1 is `answer` (`up`, `down` or `skip`, a dismissal) and Field 2 is
+  `moment` (`Sortie`, `Match1` or `Match3`). Count by `answer` for one `moment`. The value is 1 for 👍 and 0
+  otherwise, so the average only gives the share of thumbs up once skips are filtered out.
+- Any line they typed goes into the feedback inbox as an `Idea`, starting `[check-in <moment> 👍]` (admin
+  command `feedback.recent`).
 
 ## Match quality: are matches fair and quick to find?
 
@@ -77,7 +111,7 @@ All of these are in **Custom events**: in the Creator Dashboard that's **Analyti
 - **Missile hit rate:** `MissileResult`, average value, by Field 2 (`weapon`).
 - **Popularity:** `Spawn`, count by `airframe`.
 
-Only human pilots count: `Kill` and the missile events are human vs human, and `ShotDown` is a human downed by a human or by nothing (a crash). AI seats in matches never move these numbers. Missiles fired with no target (an IR shot without a lock) still count.
+Only human pilots count: `Kill` and the missile events are human vs human, and `ShotDown` is a human downed by a human or by nothing (a crash). AI seats in matches never move these numbers. Fights against AI pilots (most of them while few players are online) are logged apart, with the same fields: `KillVsAI`, `ShotDownByAI`, `MissileFiredVsAI` and `MissileResultVsAI`. Missiles fired with no target (an IR shot without a lock) still count.
 
 ## Economy: where do Credits and Wings come from and go?
 
@@ -128,5 +162,5 @@ Nothing has to be configured by hand. Funnels, the Economy page and Custom event
    - **Funnels → View Events:** look for an `Onboarding` step and a `Training` step.
    - **Economy → View Events:** look for a `Gameplay` source and your purchase as a sink.
    - **Custom events → View Events:** look for `MatchEnded`, `MatchQuality`, `Onboarded` and `LessonCompleted`.
-3. **The next day,** open Funnels and check that the **Onboarding** and **Training** tabs are there. Then open Economy and check that **Credits** and **Wings** are both listed.
+3. **The next day,** open Funnels and check that the **Onboarding**, **Training** and **FirstSortie** tabs are there. Then open Economy and check that **Credits** and **Wings** are both listed.
 4. **The weekly balance report (ANL-05).** In the live game's Custom events, build the four balance charts listed above (last 7 days, by airframe or weapon). Save or bookmark each view, if the page offers it, so the report is a few clicks each week.

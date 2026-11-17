@@ -2,7 +2,8 @@
 -- What we learn from play (DEVELOPMENT.md §30, ANL-02/04). Everything goes through Lib/Telemetry.
 --   Onboarding funnel (Shared/Funnels; once per player and in order, saved in data.Onboarding): 1 Joined,
 --     2 Onboarded (MatchmakingService), 3 First match finished, 4 First kill, 5 First research.
---   Training funnel (one run per player): 1 Arrived on a training server, 2–7 lessons 1–6 done.
+--   Training funnel (one run per player): 1 Arrived on a training server, 2 the first sortie, 3–8 lessons 1–6
+--     done.
 --   Progression: the highest tier a player has owned a jet of (path "Tier").
 --   Balance (scored matches only: not training, the stress test or free flight; human pilots only, so AI
 --   seats don't skew the numbers: kills and missiles between two humans, deaths of humans to a human or to
