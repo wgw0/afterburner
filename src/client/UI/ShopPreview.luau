@@ -87,30 +87,6 @@ local function smoke(model: Model, colours: { Color3 }, length: number): Vector3
 	return root.Position + back * trail * 0.38
 end
 
--- Wing art's plates hold SurfaceGuis, which a ViewportFrame doesn't draw: put each picture in a Decal instead.
--- Returns the right wing's plate (the card zooms in on it).
-local function decals(model: Model): Part?
-	local root = model.PrimaryPart :: BasePart
-	local right: Part? = nil
-	for _, d in model:GetDescendants() do
-		if d:IsA("SurfaceGui") and d.Parent and d.Parent.Name == "WingArt" then
-			local image = d:FindFirstChildWhichIsA("ImageLabel")
-			if image then
-				local decal = Instance.new("Decal")
-				decal.Face = d.Face
-				decal.Texture = image.Image
-				decal.Parent = d.Parent
-			end
-			local plate = d.Parent :: Part
-			if (plate.Position - root.Position):Dot(root.CFrame.RightVector) > 0 then
-				right = plate
-			end
-			d:Destroy()
-		end
-	end
-	return right
-end
-
 -- The F-16A wearing a contrail or wing art, still, in a ViewportFrame.
 local function JetScene(props: any)
 	local viewportRef = React.useRef(nil)
@@ -148,7 +124,7 @@ local function JetScene(props: any)
 				camera.CFrame = CFrame.lookAt(eye, focus)
 			else
 				WingArt.apply(model, props.Id)
-				local plate = decals(model)
+				local plate = WingArt.toDecals(model) -- a ViewportFrame doesn't draw SurfaceGuis
 				if plate then
 					-- Straight down onto the right wing's decal, close enough to read it, with the wing around it
 					-- (checked in Studio: about twice the decal's width away)

@@ -131,4 +131,30 @@ function WingArt.apply(model: Model, id: string?)
 	end
 end
 
+-- For a ViewportFrame (the menu previews and shop cards), which doesn't draw SurfaceGuis: puts each plate's
+-- picture in a Decal on the same face instead (a ViewportFrame does draw those). Returns the right wing's
+-- plate, if there is one (the shop card zooms in on it).
+function WingArt.toDecals(model: Model): Part?
+	local root = model.PrimaryPart
+	local right: Part? = nil
+	for _, plate in model:GetDescendants() do
+		local gui = plate:IsA("BasePart") and plate.Name == NAME and plate:FindFirstChildWhichIsA("SurfaceGui")
+		if not gui then
+			continue
+		end
+		local image = gui:FindFirstChildWhichIsA("ImageLabel")
+		if image then
+			local decal = Instance.new("Decal")
+			decal.Face = gui.Face
+			decal.Texture = image.Image
+			decal.Parent = plate
+		end
+		gui:Destroy()
+		if root and (plate.Position - root.Position):Dot(root.CFrame.RightVector) > 0 then
+			right = plate :: Part
+		end
+	end
+	return right
+end
+
 return WingArt
