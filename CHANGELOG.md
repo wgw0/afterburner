@@ -8,6 +8,32 @@ What changed in each release of Afterburner. The newest release is at the top. V
 A section headed `Unreleased` is a release still being built. `scripts/release.sh` replaces that word with
 the release date when the release is tagged.
 
+## [1.1.0] - Unreleased
+
+On master since 1.0.0. The version number is a draft: `Version.NUMBER` is still 1.0.0.
+
+### Added
+- A first sortie for new pilots: two easy enemy jets, starting by itself in training, in place of lesson 1's
+  rings. The welcome card then leads with multiplayer, with the lessons as extras.
+- LIVE NOW on the Hangar: up to three matches in progress with a free seat, and a JOIN button that takes an AI
+  pilot's place. While fewer than 20 pilots are online, Any mode is marked recommended.
+- Check-ins: a one-tap 👍 / 👎 "How's Afterburner so far?" after the first sortie and the 1st and 3rd matches,
+  with an optional line.
+- A picture on every shop card, and jet previews that show kill markers and wing art.
+- A line on the results screen and the welcome card pointing to the Discord link on the game page (text only).
+
+### Changed
+- New pilots start on Teams. Until they've finished 3 matches, a match of only new pilots has Easy AI and is
+  shorter (a third of the kill limit, at most 5 minutes).
+- A lone player's AI match starts after 10 s instead of 30 s (45 s for duels) when nobody else is queuing.
+- HUD themes are no longer sold: the HUD colour is free in Settings.
+- Achievement bars on the Career page fill from zero, matching the count beside them.
+- Analytics: a Sortie step in the training funnel, the FirstSortie funnel and new pilots' journey events,
+  and fights against AI pilots logged apart (docs/ANALYTICS.md).
+
+### Fixed
+- The Kill Bars kill-marker glyph.
+
 ## [1.0.0] - 2026-11-15
 
 The launch build (it was to have been 0.6.0, the soft launch, and grew into the launch).

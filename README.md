@@ -67,7 +67,7 @@ Afterburner is a Roblox dogfighting game inspired by DCS World. It isn't a full 
 - XP, research points and Credits, with 18 upgrade modules per jet
 - Challenges, a login streak, 99 achievements, mastery stars, a free spin and a season pass
 - Squadrons and leaderboards
-- Skins per jet, and camos, contrails, kill markers, HUD themes and wing art bought with Wings
+- Skins per jet, and camos, contrails, kill markers and wing art bought with Wings
 - Monetisation is cosmetics and convenience only
 
 </td>
@@ -242,7 +242,7 @@ Each phase ends with a playable build and an exit test. Phase 6 still has the li
 
 > Nothing bought with Robux makes a jet turn harder, hit harder or see further than its free equivalent.
 
-On sale: Wings packs; camos, jet skins, contrails, kill markers, HUD themes and wing art (for Wings); the season pass; the Starter Bundle and a weekly bundle; Tier Unlocks for Tiers IV and V; the VIP Pilot, Extra Lineup Slot and Custom Callsign passes; and capped boosters. Premium jets, at the same BR and stats as free ones, may come later.
+On sale: Wings packs; camos, jet skins, contrails, kill markers and wing art (for Wings); the season pass; the Starter Bundle and a weekly bundle; Tier Unlocks for Tiers IV and V; the VIP Pilot, Extra Lineup Slot and Custom Callsign passes; and capped boosters. Premium jets, at the same BR and stats as free ones, may come later.
 
 Never on sale: loot boxes or spins (the free spin is earned only), jets above Tier V, performance upgrades, or revives in PvP.
 
