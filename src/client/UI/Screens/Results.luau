@@ -302,7 +302,7 @@ local function Results(props: any)
 		})
 	end
 	children.Rewards = e(C.Panel, {
-		Size = UDim2.new(0.5, -24, 1, -100),
+		Size = UDim2.new(0.5, -24, 1, -128),
 		Position = UDim2.fromOffset(16, 88),
 		Color = Theme.Background,
 		Padding = 12,
@@ -379,14 +379,25 @@ local function Results(props: any)
 		})
 	end
 	children.Board = e(C.Panel, {
-		Size = UDim2.new(0.5, -24, 1, -100),
+		Size = UDim2.new(0.5, -24, 1, -128),
 		Position = UDim2.new(0.5, 8, 0, 88),
 		Color = Theme.Background,
 		Padding = 12,
 	}, board)
 
+	-- Where to find the community: the Discord is linked on the game page (Social Links), never in the game
+	children.Community = e(C.Label, {
+		Text = "Join the Afterburner community! Find our Discord link on the game page.",
+		Size = UDim2.new(1, -24, 0, 20),
+		Position = UDim2.new(0, 12, 1, -32),
+		Align = "Center",
+		Bold = true,
+		TextSize = 14,
+		Color = Theme.Dim,
+	})
+
 	return e(C.Panel, {
-		Size = UDim2.fromOffset(820, 470),
+		Size = UDim2.fromOffset(820, 498),
 		Position = UDim2.fromScale(0.5, 0.5),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		StrokeColor = Theme.Accent,

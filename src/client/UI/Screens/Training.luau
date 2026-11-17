@@ -153,7 +153,7 @@ local function Welcome(props: any)
 	end
 	local complete = nextLesson == nil
 	return e(C.Panel, {
-		Size = UDim2.fromOffset(440, 262),
+		Size = UDim2.fromOffset(440, 290),
 		Position = UDim2.fromScale(0.5, 0.36),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Padding = 20,
@@ -169,17 +169,18 @@ local function Welcome(props: any)
 		}),
 		Text = e(C.Label, {
 			Text = if complete
-				then "You won your first dogfight. Take on real pilots now, or sharpen up with the lessons (optional)."
+				then "You won your first dogfight. Take on real pilots now, or sharpen up with the lessons (optional). Our Discord link is on the game page."
 				else "Your first dogfight: two easy enemy jets. Or jump straight into multiplayer.",
-			Size = UDim2.new(1, 0, 0, 36),
+			Size = UDim2.new(1, 0, 0, 56),
 			Position = UDim2.fromOffset(0, 34),
 			TextSize = 13,
+			AlignY = "Top",
 			Wrap = true,
 			Color = Theme.Dim,
 		}),
 		Lessons = e("Frame", {
 			Size = UDim2.new(1, 0, 0, 74),
-			Position = UDim2.fromOffset(0, 78),
+			Position = UDim2.fromOffset(0, 96),
 			BackgroundTransparency = 1,
 		}, rows),
 		Primary = e(C.Button, {
