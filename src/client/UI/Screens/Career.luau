@@ -461,8 +461,8 @@ local function seriesCard(series: any, earned: any, career: any, order: number)
 	local done = nextDef == nil
 	local shown = nextDef or levels[#levels]
 	local colour = Theme.Rarity[shown.rarity] or Theme.Accent
-	local previous = if reached > 0 then levels[reached].target else 0
-	local progress = if done then 1 else math.clamp((current - previous) / (shown.target - previous), 0, 1)
+	-- From zero, like the count beside it (11/25 is a bar 44% full, not measured from the last level's 10)
+	local progress = if done then 1 else math.clamp(current / shown.target, 0, 1)
 	return e(C.Panel, {
 		Size = UDim2.fromOffset(CARD_W, CARD_H),
 		Color = if reached > 0 then Theme.PanelLight else Theme.Background,
