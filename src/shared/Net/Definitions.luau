@@ -191,6 +191,12 @@ local definitions: { [string]: Definition } = {
 	-- Report a pilot on this server for cheating (ReportService, CMP-03): targetUserId, reason id (Reports) ->
 	-- (ok, message). The server also allows one report per 30 s.
 	ReportPlayer = { direction = "Function", args = { "integer", "string" }, rate = { burst = 2, perSecond = 1 / 30 } },
+	-- A quick check-in (Shared/Pulse): moment, "up" | "down" | "skip", an optional line
+	PulseAnswer = {
+		direction = "ClientToServer",
+		args = { "string", "string", "string?" },
+		rate = { burst = 3, perSecond = 1 / 10 },
+	},
 	-- Report a bug (FeedbackService, Shared/Feedback): kind (Bug / Lag / Idea / Other), text, device info table
 	-- -> (ok, message). The server also allows one per 2 minutes and 5 a day.
 	SendFeedback = {

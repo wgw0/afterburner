@@ -35,6 +35,7 @@ local Environment = require(Shared.Config.Environment)
 local LiveConfig = require(Shared.LiveConfig)
 local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
+local Pulse = require(Shared.Pulse)
 local Queue = require(Shared.Queue)
 local ServerRole = require(Shared.ServerRole)
 local Streak = require(Shared.Streak)
@@ -113,6 +114,7 @@ local state = {
 	queue = { state = "Idle", mode = "Any", startedAt = 0, message = nil :: string? },
 	-- Matches in progress to join, pilots online and whether Any mode is the tip (lobby, Shared/LiveMatches)
 	live = { matches = {}, online = 0, recommendAny = false } :: any,
+	pulseDone = {} :: { [string]: boolean }, -- check-ins answered this visit (before the save says so)
 	-- Your party (lobby only), from PartyState (MMK-05)
 	party = { leader = nil :: number?, members = {} :: { any }, invites = {} :: { any }, max = 3 },
 	teleportScreen = false,
@@ -550,6 +552,24 @@ render = function()
 			else "PLAY",
 		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Duel" else nil,
 		LiveMatches = if lobby then state.live.matches else nil,
+		-- A quick check-in, when one is due and no window is up
+		PulseMoment = (function(): string?
+			local data = PlayerDataController.data
+			local moment = data and not modalGui.Enabled and Pulse.due(data)
+			return if moment and not state.pulseDone[moment] then moment else nil
+		end)(),
+		OnPulse = function(answer: string, text: string?)
+			local data = PlayerDataController.data
+			local moment = data and Pulse.due(data)
+			if moment then
+				state.pulseDone[moment] = true
+				Net.Client.fire("PulseAnswer", moment, answer, text)
+				if answer ~= "skip" then
+					setStatus("Thanks for the feedback!")
+				end
+				render()
+			end
+		end,
 		OnlinePilots = state.live.online,
 		RecommendAny = lobby and state.live.recommendAny == true,
 		OnJoinLive = function(id: string)

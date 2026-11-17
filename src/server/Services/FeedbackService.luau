@@ -10,9 +10,12 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Feedback = require(Shared.Feedback)
+local Pulse = require(Shared.Pulse)
 local Net = require(Shared.Net)
 
 local Telemetry = require(ServerScriptService.Server.Lib.Telemetry)
+
+local DataService = require(script.Parent.DataService)
 
 local FeedbackService = {
 	Priority = 50,
@@ -104,7 +107,32 @@ function FeedbackService:Recent(count: number, kind: string?): { any }
 	return found
 end
 
+-- A quick check-in answered (Shared/Pulse): remembered so it isn't asked again, logged as an analytics
+-- event (value 1 thumbs up, 0 down; skips counted apart), and any line goes in the feedback inbox.
+local function onPulse(player: Player, moment: string, answer: string, text: string?)
+	if not table.find(Pulse.MOMENTS, moment) or not Pulse.ANSWERS[answer] then
+		return
+	end
+	local fresh = false
+	DataService:Update(player, function(data)
+		if not (data.Pulse and data.Pulse[moment]) then
+			Pulse.answer(data, moment)
+			fresh = true
+		end
+	end)
+	if not fresh then
+		return
+	end
+	Telemetry.event("Pulse", if answer == "up" then 1 else 0, { moment = moment, answer = answer }, player)
+	local line = if type(text) == "string" then string.match(text, "^%s*(.-)%s*$") else nil
+	if answer ~= "skip" and line and #line >= Feedback.MIN_LENGTH then
+		local mark = if answer == "up" then "👍" else "👎"
+		FeedbackService:Send(player, "Idea", `[check-in {moment} {mark}] {string.sub(line, 1, Pulse.MAX_TEXT)}`, {})
+	end
+end
+
 function FeedbackService:Init()
+	Net.Server.on("PulseAnswer", onPulse)
 	Net.Server.handle("SendFeedback", function(player: Player, kind: string, text: string, info: any)
 		return self:Send(player, kind, text, info)
 	end)

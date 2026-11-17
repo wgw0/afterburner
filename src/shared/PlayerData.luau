@@ -121,6 +121,7 @@ function PlayerData.template(): { [string]: any }
 		Spin = Spin.newState(), -- free spins: banked and play-time toward the next (SpinService)
 		Titles = {}, -- titles unlocked other than by level, e.g. the streak's [titleId] = true
 		Onboarding = {}, -- onboarding funnel steps already logged (ANL-02)
+		Pulse = {}, -- quick check-ins answered or dismissed (Shared/Pulse): [moment] = true
 		TopTier = 0, -- highest tier owned, for the progression event
 		Season = Season.newState(), -- the season pass (Shared/Season)
 		StarterBought = false, -- the Starter Bundle (once per player, Shop)

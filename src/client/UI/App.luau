@@ -14,6 +14,7 @@ local Perks = require(Shared.Perks)
 local Season = require(Shared.Season)
 
 local C = require(script.Parent.Components)
+local PulseCard = require(script.Parent.PulseCard)
 local Theme = require(script.Parent.Theme)
 local Screens = script.Parent.Screens
 local AircraftDetail = require(Screens.AircraftDetail)
@@ -543,6 +544,10 @@ local function App(props: any)
 			Screen = body,
 			News = if screen == "Hangar"
 				then e(NewsBanner, { Event = props.Event, EventEnds = props.EventEnds, Motd = props.Motd })
+				else nil,
+			-- A quick check-in (Shared/Pulse), on the home screen only
+			Pulse = if screen == "Hangar" and props.PulseMoment
+				then e(PulseCard, { Moment = props.PulseMoment, OnAnswer = props.OnPulse })
 				else nil,
 		}),
 	})

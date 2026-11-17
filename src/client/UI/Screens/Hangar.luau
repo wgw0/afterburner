@@ -262,15 +262,12 @@ local function Hangar(props: any)
 				TextSize = 16,
 			}),
 			Modes = if props.QueueMode
-				then e(
-					ModeSelect,
-					{
-						Value = props.QueueMode,
-						OnPick = props.OnQueueMode,
-						Data = data,
-						RecommendAny = props.RecommendAny,
-					}
-				)
+				then e(ModeSelect, {
+					Value = props.QueueMode,
+					OnPick = props.OnQueueMode,
+					Data = data,
+					RecommendAny = props.RecommendAny,
+				})
 				else nil,
 			Play = e(C.Button, {
 				Text = props.PlayText or "PLAY",
