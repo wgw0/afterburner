@@ -9,7 +9,7 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		-- FirstBlood = 0,
 	},
 	[10773807904] = { -- the live experience (place 95037764806358)
-		-- Roblox allows 5 free badges per experience per day (then 100 R$ each): the rest are added as made
+		-- All 32 one-off achievements have a badge (Roblox allows 5 free per experience per day, then 100 R$ each)
 		FirstBlood = 3539253452079701,
 		Victor = 1811915741907712,
 		GunsOnly = 4067644470962128,
@@ -40,6 +40,8 @@ local BY_UNIVERSE: { [number]: { [string]: number } } = {
 		Boffin = 3817988340426979,
 		SharpDresser = 4378878278078332,
 		FashionIcon = 4436226163746060,
+		Wardrobe = 820947761397618,
+		ThreadTheNeedle = 3706899522529941,
 	},
 }
 

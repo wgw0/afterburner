@@ -10,7 +10,7 @@ Every task from [DEVELOPMENT.md](DEVELOPMENT.md), by phase. A task is marked don
 | 3 Missiles, sensors and countermeasures | 23 / 23 | Signed off |
 | 4 Match loop MVP | 21 / 21 | Signed off |
 | 5 Progression and saving | 23 / 23 | Signed off |
-| 6 Content and polish for a soft launch | 42 / 43 | Only LIV-02 left: its badges are being created (5 free a day). LIV-08 (free spin) was added and is done. |
+| 6 Content and polish for a soft launch | 43 / 43 | Complete: the last badges (LIV-02) were created on 17 November 2026. LIV-08 (free spin) was added and is done. |
 | 7 Monetisation | 11 / 11 | Built and checked in Studio |
 | 8 Launch and live ops | 12 / 21 | In progress: parties (MMK-05) wait for the live test; v1.0.0 tagged 15 November 2026; new modes, maps and Open Cloud publishing not started |
 
@@ -301,11 +301,11 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
   - Built: `QueueJoined`, `QueueLeft`, `QueueMatched` (wait), `MatchFormed` (longest wait, players, AI seats, BR spread), `MatchArrived` (% of pilots sent who made it), `MatchQuality` (how close it finished, 0–100), `TeleportFailed`, and admin `matchmaking.stats` (median / 90th percentile / longest waits, gave-ups, matches formed) (DEVELOPMENT.md §25.6). Checked in Studio: all events logged for Team Deathmatch, Dogfight and Air Superiority matches. Tested by Will. Played with a friend by Will on 3 November 2026: everything worked.
 - [x] **LIV-01** Daily/weekly challenges with rerolls
   - 3 dailies a day (the same for everyone) and 2 weeklies from pools of 12 and 6, one reroll a day, Credits and XP paid on completion, counted in scored matches only; a panel on the right of the Hangar and a toast for each (`Challenges.luau`, `ChallengeService`, DEVELOPMENT.md §26.2a). Checked in play and by Will.
-- [ ] **LIV-02** Achievements and Roblox badges
+- [x] **LIV-02** Achievements and Roblox badges
   - Achievements done: 20 plus a secret one (Threading the Needle: fly under a bridge, which also pays 100 XP), in five rarities, on a CAREER tab with lifetime stats and a level track (titles, Pink / Blue / Violet HUD colours, Credits and Free RP milestones, level skins at 10, 25 and 50, painted for all 27 jets). Checked in play and by Will.
   - 11 hangar and bank achievements (October 2026): Full Hangar, Fully Kitted, Master Mechanic, three for Credits held, two for RP banked, three for skins owned.
   - Rewards by rarity and ranked series (November 2026): every achievement pays when earned (Common 1,000 Credits up to Legendary 25,000 Credits + 50 Wings), and 12 ranked series (Hunter, Dogfighter, Champion … Promotion; 67 levels, rarer as they climb) keep the next one in reach. Career shows a card per series with a bar to the next level. **99 achievements in all: 32 one-offs (the secret one among them) and 67 series levels.** Career's total leaves the secret one out. Tested in `AchievementSeries.spec`; checked in Studio (Will's save earned five levels on joining, then was put back).
-  - Badges: icons for all 32 one-off achievements (`tools/badges`, `docs/art/badges`); 30 created on the live experience so far (Roblox: 5 free per day), ids in `Config/Badges`. Series levels get no badges. *Tick once every one-off achievement has its badge (release checklist §35.3 step 6).*
+  - Badges: icons for all 32 one-off achievements (`tools/badges`, `docs/art/badges`); all 32 created on the live experience (5 a day, the last 2 on 17 November 2026, all free), ids in `Config/Badges`. Series levels get no badges. **Done 17 November 2026.**
 - [x] **LIV-03** Login streak rewards
   - A DAILY REWARD window once a day: a 7-day week from 250 to 1,500 Credits (+500 Free RP on day 7), titles Regular (day 7) and Devoted (day 30, +5,000 Cr); one missed day forgiven, a longer break back to the start of that week (`Streak.luau`, DEVELOPMENT.md §26.2a). Checked in play and by Will.
 - [x] **LIV-08** Free spin (retention)
@@ -424,7 +424,7 @@ Fixes made to earlier systems during Phase 6 are noted on those tasks (AIR-02, C
 - [x] **OPS-04** Message of the day and announcements
   - Built: the message of the day is the `motd` live override (OPS-01); admin `announce { text, seconds? }` reaches every player on every server at once as a toast (§31.4). Checked in Studio.
 - [x] **CMP-04** Pre-launch compliance checklist (names, assets, maturity questionnaire, product descriptions)
-  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). The content maturity questionnaire was completed by Will on 1 November 2026. The VIP Pilot description was fixed in both experiences on 1 November 2026. The erasure webhook, the asset rights check, the genre and description and taking the Tier II and III Unlocks off sale were done on 1 November 2026. Ticked by Will on 15 November 2026 for the 1.0.0 release, with 30 of 32 badges created; the last 2 follow (5 free a day). Live settings read back the same day: access, permissions, chat, content rating (Minimal), places, passes and products all as COMPLIANCE.md and the Config files say.
+  - Built: [COMPLIANCE.md](COMPLIANCE.md), the whole list with what's done and what needs Will's account; every live product's name, price and description read back from Roblox; `erasure.run { userId }` deletes everything stored under a UserId (DEVELOPMENT.md §32.3). The content maturity questionnaire was completed by Will on 1 November 2026. The VIP Pilot description was fixed in both experiences on 1 November 2026. The erasure webhook, the asset rights check, the genre and description and taking the Tier II and III Unlocks off sale were done on 1 November 2026. Ticked by Will on 15 November 2026 for the 1.0.0 release, with 30 of 32 badges created. Live settings read back the same day: access, permissions, chat, content rating (Minimal), places, passes and products all as COMPLIANCE.md and the Config files say. The last 2 badges were created on 17 November 2026.
 - [ ] **REL-05** (Optional) Open Cloud publishing from CI
 
 ## Requested, not started
