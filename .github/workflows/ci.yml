@@ -9,7 +9,7 @@ jobs:
     name: Format, lint, build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Pinned release download with retries (the install script's API lookup is rate-limited on
       # shared runners and failed a run).
@@ -41,10 +41,10 @@ jobs:
         run: lune run scripts/validate-models.luau
 
       - name: StyLua (format check)
-        run: stylua --check src tests tools
+        run: stylua --check src tests tools scripts
 
       - name: Selene (lint)
-        run: selene src tests tools
+        run: selene src tests tools scripts
 
       - name: Rojo build
         run: |
