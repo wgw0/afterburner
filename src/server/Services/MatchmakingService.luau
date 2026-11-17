@@ -330,6 +330,16 @@ end
 
 -- Starts a teleport, retrying if it can't start. Failures after it starts come back on TeleportInitFailed.
 local function teleport(placeId: number, players: { Player }, options: TeleportOptions?): boolean
+	-- The send time goes with them, so the next server can log how long the trip took (TelemetryService)
+	local sending = options or Instance.new("TeleportOptions")
+	local data = sending:GetTeleportData()
+	data = if type(data) == "table" then data else {}
+	data.sentAt = os.time()
+	sending:SetTeleportData(data)
+	options = sending
+	for _, player in players do
+		TelemetryService:Stage(player, "Leaving")
+	end
 	for attempt = 1, TELEPORT_TRIES do
 		local ok, err = pcall(function()
 			TeleportService:TeleportAsync(placeId, players, options)
@@ -454,6 +464,7 @@ local function join(player: Player, mode: string, airframe: string?)
 		q = { mode = mode, joinedAt = now(), airframe = airframe }
 		queued[player] = q
 		Telemetry.event("QueueJoined", 1, { mode = mode }, player)
+		TelemetryService:Stage(player, "Queued")
 	end
 	local ok, err = pcall(store.queueSet, keyOf(player.UserId), entryFor(player, q))
 	if not ok then

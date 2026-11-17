@@ -13,6 +13,9 @@
 --     AirframeResult airframe, mode; value 1 won / 0   win rate per jet
 --     MissileFired   class, weapon                     fire rate per missile
 --     MissileResult  class, weapon; value 1 hit / 0    hit rate per missile (Pk)
+--     KillVsAI, ShotDownByAI, MissileFiredVsAI, MissileResultVsAI: the same against AI pilots, kept apart
+--   New pilots (Shared/Journey): LeftServer (where they were when they left), Travel, MapReadyTime and the
+--     FirstSortie funnel.
 --   (Also elsewhere: MatchEnded, Death, QueueMatched, MatchFormed, AntiCheatStrike, Economy*.)
 --   LessonCompleted(lessonId) from the client marks a lesson done (data.Lessons) on a training server; the
 --   first time lessons 1–3 are all done, it pays TUTORIAL_CREDITS and sets Flags.TutorialComplete (TUT-04).
@@ -24,6 +27,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AircraftData = require(Shared.AircraftData)
 local Funnels = require(Shared.Funnels)
+local Journey = require(Shared.Journey)
 local Net = require(Shared.Net)
 local ServerRole = require(Shared.ServerRole)
 local WeaponData = require(Shared.WeaponData)
@@ -48,6 +52,10 @@ local TelemetryService = {
 -- Players' current jet (for match results) and whether they flew in this match
 local flying: { [Player]: string } = {}
 local flew: { [Player]: boolean } = {}
+
+-- New pilots' journeys on this server (Shared/Journey): the role, the furthest stage, when they arrived and
+-- whether this is their first sortie (logged as the FirstSortie funnel too)
+local journeys: { [Player]: { role: string, at: number, arrived: number, firstSortie: boolean } } = {}
 
 local function counting(): boolean
 	local mode = MatchService:GetMode()
@@ -113,6 +121,64 @@ local function airframeOf(jet: any): string
 	return jet and jet.airframeId or "?"
 end
 
+-- A new pilot reached stage `name` of their journey here (Shared/Journey); ignored for everyone else and
+-- for stages already passed. Also called by MatchmakingService (Queued, Leaving).
+function TelemetryService:Stage(player: Player, name: string)
+	local journey = journeys[player]
+	local index = journey and Journey.advance(journey.role, journey.at, name)
+	if not (journey and index) then
+		return
+	end
+	if journey.firstSortie then
+		-- Every step up to this one (a funnel step counts only after the ones before it)
+		for i = journey.at + 1, index do
+			Telemetry.funnel(player, Journey.FUNNEL, `u{player.UserId}`, i, Journey.name(journey.role, i))
+		end
+	end
+	journey.at = index
+	if name == "MapReady" then
+		local seconds = math.floor(os.clock() - journey.arrived + 0.5)
+		Telemetry.event("MapReadyTime", seconds, { role = journey.role }, player)
+	end
+end
+local function stage(player: Player?, name: string)
+	if typeof(player) == "Instance" and player:IsA("Player") then
+		TelemetryService:Stage(player, name)
+	end
+end
+
+-- On arriving: how long the teleport took (MatchmakingService puts the send time in the teleport data), and
+-- for a new pilot, the start of their journey here.
+local function arrived(player: Player, data: { [string]: any })
+	local ok, join = pcall(player.GetJoinData, player)
+	local sent = ok and type(join) == "table" and type(join.TeleportData) == "table" and join.TeleportData.sentAt
+	if type(sent) == "number" then
+		local seconds = math.clamp(os.time() - sent, 0, 600)
+		Telemetry.event("Travel", seconds, { role = ServerRole.get() }, player)
+	end
+	if not Journey.newcomer(data) then
+		return
+	end
+	journeys[player] = {
+		role = ServerRole.get(),
+		at = 0,
+		arrived = os.clock(),
+		firstSortie = ServerRole.isTraining() and not data.Flags.Onboarded and not data.Lessons.Sortie,
+	}
+	stage(player, "Arrived")
+	if player:GetAttribute("MapReady") then
+		stage(player, "MapReady")
+	else
+		local connection
+		connection = player:GetAttributeChangedSignal("MapReady"):Connect(function()
+			if player:GetAttribute("MapReady") then
+				connection:Disconnect()
+				stage(player, "MapReady")
+			end
+		end)
+	end
+end
+
 function TelemetryService:Init()
 	Net.Server.on("LessonCompleted", function(player: Player, lessonId: string)
 		if not (LESSONS[lessonId] and ServerRole.isTraining()) then
@@ -124,6 +190,9 @@ function TelemetryService:Init()
 			data.Lessons[lessonId] = true
 		end)
 		Telemetry.event("LessonCompleted", 1, { lesson = lessonId }, player)
+		if lessonId == "Sortie" then
+			stage(player, "Won")
+		end
 		if first then
 			training(player, lessonId)
 		end
@@ -159,16 +228,20 @@ function TelemetryService:Init()
 		end
 	end)
 
-	DataService.ProfileLoaded:Connect(function(player)
+	DataService.ProfileLoaded:Connect(function(player, data)
 		onboarding(player, "Joined")
 		task.spawn(function()
 			-- a reserved server may still be reading its role
 			while ServerRole.get() == "Pending" and player.Parent == Players do
 				ReplicatedStorage:GetAttributeChangedSignal("ServerRole"):Wait()
 			end
-			if ServerRole.isTraining() and player.Parent == Players then
+			if player.Parent ~= Players then
+				return
+			end
+			if ServerRole.isTraining() then
 				training(player, "Arrived")
 			end
+			arrived(player, data)
 		end)
 		checkTier(player)
 	end)
@@ -188,6 +261,7 @@ function TelemetryService:Init()
 			return
 		end
 		flying[player] = jet.airframeId
+		stage(player, "InJet")
 		if counting() then
 			flew[player] = true
 			Telemetry.event("Spawn", 1, { airframe = jet.airframeId, mode = MatchService:GetMode().Id }, player, {
@@ -197,6 +271,15 @@ function TelemetryService:Init()
 		end
 	end)
 
+	-- New pilots' journeys: hitting someone and the first kill count anywhere, training included
+	CombatService.JetDamaged:Connect(function(_jet, _component, _amount, attacker)
+		stage(attacker, "HitEnemy")
+	end)
+	CombatService.Kill:Connect(function(victimJet, credit)
+		if credit.killer ~= victimJet.identity then
+			stage(credit.killer, "FirstKill")
+		end
+	end)
 	CombatService.Kill:Connect(function(victimJet, credit, cause)
 		if not live() then
 			return
@@ -223,6 +306,25 @@ function TelemetryService:Init()
 			end
 			onboarding(killer, "FirstKill")
 		end
+		-- Against AI pilots (most fights while few are online), logged apart so the balance numbers above stay
+		-- human against human
+		if killer and isHuman(killer) and not humanVictim then
+			Telemetry.event(
+				"KillVsAI",
+				1,
+				{ airframe = airframeOf(killerJet), weapon = credit.weapon or "?" },
+				killer,
+				{ "airframe", "weapon" }
+			)
+		elseif humanVictim and killer ~= nil and not isHuman(killer) then
+			Telemetry.event(
+				"ShotDownByAI",
+				1,
+				{ airframe = airframeOf(victimJet), cause = cause },
+				victimJet.pilot,
+				{ "airframe", "cause" }
+			)
+		end
 		if humanVictim and (killer == nil or isHuman(killer)) and not (QUIET_CAUSES[cause] and killer == nil) then
 			Telemetry.event(
 				"ShotDown",
@@ -235,6 +337,15 @@ function TelemetryService:Init()
 	end)
 
 	MissileService.MissileLaunched:Connect(function(jet, weaponId: string, target: any)
+		if live() and isHuman(jet.identity) and target ~= nil and not isHuman(target) then
+			Telemetry.event(
+				"MissileFiredVsAI",
+				1,
+				{ class = missileClass(weaponId), weapon = weaponId },
+				jet.pilot,
+				{ "class", "weapon" }
+			)
+		end
 		if live() and isHuman(jet.identity) and (target == nil or isHuman(target)) then
 			Telemetry.event(
 				"MissileFired",
@@ -246,6 +357,15 @@ function TelemetryService:Init()
 		end
 	end)
 	MissileService.MissileEnded:Connect(function(owner, weaponId: string, hit: boolean, target: any)
+		if live() and isHuman(owner) and target ~= nil and not isHuman(target) then
+			Telemetry.event(
+				"MissileResultVsAI",
+				if hit then 1 else 0,
+				{ class = missileClass(weaponId), weapon = weaponId },
+				owner,
+				{ "class", "weapon" }
+			)
+		end
 		if live() and isHuman(owner) and (target == nil or isHuman(target)) then
 			Telemetry.event(
 				"MissileResult",
@@ -262,6 +382,13 @@ function TelemetryService:Init()
 		for _, player in Players:GetPlayers() do
 			if AircraftService:GetJet(player) then
 				flew[player] = true
+			end
+		end
+	end)
+	MatchService.MatchEnded:Connect(function()
+		if ServerRole.isMatch() then
+			for _, player in Players:GetPlayers() do
+				stage(player, "MatchOver")
 			end
 		end
 	end)
@@ -291,6 +418,18 @@ function TelemetryService:Init()
 	Players.PlayerRemoving:Connect(function(player)
 		flying[player] = nil
 		flew[player] = nil
+		-- Where a new pilot was when they left this server, and after how long
+		local journey = journeys[player]
+		journeys[player] = nil
+		if journey then
+			Telemetry.event(
+				"LeftServer",
+				math.floor(os.clock() - journey.arrived + 0.5),
+				{ role = journey.role, stage = Journey.name(journey.role, journey.at) },
+				player,
+				{ "stage", "role" }
+			)
+		end
 	end)
 end
 
