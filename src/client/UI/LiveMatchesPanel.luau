@@ -48,7 +48,7 @@ local function Card(props: { Match: any, Order: number, OnJoin: (string) -> () }
 		}, { Corner = C.corner(3) }),
 		Name = e(C.Label, {
 			Text = string.upper(if mode then mode.name else match.mode),
-			Size = UDim2.new(1, -110, 0, 22),
+			Size = UDim2.new(1, -118, 0, 22), -- clear of JOIN (86 wide, 12 in)
 			Position = UDim2.fromOffset(16, 10),
 			TextSize = 17,
 			Heavy = true,
@@ -56,14 +56,14 @@ local function Card(props: { Match: any, Order: number, OnJoin: (string) -> () }
 		}),
 		Where = e(C.Label, {
 			Text = if map then map.DisplayName else "",
-			Size = UDim2.new(1, -110, 0, 18),
+			Size = UDim2.new(1, -118, 0, 18), -- clear of JOIN (86 wide, 12 in)
 			Position = UDim2.fromOffset(16, 33),
 			TextSize = 13,
 			Color = Theme.Dim,
 		}),
 		Pilots = e(C.Label, {
 			Text = `{match.humans}/{match.seats} pilots  ·  {timeText(match)}`,
-			Size = UDim2.new(1, -110, 0, 18),
+			Size = UDim2.new(1, -118, 0, 18), -- clear of JOIN (86 wide, 12 in)
 			Position = UDim2.fromOffset(16, 54),
 			TextSize = 13,
 			Bold = true,
@@ -95,7 +95,7 @@ local function LiveMatchesPanel(props: any)
 		Width = WIDTH,
 		Height = CARD_H + 26,
 		Sides = SIDE_PANELS,
-		Position = UDim2.new(0.5, 0, 0, 58), -- under the news banner
+		Position = UDim2.new(0.5, 0, 0, 92), -- under the news banner and the friends-bonus chip (56 to 84)
 		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 3,
 	}, {

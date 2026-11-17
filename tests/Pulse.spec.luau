@@ -4,6 +4,7 @@
 return function(ctx)
 	local describe, it, expect = ctx.describe, ctx.it, ctx.expect
 	local Pulse = require(ctx.Shared.Pulse)
+	local PlayerData = require(ctx.Shared.PlayerData)
 
 	local function save(matches: number, sortie: boolean, done: { [string]: boolean }?): any
 		return { Stats = { Matches = matches }, Lessons = { Sortie = sortie or nil }, Pulse = done or {} }
@@ -31,6 +32,13 @@ return function(ctx)
 
 		it("a pilot who skipped the sortie is still asked after matches", function()
 			expect(Pulse.due(save(1, false))).toBe("Match1")
+		end)
+	end)
+
+	describe("save", function()
+		it("answers reach the client, so it isn't asked again", function()
+			expect(table.find(PlayerData.REPLICATED, "Pulse") ~= nil).toBe(true)
+			expect(type(PlayerData.template().Pulse)).toBe("table")
 		end)
 	end)
 end

@@ -1,5 +1,5 @@
 --!strict
--- A quick check-in (Shared/Pulse), bottom left of the Hangar or training menu: "How's Afterburner so far?" with
+-- A quick check-in (Shared/Pulse), in the open sky between the Hangar's jet and its name: "How's Afterburner so far?" with
 -- 👍 / 👎, then an optional line and SEND. ✕ dismisses it for good. In its own ScreenGui above the menu (which
 -- draws with Global ZIndex). props: Moment, OnAnswer(answer: "up" | "down" | "skip", text: string?).
 
@@ -29,8 +29,8 @@ local function PulseCard(props: { Moment: string, OnAnswer: (string, string?) ->
 	local height = if picked then 178 else 112
 	local panel = e(C.Panel, {
 		Size = UDim2.fromOffset(WIDTH, height),
-		Position = UDim2.new(0, 20, 1, -20),
-		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0.5, 0.6),
+		AnchorPoint = Vector2.new(0.5, 0.5),
 		Padding = 14,
 		StrokeColor = Theme.Accent,
 		StrokeThickness = 2,
@@ -43,7 +43,7 @@ local function PulseCard(props: { Moment: string, OnAnswer: (string, string?) ->
 			Color = Theme.Accent,
 		}),
 		Close = e(C.Button, {
-			Text = "✕",
+			Text = "X", -- the menu font has no ✕
 			Style = "Ghost",
 			Size = UDim2.fromOffset(32, 32),
 			Position = UDim2.new(1, 0, 0, -6),

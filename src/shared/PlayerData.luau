@@ -54,6 +54,7 @@ PlayerData.REPLICATED = table.freeze({
 	"TestPilot",
 	"Squadron",
 	"Duel",
+	"Pulse", -- the client hides a check-in once answered (Shared/Pulse)
 })
 
 local function deepCopy<T>(value: T): T
