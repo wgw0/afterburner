@@ -111,6 +111,21 @@ local function humans(): { Player }
 	return Players:GetPlayers()
 end
 
+-- A match server whose players are all newcomers (MatchRules.NEWCOMER_MATCHES): Easy AI, a shorter match.
+local function newcomersOnly(): boolean
+	local players = humans()
+	if not ServerRole.isMatch() or #players == 0 then
+		return false
+	end
+	for _, player in players do
+		local data = DataService:GetData(player)
+		if not data or data.Stats.Matches >= MatchRules.NEWCOMER_MATCHES then
+			return false
+		end
+	end
+	return true
+end
+
 local function setState(newState: string)
 	state = newState
 	stateSince = os.clock()
@@ -375,6 +390,9 @@ local function syncAIFill()
 			local rating = if data then Duel.record(data).Rating else Duel.START_RATING
 			difficulty = if rating >= 1400 then "Ace" elseif rating >= 1100 then "Hard" else "Normal"
 		end
+		if newcomersOnly() then
+			difficulty = "Easy"
+		end
 		local pilot = AIService:CreatePilot(difficulty, choices[#AIService:GetMatchPilots() % #choices + 1])
 		if ServerRole.isTraining() then
 			pilot.profile = AdaptiveAI.profile(mode.AIDifficulty or "Normal", aiOffset)
@@ -428,6 +446,9 @@ local function startMatch()
 	end
 	for _, pilot in AIService:GetMatchPilots() do
 		ensureScore(pilot.identity, pilot.identity.Name, true, 0)
+	end
+	if newcomersOnly() then
+		mode = MatchRules.forNewcomers(mode)
 	end
 	setState("InProgress")
 end

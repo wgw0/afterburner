@@ -10,6 +10,15 @@ return function(ctx)
 	local Units = require(ctx.Shared.Units)
 
 	describe("MatchRules", function()
+		it("a newcomers' match is shorter: a third of the kills, at most NEWCOMER_TIME; duels unchanged", function()
+			local ffa = MatchRules.forNewcomers(MatchRules.MODES.Dogfight)
+			expect(ffa.ScoreLimit).toBe(5)
+			expect(ffa.TimeLimit).toBe(MatchRules.NEWCOMER_TIME)
+			expect(MatchRules.forNewcomers(MatchRules.MODES.TeamDeathmatch).ScoreLimit).toBe(10)
+			expect(MatchRules.MODES.Dogfight.ScoreLimit).toBe(15) -- the mode itself is untouched
+			expect(MatchRules.forNewcomers(MatchRules.MODES.Duel)).toBe(MatchRules.MODES.Duel)
+		end)
+
 		local dogfight = MatchRules.MODES.Dogfight
 
 		local function scores()

@@ -18,6 +18,10 @@ return function(ctx)
 			expect(#data.Lineup).toBe(1)
 			expect(data.Lineup[1]).toBe(Economy.STARTERS[1])
 		end)
+
+		it("a new account queues for a free-for-all, not a duel", function()
+			expect(PlayerData.template().Settings.QueueMode).toBe("Dogfight")
+		end)
 	end)
 
 	describe("migrations", function()

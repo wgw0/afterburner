@@ -46,6 +46,11 @@ export type Score = {
 }
 
 MatchRules.GUNS_ONLY_AMMO = 4 -- Guns Only: times the gun's usual rounds (Will)
+-- A match with only newcomers in it (fewer than NEWCOMER_MATCHES finished) is shorter and its AI flies on Easy
+-- (Will: of 61 new pilots who finished a first match, 5 got a kill; matches ran up to 10 minutes)
+MatchRules.NEWCOMER_MATCHES = 3
+MatchRules.NEWCOMER_TIME = 300 -- seconds
+MatchRules.NEWCOMER_SCORE_SHARE = 1 / 3 -- of the kill limit (15 → 5 in a free-for-all, 30 → 10 in Teams)
 MatchRules.BVR_SEPARATION = 7600 -- BVR Battles: studs between the two teams' start lines (~20 km real)
 MatchRules.RADAR_CLASSES = table.freeze({ SARH = true, ARH = true })
 
@@ -416,6 +421,22 @@ function MatchRules.canSpawn(config: ModeConfig, pilot: PilotState, now: number)
 		end
 	end
 	return true, 0, livesLeft
+end
+
+-- A newcomers' match: the same mode, shorter (a third of the kill limit, at most NEWCOMER_TIME). Duels keep
+-- their rounds.
+function MatchRules.forNewcomers(config: ModeConfig): ModeConfig
+	if config.Duel then
+		return config
+	end
+	local short = table.clone(config)
+	if short.ScoreLimit > 0 then
+		short.ScoreLimit = math.max(1, math.ceil(short.ScoreLimit * MatchRules.NEWCOMER_SCORE_SHARE))
+	end
+	if short.TimeLimit > 0 then
+		short.TimeLimit = math.min(short.TimeLimit, MatchRules.NEWCOMER_TIME)
+	end
+	return short
 end
 
 return MatchRules
