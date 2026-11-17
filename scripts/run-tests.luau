@@ -99,28 +99,6 @@ function Random:Shuffle(t: { any })
 	end
 end
 
--- CFrame.lookAt (and the two-point CFrame.new) in Lune 0.10.5 point the wrong way along Z; this builds them
--- the way Roblox does
-local function lookAt(at, target, up)
-	up = up or roblox.Vector3.new(0, 1, 0)
-	local look = (target - at).Unit
-	if math.abs(look:Dot(up.Unit)) > 0.9999 then
-		up = roblox.Vector3.new(0, 0, 1)
-	end
-	local right = look:Cross(up).Unit
-	return roblox.CFrame.fromMatrix(at, right, right:Cross(look), -look)
-end
-local CFrame = setmetatable({
-	lookAt = lookAt,
-	new = function(...)
-		local a, b = ...
-		if select("#", ...) == 2 and typeof(a) == "Vector3" and typeof(b) == "Vector3" then
-			return lookAt(a, b)
-		end
-		return roblox.CFrame.new(...)
-	end,
-}, { __index = roblox.CFrame })
-
 -- Engine methods and properties Lune's instances don't have
 game.GameId = 0 -- known to Lune but without a value in a loaded place
 game.PlaceId = 0
@@ -141,7 +119,7 @@ local base = {
 	Instance = roblox.Instance,
 	Vector3 = roblox.Vector3,
 	Vector2 = roblox.Vector2,
-	CFrame = CFrame,
+	CFrame = roblox.CFrame,
 	Color3 = roblox.Color3,
 	ColorSequence = roblox.ColorSequence,
 	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
