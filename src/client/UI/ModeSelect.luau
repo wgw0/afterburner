@@ -3,7 +3,8 @@
 -- kind's colour, team size, length and a one-line pitch); clicking it opens a picker of every mode as large
 -- cards grouped by kind, with the main mode (Ranked Duel, Will) featured first with your rank. The mode under
 -- the pointer is explained in full along the bottom; clicking a card picks it and closes the picker.
--- props: Value (the mode id), OnPick(id), Data (the save, for the duel rank).
+-- props: Value (the mode id), OnPick(id), Data (the save, for the duel rank), RecommendAny (few pilots online:
+-- Any mode is marked RECOMMENDED, and the card's pitch says so while another mode is picked).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,115 +13,14 @@ local React = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("R
 local ReactRoblox = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("ReactRoblox")) :: any
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Duel = require(Shared.Duel)
-local MatchRules = require(Shared.MatchRules)
-local Strike = require(Shared.Strike)
 
 local C = require(script.Parent.Components)
+local ModeInfo = require(script.Parent.ModeInfo)
 local Theme = require(script.Parent.Theme)
 
 local e = React.createElement
 
--- Each kind of mode has its colour, on the card's stripe and tag
-local KINDS = {
-	Duels = { name = "DUELS", colour = Theme.Rarity.Legendary },
-	Teams = { name = "TEAM BATTLE", colour = Theme.Rarity.Rare },
-	FreeForAll = { name = "FREE FOR ALL", colour = Theme.Bad },
-	Coop = { name = "CO-OP", colour = Theme.Good },
-	Quick = { name = "QUICK PLAY", colour = Theme.Accent },
-}
-
-local function minutes(modeId: string): string
-	return `{math.floor((MatchRules.MODES :: any)[modeId].TimeLimit / 60)} min`
-end
-
-type Mode = { name: string, kind: string, size: string, length: string, pitch: string, about: string }
-
-local MODES: { [string]: Mode } = {
-	Duel = {
-		name = "Ranked Duel",
-		kind = "Duels",
-		size = "1v1",
-		length = "Best of 5",
-		pitch = "Climb the ranks, one pilot at a time.",
-		about = `1v1 against a pilot near your rating, best of five rounds with one life each. You start in opposite corners; first to {Duel.ROUNDS_TO_WIN} round wins. Wins and losses move your duel rating.`,
-	},
-	DuelCasual = {
-		name = "Casual Duel",
-		kind = "Duels",
-		size = "1v1",
-		length = "Best of 5",
-		pitch = "Duel practice. No rating on the line.",
-		about = "The same 1v1 rounds as Ranked Duel, for practice: your rating doesn't move.",
-	},
-	Any = {
-		name = "Any Mode",
-		kind = "Quick",
-		size = "3v3 or FFA",
-		length = "Fastest",
-		pitch = "Jump into whichever match is ready first.",
-		about = "Whichever of the team and free-for-all modes finds you a match fastest.",
-	},
-	TeamDeathmatch = {
-		name = "Teams",
-		kind = "Teams",
-		size = "3v3",
-		length = minutes("TeamDeathmatch"),
-		pitch = "Fly with your wingmen. Most kills wins.",
-		about = `Two teams of three. First team to {MatchRules.MODES.TeamDeathmatch.ScoreLimit} kills, or the most after {minutes(
-			"TeamDeathmatch"
-		)}.`,
-	},
-	AirSuperiority = {
-		name = "Zones",
-		kind = "Teams",
-		size = "3v3",
-		length = minutes("AirSuperiority"),
-		pitch = "Seize the sky. Hold zones, drain tickets.",
-		about = "Two teams fight for three zones. Hold more zones than the enemy and their tickets drain; every jet lost costs tickets too.",
-	},
-	StrikeEscort = {
-		name = "Strike Escort",
-		kind = "Teams",
-		size = "3v3",
-		length = minutes("StrikeEscort"),
-		pitch = "Escort your bombers. Stop theirs.",
-		about = `Two teams escort AI bombers to the enemy airbase and hunt theirs. First to {Strike.STRIKE_LIMIT} bomber strikes wins.`,
-	},
-	BVR = {
-		name = "BVR Battle",
-		kind = "Teams",
-		size = "3v3",
-		length = minutes("BVR"),
-		pitch = "Radar missiles from 20 km out.",
-		about = "Beyond visual range: two teams start about 20 km apart with radar missiles only. Needs a Tier IV+ jet with radar missiles.",
-	},
-	Dogfight = {
-		name = "Dogfight",
-		kind = "FreeForAll",
-		size = "6 pilots",
-		length = minutes("Dogfight"),
-		pitch = "Everyone's a target. Most kills wins.",
-		about = `Free for all: every other jet is an enemy. First to {MatchRules.MODES.Dogfight.ScoreLimit} kills, or the most after {minutes(
-			"Dogfight"
-		)}.`,
-	},
-	GunsOnly = {
-		name = "Guns Only",
-		kind = "FreeForAll",
-		size = "6 pilots",
-		length = minutes("GunsOnly"),
-		pitch = "No missiles. Just guns and nerve.",
-		about = `Free for all with no missiles: guns only, with {MatchRules.GUNS_ONLY_AMMO} times the ammo. Close-in turning fights.`,
-	},
-	Waves = {
-		name = "PvE Waves",
-		kind = "Coop",
-		size = "Co-op, up to 3",
-		length = `{Strike.WAVES} waves`,
-		pitch = "Team up against waves of AI raiders.",
-		about = `Co-op for up to three: defend your airbase from {Strike.WAVES} waves of AI fighters and bombers, each bigger than the last.`,
-	},
-}
+local KINDS, MODES = ModeInfo.KINDS, ModeInfo.MODES
 
 -- The picker's rows: { id, columns wide }. The main mode leads, wide.
 local ROWS = {
@@ -155,6 +55,7 @@ local function ModeTile(props: any)
 	local kind = KINDS[mode.kind]
 	local picked = props.Picked
 	local featured = id == "Duel"
+	local recommended = id == "Any" and props.RecommendAny == true
 	return e("TextButton", {
 		Size = UDim2.fromOffset(props.Width, props.Height),
 		BackgroundColor3 = if picked then Theme.PanelLight else Theme.Panel,
@@ -174,8 +75,8 @@ local function ModeTile(props: any)
 	}, {
 		Corner = C.corner(10),
 		Stroke = e("UIStroke", {
-			Color = if picked then kind.colour else Theme.Stroke,
-			Thickness = if picked then 3 else 1,
+			Color = if picked or recommended then kind.colour else Theme.Stroke,
+			Thickness = if picked then 3 elseif recommended then 2 else 1,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		}),
 		Stripe = stripe(kind.colour),
@@ -185,7 +86,10 @@ local function ModeTile(props: any)
 			BackgroundTransparency = 1,
 		}, {
 			Kind = e(C.Label, {
-				Text = if featured then `{kind.name}  ·  MAIN MODE` else kind.name,
+				Text = if featured
+					then `{kind.name}  ·  MAIN MODE`
+					elseif recommended then `{kind.name}  ·  RECOMMENDED`
+					else kind.name,
 				Size = UDim2.new(1, 0, 0, 14),
 				TextSize = 12,
 				Bold = true,
@@ -246,6 +150,7 @@ local function Picker(props: any)
 				Height = ROW_HEIGHTS[r],
 				Order = i,
 				Picked = item[1] == props.Value,
+				RecommendAny = props.RecommendAny,
 				Data = props.Data,
 				OnPick = props.OnPick,
 				OnHover = setHovered,
@@ -392,12 +297,16 @@ local function ModeSelect(props: any)
 				Bold = true,
 				Color = Theme.Dim,
 			}),
+			-- Few pilots online and another mode picked: the tip instead of the pitch
 			Pitch = e(C.Label, {
-				Text = mode.pitch,
+				Text = if props.RecommendAny and props.Value ~= "Any"
+					then "Few pilots online: ANY MODE finds you a match fastest"
+					else mode.pitch,
 				Size = UDim2.new(1, -200, 0, 20),
 				Position = UDim2.fromOffset(22, 38),
 				TextSize = 15,
-				Color = Theme.Text,
+				Bold = props.RecommendAny and props.Value ~= "Any",
+				Color = if props.RecommendAny and props.Value ~= "Any" then Theme.Accent else Theme.Text,
 			}),
 			Change = e("Frame", {
 				Size = UDim2.fromOffset(150, 40),
@@ -428,6 +337,7 @@ local function ModeSelect(props: any)
 				}, {
 					Picker = e(Picker, {
 						Value = props.Value,
+						RecommendAny = props.RecommendAny,
 						Data = props.Data,
 						OnPick = function(id: string)
 							props.OnPick(id)

@@ -24,6 +24,7 @@ local UI = script.Parent.Parent
 local ChallengesPanel = require(UI.ChallengesPanel)
 local C = require(UI.Components)
 local JetPreview = require(UI.JetPreview)
+local LiveMatchesPanel = require(UI.LiveMatchesPanel)
 local MatchmakingPanel = require(UI.MatchmakingPanel)
 local ModeSelect = require(UI.ModeSelect)
 local PartyPanel = require(UI.PartyPanel)
@@ -261,7 +262,15 @@ local function Hangar(props: any)
 				TextSize = 16,
 			}),
 			Modes = if props.QueueMode
-				then e(ModeSelect, { Value = props.QueueMode, OnPick = props.OnQueueMode, Data = data })
+				then e(
+					ModeSelect,
+					{
+						Value = props.QueueMode,
+						OnPick = props.OnQueueMode,
+						Data = data,
+						RecommendAny = props.RecommendAny,
+					}
+				)
 				else nil,
 			Play = e(C.Button, {
 				Text = props.PlayText or "PLAY",
@@ -334,6 +343,14 @@ local function Hangar(props: any)
 				TextSize = 16,
 			}),
 		}),
+		-- In a lobby: matches in progress to jump into
+		Live = if props.QueueMode
+			then e(LiveMatchesPanel, {
+				Matches = props.LiveMatches,
+				Online = props.OnlinePilots,
+				OnJoin = props.OnJoinLive,
+			})
+			else nil,
 		Challenges = e(ChallengesPanel, { Data = data, OnReroll = props.OnReroll }),
 		-- The friends bonus, under the news banner (Shared/Social)
 		Social = e(SocialChip, {}),

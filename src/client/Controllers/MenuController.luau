@@ -111,6 +111,8 @@ local state = {
 	lastAirframe = nil :: string?,
 	-- The matchmaking queue (lobby only), from QueueState
 	queue = { state = "Idle", mode = "Any", startedAt = 0, message = nil :: string? },
+	-- Matches in progress to join, pilots online and whether Any mode is the tip (lobby, Shared/LiveMatches)
+	live = { matches = {}, online = 0, recommendAny = false } :: any,
 	-- Your party (lobby only), from PartyState (MMK-05)
 	party = { leader = nil :: number?, members = {} :: { any }, invites = {} :: { any }, max = 3 },
 	teleportScreen = false,
@@ -547,6 +549,14 @@ render = function()
 			elseif state.party.leader and state.party.leader ~= Players.LocalPlayer.UserId then "LEADER STARTS"
 			else "PLAY",
 		QueueMode = if lobby then SettingsController:Get("QueueMode") or "Duel" else nil,
+		LiveMatches = if lobby then state.live.matches else nil,
+		OnlinePilots = state.live.online,
+		RecommendAny = lobby and state.live.recommendAny == true,
+		OnJoinLive = function(id: string)
+			if state.queue.state ~= "Found" then
+				Net.Client.fire("JoinLiveMatch", id)
+			end
+		end,
 		Party = if lobby then state.party else nil,
 		PartyCandidates = (function()
 			local list = {}
@@ -1135,6 +1145,12 @@ function MenuController:Start()
 	end)
 	Players.PlayerRemoving:Connect(function()
 		task.defer(render)
+	end)
+	Net.Client.on("LiveMatches", function(payload: any)
+		if type(payload) == "table" and type(payload.matches) == "table" then
+			state.live = payload
+			render()
+		end
 	end)
 	Net.Client.on("QueueState", function(payload: any)
 		local queue = state.queue

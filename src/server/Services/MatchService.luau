@@ -1184,6 +1184,17 @@ function MatchService:GetMode(): MatchRules.ModeConfig
 	return mode
 end
 
+-- For the live-matches list (Shared/LiveMatches): this match's mode, state, players and time left.
+function MatchService:Summary(): { mode: string, state: string, humans: number, timeLeft: number }
+	local elapsed = os.clock() - stateSince
+	local timeLeft = if state == "Countdown"
+		then mode.CountdownSeconds - elapsed
+		elseif state == "InProgress" and mode.TimeLimit > 0 then mode.TimeLimit - elapsed
+		elseif state == "InProgress" then math.huge
+		else 0
+	return { mode = mode.Id, state = state, humans = #humans(), timeLeft = math.max(timeLeft, 0) }
+end
+
 function MatchService:GetState(): string
 	return state
 end

@@ -35,6 +35,7 @@ local MatchmakingStats = require(Shared.MatchmakingStats)
 local Net = require(Shared.Net)
 local Party = require(Shared.Party)
 local Places = require(Shared.Config.Places)
+local LiveMatches = require(Shared.LiveMatches)
 local Queue = require(Shared.Queue)
 local ServerRole = require(Shared.ServerRole)
 
@@ -66,6 +67,9 @@ type Store = {
 	queueRemove: (key: string) -> (),
 	queueAll: () -> { any },
 	update: (key: string, transform: (any) -> any, ttl: number) -> any,
+	liveSet: (key: string, value: any) -> (), -- matches in progress (Shared/LiveMatches)
+	liveRemove: (key: string) -> (),
+	liveAll: () -> { any },
 	get: (key: string) -> any,
 	set: (key: string, value: any, ttl: number) -> (),
 }
@@ -73,7 +77,21 @@ type Store = {
 local function memoryStore(): Store
 	local queue = MemoryStoreService:GetSortedMap("MatchQueue")
 	local map = MemoryStoreService:GetHashMap("Matchmaking")
+	local live = MemoryStoreService:GetSortedMap("LiveMatches")
 	return {
+		liveSet = function(key, value)
+			live:SetAsync(key, value, LiveMatches.STALE_AFTER)
+		end,
+		liveRemove = function(key)
+			live:RemoveAsync(key)
+		end,
+		liveAll = function()
+			local out = {}
+			for _, item in live:GetRangeAsync(Enum.SortDirection.Ascending, 100) do
+				table.insert(out, item.value)
+			end
+			return out
+		end,
 		queueSet = function(key, value)
 			queue:SetAsync(key, value, ENTRY_TTL)
 		end,
@@ -114,8 +132,21 @@ end
 
 -- Studio: one server, so plain tables behave the same
 local function localStore(): Store
-	local queue, map = {}, {}
+	local queue, map, live = {}, {}, {}
 	return {
+		liveSet = function(key, value)
+			live[key] = value
+		end,
+		liveRemove = function(key)
+			live[key] = nil
+		end,
+		liveAll = function()
+			local out = {}
+			for _, value in live do
+				table.insert(out, value)
+			end
+			return out
+		end,
 		queueSet = function(key, value)
 			queue[key] = value
 		end,
@@ -639,6 +670,10 @@ local function makeMatch(match: Queue.Match)
 		end
 		return
 	end
+	-- The access code too, so the match server can list itself for joining (LiveMatches); the record stays
+	-- server-side, never sent to clients
+	record.code = code
+	record.place = Places.battle(map)
 	pcall(store.set, `match:{serverId}`, record, RECORD_TTL)
 	local byJob: { [string]: { any } } = {}
 	for _, entry in match.entries do
@@ -711,6 +746,108 @@ function MatchmakingService:MatchParties(): { { number } }
 	return (matchRecord and matchRecord.parties) or {}
 end
 
+------------------------------------------------------------------------------------- matches in progress
+
+-- Lobby: how to join each match the last list showed (by its id); the access codes never go to clients
+local liveJoins: { [string]: { code: string, place: number, free: number } } = {}
+
+-- A match server reports itself for the lobbies' live list (Shared/LiveMatches) every REPORT_EVERY seconds.
+local function reportLive()
+	if not (ServerRole.isMatch() and matchRecord and matchRecord.code) then
+		return
+	end
+	local summary = MatchService:Summary()
+	local id = game.PrivateServerId
+	pcall(store.liveSet, id, {
+		id = id,
+		code = matchRecord.code,
+		place = matchRecord.place,
+		mode = summary.mode,
+		map = matchRecord.map,
+		state = summary.state,
+		humans = summary.humans,
+		seats = Queue.sizeFor(summary.mode),
+		timeLeft = math.min(summary.timeLeft, 3600), -- no time limit: an hour (MemoryStore holds JSON)
+		at = now(),
+	})
+end
+
+-- A lobby: the joinable matches (up to LiveMatches.SHOWN), pilots online, and whether Any mode is the tip.
+local function broadcastLive()
+	local ok, all = pcall(store.liveAll)
+	if not ok then
+		return
+	end
+	local okQueue, queue = pcall(store.queueAll)
+	local t = now()
+	liveJoins = {}
+	local shown = {}
+	for i, entry in LiveMatches.list(all, t) do
+		if i > LiveMatches.SHOWN then
+			break
+		end
+		liveJoins[entry.id] = { code = entry.code, place = entry.place, free = entry.seats - entry.humans }
+		table.insert(shown, {
+			id = entry.id,
+			mode = entry.mode,
+			map = entry.map,
+			humans = entry.humans,
+			seats = entry.seats,
+			state = entry.state,
+			timeLeft = math.floor(entry.timeLeft),
+		})
+	end
+	local online = LiveMatches.online(all, if okQueue then #queue else 0, #Players:GetPlayers(), t)
+	Net.Server.fireAll(
+		"LiveMatches",
+		{ matches = shown, online = online, recommendAny = LiveMatches.recommendAny(online) }
+	)
+end
+
+-- JOIN on a live match: the player (or their whole party, from its leader) takes seats in it.
+local function joinLive(player: Player, id: string)
+	if not ServerRole.isLobby() or leaving[player] or type(id) ~= "string" then
+		return
+	end
+	local target = liveJoins[id]
+	if not target then
+		sendState(player, { state = "Idle", message = "That match has filled up or finished. Try another." })
+		return
+	end
+	local leader = PartyService:LeaderOf(player)
+	if leader and leader ~= player.UserId then
+		sendState(player, { state = "Idle", message = "Your party's leader picks the match." })
+		return
+	end
+	local players = {}
+	for _, userId in PartyService:MembersOf(player) do
+		local member = Players:GetPlayerByUserId(userId)
+		if member and not leaving[member] then
+			table.insert(players, member)
+		end
+	end
+	if #players == 0 then
+		players = { player }
+	end
+	if #players > target.free then
+		sendState(player, { state = "Idle", message = "Not enough seats in that match for your party." })
+		return
+	end
+	leave(player, true) -- out of the queue if they were in it
+	for _, member in players do
+		leaving[member] = true
+		sendState(member, { state = "Found", mode = "Live" })
+	end
+	local options = Instance.new("TeleportOptions")
+	options.ReservedServerAccessCode = target.code
+	if not teleport(target.place, players, options) then
+		for _, member in players do
+			leaving[member] = nil
+			sendState(member, { state = "Idle", message = "Couldn't join that match. Try another." })
+		end
+	end
+end
+
 -- Testing (admin onboarding.restart): send a player into the first-session flow now.
 function MatchmakingService:StartFirstSession(player: Player)
 	leave(player, true)
@@ -722,6 +859,13 @@ function MatchmakingService:Init()
 
 	Net.Server.on("QueueJoin", join)
 	Net.Server.on("QueueLeave", cancel)
+	Net.Server.on("JoinLiveMatch", joinLive)
+	-- A finished match comes off the live list at once
+	MatchService.MatchOver:Connect(function()
+		if ServerRole.isMatch() then
+			pcall(store.liveRemove, game.PrivateServerId)
+		end
+	end)
 	-- A party that changes (someone joins, leaves or is removed) stops searching: press PLAY again
 	PartyService.Changed:Connect(function(userIds: { number })
 		local stopped = false
@@ -804,6 +948,17 @@ function MatchmakingService:Init()
 end
 
 function MatchmakingService:Start()
+	-- Matches in progress: match servers report, lobbies list them
+	task.spawn(function()
+		while true do
+			task.wait(LiveMatches.REPORT_EVERY)
+			if ServerRole.isMatch() then
+				reportLive()
+			elseif ServerRole.isLobby() then
+				broadcastLive()
+			end
+		end
+	end)
 	task.spawn(function()
 		local sinceRefresh = 0
 		while true do

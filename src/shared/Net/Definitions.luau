@@ -162,6 +162,10 @@ local definitions: { [string]: Definition } = {
 	QueueJoin = { direction = "ClientToServer", args = { "string", "string?" }, rate = { burst = 3, perSecond = 0.5 } },
 	QueueLeave = { direction = "ClientToServer", args = {}, rate = { burst = 3, perSecond = 0.5 } },
 	QueueState = { direction = "ServerToClient", args = { "table" } },
+	-- Matches in progress a lobby can join (Shared/LiveMatches): { matches = { { id, mode, map, humans, seats,
+	-- timeLeft } }, online = pilots online, recommendAny }; JoinLiveMatch(id) takes a seat in one
+	LiveMatches = { direction = "ServerToClient", args = { "table" } },
+	JoinLiveMatch = { direction = "ClientToServer", args = { "string" }, rate = { burst = 2, perSecond = 0.5 } },
 	-- Squadrons (LIV-06): your squadron's view; an action (Create / CreateClosed / Join / Leave / Kick / Role /
 	-- Open / Invite / Respond / Claim, with up to two arguments) -> (ok, message); SquadronChanged: ask again
 	SquadronGet = { direction = "Function", args = {}, rate = { burst = 4, perSecond = 1 } },
