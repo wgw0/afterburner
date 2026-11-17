@@ -20,7 +20,7 @@ return function(ctx)
 		end)
 
 		it("a new account queues for a free-for-all, not a duel", function()
-			expect(PlayerData.template().Settings.QueueMode).toBe("Dogfight")
+			expect(PlayerData.template().Settings.QueueMode).toBe("TeamDeathmatch")
 		end)
 	end)
 

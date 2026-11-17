@@ -93,10 +93,11 @@ function PlayerData.template(): { [string]: any }
 		Passes = {}, -- [passKey] = true while owned: PassService mirrors Roblox's answer on every join and purchase
 		Boosters = { Credits = 0, RP = 0 }, -- unix time each booster runs out (Shared/Perks)
 		ProcessedReceipts = {},
-		-- A new pilot's first mode is a free-for-all against AI, not a duel (Will: new players got no kills)
+		-- A new pilot's first mode is Teams against AI, not a duel or a free-for-all: on a team they can win
+		-- (badges: nobody new had ever topped a free-for-all; every new pilot's win came from a team mode)
 		Settings = (function()
 			local settings = Settings.defaults()
-			settings.QueueMode = "Dogfight"
+			settings.QueueMode = "TeamDeathmatch"
 			return settings
 		end)(),
 		-- Lifetime counts (Assists, MissilesDefeated, Captures and Challenges feed the achievement series)
