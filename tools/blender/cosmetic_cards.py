@@ -50,7 +50,7 @@ TRAILS = {
     "TrailAurora": [rgb(80, 255, 170), rgb(110, 150, 255), rgb(200, 90, 255)],
 }
 MARKERS = {
-    "MarkerBars": ("▮", rgb(235, 235, 225)),
+    "MarkerBars": ("▌", rgb(235, 235, 225)),
     "MarkerRoundels": ("◉", rgb(235, 80, 70)),
     "MarkerJets": ("✈", rgb(235, 235, 225)),
     "MarkerGold": ("★", GOLD),

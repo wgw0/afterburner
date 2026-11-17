@@ -81,7 +81,7 @@ Cosmetics.LIST = table.freeze({
 		Kind = "Marker",
 		DisplayName = "Kill Bars",
 		Wings = 100,
-		Glyph = "▮",
+		Glyph = "▌", -- not ▮: GothamBold has no ▮ and draws an empty box (seen in Studio, November 2026)
 		Colour = rgb(235, 235, 225),
 		Order = 1,
 	},

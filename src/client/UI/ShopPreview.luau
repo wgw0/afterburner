@@ -5,8 +5,9 @@
 --   Trail: the F-16A on afterburner in a ViewportFrame, streaming display smoke in the trail's colours from
 --     both wingtips (several colours follow one another along the trail, as in the game). Trails and beams
 --     don't draw in a ViewportFrame, so the smoke is a line of glowing puffs.
---   WingArt: the F-16A from above with the decal on both wings (Shared/WingArt). Its SurfaceGuis don't draw in
---     a ViewportFrame either, so each plate's picture is swapped for a Decal.
+--   WingArt: looking straight down on the F-16A's right wing, close in on the decal (Shared/WingArt; a decal is
+--     only about 2 studs across on a 15-stud jet, too small to read with the whole jet in view). Its
+--     SurfaceGuis don't draw in a ViewportFrame either, so each plate's picture is swapped for a Decal.
 --   Marker: drawn flat: a strip of grey hull with a row of five of the marks, as under the canopy.
 -- The jet scenes are still (no turntable), so a ViewportFrame only draws once; the scene is built a frame
 -- after the card mounts so opening the Shop doesn't stall.
@@ -23,7 +24,7 @@ local Theme = require(script.Parent.Theme)
 local e = React.createElement
 
 local AIRFRAME = "F16A" -- the camo cards' jet, in its own default skin
-local PUFFS = 22 -- per wingtip
+local PUFFS = 40 -- per wingtip: close enough to read as one plume
 local MARKS = 5 -- a five-star mastery's row
 local AFTERBURNER = Color3.fromRGB(255, 150, 60)
 
@@ -66,15 +67,15 @@ local function smoke(model: Model, colours: { Color3 }, length: number): Vector3
 	local root = model.PrimaryPart :: BasePart
 	local back = -root.CFrame.LookVector
 	local up = root.CFrame.UpVector
-	local trail = length * 2.2
+	local trail = length * 1.5
 	for _, side in { "WingtipL", "WingtipR" } do
 		local tip = root:FindFirstChild(side) :: Attachment?
 		if tip then
 			for i = 1, PUFFS do
 				local t = (i - 1) / (PUFFS - 1)
-				local size = length * (0.035 + 0.12 * t) -- spreading as it trails
+				local size = length * (0.05 + 0.16 * t) -- spreading as it trails
 				local at = tip.WorldPosition + back * (trail * t + size * 0.3) + up * (math.sin(t * 7) * length * 0.015)
-				part(Enum.PartType.Ball, along(colours, t), size, at, 0.05 + 0.6 * t).Parent = model
+				part(Enum.PartType.Ball, along(colours, t), size, at, 0.1 + 0.55 * t).Parent = model
 			end
 		end
 	end
@@ -83,11 +84,14 @@ local function smoke(model: Model, colours: { Color3 }, length: number): Vector3
 		local flame = length * 0.06
 		part(Enum.PartType.Ball, AFTERBURNER, flame, nozzle.WorldPosition + back * flame * 0.6, 0.15).Parent = model
 	end
-	return root.Position + back * trail * 0.35
+	return root.Position + back * trail * 0.38
 end
 
 -- Wing art's plates hold SurfaceGuis, which a ViewportFrame doesn't draw: put each picture in a Decal instead.
-local function decals(model: Model)
+-- Returns the right wing's plate (the card zooms in on it).
+local function decals(model: Model): Part?
+	local root = model.PrimaryPart :: BasePart
+	local right: Part? = nil
 	for _, d in model:GetDescendants() do
 		if d:IsA("SurfaceGui") and d.Parent and d.Parent.Name == "WingArt" then
 			local image = d:FindFirstChildWhichIsA("ImageLabel")
@@ -97,9 +101,14 @@ local function decals(model: Model)
 				decal.Texture = image.Image
 				decal.Parent = d.Parent
 			end
+			local plate = d.Parent :: Part
+			if (plate.Position - root.Position):Dot(root.CFrame.RightVector) > 0 then
+				right = plate
+			end
 			d:Destroy()
 		end
 	end
+	return right
 end
 
 -- The F-16A wearing a contrail or wing art, still, in a ViewportFrame.
@@ -134,16 +143,23 @@ local function JetScene(props: any)
 			if item and item.Kind == "Trail" then
 				local focus = smoke(model, item.Colours or { Color3.new(1, 1, 1) }, length)
 				-- From the side, ahead and above: the jet at one end and the smoke streaming away behind it
-				local distance = length * 3.8
+				local distance = length * 2.3
 				local eye = focus + right * distance * 0.8 + forward * distance * 0.45 + up * distance * 0.38
 				camera.CFrame = CFrame.lookAt(eye, focus)
 			else
 				WingArt.apply(model, props.Id)
-				decals(model)
-				-- From above, a little off to the right, nose pointing right across the card (it's wider than tall)
-				local distance = length * 1.4
-				local eye = root.Position + up * distance + right * distance * 0.3
-				camera.CFrame = CFrame.lookAt(eye, root.Position, -right)
+				local plate = decals(model)
+				if plate then
+					-- Straight down onto the right wing's decal, close enough to read it, with the wing around it
+					-- (checked in Studio: about twice the decal's width away)
+					local distance = plate.Size.X * 2.3
+					camera.CFrame =
+						CFrame.lookAt(plate.Position + plate.CFrame.LookVector * distance, plate.Position, -right)
+				else -- no room on the wing: the whole jet from above
+					local distance = length * 1.4
+					local eye = root.Position + up * distance + right * distance * 0.3
+					camera.CFrame = CFrame.lookAt(eye, root.Position, -right)
+				end
 			end
 			camera.Parent = viewport
 			viewport.CurrentCamera = camera

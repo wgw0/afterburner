@@ -383,7 +383,8 @@ local function PassCard(props: {
 	})
 end
 
--- Cards that wrap onto as many lines as they need (taller ones with a picture; wider ones for the passes), so a narrow screen stacks them instead of cutting them off
+-- Cards that wrap onto as many lines as they need (taller ones with a picture; wider ones for the passes), so
+-- a narrow screen stacks them instead of cutting them off
 local function grid(order: number, cards: { [string]: any }, height: number?, width: number?)
 	cards.Layout = e("UIGridLayout", {
 		CellSize = UDim2.fromOffset(width or CARD_W, height or CARD_H),
@@ -611,8 +612,8 @@ end
 
 local THUMB_W = 104 -- each bundle item's picture
 
--- This week's featured bundle: its items' pictures and names, what it would cost you (owned items aren't charged) and the day it
--- changes (a real date, not a countdown to pressure anyone).
+-- This week's featured bundle: its items' pictures and names, what it would cost you (owned items aren't
+-- charged) and the day it changes (a real date, not a countdown to pressure anyone).
 local function BundlePanel(props: { Data: any, Order: number, OnBuy: (string) -> (boolean, string?) })
 	local message, setMessage = React.useState(nil :: string?)
 	local now = workspace:GetServerTimeNow()
