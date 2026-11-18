@@ -15,6 +15,7 @@ local Season = require(Shared.Season)
 
 local C = require(script.Parent.Components)
 local PulseCard = require(script.Parent.PulseCard)
+local RateCard = require(script.Parent.RateCard)
 local Theme = require(script.Parent.Theme)
 local Screens = script.Parent.Screens
 local AircraftDetail = require(Screens.AircraftDetail)
@@ -548,6 +549,15 @@ local function App(props: any)
 			-- A quick check-in (Shared/Pulse), on the home screen only
 			Pulse = if screen == "Hangar" and props.PulseMoment
 				then e(PulseCard, { Moment = props.PulseMoment, OnAnswer = props.OnPulse })
+				else nil,
+			-- After a 👍 on it: rate and favourite the game (RateCard)
+			Rate = if screen == "Hangar"
+					and props.RateAsk
+					and not props.PulseMoment
+				then e(
+					RateCard,
+					{ OnRate = props.OnRate, OnFavourite = props.OnFavourite, OnClose = props.OnRateClose }
+				)
 				else nil,
 		}),
 	})

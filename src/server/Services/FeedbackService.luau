@@ -131,8 +131,19 @@ local function onPulse(player: Player, moment: string, answer: string, text: str
 	end
 end
 
+-- The rate-and-favourite card (RateCard): analytics event "RateAsk" (value 1 when the prompt went through)
+local RATE_ACTIONS = { rate = true, favourite = true, close = true }
+local function onRateAsk(player: Player, action: string, result: string)
+	if not RATE_ACTIONS[action] or #result > 20 then
+		return
+	end
+	local ok = result == "Completed" or result == "Success"
+	Telemetry.event("RateAsk", if ok then 1 else 0, { action = action, result = result }, player)
+end
+
 function FeedbackService:Init()
 	Net.Server.on("PulseAnswer", onPulse)
+	Net.Server.on("RateAsk", onRateAsk)
 	Net.Server.handle("SendFeedback", function(player: Player, kind: string, text: string, info: any)
 		return self:Send(player, kind, text, info)
 	end)

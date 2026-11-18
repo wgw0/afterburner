@@ -197,6 +197,9 @@ local definitions: { [string]: Definition } = {
 		args = { "string", "string", "string?" },
 		rate = { burst = 3, perSecond = 1 / 10 },
 	},
+	-- The rate-and-favourite card after a 👍 (RateCard): "rate" | "favourite" | "close", and the prompt's
+	-- result (an Enum item name, "Error" or "Closed"). Analytics only (FeedbackService).
+	RateAsk = { direction = "ClientToServer", args = { "string", "string" }, rate = { burst = 4, perSecond = 1 / 5 } },
 	-- Report a bug (FeedbackService, Shared/Feedback): kind (Bug / Lag / Idea / Other), text, device info table
 	-- -> (ok, message). The server also allows one per 2 minutes and 5 a day.
 	SendFeedback = {

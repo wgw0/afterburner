@@ -8,6 +8,7 @@
 -- searching); on a match server you launch in the selected jet as the match starts (you already chose to
 -- play), and PLAY flies again after that; on a training server PLAY flies.
 
+local AvatarEditorService = game:GetService("AvatarEditorService")
 local GuiService = game:GetService("GuiService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -34,6 +35,7 @@ local TechTree = require(Shared.TechTree)
 local Environment = require(Shared.Config.Environment)
 local LiveConfig = require(Shared.LiveConfig)
 local Passes = require(Shared.Config.Passes)
+local Places = require(Shared.Config.Places)
 local Products = require(Shared.Config.Products)
 local Pulse = require(Shared.Pulse)
 local Queue = require(Shared.Queue)
@@ -115,6 +117,7 @@ local state = {
 	-- Matches in progress to join, pilots online and whether Any mode is the tip (lobby, Shared/LiveMatches)
 	live = { matches = {}, online = 0, recommendAny = false } :: any,
 	pulseDone = {} :: { [string]: boolean }, -- check-ins answered this visit (before the save says so)
+	rateAsk = false, -- a 👍 on a check-in: the card asking to rate and favourite the game is up (RateCard)
 	-- Your party (lobby only), from PartyState (MMK-05)
 	party = { leader = nil :: number?, members = {} :: { any }, invites = {} :: { any }, max = 3 },
 	teleportScreen = false,
@@ -564,11 +567,40 @@ render = function()
 			if moment then
 				state.pulseDone[moment] = true
 				Net.Client.fire("PulseAnswer", moment, answer, text)
-				if answer ~= "skip" then
+				if answer == "up" then
+					state.rateAsk = true
+				elseif answer ~= "skip" then
 					setStatus("Thanks for the feedback!")
 				end
 				render()
 			end
+		end,
+		RateAsk = state.rateAsk,
+		OnRate = function()
+			state.rateAsk = false
+			render()
+			task.spawn(function()
+				local ok, result = pcall(SocialService.PromptRateExperienceAsync, SocialService)
+				Net.Client.fire("RateAsk", "rate", if ok then result.Name else "Error")
+			end)
+		end,
+		OnFavourite = function()
+			-- Stays up, so they can rate as well
+			local done = AvatarEditorService.PromptSetFavoriteCompleted:Once(function(result: Enum.AvatarPromptResult)
+				Net.Client.fire("RateAsk", "favourite", result.Name)
+			end)
+			local ok = pcall(function()
+				AvatarEditorService:PromptSetFavorite(Places.lobby(), Enum.AvatarItemType.Asset, true)
+			end)
+			if not ok then
+				done:Disconnect()
+				Net.Client.fire("RateAsk", "favourite", "Error")
+			end
+		end,
+		OnRateClose = function()
+			state.rateAsk = false
+			Net.Client.fire("RateAsk", "close", "Closed")
+			render()
 		end,
 		OnlinePilots = state.live.online,
 		RecommendAny = lobby and state.live.recommendAny == true,
