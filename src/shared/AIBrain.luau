@@ -87,6 +87,23 @@ AIBrain.PROFILES = table.freeze({
 	}),
 })
 
+-- A new pilot's first sortie (TutorialController): starts in front of them flying away, turns gently, is
+-- slow to react, rarely hits with its gun and fires no missiles. Not one of the PROFILES, so it isn't offered
+-- as a Vs AI difficulty. (Analytics, Nov 18: against Easy, 68% of new pilots left training without ever
+-- hitting it and 4 of ~630 won the two-kill sortie.)
+AIBrain.ROOKIE = table.freeze({
+	Name = "Rookie",
+	ReactionTime = 4,
+	AimError = 10,
+	FireTolerance = 1,
+	FlareSkill = 0,
+	EnergySkill = 0.1,
+	MaxGUse = 0.3,
+	GunRange = 350,
+	MissileInterval = math.huge,
+	MissileRange = 0,
+})
+
 -- Missile choice (AI-04). A slot the pilot could fire: class "IR" | "Radar", ranges in real metres,
 -- irLockable = a heat-seeker could see the target now (caller checks with Guidance.irLockable).
 export type MissileOption = {

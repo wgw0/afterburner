@@ -9,7 +9,7 @@
 --   5 Defend: drop a flare, then beat 3 heat-seekers fired at you from behind (DebugLaunchAtMe).
 --   6 First fight: a head-on merge with an Easy AI pilot that fights only you (TrainingBout); win it.
 -- First session (TUT-04): a new pilot arrives on a training server and their first sortie starts by itself:
--- two Easy enemy jets, one after the other, with the controls on the panel (Will: 94% of new players left
+-- one easy enemy jet in front of them, with the controls on the panel (Will: 94% of new players left
 -- during lesson 1's rings, before any fighting). Shot down, they're put back in the air to try again; after it
 -- they're taken back to the menu, where the welcome card offers multiplayer or the lessons. Any lesson can be
 -- quit by holding the hangar key (shown on the panel).
@@ -399,28 +399,19 @@ local LESSONS: { [string]: LessonRunner.Lesson } = {
 
 TutorialController.ORDER = { "Flight", "Energy", "Guns", "Missiles", "Defend", "Fight" }
 
--- A new pilot's first sortie (not in the lessons list): two Easy opponents, one after the other
+-- A new pilot's first sortie (not in the lessons list): one easy kill. A Rookie opponent (AIBrain.ROOKIE)
+-- starts in front of you flying away. (It was two Easy opponents head-on: 4 of ~630 new pilots won it,
+-- taking 15 minutes on average, and 68% left without ever hitting one.)
 LESSONS.Sortie = {
 	id = "Sortie",
 	title = "YOUR FIRST DOGFIGHT",
 	steps = {
 		{
-			text = "An enemy jet is coming at you. Shoot it down!",
+			text = "Enemy jet dead ahead! Shoot it down!",
 			hint = "Steer with the mouse: the jet flies where you point · hold {FireGun} to fire guns · {FireMissile} fires a missile when the tone is steady",
 			enter = function(_ctx: Context, memory)
 				memory.startKills = kills
-				Net.Client.fire("TrainingBout", true)
-			end,
-			check = function(_ctx: Context, memory)
-				return kills > memory.startKills
-			end,
-		},
-		{
-			text = "Splash one! Here comes another. Get on its tail.",
-			hint = "Turn hard to stay behind it · guns up close · {FireMissile} from behind is hard to dodge",
-			enter = function(_ctx: Context, memory)
-				memory.startKills = kills
-				Net.Client.fire("TrainingBout", true)
+				Net.Client.fire("TrainingBout", true, "Rookie")
 			end,
 			check = function(_ctx: Context, memory)
 				return kills > memory.startKills

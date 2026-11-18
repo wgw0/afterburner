@@ -6,7 +6,8 @@
 --   "far":    the same, 600 studs ahead (past heat-seekers' minimum range, for the missile lesson)
 --   "circle": orbits the test range at a steady bank
 -- Training bouts (TrainingBout, lesson 6): an Easy AI pilot (AIService:CreateTrainingPilot) that turns to
--- fight only you, in Free Flight. It goes when it or you are shot down, or you leave.
+-- fight only you, in Free Flight. It goes when it or you are shot down, or you leave. With "Rookie" (a new
+-- pilot's first sortie): AIBrain.ROOKIE, starting ahead of you and flying away.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,6 +25,8 @@ local Units = require(Shared.Units)
 local AIService = require(script.Parent.AIService)
 local AircraftService = require(script.Parent.AircraftService)
 local CombatService = require(script.Parent.CombatService)
+
+local ROOKIE_AHEAD = 700 -- studs
 
 type Drone = {
 	jet: AircraftService.Jet,
@@ -139,17 +142,25 @@ function DroneService:Init()
 			AIService:RemovePilot(pilot)
 		end
 	end
-	Net.Server.on("TrainingBout", function(player: Player, start: boolean)
+	Net.Server.on("TrainingBout", function(player: Player, start: boolean, kind: string?)
 		endBout(player)
 		local jet = AircraftService:GetJet(player)
 		if not start or not jet or ReplicatedStorage:GetAttribute("GameMode") ~= "FreeFlight" then
 			return
 		end
-		-- Head-on, 2,500 studs ahead at your height: a merge, then a fight
-		local pilot = AIService:CreateTrainingPilot(player, jet.airframeId)
+		local rookie = kind == "Rookie"
+		local pilot = AIService:CreateTrainingPilot(player, jet.airframeId, rookie)
 		bouts[player] = pilot
 		local flat = Vector3.new(jet.root.CFrame.LookVector.X, 0, jet.root.CFrame.LookVector.Z)
 		flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
+		if rookie then
+			-- The first sortie: ROOKIE_AHEAD in front, same heading, so it starts in your sights (and past a
+			-- heat-seeker's minimum range)
+			local position = jet.root.Position + flat * ROOKIE_AHEAD
+			AIService:SpawnPilot(pilot, CFrame.lookAt(position, position + flat))
+			return
+		end
+		-- Head-on, 2,500 studs ahead at your height: a merge, then a fight
 		local position = jet.root.Position + flat * 2500
 		AIService:SpawnPilot(
 			pilot,

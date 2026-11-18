@@ -138,9 +138,13 @@ function AIService:CreateMissionPilot(role: string, difficulty: string, airframe
 end
 
 -- A training-bout opponent (TUT-03 lesson 6): an Easy pilot that fights only `trainee`.
-function AIService:CreateTrainingPilot(trainee: Player, airframeId: string): Pilot
+function AIService:CreateTrainingPilot(trainee: Player, airframeId: string, rookie: boolean?): Pilot
 	local pilot = self:CreatePilot("Easy", airframeId)
 	pilot.training = trainee
+	if rookie then
+		pilot.profile = AIBrain.ROOKIE
+		pilot.identity.Difficulty = AIBrain.ROOKIE.Name
+	end
 	return pilot
 end
 

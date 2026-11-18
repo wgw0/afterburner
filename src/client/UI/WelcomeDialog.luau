@@ -1,7 +1,7 @@
 --!strict
 -- The first-visit welcome (TUT-04): a brand-new pilot in the lobby gets this over the menu, built like the
--- free-spin window. START YOUR FIRST DOGFIGHT heads to a training server, where their first sortie (two Easy
--- enemy jets) starts by itself; SKIP stays in the lobby and the pilot counts as onboarded, so it doesn't come
+-- free-spin window. START YOUR FIRST DOGFIGHT heads to a training server, where their first sortie (one easy
+-- enemy jet) starts by itself; SKIP stays in the lobby and the pilot counts as onboarded, so it doesn't come
 -- back (MenuController).
 -- props: OnTraining(), OnClose()
 

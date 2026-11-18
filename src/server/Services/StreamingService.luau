@@ -4,9 +4,10 @@
 -- stream the rest in around them: the spawn points first (where they'll appear), then the airbases, then
 -- a grid over the whole map. With Workspace.StreamOutBehavior = LowMemory (set in Studio; scripts can't),
 -- what's loaded stays loaded unless the device runs short of memory, so spawning doesn't start in a void.
--- The client sets the pace: it reports its frame rate (StreamingController), and each area waits until
--- that is back to normal for the machine. Sending everything at once held a client at ~10 fps for over
--- a minute while it built the terrain; a fixed pause between areas wasted a fast machine's headroom.
+-- PLAY waits only for the first of them (READY_AFTER). The client sets the pace: it reports its frame rate
+-- (StreamingController), and each area waits until that is back to normal for the machine. Sending
+-- everything at once held a client at ~10 fps for over a minute while it built the terrain; a fixed pause
+-- between areas wasted a fast machine's headroom.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -78,16 +79,20 @@ local function settle(player: Player)
 	until os.clock() - started >= MAX_WAIT
 end
 
-local MAP_READY_AFTER = 60 -- seconds: PLAY unlocks by then even if some area is slow
+-- PLAY unlocks (MapReady) as soon as the first spawn area is in, or after READY_AFTER at the latest; the
+-- other areas keep loading behind it. Jets spawn in the air, so the ground under the rest can arrive while
+-- flying (WorldEdgeController's underlay covers the gap). Waiting for every spawn area first took 32s on
+-- average in matches, and 41% of new pilots left a match server before it was done (analytics, Nov 18).
+local READY_AFTER = 8 -- seconds
+local FIRST_TIMEOUT = 6 -- seconds to wait on the first area
 
 local function warm(player: Player)
-	-- PLAY stays greyed out until the spawn areas are in (MatchController:SpawnStatus)
-	task.delay(MAP_READY_AFTER, function()
+	local function ready()
 		if player.Parent == Players then
 			player:SetAttribute("MapReady", true)
 		end
-	end)
-	local spawnCount = #spawnAreas()
+	end
+	task.delay(READY_AFTER, ready)
 	local areas = spawnAreas()
 	if WARM_WHOLE_MAP then
 		for _, position in grid() do
@@ -95,16 +100,18 @@ local function warm(player: Player)
 		end
 	end
 	for i, position in areas do
-		settle(player)
+		if i > 1 then
+			settle(player) -- the first area goes straight away; the rest at the client's pace
+		end
 		if player.Parent ~= Players then
 			return
 		end
-		pcall(player.RequestStreamAroundAsync, player, position, TIMEOUT)
-		if i == spawnCount then
-			player:SetAttribute("MapReady", true)
+		pcall(player.RequestStreamAroundAsync, player, position, if i == 1 then FIRST_TIMEOUT else TIMEOUT)
+		if i == 1 then
+			ready()
 		end
 	end
-	player:SetAttribute("MapReady", true)
+	ready()
 end
 
 function StreamingService:Start()

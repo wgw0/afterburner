@@ -290,5 +290,13 @@ return function(ctx)
 			expect(ace.MissileRange > easy.MissileRange).toBe(true)
 			expect(ace.MissileInterval < easy.MissileInterval).toBe(true)
 		end)
+
+		it("the first sortie's Rookie never fires a missile and isn't a Vs AI difficulty", function()
+			local rookie = AIBrain.ROOKIE
+			expect((AIBrain.chooseMissile(rookie, { ir, radar }, 2500, true))).toBe(nil)
+			expect((AIBrain.PROFILES :: any).Rookie).toBe(nil)
+			expect(rookie.MaxGUse < AIBrain.PROFILES.Easy.MaxGUse).toBe(true)
+			expect(rookie.ReactionTime > AIBrain.PROFILES.Easy.ReactionTime).toBe(true)
+		end)
 	end)
 end

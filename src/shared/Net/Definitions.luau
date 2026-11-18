@@ -213,7 +213,11 @@ local definitions: { [string]: Definition } = {
 		rate = { burst = 3, perSecond = 0.5 },
 	},
 	-- Lesson 6: start (true) or end (false) a training bout against an Easy AI pilot (Free Flight only)
-	TrainingBout = { direction = "ClientToServer", args = { "boolean" }, rate = { burst = 2, perSecond = 0.5 } },
+	TrainingBout = {
+		direction = "ClientToServer",
+		args = { "boolean", "string?" },
+		rate = { burst = 2, perSecond = 0.5 },
+	},
 	DebugPing = { direction = "ClientToServer", args = { "integer" }, rate = { burst = 5, perSecond = 2 } },
 	DebugPong = { direction = "ServerToClient", args = { "integer", "number" } },
 	DebugEcho = { direction = "Function", args = { "string" }, rate = { burst = 3, perSecond = 1 } },
