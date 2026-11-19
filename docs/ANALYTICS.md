@@ -47,7 +47,7 @@ Go to **Funnels**, then the **Training** tab. Each player counts once.
 | Step | Name |
 |---|---|
 | 1 | Arrived (first time on a training server) |
-| 2 | Sortie (the first sortie: a new pilot's fight against two Easy jets, which starts by itself on arrival) |
+| 2 | Sortie (the first sortie: a new pilot's fight against one gentle Rookie jet, which starts by itself on arrival) |
 | 3 | Flight (lesson 1) |
 | 4 | Energy (lesson 2) |
 | 5 | Guns (lesson 3: lessons 1–3 pay the 2,000 Credits) |
@@ -88,7 +88,12 @@ far?" with 👍 / 👎 and an optional line (`Shared/Pulse`). Each moment is ask
   `moment` (`Sortie`, `Match1` or `Match3`). Count by `answer` for one `moment`. The value is 1 for 👍 and 0
   otherwise, so the average only gives the share of thumbs up once skips are filtered out.
 - Any line they typed goes into the feedback inbox as an `Idea`, starting `[check-in <moment> 👍]` (admin
-  command `feedback.recent`).
+  command `feedback.recent`, or the `Feedback` data store in Creator Hub's Data Stores Manager, key
+  `day:<days since 1970>`).
+- **`RateAsk`** (Custom events): after a 👍 the card asks, with no reward, to rate and favourite the game
+  (`UI/RateCard`, Roblox's own prompts). Field 1 is `action` (`rate`, `favourite` or `close`) and Field 2 is
+  `result` (`Completed`, `Dismissed`, `NotAllowed` or `Failed` for rating; `Success`, `PermissionDenied` or
+  `Failed` for favouriting; `Closed`; `Error`). The value is 1 when the prompt went through.
 
 ## Match quality: are matches fair and quick to find?
 

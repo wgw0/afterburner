@@ -10,26 +10,31 @@ the release date when the release is tagged.
 
 ## [1.1.0] - Unreleased
 
-On master since 1.0.0. The version number is a draft: `Version.NUMBER` is still 1.0.0.
+On master since 1.0.0, and live since 18 November 2026 (published with the version number still 1.0.0). The
+version number is a draft: `Version.NUMBER` is still 1.0.0.
 
 ### Added
-- A first sortie for new pilots: two easy enemy jets, starting by itself in training, in place of lesson 1's
-  rings. The welcome card then leads with multiplayer, with the lessons as extras.
+- A first sortie for new pilots, starting by itself in training in place of lesson 1's rings: one kill against
+  a gentle Rookie that starts in front of you. The welcome card then leads with multiplayer, with the lessons
+  as extras.
 - LIVE NOW on the Hangar: up to three matches in progress with a free seat, and a JOIN button that takes an AI
   pilot's place. While fewer than 20 pilots are online, Any mode is marked recommended.
 - Check-ins: a one-tap 👍 / 👎 "How's Afterburner so far?" after the first sortie and the 1st and 3rd matches,
-  with an optional line.
+  with an optional line. After a 👍, a card asks (with no reward) to rate and favourite the game, using
+  Roblox's own prompts.
 - A picture on every shop card, and jet previews that show kill markers and wing art.
 - A line on the results screen and the welcome card pointing to the Discord link on the game page (text only).
 
 ### Changed
 - New pilots start on Teams. Until they've finished 3 matches, a match of only new pilots has Easy AI and is
   shorter (a third of the kill limit, at most 5 minutes).
+- PLAY unlocks once the first spawn area has loaded (8 s at most) instead of waiting for every spawn area
+  (32 s on average in matches).
 - A lone player's AI match starts after 10 s instead of 30 s (45 s for duels) when nobody else is queuing.
 - HUD themes are no longer sold: the HUD colour is free in Settings.
 - Achievement bars on the Career page fill from zero, matching the count beside them.
 - Analytics: a Sortie step in the training funnel, the FirstSortie funnel and new pilots' journey events,
-  and fights against AI pilots logged apart (docs/ANALYTICS.md).
+  fights against AI pilots logged apart, and the rate-and-favourite card's choices (docs/ANALYTICS.md).
 
 ### Fixed
 - The Kill Bars kill-marker glyph.
