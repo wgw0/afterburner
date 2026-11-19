@@ -1,3 +1,10 @@
+> [!NOTE]
+> **Project debrief:** Afterburner was built in three weeks, launched on Roblox on 15 November 2026 and tested with a $25 ad campaign. The 20-slide debrief covers what was built, what players did, and whether it worked. **Click the slide to step through it.**
+>
+> <a href="docs/debrief/README.md"><img src="docs/debrief/slides/slide-01.jpg" alt="Afterburner: Lifetime Debrief, title slide. Click to step through all 20 slides." width="100%" /></a>
+>
+> **[Step through the slides](docs/debrief/README.md)** · [Open the PDF](docs/debrief/Afterburner_Debrief.pdf) · [Download the PowerPoint](docs/debrief/Afterburner_Debrief.pptx)
+
 <div align="center">
 
 <img src="assets/banner.svg" alt="Afterburner: sim-flavoured air combat for Roblox" width="100%" />
@@ -9,7 +16,7 @@
 [![Platform](https://img.shields.io/badge/platform-Roblox-000000?style=for-the-badge&logo=roblox&logoColor=white)](https://create.roblox.com)
 [![Language](https://img.shields.io/badge/language-Luau-00A2FF?style=for-the-badge&logo=lua&logoColor=white)](https://luau.org)
 [![Tooling](https://img.shields.io/badge/sync-Rojo-E13835?style=for-the-badge)](https://rojo.space)
-[![Status](https://img.shields.io/badge/status-soft--launch%20build-FF8A3D?style=for-the-badge)](#roadmap)
+[![Status](https://img.shields.io/badge/status-launched%20v1.0.0-FF8A3D?style=for-the-badge)](#roadmap)
 
 [**Design doc**](docs/DESIGN.md) · [**Dev instructions**](docs/DEVELOPMENT.md) · [**Progress**](docs/PROGRESS.md) · [**Art pipeline**](docs/art/AIRCRAFT_PIPELINE.md) · [**Roadmap**](#roadmap) · [**Getting started**](#getting-started) · [**Project layout**](#project-layout)
 
@@ -213,11 +220,11 @@ Then:
 | 3 | Missiles, radar, RWR and countermeasures | Done |
 | 4 | Match loop: Dogfight, AI pilots, first map, tutorial, touch controls | Done |
 | 5 | Progression and saving: tech tree Tiers I–III, BR matchmaking | Done |
-| 6 | Content and polish for a soft launch: all 27 jets with final art, TDM, Air Superiority, matchmaking across servers | In progress |
-| 7 | Monetisation: Wings, shop, passes, boosters, bundles, Season 1 pass | Built |
+| 6 | Content and polish for a soft launch: all 27 jets with final art, TDM, Air Superiority, matchmaking across servers | Done |
+| 7 | Monetisation: Wings, shop, passes, boosters, bundles, Season 1 pass | Done |
 | 8 | Launch and live ops: Tiers V–VIII, squadrons, ranked, BVR | In progress |
 
-Each phase ends with a playable build and an exit test. Phase 6 still has the live matchmaking test, badges, the mobile passes and the rollback drill. Phase 7 is built and checked in Studio. From Phase 8, Tiers V–VIII, squadrons, parties, leaderboards, scheduled events and the Test Pilot trials came early; the public launch, Ranked Duels, BVR and PvE are still to come. Task-level status is in [PROGRESS.md](docs/PROGRESS.md), and the phase checklists are in [design doc §10](docs/DESIGN.md#10-build-plan-steps-to-follow).
+Each phase ends with a playable build and an exit test. Phases 0–7 are done. In Phase 8, the public launch (v1.0.0, 15 November 2026), Duels, BVR Battles, Strike Escort, PvE waves, the Desert Range map, Tiers V–VIII, squadrons, parties, leaderboards, scheduled events and the Test Pilot trials are built; 12 of its 21 tasks are done. How the launch went is in the [project debrief](docs/debrief/README.md). Task-level status is in [PROGRESS.md](docs/PROGRESS.md), and the phase checklists are in [design doc §10](docs/DESIGN.md#10-build-plan-steps-to-follow).
 
 <details>
 <summary><b>Decision log</b></summary>
